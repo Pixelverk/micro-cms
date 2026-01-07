@@ -1,23 +1,23 @@
 # Micro CMS
 
-A very small CMS with fancy Web Components and not-so-fancy PHP.
+A very small, fast CMS using Web Components for front-end structure and lightweight PHP for editing and saving content. 
 
-Meant to run on cheap apache hosting and still get 100s from pagespeed.web.dev
-
-Made by chatgpt and maybe some programming person.
+Designed to run on cheap Apache hosting while keeping page speed scores high.
 
 ## Workflow
-1. Build your own components
-2. Set up some pages
-3. ???
-4. Profit
+1. Build your own Web Components and place them in `_components/`
+2. Create page folders (e.g., `/home`, `/services`) with an `index.html`
+3. Open the editor at `/editor/` to edit component attributes of any page
+4. Save changes, and your pages update instantly
 
 ## To-Do next
+### Components
 - [ ] More components
-- [ ] Fancier, more responsive, demo site
 - [ ] Demonstrate nested components
-- [ ] More advanced components and forms 
+- [ ] More advanced components and forms
+- [ ] Make use of Alpine.js
 
+### Editor UX
 - [ ] Drag and drop / reorder components
 - [ ] Add/remove components on page
 - [ ] Live preview
@@ -26,26 +26,32 @@ Made by chatgpt and maybe some programming person.
 - [ ] Editor page create/delete
 - [ ] Image uploads / image manager
 - [ ] Color pickers
-- [ ] User CRUD
-- [ ] Proper password stuff
 - [ ] Drafts or edit history and restore
 - [ ] Slug editing
-- [ ] Nav and menu manager
 
-- [ ] Working contact form, contact.php?
+### Users & Security
+- [ ] User CRUD
+- [ ] Proper password storage and hashing
+
+### Features
+- [ ] Working contact form posting
 - [ ] Documentation / how-to guide in app
 - [ ] Lazy loading components and/or images
 - [ ] Multi-language support
-- [ ] Fancy SEO fields, opengraph etc
+- [ ] Fancy SEO fields, OpenGraph etc
+- [ ] Nav and menu manager
 
-- [ ] Not store password123 in plaintext
+### Polish
 - [ ] Make it pretty
 - [ ] Make it better
-- [ ] Make a longer list
 
 ## Local dev
-Run with any php server, like: php -S localhost:8000
+Run with any PHP server, for example:
 
-If you don't run apache, the .htaccess redirect of / to /home/index.html will be useless.
+```
+php -S localhost:8000
+```
 
-There is an index.html just to make sure something loads on /. Remove when publishing.
+Visit http://localhost:8000/editor/ to log in and start editing.
+
+Note: The .htaccess redirect of / → /home/index.html needs Apache. The included index.html in root just makes sure something loads at / during local dev.
