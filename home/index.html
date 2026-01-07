@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Helping your business shrink with strategic consulting.">
+    <title>Home &ndash; Demo Site</title>
+
+    <link rel="stylesheet" href="/_assets/style.css">
+    <script src="/_assets/main.js" defer></script>
+    <script src="/_vendor/alpine.min.js" defer></script>
+
+    <script type="module">
+        import '/_components/site-header.js';
+        import '/_components/site-footer.js';
+        import '/_components/hero-section.js';
+        import '/_components/features.js';
+        import '/_components/feature-card.js';
+        import '/_components/cta-section.js';
+    </script>
+</head>
+<body>
+    <site-header></site-header>
+
+    <main>
+        <!-- Hero section -->
+        <hero-section title="Helping Your Business Shrink" subtitle="Strategic consulting, clear direction, and measurable results." image="hero-bg.jpg"></hero-section>
+
+        <!-- Features section -->
+        <features-section>
+            <feature-card title="Fast Delivery" text="We deliver your project on time." icon="&#128640;" image="feature1.png"></feature-card>
+
+            <feature-card title="Clear Communication" text="You always know what&rsquo;s happening." icon="&#128172;" image="feature2.png"></feature-card>
+
+            <feature-card title="Proven Results" text="We focus on outcomes, not buzzwords." icon="&#128200;" image="feature3.png"></feature-card>
+        </features-section>
+
+        <!-- Call to action -->
+        <cta-section url="/contact/" linktext="Get in touch" title="Ready to take the next step?" text="Let&rsquo;s talk about your project."></cta-section>
+    </main>
+
+    <site-footer></site-footer>
+</body>
+</html>

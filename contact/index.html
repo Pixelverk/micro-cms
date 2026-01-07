@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contact us to discuss your project or ask a question.">
+    <title>Contact &ndash; Demo Site</title>
+
+    <link rel="stylesheet" href="/_assets/style.css">
+    <script src="/_assets/main.js" defer></script>
+    <script src="/_vendor/alpine.min.js" defer></script>
+
+    <script type="module">
+        import '/_components/site-header.js';
+        import '/_components/site-footer.js';
+        import '/_components/hero-section.js';
+        import '/_components/cta-section.js';
+    </script>
+</head>
+<body>
+    <site-header></site-header>
+
+    <main>
+        <!-- Hero section -->
+        <hero-section title="Contact Us" subtitle="We&rsquo;d love to hear about your goals and challenges." image="contact-hero.jpg">
+        </hero-section>
+
+        <!-- CTA / Contact block -->
+        <cta-section url="mailto:hello@example.com" linktext="Email us" title="Start the conversation" text="Reach out by email and we&rsquo;ll get back to you shortly."></cta-section>
+    </main>
+
+    <site-footer></site-footer>
+</body>
+</html>
