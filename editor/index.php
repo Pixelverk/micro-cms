@@ -15,7 +15,7 @@ $username = $_SESSION['user_id'] ?? 'User';
 <body>
 
 <header>
-    <h1>Micro CMS - Editor Dashboard</h1>
+    <h1>Micro CMS - Dashboard</h1>
     <nav>
         <a href="index.php">Dashboard</a>
         <a href="page-list.php">Pages</a>

@@ -19,7 +19,7 @@ $pages = list_pages();
 <body>
 
 <header>
-    <h1>Micro CMS - Page List</h1>
+    <h1>Micro CMS - Pages</h1>
     <nav>
         <a href="index.php">Dashboard</a>
         <a href="page-list.php">Pages</a>

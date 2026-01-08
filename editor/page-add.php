@@ -46,7 +46,7 @@ button:hover{background:#004d40}
 <body>
 
 <header>
-<h1>Micro CMS - Add New Page</h1>
+<h1>Micro CMS - Add Page</h1>
 <nav>
 <a href="index.php">Dashboard</a>
 <a href="page-list.php">Pages</a>
