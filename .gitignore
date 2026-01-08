@@ -1,0 +1,15 @@
+# Ignore the very safe json storage
+/editor/_core/users.json
+
+# Build outputs or temp files
+*.log
+*.tmp
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+*.swp
