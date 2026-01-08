@@ -87,3 +87,20 @@ function save_page(string $slug, array $data): bool
 
     return file_put_contents($path, $json, LOCK_EX) !== false;
 }
+
+/**
+ * Make slugs look like we want
+ */
+function sanitize_slug(string $slug): string {
+    // Convert to lowercase
+    $slug = strtolower($slug);
+    // Replace spaces and underscores with dashes
+    $slug = preg_replace('/[\s_]+/', '-', $slug);
+    // Remove all characters except letters, numbers, and dashes
+    $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+    // Remove multiple consecutive dashes
+    $slug = preg_replace('/-+/', '-', $slug);
+    // Trim leading/trailing dashes
+    $slug = trim($slug, '-');
+    return $slug;
+}

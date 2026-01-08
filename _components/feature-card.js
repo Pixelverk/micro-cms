@@ -54,6 +54,9 @@ class FeatureCard extends HTMLElement {
       </div>
     `;
   }
+  static get observedAttributes() {
+    return ["title", "text", "icon", "image"];
+  }
 }
 
 customElements.define('feature-card', FeatureCard);

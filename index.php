@@ -115,13 +115,13 @@ if (file_exists($pageFile)) {
     echo renderComponents($pageData['layout']['header'] ?? [], $usedScripts);
     
     // Render all components recursively
+    echo "<main>\n";
     if (!empty($pageData['components'])) {
-        echo "<main>\n";
         echo renderComponents($pageData['components'], $usedScripts);
-        echo "</main>\n";
     } else {
         echo "<p>No components found on this page.</p>";
     }
+    echo "</main>\n";
 
     // render site footer
     echo renderComponents($pageData['layout']['footer'] ?? [], $usedScripts);

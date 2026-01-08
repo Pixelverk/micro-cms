@@ -45,6 +45,11 @@ class CTASection extends HTMLElement {
       </section>
     `;
   }
+
+  static get observedAttributes() {
+    return ["url","linktext","title", "text"];
+  }
+
 }
 
 customElements.define('cta-section', CTASection);

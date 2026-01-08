@@ -11,24 +11,45 @@ if (!$slug) {
     exit;
 }
 
-// Load existing page JSON
+// Sanitize slug
+$slug = sanitize_slug($slug);
+if (!$slug) {
+    die("Invalid page slug");
+}
+
+// Load existing page JSON, or start fresh if creating a new page
 $pageData = load_page($slug);
 if (!$pageData) {
-    die("Page not found");
+    $pageData = [
+        'title' => $_POST['title'] ?? 'New Page',
+        'meta' => ['description' => $_POST['meta_description'] ?? ''],
+        'layout' => [
+            'header' => [
+                ['type' => 'site-header']
+            ],
+            'footer' => [
+                ['type' => 'site-footer']
+            ]
+        ],
+        'components' => []
+    ];
 }
 
 // ----------------------------
 // Update main fields
-$pageData['title'] = $_POST['title'] ?? $pageData['title'] ?? '';
-$pageData['meta']['description'] = $_POST['meta_description'] ?? $pageData['meta']['description'] ?? '';
+$pageData['title'] = $_POST['title'] ?? $pageData['title'];
+$pageData['meta']['description'] = $_POST['meta_description'] ?? $pageData['meta']['description'];
 
-// Keep layout
+// Keep layout (even for new pages)
 $pageData['layout']['header'] = $pageData['layout']['header'] ?? [];
 $pageData['layout']['footer'] = $pageData['layout']['footer'] ?? [];
 
 // ----------------------------
 // Rebuild nested components from POST
 $postedComponents = $_POST['components'] ?? [];
+$postedComponents = array_filter($postedComponents, function($c) {
+    return !empty($c['type']);
+});
 
 function setNestedComponent(array &$tree, array $parts, array $comp) {
     $index = array_shift($parts);
@@ -75,7 +96,7 @@ function reindexRecursive(array $array): array {
 $pageData['components'] = reindexRecursive($componentsTree);
 
 // ----------------------------
-// Save JSON page
+// Save JSON page (will create new file if necessary)
 if (!save_page($slug, $pageData)) {
     die("Failed to save page");
 }

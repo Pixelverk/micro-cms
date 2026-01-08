@@ -50,6 +50,10 @@ class HeroSection extends HTMLElement {
       </section>
     `;
   }
+  static get observedAttributes() {
+    return ["title","subtitle","image"];
+  }
+
 }
 
 customElements.define('hero-section', HeroSection);
