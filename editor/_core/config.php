@@ -30,7 +30,6 @@ return [
         'pages'        => dirname(__DIR__, 2) . '/pages',
         'assets'       => dirname(__DIR__, 2) . '/_assets',
         'components'   => dirname(__DIR__, 2) . '/_components',
-        'editor_data'  => dirname(__DIR__) . '/_data',
     ],
 
 ];

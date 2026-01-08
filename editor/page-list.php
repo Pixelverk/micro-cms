@@ -44,7 +44,7 @@ $pages = list_pages();
                 <div class="card">
                     <h2><?= html_entity_decode($page['title']) ?></h2>
                     <p>Slug: <?= htmlspecialchars($page['slug']) ?></p>
-                    <a href="page-view.php?slug=<?= htmlspecialchars($page['slug']) ?>">Edit page →</a>
+                    <a href="page-edit.php?slug=<?= htmlspecialchars($page['slug']) ?>">Edit page →</a>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

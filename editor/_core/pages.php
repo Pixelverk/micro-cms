@@ -1,5 +1,6 @@
 <?php
 // editor/_core/pages.php
+// helpers for page crud
 
 declare(strict_types=1);
 

@@ -1,112 +1,128 @@
 <?php
-session_start();
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header("Location: login.php");
+require_once __DIR__ . '/_core/bootstrap.php';
+require_once __DIR__ . '/_core/pages.php';
+
+require_login();
+
+$slug = $_GET['slug'] ?? '';
+if (!$slug) {
+    header('Location: page-list.php');
     exit;
 }
 
-// Path to site pages (relative to editor folder)
-$pagesRoot = realpath(__DIR__ . '/../'); // assuming editor/ is inside project root
-
-$pages = [];
-
-// Scan subfolders for index.html
-foreach (scandir($pagesRoot) as $item) {
-    if ($item === '.' || $item === '..' || $item === '_components' || $item === '_assets' || $item === '_vendor' || $item === 'editor') continue;
-    $path = $pagesRoot . '/' . $item . '/index.html';
-    if (file_exists($path)) {
-        $pages[] = $item;
-    }
+// Load page HTML
+$html = load_page($slug);
+if (!$html) {
+    die("Page not found");
 }
 
-// Select the page
-$page = $_GET['page'] ?? ($pages[0] ?? '');
-$pageFile = $pagesRoot . '/' . $page . '/index.html';
-
-// Load page HTML
-$html = file_exists($pageFile) ? file_get_contents($pageFile) : '';
-$dom = new DOMDocument();
 libxml_use_internal_errors(true);
-$dom->loadHTML($html);
-libxml_clear_errors();
+$doc = new DOMDocument();
+$doc->loadHTML($html);
 
+// ----------------------------
 // Get <title>
-$titleTag = $dom->getElementsByTagName('title')->item(0);
-$titleValue = $titleTag ? $titleTag->nodeValue : '';
+$titleNodes = $doc->getElementsByTagName('title');
+$title = $titleNodes->length ? $titleNodes->item(0)->textContent : '';
 
-// Get <meta name="description">
-$metaDescValue = '';
-foreach ($dom->getElementsByTagName('meta') as $meta) {
+// ----------------------------
+// Get meta description
+$metaDescription = '';
+foreach ($doc->getElementsByTagName('meta') as $meta) {
     if (strtolower($meta->getAttribute('name')) === 'description') {
-        $metaDescValue = $meta->getAttribute('content');
+        $metaDescription = $meta->getAttribute('content');
         break;
     }
 }
 
-// Find all custom elements
+// ----------------------------
+// Collect components (flat array)
 $components = [];
-foreach ($dom->getElementsByTagName('*') as $el) {
+foreach ($doc->getElementsByTagName('*') as $el) {
     if (strpos($el->tagName, '-') !== false) {
-        $components[] = $el;
+        $attrs = [];
+        foreach ($el->attributes as $attr) {
+            $attrs[$attr->name] = $attr->value;
+        }
+        $components[] = [
+            'tag' => $el->tagName,
+            'attributes' => $attrs
+        ];
     }
 }
+
+$username = $_SESSION['user_id'] ?? 'User';
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Page Editor - <?php echo htmlspecialchars($page); ?></title>
+    <title>Editor - Edit Page: <?= htmlspecialchars($slug) ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="_assets/style.css">
     <style>
-        body { font-family: sans-serif; margin: 2rem; }
-        fieldset { margin-bottom: 2rem; padding: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; }
+        h1, h2 { margin-bottom: 0.5rem; }
+        form { max-width: 800px; margin-top: 1rem; }
+        fieldset { border: 1px solid #ccc; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+        legend { font-weight: bold; padding: 0 0.5rem; }
+        label { display: block; margin-bottom: 0.75rem; }
+        input[type="text"], textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+        textarea { resize: vertical; min-height: 60px; }
+        button { padding: 0.75rem 1.5rem; font-size: 1rem; background: #00796b; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #004d40; }
     </style>
 </head>
 <body>
-    <h1>Page Editor: <?php echo htmlspecialchars($page); ?></h1>
-    <form method="get" id="page-select-form">
-        <label>
-            Select page:
-            <select name="page" onchange="document.getElementById('page-select-form').submit()">
-                <?php foreach ($pages as $p): ?>
-                    <option value="<?php echo htmlspecialchars($p); ?>" <?php echo $p === $page ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($p); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-    </form>
-    <p><a href="logout.php">Logout</a></p>
 
-    <form action="save.php" method="post">
-        <input type="hidden" name="page" value="<?php echo htmlspecialchars($page); ?>">
+<header>
+    <h1>Micro CMS - Edit Page</h1>
+    <nav>
+        <a href="index.php">Dashboard</a>
+        <a href="page-list.php">Pages</a>
+        <a href="user-list.php">Users</a>
+        <a href="logout.php">Logout</a>
+    </nav>
+</header>
+
+<main>
+    <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
+    <p>Editing page: <strong><?= htmlspecialchars($slug) ?></strong></p>
+
+    <form method="post" action="page-save.php">
+        <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
 
         <fieldset>
-            <legend>Page Metadata</legend>
+            <legend>Page Info</legend>
             <label>
                 Title:
-                <input type="text" name="title" value="<?php echo htmlspecialchars($titleValue); ?>">
+                <input type="text" name="title" value="<?= htmlspecialchars($title) ?>" required>
             </label>
+
             <label>
                 Meta Description:
-                <textarea name="meta_description" rows="3"><?php echo htmlspecialchars($metaDescValue); ?></textarea>
+                <textarea name="meta_description"><?= htmlspecialchars($metaDescription) ?></textarea>
             </label>
         </fieldset>
 
         <?php foreach ($components as $i => $comp): ?>
             <fieldset>
-                <legend><?php echo $comp->tagName; ?> (component <?php echo $i+1; ?>)</legend>
-                <?php
-                foreach ($comp->attributes as $attr) {
-                    $name = htmlspecialchars($attr->name);
-                    $value = htmlspecialchars($attr->value);
-                    echo "<label>$name: <input type='text' name='components[$i][$name]' value='$value'></label>";
-                }
-                ?>
+                <legend>Component: <?= htmlspecialchars($comp['tag']) ?></legend>
+                <input type="hidden" name="components[<?= $i ?>][tag]" value="<?= htmlspecialchars($comp['tag']) ?>">
+
+                <?php foreach ($comp['attributes'] as $name => $value): ?>
+                    <label>
+                        <?= htmlspecialchars($name) ?>:
+                        <input type="text" name="components[<?= $i ?>][attributes][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
+                    </label>
+                <?php endforeach; ?>
             </fieldset>
         <?php endforeach; ?>
 
-        <button type="submit">Save Changes</button>
+        <button type="submit">Save Page</button>
     </form>
+</main>
+
 </body>
 </html>

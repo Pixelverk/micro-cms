@@ -43,7 +43,6 @@ define('EDITOR_ROOT',  $config['paths']['editor_root']);
 define('PAGES_DIR',    $config['paths']['pages']);
 define('ASSETS_DIR',   $config['paths']['assets']);
 define('COMPONENTS_DIR', $config['paths']['components']);
-define('EDITOR_DATA_DIR', $config['paths']['editor_data']);
 
 // --------------------------------------------------
 // Includes

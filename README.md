@@ -31,6 +31,7 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 - [ ] Color pickers
 - [ ] Drafts or edit history and restore
 - [ ] Slug editing
+- [ ] Fancy toast on success/error
 
 ### Users & Security
 - [ ] User CRUD
