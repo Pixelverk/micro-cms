@@ -60,3 +60,5 @@ php -S localhost:8000
 ```
 
 The index.php in root should act like a router to serve the right files.
+
+There is a demo account with 'demo' as both username and password, it gets created automatically if no other user account exists. There will be user CRUD in the future.
