@@ -6,9 +6,12 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 
 ## Workflow
 1. Build your own Web Components and place them in `_components/`
-2. Create page folders (e.g., `/home`, `/services`) with an `index.html`
+2. Create JSON-files for each page like `pages/fancypage.json` that use your components
+3. Put global css and assets in `_assets/`, but page-specific assets like images in the page folder 
 3. Open the editor at `/editor/` to edit component attributes of any page
 4. Save changes, and your pages update instantly
+
+The future goal is to just make it 1) Build components, 2) Add global styles, 3) Use the editor UI.
 
 ## To-Do next
 ### Components

@@ -1,0 +1,33 @@
+{
+  "title": "Contact – Demo Site",
+  "meta": {
+    "description": "Contact us to discuss your project or ask a question."
+  },
+  "layout": {
+    "header": [
+      { "type": "site-header" }
+    ],
+    "footer": [
+      { "type": "site-footer" }
+    ]
+  },
+  "components": [
+    {
+      "type": "hero-section",
+      "props": {
+        "title": "Contact Us",
+        "subtitle": "We’d love to hear about your goals and challenges.",
+        "image": "contact-hero.jpg"
+      }
+    },
+    {
+      "type": "cta-section",
+      "props": {
+        "url": "mailto:hello@example.com",
+        "linktext": "Email us",
+        "title": "Start the conversation",
+        "text": "Reach out by email and we’ll get back to you shortly."
+      }
+    }
+  ]
+}

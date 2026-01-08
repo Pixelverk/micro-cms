@@ -6,14 +6,6 @@ declare(strict_types=1);
 
 /**
  * Return a list of editable pages.
- *
- * [
- *   [
- *     'slug' => 'home',
- *     'path' => '/full/path/pages/home/index.html',
- *     'title' => 'Home'
- *   ]
- * ]
  */
 function list_pages(): array
 {
@@ -23,82 +15,75 @@ function list_pages(): array
         return $pages;
     }
 
-    $dirs = scandir(PAGES_DIR);
+    $files = scandir(PAGES_DIR);
 
-    foreach ($dirs as $dir) {
-        if ($dir === '.' || $dir === '..') {
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..') {
             continue;
         }
 
-        $pageDir = PAGES_DIR . '/' . $dir;
-        $indexFile = $pageDir . '/index.html';
-
-        if (is_dir($pageDir) && file_exists($indexFile)) {
-            $pages[] = [
-                'slug'  => $dir,
-                'path'  => $indexFile,
-                'title' => extract_page_title($indexFile) ?? ucfirst($dir),
-            ];
+        $ext = pathinfo($file, PATHINFO_EXTENSION);
+        if ($ext !== 'json') {
+            continue;
         }
+
+        $pageFile = PAGES_DIR . '/' . $file;
+        $slug = pathinfo($file, PATHINFO_FILENAME);
+
+        $json = file_get_contents($pageFile);
+        $data = json_decode($json, true);
+
+        if (!is_array($data)) {
+            continue; // skip invalid JSON
+        }
+
+        $pages[] = [
+            'slug'  => $slug,
+            'path'  => $pageFile,
+            'title' => $data['title'] ?? ucfirst($slug),
+        ];
     }
+
+    // Optional: sort alphabetically by title
+    usort($pages, fn($a, $b) => strcmp($a['title'], $b['title']));
 
     return $pages;
 }
 
 /**
- * Load raw HTML of a page
+ * Load a page as an associative array from JSON
  */
-function load_page(string $slug): ?string
+function load_page(string $slug): ?array
 {
-    $path = PAGES_DIR . '/' . $slug . '/index.html';
+    $path = PAGES_DIR . '/' . $slug . '.json';
 
     if (!file_exists($path)) {
         return null;
     }
 
-    return file_get_contents($path);
+    $json = file_get_contents($path);
+    $data = json_decode($json, true);
+
+    if (!is_array($data)) {
+        return null; // invalid JSON
+    }
+
+    return $data;
 }
 
 /**
- * Save HTML back to disk
+ * Save a page as JSON back to disk
  */
-function save_page(string $slug, string $html): bool
+function save_page(string $slug, array $data): bool
 {
-    $path = PAGES_DIR . '/' . $slug . '/index.html';
+    $path = PAGES_DIR . '/' . $slug . '.json';
 
-    if (!file_exists($path)) {
-        return false;
+    // Optional: validate structure here if you want
+
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
+        return false; // encoding failed
     }
 
-    return file_put_contents($path, $html, LOCK_EX) !== false;
-}
-
-/**
- * Extract <title> from HTML
- */
-function extract_page_title(string $filePath): ?string
-{
-    $html = file_get_contents($filePath);
-
-    if (preg_match('/<title>(.*?)<\/title>/i', $html, $matches)) {
-        return trim($matches[1]);
-    }
-
-    return null;
-}
-
-/**
- * Extract meta description
- */
-function extract_meta_description(string $html): ?string
-{
-    if (preg_match(
-        '/<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']/i',
-        $html,
-        $matches
-    )) {
-        return trim($matches[1]);
-    }
-
-    return null;
+    return file_put_contents($path, $json, LOCK_EX) !== false;
 }

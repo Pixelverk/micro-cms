@@ -11,74 +11,75 @@ if (!$slug) {
     exit;
 }
 
-// Load current HTML
-$html = load_page($slug);
-
-libxml_use_internal_errors(true);
-$doc = new DOMDocument();
-$doc->loadHTML($html);
-
-// ----------------------------
-// Update <title>
-if (isset($_POST['title'])) {
-    $titleNodes = $doc->getElementsByTagName('title');
-    if ($titleNodes->length) {
-        $titleNodes->item(0)->textContent = $_POST['title'];
-    } else {
-        $head = $doc->getElementsByTagName('head')->item(0);
-        $titleEl = $doc->createElement('title', $_POST['title']);
-        $head->appendChild($titleEl);
-    }
+// Load existing page JSON
+$pageData = load_page($slug);
+if (!$pageData) {
+    die("Page not found");
 }
 
 // ----------------------------
-// Update <meta name="description">
-if (isset($_POST['meta_description'])) {
-    $metaUpdated = false;
-    foreach ($doc->getElementsByTagName('meta') as $meta) {
-        if ($meta->getAttribute('name') === 'description') {
-            $meta->setAttribute('content', $_POST['meta_description']);
-            $metaUpdated = true;
-            break;
-        }
-    }
-    if (!$metaUpdated) {
-        $head = $doc->getElementsByTagName('head')->item(0);
-        $metaEl = $doc->createElement('meta');
-        $metaEl->setAttribute('name', 'description');
-        $metaEl->setAttribute('content', $_POST['meta_description']);
-        $head->appendChild($metaEl);
-    }
-}
+// Update main fields
+$pageData['title'] = $_POST['title'] ?? $pageData['title'] ?? '';
+$pageData['meta']['description'] = $_POST['meta_description'] ?? $pageData['meta']['description'] ?? '';
+
+// Keep layout
+$pageData['layout']['header'] = $pageData['layout']['header'] ?? [];
+$pageData['layout']['footer'] = $pageData['layout']['footer'] ?? [];
 
 // ----------------------------
-// Update component attributes (flat array approach)
-if (isset($_POST['components']) && is_array($_POST['components'])) {
-    // Collect all component elements (tags with dash)
-    $compElements = [];
-    foreach ($doc->getElementsByTagName('*') as $el) {
-        if (strpos($el->tagName, '-') !== false) {
-            $compElements[] = $el;
-        }
+// Rebuild nested components from POST
+$postedComponents = $_POST['components'] ?? [];
+
+function setNestedComponent(array &$tree, array $parts, array $comp) {
+    $index = array_shift($parts);
+
+    if (!isset($tree[$index])) {
+        $tree[$index] = [];
     }
 
-    // Update attributes
-    foreach ($_POST['components'] as $i => $attrs) {
-        if (!isset($compElements[$i])) continue;
-        foreach ($attrs['attributes'] ?? [] as $name => $value) {
-            $compElements[$i]->setAttribute($name, $value);
-        }
+    if (count($parts) === 0) {
+        $tree[$index] = [
+            'type' => $comp['type'] ?? '',
+            'props' => $comp['props'] ?? [],
+            'children' => []
+        ];
+        return;
     }
+
+    if (!isset($tree[$index]['children'])) {
+        $tree[$index]['children'] = [];
+    }
+
+    setNestedComponent($tree[$index]['children'], $parts, $comp);
 }
 
+$componentsTree = [];
+
+foreach ($postedComponents as $path => $comp) {
+    $parts = explode('-', $path);
+    setNestedComponent($componentsTree, $parts, $comp);
+}
+
+// Reindex arrays recursively
+function reindexRecursive(array $array): array {
+    $result = [];
+    foreach ($array as $v) {
+        if (isset($v['children'])) {
+            $v['children'] = reindexRecursive($v['children']);
+        }
+        $result[] = $v;
+    }
+    return $result;
+}
+
+$pageData['components'] = reindexRecursive($componentsTree);
+
 // ----------------------------
-// Save updated HTML
-// Use DOMDocument->saveHTML but preserve UTF-8
-$newHtml = $doc->saveHTML();
-save_page($slug, $newHtml);
+// Save JSON page
+if (!save_page($slug, $pageData)) {
+    die("Failed to save page");
+}
 
-libxml_clear_errors();
-
-// Redirect back to the edit page
+// Redirect back to editor
 header("Location: page-edit.php?slug=" . urlencode($slug) . "&saved=1");
 exit;

@@ -42,7 +42,7 @@ $pages = list_pages();
         <?php else: ?>
             <?php foreach ($pages as $page): ?>
                 <div class="card">
-                    <h2><?= html_entity_decode($page['title']) ?></h2>
+                    <h2><?= htmlspecialchars($page['title']) ?></h2>
                     <p>Slug: <?= htmlspecialchars($page['slug']) ?></p>
                     <a href="page-edit.php?slug=<?= htmlspecialchars($page['slug']) ?>">Edit page →</a>
                 </div>

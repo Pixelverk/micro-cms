@@ -10,49 +10,40 @@ if (!$slug) {
     exit;
 }
 
-// Load page HTML
-$html = load_page($slug);
-if (!$html) {
+// Load page JSON
+$pageData = load_page($slug);
+if (!$pageData) {
     die("Page not found");
 }
 
-libxml_use_internal_errors(true);
-$doc = new DOMDocument();
-$doc->loadHTML($html);
-
-// ----------------------------
-// Get <title>
-$titleNodes = $doc->getElementsByTagName('title');
-$title = $titleNodes->length ? $titleNodes->item(0)->textContent : '';
-
-// ----------------------------
-// Get meta description
-$metaDescription = '';
-foreach ($doc->getElementsByTagName('meta') as $meta) {
-    if (strtolower($meta->getAttribute('name')) === 'description') {
-        $metaDescription = $meta->getAttribute('content');
-        break;
-    }
-}
-
-// ----------------------------
-// Collect components (flat array)
-$components = [];
-foreach ($doc->getElementsByTagName('*') as $el) {
-    if (strpos($el->tagName, '-') !== false) {
-        $attrs = [];
-        foreach ($el->attributes as $attr) {
-            $attrs[$attr->name] = $attr->value;
-        }
-        $components[] = [
-            'tag' => $el->tagName,
-            'attributes' => $attrs
-        ];
-    }
-}
+// Extract main fields
+$title = $pageData['title'] ?? '';
+$metaDescription = $pageData['meta']['description'] ?? '';
+$components = $pageData['components'] ?? [];
 
 $username = $_SESSION['user_id'] ?? 'User';
 
+// ----------------------------
+// Flatten nested components for editing
+function flattenComponents(array $components, string $prefix = ''): array {
+    $flat = [];
+    foreach ($components as $i => $comp) {
+        $key = $prefix === '' ? (string)$i : $prefix . '-' . $i;
+        $flat[$key] = [
+            'type' => $comp['type'],
+            'props' => $comp['props'] ?? [],
+            'path' => $key,
+            'children' => $comp['children'] ?? []
+        ];
+
+        if (!empty($comp['children'])) {
+            $flat += flattenComponents($comp['children'], $key);
+        }
+    }
+    return $flat;
+}
+
+$flatComponents = flattenComponents($components);
 ?>
 
 <!DOCTYPE html>
@@ -64,7 +55,7 @@ $username = $_SESSION['user_id'] ?? 'User';
     <link rel="stylesheet" href="_assets/style.css">
     <style>
         h1, h2 { margin-bottom: 0.5rem; }
-        form { max-width: 800px; margin-top: 1rem; }
+        form { max-width: 900px; margin-top: 1rem; }
         fieldset { border: 1px solid #ccc; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
         legend { font-weight: bold; padding: 0 0.5rem; }
         label { display: block; margin-bottom: 0.75rem; }
@@ -93,6 +84,7 @@ $username = $_SESSION['user_id'] ?? 'User';
     <form method="post" action="page-save.php">
         <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
 
+        <!-- Page Info -->
         <fieldset>
             <legend>Page Info</legend>
             <label>
@@ -106,15 +98,16 @@ $username = $_SESSION['user_id'] ?? 'User';
             </label>
         </fieldset>
 
-        <?php foreach ($components as $i => $comp): ?>
+        <!-- Components -->
+        <?php foreach ($flatComponents as $key => $comp): ?>
             <fieldset>
-                <legend>Component: <?= htmlspecialchars($comp['tag']) ?></legend>
-                <input type="hidden" name="components[<?= $i ?>][tag]" value="<?= htmlspecialchars($comp['tag']) ?>">
+                <legend>Component: <?= htmlspecialchars($comp['type']) ?> (path: <?= htmlspecialchars($comp['path']) ?>)</legend>
+                <input type="hidden" name="components[<?= htmlspecialchars($comp['path']) ?>][type]" value="<?= htmlspecialchars($comp['type']) ?>">
 
-                <?php foreach ($comp['attributes'] as $name => $value): ?>
+                <?php foreach ($comp['props'] as $name => $value): ?>
                     <label>
                         <?= htmlspecialchars($name) ?>:
-                        <input type="text" name="components[<?= $i ?>][attributes][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
+                        <input type="text" name="components[<?= htmlspecialchars($comp['path']) ?>][props][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
                     </label>
                 <?php endforeach; ?>
             </fieldset>

@@ -1,0 +1,75 @@
+{
+    "title": "Services – Demo Site",
+    "meta": {
+        "description": "Our services and how we help your business grow."
+    },
+    "layout": {
+        "header": [
+            {
+                "type": "site-header"
+            }
+        ],
+        "footer": [
+            {
+                "type": "site-footer"
+            }
+        ]
+    },
+    "components": [
+        {
+            "type": "hero-section",
+            "props": {
+                "title": "Our Services",
+                "subtitle": "Practical solutions designed to move your business forward.",
+                "image": "services-hero.jpg"
+            },
+            "children": []
+        },
+        {
+            "type": "features-section",
+            "props": [],
+            "children": [
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Strategy & Planning",
+                        "text": "Clear roadmaps built around your real business goals.",
+                        "icon": "🧭",
+                        "image": "strategy.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Execution & Delivery",
+                        "text": "We turn plans into action and ship real results.",
+                        "icon": "⚙️",
+                        "image": "execution.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Review & Optimization",
+                        "text": "Continuous improvement based on measurable outcomes.",
+                        "icon": "🔍",
+                        "image": "review.png"
+                    },
+                    "children": []
+                }
+            ]
+        },
+        {
+            "type": "cta-section",
+            "props": {
+                "url": "\/contact\/",
+                "linktext": "Get in touch",
+                "title": "Let’s work together",
+                "text": "Tell us about your project and we’ll take it from there."
+            },
+            "children": []
+        }
+    ]
+}

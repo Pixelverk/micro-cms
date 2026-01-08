@@ -1,0 +1,75 @@
+{
+    "title": "Home - Demo Site",
+    "meta": {
+        "description": "Helping your business shrink with strategic consulting."
+    },
+    "layout": {
+        "header": [
+            {
+                "type": "site-header"
+            }
+        ],
+        "footer": [
+            {
+                "type": "site-footer"
+            }
+        ]
+    },
+    "components": [
+        {
+            "type": "hero-section",
+            "props": {
+                "title": "Helping Your Business Shrink",
+                "subtitle": "Strategic consulting, clear direction, and measurable results.",
+                "image": "hero-bg.jpg"
+            },
+            "children": []
+        },
+        {
+            "type": "features-section",
+            "props": [],
+            "children": [
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Fast Delivery",
+                        "text": "We deliver your project on time.",
+                        "icon": "🚀",
+                        "image": "feature1.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Clear Communication",
+                        "text": "You always know what’s happening.",
+                        "icon": "💬",
+                        "image": "feature2.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Proven Results",
+                        "text": "We focus on outcomes, not buzzwords.",
+                        "icon": "📈",
+                        "image": "feature3.png"
+                    },
+                    "children": []
+                }
+            ]
+        },
+        {
+            "type": "cta-section",
+            "props": {
+                "url": "\/contact\/",
+                "linktext": "Get in touch",
+                "title": "Ready to take the next step?",
+                "text": "Let’s talk about your project."
+            },
+            "children": []
+        }
+    ]
+}
