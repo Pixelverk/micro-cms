@@ -45,6 +45,8 @@ $pages = list_pages();
                     <h2><?= htmlspecialchars($page['title']) ?></h2>
                     <p>Slug: <?= htmlspecialchars($page['slug']) ?></p>
                     <a href="page-edit.php?slug=<?= htmlspecialchars($page['slug']) ?>">Edit page →</a>
+                     <!-- Delete button -->
+                    <button type="button" class="delete-page-btn" data-slug="<?= htmlspecialchars($page['slug']) ?>">Delete</button>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -55,8 +57,21 @@ $pages = list_pages();
             <p>Add a brand new page to your site.</p>
             <a href="page-add.php">Add page →</a>
         </div>
+
     </div>
+
 </main>
+
+<script>
+document.querySelectorAll('.delete-page-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const slug = btn.dataset.slug;
+        if (confirm(`Are you sure you want to delete the page "${slug}"? This cannot be undone.`)) {
+            window.location.href = `page-remove.php?slug=${encodeURIComponent(slug)}`;
+        }
+    });
+});
+</script>
 
 </body>
 </html>
