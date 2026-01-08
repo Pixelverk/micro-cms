@@ -1,0 +1,66 @@
+
+body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    background: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background: #1f2933;
+    color: #fff;
+    padding: 1.25rem 2rem;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+main {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.card {
+    background: #fff;
+    border-radius: 6px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.card a {
+    display: inline-block;
+    margin-top: 0.75rem;
+    text-decoration: none;
+    color: #2563eb;
+    font-weight: 500;
+}
+
+nav {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+nav a {
+    color: #c7d2fe;
+    margin-right: 1rem;
+    text-decoration: none;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}

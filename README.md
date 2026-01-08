@@ -20,11 +20,14 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 ### Editor UX
 - [ ] Drag and drop / reorder components
 - [ ] Add/remove components on page
+- [ ] Clone/duplicate existing component
 - [ ] Live preview
+- [ ] Live preview size breakpoints
 - [ ] Editor styling
 - [ ] Editor page list
 - [ ] Editor page create/delete
 - [ ] Image uploads / image manager
+- [ ] Image optimization / scaling / converter
 - [ ] Color pickers
 - [ ] Drafts or edit history and restore
 - [ ] Slug editing
@@ -32,6 +35,7 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 ### Users & Security
 - [ ] User CRUD
 - [ ] Proper password storage and hashing
+- [ ] Auto-create demo/demo if no user exists
 
 ### Features
 - [ ] Working contact form posting
@@ -40,6 +44,9 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 - [ ] Multi-language support
 - [ ] Fancy SEO fields, OpenGraph etc
 - [ ] Nav and menu manager
+- [ ] Sitemap generator, xml?
+- [x] include instant.page for preloading?
+- [ ] blog index and articles + categories
 
 ### Polish
 - [ ] Make it pretty
@@ -52,6 +59,4 @@ Run with any PHP server, for example:
 php -S localhost:8000
 ```
 
-Visit http://localhost:8000/editor/ to log in and start editing.
-
-Note: The .htaccess redirect of / → /home/index.html needs Apache. The included index.html in root just makes sure something loads at / during local dev.
+The index.php in root should act like a router to serve the right files.
