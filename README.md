@@ -90,6 +90,7 @@ Demo account:
 * Password: `demo`
 
 The demo account is created automatically if no other users exist.
+
 Access the editor at `/editor/` to manage pages and users.
 
 ---
