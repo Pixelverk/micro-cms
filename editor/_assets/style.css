@@ -127,9 +127,19 @@ nav a:hover {
     cursor: pointer;
 }
 
-.btn-danger {
+.btn-delete {
     background: #b71c1c;
     color: #fff;
+    margin-top:0;
+}
+
+.btn-delete:hover {
+    background: #751111;
+}
+
+.btn-delete:disabled {
+    background: gray;
+    cursor:not-allowed;
 }
 
 .page-actions {
@@ -168,6 +178,8 @@ select {
     box-sizing: border-box
 }
 
+
+
 textarea {
     resize: vertical;
     min-height: 60px
@@ -200,8 +212,10 @@ button:hover {
 }
 
 .remove-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
     background: #b71c1c;
+}
+
+.component-actions {
+    display:flex;
+    justify-content: space-between;
 }

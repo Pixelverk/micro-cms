@@ -49,7 +49,7 @@ ob_start();
 
                         <button
                             type="button"
-                            class="btn-danger btn-small delete-page-btn"
+                            class="btn-delete btn-small delete-page-btn"
                             data-slug="<?= htmlspecialchars($page['slug']) ?>"
                         >
                             Delete

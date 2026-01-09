@@ -49,12 +49,17 @@ ob_start();
                     <?php if ($name !== $username): ?>
                         <button
                             type="button"
-                            class="btn-small btn-danger delete-user-btn"
+                            class="btn-small btn-delete delete-user-btn"
                             data-username="<?= htmlspecialchars($name) ?>">
                             Delete
                         </button>
                     <?php else: ?>
-                        <span>Current user</span>
+                        <button
+                            type="button"
+                            class="btn-small btn-delete delete-user-btn"
+                            disabled>
+                            Nope
+                        </button>
                     <?php endif; ?>
                 </td>
             </tr>

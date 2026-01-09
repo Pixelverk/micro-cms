@@ -40,10 +40,7 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
     ob_start();
     ?>
     <fieldset class="component" data-path="<?= htmlspecialchars($comp['path'] ?? '') ?>">
-        <legend><?= htmlspecialchars($comp['type']) ?></legend>
-
-        <!-- Remove button -->
-        <button type="button" class="remove-btn">×</button>
+        <legend><?= htmlspecialchars($comp['type']) ?></legend>       
 
         <input type="hidden" name="components[<?= htmlspecialchars($comp['path'] ?? '') ?>][type]" value="<?= htmlspecialchars($comp['type']) ?>">
 
@@ -61,8 +58,11 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
             <?php endforeach; ?>
         </div>
 
-        <!-- Add Child Button -->
-        <button type="button" class="add-child-btn">Add Child Component</button>
+        <!-- Add Child and remove component Buttons -->
+        <div class="component-actions">
+            <button type="button" class="add-child-btn">Add Child Component</button>
+            <button type="button" class="remove-btn">×</button>
+        </div>
     </fieldset>
     <?php
     return ob_get_clean();
@@ -171,13 +171,6 @@ async function addComponent(type, parentContainer = container, parentPath = null
     legend.textContent = type;
     fs.appendChild(legend);
 
-    // Remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.textContent = '×';
-    removeBtn.className = 'remove-btn';
-    fs.appendChild(removeBtn);
-
     // Hidden type input
     const hiddenType = document.createElement('input');
     hiddenType.type = 'hidden';
@@ -197,12 +190,24 @@ async function addComponent(type, parentContainer = container, parentPath = null
     childrenDiv.className = 'children-container';
     fs.appendChild(childrenDiv);
 
+    // Component actions container
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'component-actions';
+    fs.appendChild(actionsDiv);
+
     // Add Child button
     const addChildBtn = document.createElement('button');
     addChildBtn.type = 'button';
     addChildBtn.textContent = 'Add Child Component';
     addChildBtn.className = 'add-child-btn';
-    fs.appendChild(addChildBtn);
+    actionsDiv.appendChild(addChildBtn);
+
+    // Remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '×';
+    removeBtn.className = 'remove-btn';
+    actionsDiv.appendChild(removeBtn);
 
     parentContainer.appendChild(fs);
     componentCount++;
