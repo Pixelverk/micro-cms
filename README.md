@@ -19,7 +19,7 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 - [x] add/remove components
 - [x] nested components
 - [x] login / basic auth
-- [ ] user CRUD
+- [x] user CRUD
 
 ## Phase 2
 - [ ] fancier demo site

@@ -4,19 +4,21 @@ require_once __DIR__ . '/_core/pages.php';
 
 require_login();
 
+// ----------------------------
 // Get POST data
+// ----------------------------
 $slug = $_POST['slug'] ?? '';
 if (!$slug) {
-    header('Location: page-list.php');
-    exit;
+    redirect_with_toast('page-list.php', 'error', 'Missing page slug.');
 }
 
 // Sanitize slug
 $slug = sanitize_slug($slug);
 if (!$slug) {
-    die("Invalid page slug");
+    redirect_with_toast('page-list.php', 'error', 'Invalid page slug.');
 }
 
+// ----------------------------
 // Load existing page JSON, or start fresh if creating a new page
 $pageData = load_page($slug);
 if (!$pageData) {
@@ -47,9 +49,7 @@ $pageData['layout']['footer'] = $pageData['layout']['footer'] ?? [];
 // ----------------------------
 // Rebuild nested components from POST
 $postedComponents = $_POST['components'] ?? [];
-$postedComponents = array_filter($postedComponents, function($c) {
-    return !empty($c['type']);
-});
+$postedComponents = array_filter($postedComponents, fn($c) => !empty($c['type']));
 
 function setNestedComponent(array &$tree, array $parts, array $comp) {
     $index = array_shift($parts);
@@ -75,7 +75,6 @@ function setNestedComponent(array &$tree, array $parts, array $comp) {
 }
 
 $componentsTree = [];
-
 foreach ($postedComponents as $path => $comp) {
     $parts = explode('-', $path);
     setNestedComponent($componentsTree, $parts, $comp);
@@ -98,13 +97,10 @@ $pageData['components'] = reindexRecursive($componentsTree);
 // ----------------------------
 // Save JSON page (will create new file if necessary)
 if (!save_page($slug, $pageData)) {
-    die("Failed to save page");
+    redirect_with_toast('page-list.php', 'error', 'Failed to save page.');
 }
 
-// Redirect back to editor
-$_SESSION['toast'] = [
-    'message' => 'Page saved',
-    'type' => 'success'
-];
-header("Location: page-edit.php?slug=" . urlencode($slug) . "&saved=1");
-exit;
+// ----------------------------
+// Success toast
+// ----------------------------
+redirect_with_toast('page-edit.php?slug=' . urlencode($slug) . '&saved=1', 'success', 'Page saved successfully!');

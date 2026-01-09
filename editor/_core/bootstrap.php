@@ -59,6 +59,16 @@ function redirect(string $path): void
     exit;
 }
 
+function redirect_with_toast(string $url, string $type, string $message): void
+{
+    $_SESSION['toast'] = [
+        'type'    => $type,
+        'message' => $message,
+    ];
+    header("Location: /editor/" . $url);
+    exit;
+}
+
 function is_logged_in(): bool
 {
     return !empty($_SESSION['user_id']);

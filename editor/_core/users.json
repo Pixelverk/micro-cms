@@ -2,5 +2,9 @@
     "demo": {
         "password": "$2y$10$a9iRlMkNQ3JbQ9fzm9dHVeVrVaOoYbtwty4c86jVe\/Lz1vC9OksyC",
         "created": 1767857558
+    },
+    "test": {
+        "password": "$2y$10$S1p.zDDpzErTblJA44G0Iukz60\/TXKM0WL8cFNQkHQuZ8mH7EtEue",
+        "created": 1767955759
     }
 }

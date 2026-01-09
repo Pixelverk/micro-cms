@@ -7,18 +7,21 @@ require_login();
 $pageTitle = 'Edit Page';
 $username = $_SESSION['user_id'] ?? 'User';
 
+// ----------------------------
+// Get slug
+// ----------------------------
 $slug = $_GET['slug'] ?? '';
 if (!$slug) {
-    header('Location: page-list.php');
-    exit;
+    redirect_with_toast('page-list.php', 'error', 'Missing page slug.');
 }
 
 // Load page JSON
 $pageData = load_page($slug);
 if (!$pageData) {
-    die("Page not found");
+    redirect_with_toast('page-list.php', 'error', 'Page not found.');
 }
 
+// Load page values
 $title = $pageData['title'] ?? '';
 $metaDescription = $pageData['meta']['description'] ?? '';
 $components = $pageData['components'] ?? [];
@@ -67,20 +70,6 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
 
 ob_start();
 ?>
-
-<style>
-h1,h2{margin-bottom:.5rem}
-fieldset{border:1px solid #ccc;padding:1rem 1.5rem;margin-bottom:1.5rem;position:relative}
-legend{font-weight:bold;padding:0 .5rem}
-label{display:block;margin-bottom:.75rem}
-input[type=text],textarea,select{width:100%;padding:.5rem;margin-top:.25rem;box-sizing:border-box}
-textarea{resize:vertical;min-height:60px}
-button{padding:.5rem 1rem;font-size:1rem;background:#00796b;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:.25rem}
-button:hover{background:#004d40}
-.children-container{margin-left:1.5rem;border-left:2px solid #eee;padding-left:1rem;margin-top:.5rem;}
-.add-component-btn{margin-bottom:1rem;}
-.remove-btn{position:absolute; top:0.5rem; right:0.5rem; background:#b71c1c;}
-</style>
 
 <div class="page-header">
     <div class="page-title">

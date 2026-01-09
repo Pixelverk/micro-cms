@@ -4,35 +4,31 @@ require_once __DIR__ . '/_core/pages.php';
 
 require_login();
 
+// ----------------------------
 // Get slug from GET or POST
+// ----------------------------
 $slug = $_GET['slug'] ?? $_POST['slug'] ?? '';
 if (!$slug) {
-    header('Location: page-list.php');
-    exit;
+    redirect_with_toast('page-list.php', 'error', 'Missing page slug.');
 }
 
 // Sanitize slug (lowercase, replace spaces with dashes, remove unsafe characters)
 $slug = sanitize_slug($slug);
 if (!$slug) {
-    die("Invalid page slug");
+    redirect_with_toast('page-list.php', 'error', 'Invalid page slug.');
 }
 
 // Build file path
 $path = PAGES_DIR . '/' . $slug . '.json';
 
 if (!file_exists($path)) {
-    die("Page not found");
+    redirect_with_toast('page-list.php', 'error', 'Page not found.');
 }
 
 // Attempt to delete
 if (!unlink($path)) {
-    die("Failed to delete page");
+    redirect_with_toast('page-list.php', 'error', 'Failed to delete page.');
 }
 
-// Redirect back to page list
-$_SESSION['toast'] = [
-    'message' => 'Page removed',
-    'type' => 'success'
-];
-header('Location: page-list.php?deleted=' . urlencode($slug));
-exit;
+// Success
+redirect_with_toast('page-list.php', 'success', 'Page removed successfully.');

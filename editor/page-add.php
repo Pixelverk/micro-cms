@@ -21,26 +21,18 @@ $title = '';
 $metaDescription = '';
 $components = [];
 
+// Optional: validate query param 'slug' if passed, otherwise rely on save
+$slug = $_GET['slug'] ?? '';
+if ($slug && !preg_match('/^[a-z0-9_-]+$/', $slug)) {
+    redirect_with_toast('page-list.php', 'error', 'Invalid slug in URL.');
+}
+
 ob_start();
 ?>
 
-<style>
-h1,h2{margin-bottom:.5rem}
-fieldset{border:1px solid #ccc;padding:1rem 1.5rem;margin-bottom:1.5rem;position:relative}
-legend{font-weight:bold;padding:0 .5rem}
-label{display:block;margin-bottom:.75rem}
-input[type=text],textarea,select{width:100%;padding:.5rem;margin-top:.25rem;box-sizing:border-box}
-textarea{resize:vertical;min-height:60px}
-button{padding:.5rem 1rem;font-size:1rem;background:#00796b;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:.25rem}
-button:hover{background:#004d40}
-.children-container{margin-left:1.5rem;border-left:2px solid #eee;padding-left:1rem;margin-top:.5rem;}
-.add-component-btn{margin-bottom:1rem;}
-.remove-btn{position:absolute; top:0.5rem; right:0.5rem; background:#b71c1c;}
-</style>
-
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?php echo htmlspecialchars($username); ?> 👋</h2>
+        <h2>Welcome, <?= htmlspecialchars($username) ?> 👋</h2>
         <p>Create a new page</p>
     </div>
     <div class="page-actions">
@@ -48,7 +40,7 @@ button:hover{background:#004d40}
     </div>
 </div>
 
-<form id="create" method="post" action="page-save.php" id="page-form">
+<form id="create" method="post" action="page-save.php">
     <label>
         Slug (URL-friendly name):
         <input type="text" name="slug" required>
