@@ -29,7 +29,7 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 - [ ] menu manager
 - [ ] Drag and drop / reorder components
 - [ ] Clone/duplicate existing component
-- [ ] Fancy toast on success/error
+- [x] Fancy toast on success/error
 
 ## Phase 3
 - [ ] live preview
@@ -37,8 +37,9 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 - [ ] blog CRUD
 - [ ] blog categories
 - [ ] slug editing
+- [ ] nicer editor UI/UX
 
-## Phsae 4
+## Phase 4
 - [ ] Working contact form posting
 - [ ] Image uploads / media manager
 - [ ] Sitemap generator, xml?
@@ -48,6 +49,7 @@ Designed to run on cheap Apache hosting while keeping page speed scores high.
 
 ### Maybe later
 - [ ] Make use of Alpine.js
+- [ ] Consider Alpine Ajax for cool stuff
 - [ ] Image optimization / scaling / converter
 - [ ] Drafts or edit history and restore
 - [ ] Lazy loading components and/or images
@@ -61,6 +63,8 @@ Run with any PHP server, for example:
 php -S localhost:8000
 ```
 
-The index.php in root should act like a router to serve the right files.
+All requests go to index.php in root and the pages are built from there.
+
+Page data is kept in the /pages/ folder, one JSON each.
 
 There is a demo account with 'demo' as both username and password, it gets created automatically if no other user account exists. There will be user CRUD in the future.

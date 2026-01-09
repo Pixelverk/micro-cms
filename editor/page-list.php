@@ -4,74 +4,76 @@ require_once __DIR__ . '/_core/pages.php';
 
 require_login();
 
+$pageTitle = 'Pages';
 $username = $_SESSION['user_id'] ?? 'User';
 $pages = list_pages();
+
+ob_start();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Editor - Pages</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="_assets/style.css">
-</head>
-<body>
-
-<header>
-    <h1>Micro CMS - Pages</h1>
-    <nav>
-        <a href="index.php">Dashboard</a>
-        <a href="page-list.php">Pages</a>
-        <a href="user-list.php">Users</a>
-        <a href="logout.php">Logout</a>
-    </nav>
-</header>
-
-<main>
-    <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
-    <p>Manage your pages below.</p>
-
-    <div class="cards">
-        <?php if (empty($pages)): ?>
-            <div class="card">
-                <h2>No pages found</h2>
-                <p>Create your first page from the dashboard.</p>
-                <a href="index.php">Go to Dashboard →</a>
-            </div>
-        <?php else: ?>
-            <?php foreach ($pages as $page): ?>
-                <div class="card">
-                    <h2><?= htmlspecialchars($page['title']) ?></h2>
-                    <p>Slug: <?= htmlspecialchars($page['slug']) ?></p>
-                    <a href="page-edit.php?slug=<?= htmlspecialchars($page['slug']) ?>">Edit page →</a>
-                     <!-- Delete button -->
-                    <button type="button" class="delete-page-btn" data-slug="<?= htmlspecialchars($page['slug']) ?>">Delete</button>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-
-        <!-- Optional: Add a “New Page” card -->
-        <div class="card new-page">
-            <h2>Create New Page</h2>
-            <p>Add a brand new page to your site.</p>
-            <a href="page-add.php">Add page →</a>
-        </div>
-
+<div class="page-header">
+    <div class="page-title">
+        <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
+        <p>Manage your pages below.</p>
     </div>
+    <div class="page-actions">
+        <a href="page-add.php" class="btn-primary">+ Add New Page</a>
+    </div>
+</div>
 
-</main>
+<?php if (empty($pages)): ?>
+    <p>No pages found. Create your first page.</p>
+<?php else: ?>
+    <table class="pages-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Slug</th>
+                <th style="width: 180px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($pages as $page): ?>
+                <tr>
+                    <td><?= htmlspecialchars($page['title']) ?></td>
+                    <td>
+                        <code><?= htmlspecialchars($page['slug']) ?></code>
+                    </td>
+                    <td class="actions">
+                        <a
+                            href="page-edit.php?slug=<?= urlencode($page['slug']) ?>"
+                            class="btn-small"
+                        >
+                            Edit
+                        </a>
+
+                        <button
+                            type="button"
+                            class="btn-danger btn-small delete-page-btn"
+                            data-slug="<?= htmlspecialchars($page['slug']) ?>"
+                        >
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+<?php endif; ?>
 
 <script>
 document.querySelectorAll('.delete-page-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const slug = btn.dataset.slug;
-        if (confirm(`Are you sure you want to delete the page "${slug}"? This cannot be undone.`)) {
+        if (
+            confirm(`Are you sure you want to delete the page "${slug}"?\n\nThis action cannot be undone.`)
+        ) {
             window.location.href = `page-remove.php?slug=${encodeURIComponent(slug)}`;
         }
     });
 });
 </script>
 
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+include __DIR__ . '/_partials/layout.php';

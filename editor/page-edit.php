@@ -4,6 +4,9 @@ require_once __DIR__ . '/_core/pages.php';
 
 require_login();
 
+$pageTitle = 'Edit Page';
+$username = $_SESSION['user_id'] ?? 'User';
+
 $slug = $_GET['slug'] ?? '';
 if (!$slug) {
     header('Location: page-list.php');
@@ -19,8 +22,6 @@ if (!$pageData) {
 $title = $pageData['title'] ?? '';
 $metaDescription = $pageData['meta']['description'] ?? '';
 $components = $pageData['components'] ?? [];
-
-$username = $_SESSION['user_id'] ?? 'User';
 
 // Load available components from root _components folder
 $componentFiles = glob(__DIR__ . '/../_components/*.js');
@@ -63,18 +64,12 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
     <?php
     return ob_get_clean();
 }
+
+ob_start();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Editor - Edit Page: <?= htmlspecialchars($slug) ?></title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="_assets/style.css">
 <style>
 h1,h2{margin-bottom:.5rem}
-form{max-width:900px;margin-top:1rem}
 fieldset{border:1px solid #ccc;padding:1rem 1.5rem;margin-bottom:1.5rem;position:relative}
 legend{font-weight:bold;padding:0 .5rem}
 label{display:block;margin-bottom:.75rem}
@@ -86,24 +81,18 @@ button:hover{background:#004d40}
 .add-component-btn{margin-bottom:1rem;}
 .remove-btn{position:absolute; top:0.5rem; right:0.5rem; background:#b71c1c;}
 </style>
-</head>
-<body>
 
-<header>
-<h1>Micro CMS - Edit Page</h1>
-<nav>
-<a href="index.php">Dashboard</a>
-<a href="page-list.php">Pages</a>
-<a href="user-list.php">Users</a>
-<a href="logout.php">Logout</a>
-</nav>
-</header>
+<div class="page-header">
+    <div class="page-title">
+        <h2>Welcome, <?php echo htmlspecialchars($username); ?> 👋</h2>
+        <p>Editing page: <strong><?= htmlspecialchars($slug) ?></strong></p>
+    </div>
+    <div class="page-actions">
+        <button type="submit" form="save">Save Page</button>
+    </div>
+</div>
 
-<main>
-<h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
-<p>Editing page: <strong><?= htmlspecialchars($slug) ?></strong></p>
-
-<form method="post" action="page-save.php" id="page-form">
+<form id="save" method="post" action="page-save.php" id="page-form">
     <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
 
     <!-- Page Info -->
@@ -152,8 +141,6 @@ button:hover{background:#004d40}
         </select>
     </label>
     <button type="button" id="add-component" class="add-component-btn">Add Component</button>
-
-    <button type="submit">Save Page</button>
 </form>
 
 <script type="module">
@@ -262,6 +249,6 @@ container.addEventListener('click', e => {
 });
 </script>
 
-</main>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+include __DIR__ . '/_partials/layout.php';

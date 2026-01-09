@@ -10,11 +10,18 @@ header {
     background: #1f2933;
     color: #fff;
     padding: 1.25rem 2rem;
+    display:flex;
+    justify-content: space-between;
 }
 
 header h1 {
     margin: 0;
     font-size: 1.4rem;
+}
+
+header h1 a {
+    text-decoration: none;
+    color:inherit;
 }
 
 main {
@@ -63,4 +70,68 @@ nav a {
 
 nav a:hover {
     text-decoration: underline;
+}
+
+.page-header {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+}
+
+.pages-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.pages-table th,
+.pages-table td {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.pages-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.pages-table tr:hover {
+    background: #fafafa;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #00796b;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.btn-small {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    text-decoration: none;
+    background: #eee;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: #b71c1c;
+    color: #fff;
+}
+
+.page-actions {
+    margin-bottom: 1rem;
 }

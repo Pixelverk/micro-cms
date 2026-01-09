@@ -102,5 +102,9 @@ if (!save_page($slug, $pageData)) {
 }
 
 // Redirect back to editor
+$_SESSION['toast'] = [
+    'message' => 'Page saved',
+    'type' => 'success'
+];
 header("Location: page-edit.php?slug=" . urlencode($slug) . "&saved=1");
 exit;

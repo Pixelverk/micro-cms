@@ -30,5 +30,9 @@ if (!unlink($path)) {
 }
 
 // Redirect back to page list
+$_SESSION['toast'] = [
+    'message' => 'Page removed',
+    'type' => 'success'
+];
 header('Location: page-list.php?deleted=' . urlencode($slug));
 exit;
