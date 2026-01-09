@@ -1,9 +1,4 @@
 class CTASection extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-    }
-
   connectedCallback() {
     if (this._rendered) return;
     this._rendered = true;
@@ -13,22 +8,29 @@ class CTASection extends HTMLElement {
     const title = this.getAttribute('title') || 'Default Title';
     const text = this.getAttribute('text') || 'Default text';
 
-    this.shadowRoot.innerHTML = `
+    this.innerHTML = `
       <style>
-        .cta {
+        cta-section {
+          display: block;
           background: #e0f7fa;
+        }
+
+        cta-section .cta {
           padding: 3rem 2rem;
           text-align: center;
         }
-        .cta h1 {
+
+        cta-section .cta h1 {
           font-size: 2rem;
           margin-bottom: 1rem;
         }
-        .cta p {
+
+        cta-section .cta p {
           font-size: 1.2rem;
           margin-bottom: 1.5rem;
         }
-        .cta-button {
+
+        cta-section .cta-button {
           display: inline-block;
           padding: 0.75rem 1.5rem;
           background: #00796b;
@@ -38,18 +40,22 @@ class CTASection extends HTMLElement {
         }
       </style>
 
-      <section class="cta">
+      <div class="cta">
         <h1>${title}</h1>
         <p>${text}</p>
         <a href="${url}" class="cta-button">${linktext}</a>
-      </section>
+      </div>
     `;
   }
 
   static get observedAttributes() {
-    return ["url","linktext","title", "text"];
+    return ["url", "linktext", "title", "text"];
   }
 
+  attributeChangedCallback() {
+    this._rendered = false;
+    this.connectedCallback();
+  }
 }
 
 customElements.define('cta-section', CTASection);

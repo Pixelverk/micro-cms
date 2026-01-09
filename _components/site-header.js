@@ -1,29 +1,15 @@
 class SiteHeader extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-    }
-
   connectedCallback() {
     if (this._rendered) return;
     this._rendered = true;
 
     const current = window.location.pathname;
 
-    this.shadowRoot.innerHTML = `
+    this.innerHTML = `
       <style>
         header {
           background: #ffffff;
           border-bottom: 1px solid #eaeaea;
-        }
-
-        .inner {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 1rem 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
         }
 
         .logo {
@@ -57,7 +43,7 @@ class SiteHeader extends HTMLElement {
       </header>
     `;
 
-    this.shadowRoot.querySelectorAll('nav a').forEach(link => {
+    this.querySelectorAll('nav a').forEach(link => {
         if (link.getAttribute('href') === current) {
             link.style.fontWeight = '700';
         }

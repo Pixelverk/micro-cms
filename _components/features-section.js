@@ -1,36 +1,35 @@
 class FeaturesSection extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-    }
-
   connectedCallback() {
     if (this._rendered) return;
     this._rendered = true;
 
-    this.shadowRoot.innerHTML = `
-      <style>
-        section {
-          padding: 4rem 2rem;
-          background: #f7f7f7;
-        }
+    // Move existing children into a grid wrapper
+    const grid = document.createElement('div');
+    grid.className = 'grid';
 
-        .grid {
-          max-width: 1100px;
-          margin: 0 auto;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 2rem;
-        }
-      </style>
+    // Move all current children into the grid
+    while (this.firstChild) {
+      grid.appendChild(this.firstChild);
+    }
 
-      <section>
-        <div class="grid">
-          <slot></slot>
-        </div>
-      </section>
+    // Optional: inject styles
+    const style = document.createElement('style');
+    style.textContent = `
+      features-section {
+        display:block;
+        padding: 4rem 2rem;
+        background: #f7f7f7;
+      }
+      .grid {
+        max-width: 1100px;
+        margin:0 auto;
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+        gap:2rem; }
     `;
+
+    this.appendChild(style);
+    this.appendChild(grid);
   }
 }
-
 customElements.define('features-section', FeaturesSection);

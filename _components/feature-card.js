@@ -1,9 +1,4 @@
 class FeatureCard extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
-
   connectedCallback() {
     if (this._rendered) return;
     this._rendered = true;
@@ -13,9 +8,10 @@ class FeatureCard extends HTMLElement {
     const icon = this.getAttribute('icon') || '';
     const image = this.getAttribute('image') || '';
 
-    this.shadowRoot.innerHTML = `
+    this.innerHTML = `
       <style>
-        .card {
+        feature-card {
+          display: block;
           background: #fff;
           border-radius: 8px;
           padding: 2rem 1rem;
@@ -23,39 +19,43 @@ class FeatureCard extends HTMLElement {
           text-align: center;
         }
 
-        .card img {
+        feature-card img {
           max-width: 100px;
           height: auto;
           margin-bottom: 1rem;
         }
 
-        .card h2 {
+        feature-card h2 {
           font-size: 1.5rem;
           margin-bottom: 0.5rem;
         }
 
-        .card p {
+        feature-card p {
           font-size: 1rem;
           color: #555;
         }
 
-        .card .icon {
+        feature-card .icon {
           font-size: 2rem;
           margin-bottom: 1rem;
         }
       </style>
 
-      <div class="card">
-        ${image ? `<img src="/_assets/img/${image}" alt="${title}">` : ''}
-        ${icon ? `<div class="icon">${icon}</div>` : ''}
-        <h2>${title}</h2>
-        <p>${text}</p>
-        <slot></slot>
-      </div>
+      ${image ? `<img src="/_assets/img/${image}" alt="${title}">` : ''}
+      ${icon ? `<div class="icon">${icon}</div>` : ''}
+      <h2>${title}</h2>
+      <p>${text}</p>
+      <slot></slot>
     `;
   }
+
   static get observedAttributes() {
     return ["title", "text", "icon", "image"];
+  }
+
+  attributeChangedCallback() {
+    this._rendered = false;
+    this.connectedCallback();
   }
 }
 

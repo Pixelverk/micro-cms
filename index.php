@@ -21,9 +21,7 @@ if ($path !== '/' && substr($path, -1) !== '/') {
 
 // Normalize slug
 $slug = trim($path, '/');
-if ($slug === '') {
-    $slug = 'home';
-}
+if ($slug === '') $slug = 'home';
 
 // ---------------------------
 // 2. Locate page JSON file
@@ -88,55 +86,52 @@ if (file_exists($pageFile)) {
 
     $usedScripts = [];
 
-    // Output HTML
+    // Pre-render header/components to collect used scripts
+    $headerHtml = renderComponents($pageData['layout']['header'] ?? [], $usedScripts);
+    $componentHtml = renderComponents($pageData['components'] ?? [], $usedScripts);
+    $footerHtml = renderComponents($pageData['layout']['footer'] ?? [], $usedScripts);
+
+    // ---------------------------
+    // 5. Output HTML
+    // ---------------------------
     header('Content-Type: text/html; charset=utf-8');
     echo "<!DOCTYPE html>\n<html lang='en'>\n<head>\n";
     echo "  <meta charset='UTF-8'>\n";
     echo "  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
+    echo "  <title>" . htmlspecialchars($pageData['title'] ?? $slug) . "</title>\n";
 
-    // Optional meta description
     if (!empty($pageData['meta']['description'])) {
         echo "  <meta name='description' content=\"" . htmlspecialchars($pageData['meta']['description']) . "\">\n";
     }
 
-    echo "  <title>" . htmlspecialchars($pageData['title'] ?? $slug) . "</title>\n";
-
     // Global CSS
     echo "  <link rel='stylesheet' href='/_assets/style.css'>\n";
 
-    // JS and vendor
+    // Global JS
     echo "  <script src='/_assets/main.js' defer></script>\n";
     echo "  <script src='/_vendor/alpine.min.js' defer></script>\n";
     echo "  <script src='/_vendor/instant-page.min.js' defer></script>\n";
 
+    // ---------------------------
+    // Include all component scripts **before body HTML**
+    // ---------------------------
+    foreach ($usedScripts as $script) {
+        echo "  <script type='module' src='/_components/$script.js' defer></script>\n";
+    }
+
     echo "</head>\n<body>\n";
 
-    // Render site header
-    echo renderComponents($pageData['layout']['header'] ?? [], $usedScripts);
-    
-    // Render all components recursively
-    echo "<main>\n";
-    if (!empty($pageData['components'])) {
-        echo renderComponents($pageData['components'], $usedScripts);
-    } else {
-        echo "<p>No components found on this page.</p>";
-    }
-    echo "</main>\n";
+    // Output pre-rendered HTML
+    echo $headerHtml;
+    echo "<main>\n$componentHtml\n</main>\n";
+    echo $footerHtml;
 
-    // render site footer
-    echo renderComponents($pageData['layout']['footer'] ?? [], $usedScripts);
-
-    // Include component JS modules
-    foreach ($usedScripts as $script) {
-        echo "<script type='module' src='/_components/$script.js'></script>\n";
-    }
-
-    echo "\n</body>\n</html>";
+    echo "</body>\n</html>";
     exit;
 }
 
 // ---------------------------
-// 5. Handle 404 pages
+// 6. Handle 404 pages
 // ---------------------------
 $notFoundJson = $pagesDir . '/404.json';
 if (file_exists($notFoundJson)) {
