@@ -1,70 +1,105 @@
 # Micro CMS
 
-A very small, fast CMS using Web Components for front-end structure and lightweight PHP for editing and saving content. 
+A lightweight, fast CMS built with Web Components for flexible front-end design and PHP for simple content management.
+Ideal for small websites, demos, or projects where speed, simplicity, and maintainability matter.
 
-Designed to run on cheap Apache hosting while keeping page speed scores high.
+---
+
+## Project Structure
+
+* `_components/` – Custom Web Components for your pages
+* `_assets/` – Global CSS, JavaScript, and images
+* `_pages/` – JSON page data (one file per page)
+* `_editor/` – Admin panel for creating/editing pages and managing users
+
+---
 
 ## Workflow
-1. Build your own Web Components and place them in `_components/`
-2. Put global css and assets in `_assets/`
-3. Open the editor at `/editor/` to add or edit pages and components
-4. Save changes, and your pages update instantly
 
-## To-Do next
+1. Build your Web Components and place them in `_components/`.
+2. Add global CSS and assets in `_assets/`.
+3. Open the editor at `/editor/` to add or edit pages and components.
+4. Save changes—pages update instantly.
 
-### Phase 1
-- [x] front controller
-- [x] JSON page data
-- [x] page CRUD
-- [x] add/remove components
-- [x] nested components
-- [x] login / basic auth
-- [x] user CRUD
+**Example:** create a `hero-section` component, then add it to the homepage in the editor.
 
-## Phase 2
-- [ ] fancier demo site
-- [ ] site settings
-- [ ] config file
-- [ ] how-to guide in app
-- [ ] menu manager
-- [ ] Drag and drop / reorder components
-- [ ] Clone/duplicate existing component
-- [x] Fancy toast on success/error
+---
 
-## Phase 3
-- [ ] live preview
-- [ ] live preview size breakpoints
-- [ ] blog CRUD
-- [ ] blog categories
-- [ ] slug editing
-- [ ] nicer editor UI/UX
+## Features & Roadmap
 
-## Phase 4
-- [ ] Working contact form posting
-- [ ] Image uploads / media manager
-- [ ] Sitemap generator, xml?
+### Phase 1 – Core Features ✅
 
-## Phase 5
-- [ ] refactor everything now that it works
+* Front controller (`index.php`) to route requests
+* JSON-based page storage
+* Page CRUD (create, edit, delete)
+* Add/remove components, including nested components
+* Basic login / authentication
+* User CRUD
 
-### Maybe later
-- [ ] Make use of Alpine.js
-- [ ] Consider Alpine Ajax for cool stuff
-- [ ] Image optimization / scaling / converter
-- [ ] Drafts or edit history and restore
-- [ ] Lazy loading components and/or images
-- [ ] Multi-language support
-- [ ] Fancy SEO fields, OpenGraph etc
+### Phase 2 – Editor Enhancements
 
-## Local dev
-Run with any PHP server, for example:
+* Fancier demo site layout
+* Site settings & configuration file
+* In-app how-to guide
+* Drag-and-drop / reorder components
+* Clone/duplicate existing components
+* Fancy toast notifications for success/error ✅
 
-```
+### Phase 3 – Live Preview & Blog
+
+* Live preview of pages
+* Preview at multiple breakpoints
+* Blog CRUD and categories
+* Editable page slugs
+* Improved editor UI/UX
+
+### Phase 4 – Media & SEO
+
+* Working contact form
+* Image uploads / media manager
+* Sitemap generator (XML)
+* Optional SEO enhancements (meta, OpenGraph, etc.)
+
+### Phase 5 – Refactor & Optimization
+
+* Refactor codebase for maintainability and performance
+
+### Future Ideas
+
+* Integrate Alpine.js for reactive UI
+* Image optimization and conversion
+* Drafts or edit history with restore functionality
+* Lazy loading components and images
+* Multi-language support
+
+---
+
+## Local Development
+
+Run a local PHP server:
+
+```bash
 php -S localhost:8000
 ```
 
-All requests go to index.php in root and the pages are built from there.
+All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_pages/`.
 
-Page data is kept in the /pages/ folder, one JSON each.
+Demo account:
 
-There is a demo account with 'demo' as both username and password, it gets created automatically if no other user account exists. There will be user CRUD in the future.
+* Username: `demo`
+* Password: `demo`
+
+The demo account is created automatically if no other users exist.
+Access the editor at `/editor/` to manage pages and users.
+
+---
+
+## Contributing
+
+Feel free to open issues, submit pull requests, or create new components to enhance the CMS.
+
+---
+
+## License
+
+Naaah
