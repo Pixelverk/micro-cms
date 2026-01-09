@@ -43,6 +43,7 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 * In-app how-to guide
 * Drag-and-drop / reorder components
 * Clone/duplicate existing components
+* layout components vs content components
 * Fancy toast notifications for success/error ✅
 
 ### Phase 3 – Live Preview & Blog

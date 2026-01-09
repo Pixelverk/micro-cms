@@ -84,7 +84,7 @@ if (file_exists($pageFile)) {
         exit;
     }
 
-    $usedScripts = [];
+    $usedScripts = ['base-component'];
 
     // Pre-render header/components to collect used scripts
     $headerHtml = renderComponents($pageData['layout']['header'] ?? [], $usedScripts);
