@@ -10,7 +10,7 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 * `_components/` – Custom Web Components for your pages
 * `_assets/` – Global CSS, JavaScript, and images
 * `_pages/` – JSON page data (one file per page)
-* `_editor/` – Admin panel for creating/editing pages and managing users
+* `editor/` – Admin panel for creating/editing pages and managing users
 
 ---
 
