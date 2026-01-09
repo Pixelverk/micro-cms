@@ -21,7 +21,7 @@
             "props": {
                 "title": "Our Services",
                 "subtitle": "Practical solutions designed to move your business forward.",
-                "image": "services-hero.jpg"
+                "image": "placeholder.png"
             },
             "children": []
         },
@@ -35,7 +35,7 @@
                         "title": "Strategy & Planning",
                         "text": "Clear roadmaps built around your real business goals.",
                         "icon": "🧭",
-                        "image": "strategy.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 },
@@ -45,7 +45,7 @@
                         "title": "Execution & Delivery",
                         "text": "We turn plans into action and ship real results.",
                         "icon": "⚙️",
-                        "image": "execution.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 },
@@ -55,7 +55,7 @@
                         "title": "Review & Optimization",
                         "text": "Continuous improvement based on measurable outcomes.",
                         "icon": "🔍",
-                        "image": "review.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 }

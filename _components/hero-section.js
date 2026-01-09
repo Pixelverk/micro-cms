@@ -19,7 +19,7 @@ class HeroSection extends HTMLElement {
           text-align: center;
           color: #fff;
           padding: 4rem 2rem;
-          background: #333;
+          background: #333;          
         }
 
         .hero img {
@@ -40,13 +40,29 @@ class HeroSection extends HTMLElement {
           font-size: 1.25rem;
           color: #ddd;
         }
+
+        .inner {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 1rem 2rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 4rem;
+        }
       </style>
 
       <section class="hero">
-        ${image ? `<img src="./img/${image}" alt="${title}">` : ''}
-        <h1>${title}</h1>
-        <p>${subtitle}</p>
+        <div class="inner">
+        <div class="hero-text">
+          <h1>${title}</h1>
+          <p>${subtitle}</p>
+        </div>
+        <div class="hero-img">
+          ${image ? `<img src="/_assets/img/${image}" alt="${title}">` : ''}
+        </div>
         <slot></slot>
+        </div>
       </section>
     `;
   }

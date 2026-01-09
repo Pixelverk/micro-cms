@@ -21,7 +21,7 @@
             "props": {
                 "title": "Helping Your Business Shrink",
                 "subtitle": "Strategic consulting, clear direction, and measurable results.",
-                "image": "hero-bg.jpg"
+                "image": "placeholder.png"
             },
             "children": []
         },
@@ -35,7 +35,7 @@
                         "title": "Fast Delivery",
                         "text": "We deliver your project on time.",
                         "icon": "🚀",
-                        "image": "feature1.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 },
@@ -45,7 +45,7 @@
                         "title": "Clear Communication",
                         "text": "You always know what’s happening.",
                         "icon": "💬",
-                        "image": "feature2.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 },
@@ -55,7 +55,7 @@
                         "title": "Proven Results",
                         "text": "We focus on outcomes, not buzzwords.",
                         "icon": "📈",
-                        "image": "feature3.png"
+                        "image": "placeholder.png"
                     },
                     "children": []
                 }

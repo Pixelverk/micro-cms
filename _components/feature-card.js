@@ -46,7 +46,7 @@ class FeatureCard extends HTMLElement {
       </style>
 
       <div class="card">
-        ${image ? `<img src="./img/${image}" alt="${title}">` : ''}
+        ${image ? `<img src="/_assets/img/${image}" alt="${title}">` : ''}
         ${icon ? `<div class="icon">${icon}</div>` : ''}
         <h2>${title}</h2>
         <p>${text}</p>

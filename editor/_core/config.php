@@ -27,7 +27,7 @@ return [
     'paths' => [
         'project_root' => dirname(__DIR__, 2),
         'editor_root'  => dirname(__DIR__),
-        'pages'        => dirname(__DIR__, 2) . '/pages',
+        'pages'        => dirname(__DIR__, 2) . '/_pages',
         'assets'       => dirname(__DIR__, 2) . '/_assets',
         'components'   => dirname(__DIR__, 2) . '/_components',
     ],

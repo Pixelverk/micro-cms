@@ -6,7 +6,7 @@ declare(strict_types=1);
 // ====================================================
 
 // Define the folder where page JSON files are stored
-$pagesDir = __DIR__ . '/pages';
+$pagesDir = __DIR__ . '/_pages';
 
 // ---------------------------
 // 1. Parse the requested URL
