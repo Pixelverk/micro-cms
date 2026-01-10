@@ -54,7 +54,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 * Fancier demo site layout
 * Site settings
 * Configuration file ✅
-* BASE_URL in config to handle subfolder hosting
+* BASE_URL in config to handle subfolder hosting ✅
 * In-app how-to guide
 * Drag-and-drop / reorder components
 * Clone/duplicate existing components
