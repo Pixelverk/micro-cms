@@ -12,7 +12,7 @@ $username = $_SESSION['user_id'] ?? 'User';
 // ----------------------------
 $slug = $_GET['slug'] ?? '';
 if (!$slug) {
-    redirect_with_toast('page-list.php', 'error', 'Missing page slug.');
+    redirect_with_toast('page-list.php', 'error', 'Edit - Missing page slug.');
 }
 
 // Load page JSON
@@ -26,39 +26,59 @@ $title = $pageData['title'] ?? '';
 $metaDescription = $pageData['meta']['description'] ?? '';
 $components = $pageData['components'] ?? [];
 
-// Load available components from root _components folder
-$componentFiles = glob(__DIR__ . '/../_components/*.js');
-$availableComponents = array_map(fn($f) => basename($f, '.js'), $componentFiles);
+// ----------------------------
+// Load available components & schemas
+// ----------------------------
+$componentFiles = glob(__DIR__ . '/../_components/*/body.php');
+$availableComponents = [];
+
+foreach ($componentFiles as $file) {
+    $name = basename(dirname($file));
+    $component = require $file;
+    $availableComponents[$name] = $component['schema'] ?? [];
+}
 
 // Exclude site-header/footer
 $excluded = ['site-header','site-footer'];
-$availableComponents = array_filter($availableComponents, fn($c) => !in_array($c, $excluded));
-sort($availableComponents);
+$availableComponents = array_filter($availableComponents, fn($schema, $name) => !in_array($name, $excluded), ARRAY_FILTER_USE_BOTH);
+ksort($availableComponents);
 
-// Recursive function to render existing components
+// ----------------------------
+// Recursive function to render component fieldsets
+// ----------------------------
 function renderComponentFieldset(array $comp, array $availableComponents): string {
+    $type = $comp['type'] ?? '';
+    $schema = $availableComponents[$type] ?? [];
+    $path = $comp['path'] ?? '';
+
     ob_start();
     ?>
-    <fieldset class="component" data-path="<?= htmlspecialchars($comp['path'] ?? '') ?>">
-        <legend><?= htmlspecialchars($comp['type']) ?></legend>       
+    <fieldset class="component" data-path="<?= htmlspecialchars($path) ?>">
+        <legend><?= htmlspecialchars($type) ?></legend>
 
-        <input type="hidden" name="components[<?= htmlspecialchars($comp['path'] ?? '') ?>][type]" value="<?= htmlspecialchars($comp['type']) ?>">
+        <input type="hidden" name="components[<?= htmlspecialchars($path) ?>][type]" value="<?= htmlspecialchars($type) ?>">
 
-        <?php foreach ($comp['props'] ?? [] as $name => $value): ?>
+        <?php foreach ($schema as $name => $field): 
+            $value = $comp['props'][$name] ?? $field['default'] ?? '';
+        ?>
             <label>
-                <?= htmlspecialchars($name) ?>:
-                <input type="text" name="components[<?= htmlspecialchars($comp['path'] ?? '') ?>][props][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
+                <?= htmlspecialchars($field['label'] ?? $name) ?>:
+                <?php if (($field['type'] ?? 'string') === 'textarea'): ?>
+                    <textarea name="components[<?= htmlspecialchars($path) ?>][props][<?= htmlspecialchars($name) ?>]"><?= htmlspecialchars($value) ?></textarea>
+                <?php else: ?>
+                    <input type="text" name="components[<?= htmlspecialchars($path) ?>][props][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
+                <?php endif; ?>
             </label>
         <?php endforeach; ?>
 
-        <!-- Children container -->
+        <!-- Children -->
         <div class="children-container">
             <?php foreach ($comp['children'] ?? [] as $child): ?>
                 <?= renderComponentFieldset($child, $availableComponents) ?>
             <?php endforeach; ?>
         </div>
 
-        <!-- Add Child and remove component Buttons -->
+        <!-- Actions -->
         <div class="component-actions">
             <button type="button" class="add-child-btn">Add Child Component</button>
             <button type="button" class="remove-btn">×</button>
@@ -68,64 +88,73 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
     return ob_get_clean();
 }
 
+// ----------------------------
+// Assign paths to components recursively
+// ----------------------------
+function assignPaths(array &$comps, string $prefix = '') {
+    foreach ($comps as $i => &$comp) {
+        $path = $prefix === '' ? (string)$i : $prefix . '-' . $i;
+        $comp['path'] = $path;
+        if (!empty($comp['children'])) {
+            assignPaths($comp['children'], $path);
+        }
+    }
+}
+assignPaths($components);
+
+// ----------------------------
+// Render page
+// ----------------------------
 ob_start();
 ?>
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?php echo htmlspecialchars($username); ?> 👋</h2>
-        <p>Editing page: <strong><?= htmlspecialchars($slug) ?></strong></p>
+        <h2>Welcome, <?= htmlspecialchars($username) ?> 👋</h2>
+        <p>Editing page: <strong><?= htmlspecialchars($title) ?></strong></p>
     </div>
     <div class="page-actions">
         <button type="submit" form="save">Save Page</button>
     </div>
 </div>
 
-<form id="save" method="post" action="page-save.php" id="page-form">
-    <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
+<form id="save" method="post" action="page-save.php">
 
     <!-- Page Info -->
     <fieldset>
         <legend>Page Info</legend>
         <label>
             Title:
-            <input type="text" name="title" value="<?= htmlspecialchars($title) ?>" required>
+            <input type="text" id="title" name="title" value="<?= htmlspecialchars($title) ?>" required>
+        </label>
+
+        <label>
+            Slug:
+            <input type="text" id="slug" name="slug" value="<?= htmlspecialchars($slug) ?>">
         </label>
 
         <label>
             Meta Description:
             <textarea name="meta_description"><?= htmlspecialchars($metaDescription) ?></textarea>
         </label>
+
+
     </fieldset>
 
-    <!-- Existing Components -->
+    <!-- Components -->
     <div id="components-container">
-        <?php
-        $componentIndex = 0;
-        function assignPaths(array &$comps, string $prefix = '') {
-            foreach ($comps as $i => &$comp) {
-                $path = $prefix === '' ? (string)$i : $prefix . '-' . $i;
-                $comp['path'] = $path;
-                if (!empty($comp['children'])) {
-                    assignPaths($comp['children'], $path);
-                }
-            }
-        }
-        assignPaths($components);
-
-        foreach ($components as $comp) {
-            echo renderComponentFieldset($comp, $availableComponents);
-        }
-        ?>
+        <?php foreach ($components as $comp): ?>
+            <?= renderComponentFieldset($comp, $availableComponents) ?>
+        <?php endforeach; ?>
     </div>
 
-    <!-- Add Top-Level Component -->
+    <!-- Add top-level component -->
     <label>
         Select component to add:
         <select id="new-component-select">
             <option value="">-- Select Component --</option>
-            <?php foreach ($availableComponents as $compName): ?>
-                <option value="<?= htmlspecialchars($compName) ?>"><?= htmlspecialchars($compName) ?></option>
+            <?php foreach (array_keys($availableComponents) as $name): ?>
+                <option value="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></option>
             <?php endforeach; ?>
         </select>
     </label>
@@ -133,7 +162,7 @@ ob_start();
 </form>
 
 <script>
-    window.availableComponents = <?= json_encode(array_values($availableComponents)) ?>;
+window.availableComponents = <?= json_encode($availableComponents) ?>;
 </script>
 <script type="module" src="./_assets/page-editor.js"></script>
 

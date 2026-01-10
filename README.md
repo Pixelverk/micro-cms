@@ -1,6 +1,6 @@
 # Micro CMS
 
-A lightweight, fast PHP CMS, built with components for flexible front-end design and a page editor for simple content management.
+A lightweight PHP CMS, built with components for front-end design and a page editor for content management.
 Ideal for small websites, demos, or projects where speed, simplicity, and maintainability matter.
 
 ---
@@ -27,8 +27,10 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 
 ## Components
 
-A components is just a folder with three files: body.php, style.css and script.js.
-These files will be parsed and combined when a page renders. CSS end up in a style tag. JS runs after DOMContentLoaded.
+A component is just a folder with three files in it: body.php, style.css and script.js.
+All component files will be parsed and combined when a page renders.
+All CSS ends up in a style tag within the page <head>.
+All JS endsup in a script tag that runs after DOMContentLoaded.
 
 ---
 

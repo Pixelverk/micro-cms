@@ -9,7 +9,7 @@ require_login();
 // ----------------------------
 $slug = $_POST['slug'] ?? '';
 if (!$slug) {
-    redirect_with_toast('page-list.php', 'error', 'Missing page slug.');
+    redirect_with_toast('page-list.php', 'error', 'Save - Missing page slug.');
 }
 
 // Sanitize slug

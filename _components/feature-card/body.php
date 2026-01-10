@@ -20,9 +20,9 @@ return [
         ],
         'icon' => [
             'type' => 'string',
-            'label' => 'Feature Image',
+            'label' => 'Feature Icon',
             'required' => false,
-            'default' => 'placeholder.png'
+            'default' => '👋'
         ],
         'image' => [
             'type' => 'string',

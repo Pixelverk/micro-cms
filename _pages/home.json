@@ -36,7 +36,9 @@
         },
         {
             "type": "features-section",
-            "props": [],
+            "props": {
+                "title": "Default Title"
+            },
             "children": [
                 {
                     "type": "feature-card",
@@ -73,10 +75,10 @@
         {
             "type": "cta-section",
             "props": {
-                "url": "\/contact\/",
-                "linktext": "Get in touch",
                 "title": "Ready to take the next step?",
-                "text": "Let’s talk about your project."
+                "text": "Let’s talk about your project.",
+                "url": "\/contact\/",
+                "linktext": "Get in touch"
             },
             "children": []
         }

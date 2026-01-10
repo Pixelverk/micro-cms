@@ -23,87 +23,20 @@ if ($path !== '/' && substr($path, -1) !== '/') {
 $slug = trim($path, '/');
 if ($slug === '') $slug = 'home';
 
-// Escape helper
-function e(string $value): string
-{
-    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-
 // ---------------------------
 // 2. Locate page JSON file
 // ---------------------------
 $pageFile = $pagesDir . '/' . $slug . '.json';
 
-// Render single component
-function renderComponent(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void {
-    $componentDir = __DIR__ . "/_components/{$name}";
-
-    // Load component PHP
-    $componentFile = "{$componentDir}/body.php";
-    if (!file_exists($componentFile)) {
-        throw new RuntimeException("Component '{$name}' not found at {$componentFile}");
-    }
-
-    $component = require $componentFile;
-
-    // --------------------------------------------
-    // CSS: collect content (deduplicated by file path)
-    // --------------------------------------------
-    $cssFile = "{$componentDir}/style.css";
-    if (file_exists($cssFile) && !in_array($cssFile, array_column($collectedCss, 'file'), true)) {
-        $collectedCss[] = [
-            'file' => $cssFile,
-            'content' => "/* CSS from {$name} */\n" . file_get_contents($cssFile)
-        ];
-    }
-
-    // --------------------------------------------
-    // JS: collect content (deduplicated by file path)
-    // --------------------------------------------
-    $jsFile = "{$componentDir}/script.js";
-    if (file_exists($jsFile) && !in_array($jsFile, array_column($collectedJs, 'file'), true)) {
-        $collectedJs[] = [
-            'file' => $jsFile,
-            'content' => "// JS from {$name}\n" . file_get_contents($jsFile)
-        ];
-    }
-
-    // --------------------------------------------
-    // Render HTML
-    // --------------------------------------------
-    if (is_callable($component['render'])) {
-        echo $component['render']($props, $collectedJs, $collectedCss);
-    } else {
-        throw new RuntimeException("Component '{$name}' has no render function.");
-    }
-}
-
-// render all components
-function renderComponents(array $components, array &$collectedJs = [], array &$collectedCss = []): void {
-    foreach ($components as $comp) {
-        $type = $comp['type'] ?? null;
-        $props = $comp['props'] ?? [];
-        $children = $comp['children'] ?? [];
-
-        if (!$type) continue;
-
-        if (!empty($children)) {
-            $props['children'] = $children;
-        }
-
-        renderComponent($type, $props, $collectedJs, $collectedCss);
-    }
-}
-
 // ---------------------------
-// 4. Serve page if JSON exists
+// 3. Serve page if JSON exists
 // ---------------------------
 if (file_exists($pageFile)) {
     serve($pageFile);
 }
 
 // ---------------------------
-// 5. Serve 404 if JSON does not exist
+// 4. Serve 404 if page does not exist
 // ---------------------------
 $notFoundJson = $pagesDir . '/404.json';
 if (file_exists($notFoundJson)) {
@@ -200,4 +133,70 @@ function serve($pageFile){
     // Close document
     echo "</body>\n</html>";
     exit;
+}
+
+// Render single component
+function renderComponent(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void {
+    $componentDir = __DIR__ . "/_components/{$name}";
+
+    // Load component PHP
+    $componentFile = "{$componentDir}/body.php";
+    if (!file_exists($componentFile)) {
+        throw new RuntimeException("Component '{$name}' not found at {$componentFile}");
+    }
+
+    $component = require $componentFile;
+
+    // --------------------------------------------
+    // CSS: collect content (deduplicated by file path)
+    // --------------------------------------------
+    $cssFile = "{$componentDir}/style.css";
+    if (file_exists($cssFile) && !in_array($cssFile, array_column($collectedCss, 'file'), true)) {
+        $collectedCss[] = [
+            'file' => $cssFile,
+            'content' => "/* CSS from {$name} */\n" . file_get_contents($cssFile)
+        ];
+    }
+
+    // --------------------------------------------
+    // JS: collect content (deduplicated by file path)
+    // --------------------------------------------
+    $jsFile = "{$componentDir}/script.js";
+    if (file_exists($jsFile) && !in_array($jsFile, array_column($collectedJs, 'file'), true)) {
+        $collectedJs[] = [
+            'file' => $jsFile,
+            'content' => "// JS from {$name}\n" . file_get_contents($jsFile)
+        ];
+    }
+
+    // --------------------------------------------
+    // Render HTML
+    // --------------------------------------------
+    if (is_callable($component['render'])) {
+        echo $component['render']($props, $collectedJs, $collectedCss);
+    } else {
+        throw new RuntimeException("Component '{$name}' has no render function.");
+    }
+}
+
+// render all components
+function renderComponents(array $components, array &$collectedJs = [], array &$collectedCss = []): void {
+    foreach ($components as $comp) {
+        $type = $comp['type'] ?? null;
+        $props = $comp['props'] ?? [];
+        $children = $comp['children'] ?? [];
+
+        if (!$type) continue;
+
+        if (!empty($children)) {
+            $props['children'] = $children;
+        }
+
+        renderComponent($type, $props, $collectedJs, $collectedCss);
+    }
+}
+
+// HTML escape helper
+function e(string $value): string {
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
