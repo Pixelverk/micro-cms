@@ -13,11 +13,11 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
+        <h2>Hello, <?= e($username) ?> 👋</h2>
         <p>Manage your pages below.</p>
     </div>
     <div class="page-actions">
-        <a href="page-add.php" class="btn-primary">+ Add New Page</a>
+        <a href="<?= url('editor/page-add.php') ?>" class="btn-primary">+ Add New Page</a>
     </div>
 </div>
 
@@ -35,22 +35,26 @@ ob_start();
         <tbody>
             <?php foreach ($pages as $page): ?>
                 <tr>
-                    <td><a style="text-decoration:none; color:inherit;" href="/<?= urlencode($page['slug']) ?>" target="_blank" ><?= htmlspecialchars($page['title']) ?> </a></td>
                     <td>
-                        <code><?= htmlspecialchars($page['slug']) ?></code>
+                        <a style="text-decoration:none; color:inherit;" 
+                           href="<?= url($page['slug']) ?>" 
+                           target="_blank">
+                            <?= e($page['title']) ?>
+                        </a>
+                    </td>
+                    <td>
+                        <code><?= e($page['slug']) ?></code>
                     </td>
                     <td class="actions">
-                        <a
-                            href="page-edit.php?slug=<?= urlencode($page['slug']) ?>"
-                            class="btn-small"
-                        >
+                        <a href="<?= url('editor/page-edit.php?slug=' . urlencode($page['slug'])) ?>"
+                           class="btn-small">
                             Edit
                         </a>
 
                         <button
                             type="button"
                             class="btn-delete btn-small delete-page-btn"
-                            data-slug="<?= htmlspecialchars($page['slug']) ?>"
+                            data-slug="<?= e($page['slug']) ?>"
                         >
                             Delete
                         </button>
@@ -65,10 +69,8 @@ ob_start();
 document.querySelectorAll('.delete-page-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const slug = btn.dataset.slug;
-        if (
-            confirm(`Are you sure you want to delete the page "${slug}"?\n\nThis action cannot be undone.`)
-        ) {
-            window.location.href = `page-remove.php?slug=${encodeURIComponent(slug)}`;
+        if (confirm(`Are you sure you want to delete the page "${slug}"?\n\nThis action cannot be undone.`)) {
+            window.location.href = "<?= url('editor/page-remove.php') ?>?slug=" + encodeURIComponent(slug);
         }
     });
 });

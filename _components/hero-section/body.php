@@ -43,7 +43,7 @@ return [
                     <p><?= e($subtitle)?></p>
                 </div>
                 <div class="hero-img">
-                    <img src="/_assets/img/<?= e($image)?>" alt="<?= e($title)?>">
+                    <img src="<?= url('_assets/img/' . $image) ?>" alt="<?= e($title) ?>">
                 </div>
                 <?php if (!empty($children)) { renderComponents($children, $collectedJs, $collectedCss); } ?>
             </div>

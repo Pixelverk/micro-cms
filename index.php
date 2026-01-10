@@ -5,23 +5,35 @@ declare(strict_types=1);
 // JSON-based Front Controller for PHP Component CMS
 // ====================================================
 
-// Define the folder where page JSON files are stored
-$pagesDir = __DIR__ . '/_pages';
+// Load Config
+$config = require __DIR__ . '/config.php';
+$pagesDir = $config['paths']['pages'];
+$baseUrl  = rtrim($config['url'], '/');
 
 // ---------------------------
 // 1. Parse the requested URL
 // ---------------------------
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Strip baseUrl from path (subdirectory install support)
+if ($baseUrl !== '' && ($path === $baseUrl || strpos($path, $baseUrl . '/') === 0)) {
+    $path = substr($path, strlen($baseUrl));
+}
+
+// Ensure path starts with slash
+if ($path === '') {
+    $path = '/';
+}
+
 // Redirect to trailing slash if missing
 if ($path !== '/' && substr($path, -1) !== '/') {
-    header("Location: $path/", true, 301);
+    header('Location: ' . url(trim($path, '/')), true, 301);
     exit;
 }
 
 // Normalize slug
 $slug = trim($path, '/');
-if ($slug === '') $slug = 'home';
+$slug = $slug === '' ? 'home' : $slug;
 
 // ---------------------------
 // 2. Locate page JSON file
@@ -32,7 +44,7 @@ $pageFile = $pagesDir . '/' . $slug . '.json';
 // 3. Serve page if JSON exists
 // ---------------------------
 if (file_exists($pageFile)) {
-    serve($pageFile);
+    serve($pageFile, $slug);
 }
 
 // ---------------------------
@@ -40,97 +52,88 @@ if (file_exists($pageFile)) {
 // ---------------------------
 $notFoundJson = $pagesDir . '/404.json';
 if (file_exists($notFoundJson)) {
-    serve($notFoundJson);
-} else {
-    // Default 404 fallback
-    header("HTTP/1.0 404 Not Found");
-    echo "<h1>404 Not Found</h1>";
-    echo "<p>The page '$slug' does not exist.</p>";
-    exit;
+    serve($notFoundJson, $slug);
 }
 
-// Serve the things
-function serve($pageFile){
+// Fallback 404
+header('HTTP/1.0 404 Not Found');
+echo "<h1>404 Not Found</h1>";
+exit;
+
+
+// ====================================================
+// Page Rendering
+// ====================================================
+
+function serve(string $pageFile, string $slug): void
+{
     $json = file_get_contents($pageFile);
     $pageData = json_decode($json, true);
 
-    if ($pageData === null) {
-        header("HTTP/1.0 500 Internal Server Error");
+    if (!is_array($pageData)) {
+        header('HTTP/1.0 500 Internal Server Error');
         echo "<h1>500 Internal Server Error</h1>";
-        echo "<p>Invalid JSON in '$slug.json'</p>";
         exit;
     }
 
-    if (isset($pageData['is404'])) {
+    if (!empty($pageData['is404'])) {
         header('HTTP/1.0 404 Not Found');
     }
 
-    // Pre-render header/components and collect styles + scripts
     $collectedJs = [];
     $collectedCss = [];
 
-    // Render header
     ob_start();
     renderComponents($pageData['layout']['header'] ?? [], $collectedJs, $collectedCss);
     $headerHtml = ob_get_clean();
 
-    // Render main components
     ob_start();
     renderComponents($pageData['components'] ?? [], $collectedJs, $collectedCss);
     $componentHtml = ob_get_clean();
 
-    // Render footer
     ob_start();
     renderComponents($pageData['layout']['footer'] ?? [], $collectedJs, $collectedCss);
     $footerHtml = ob_get_clean();
 
-    // ---------------------------
-    // 6. Output HTML
-    // ---------------------------
     header('Content-Type: text/html; charset=utf-8');
-    echo "<!DOCTYPE html>\n<html lang='en'>\n<head>\n";
-    echo "<meta charset='UTF-8'>\n";
-    echo "<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
-    echo "<title>" . e($pageData['title'] ?? $slug) . "</title>\n";
+
+    echo "<!DOCTYPE html><html lang='en'><head>";
+    echo "<meta charset='UTF-8'>";
+    echo "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    echo "<title>" . e($pageData['title'] ?? $slug) . "</title>";
 
     if (!empty($pageData['meta']['description'])) {
-        echo "  <meta name='description' content=\"" . e($pageData['meta']['description']) . "\">\n";
+        echo "<meta name='description' content='" . e($pageData['meta']['description']) . "'>";
     }
 
-    // Global JS
-    echo "<script src='/_assets/main.js' defer></script>\n";
-    echo "<script src='/_assets/vendor/instant-page.min.js' defer></script>\n";
-    
-    // Component JS
-    if (!empty($collectedJs)) {
-        echo "<script>document.addEventListener('DOMContentLoaded', function() {\n";
-        foreach ($collectedJs as $j) {
-            echo $j['content'] . "\n";
-        }
-        echo "});\n</script>\n";
-    }
-
-    // Global CSS
-    echo "<link rel='stylesheet' href='/_assets/style.css'>\n";
+    // Assets
+    echo "<link rel='stylesheet' href='" . url('_assets/style.css') . "'>";
+    echo "<script src='" . url('_assets/main.js') . "' defer></script>";
+    echo "<script src='" . url('_assets/vendor/instant-page.min.js') . "' defer></script>";
 
     // Component CSS
-    if (!empty($collectedCss)) {
-        echo "<style>\n";
+    if ($collectedCss) {
+        echo "<style>";
         foreach ($collectedCss as $c) {
-            echo $c['content'] . "\n";
+            echo $c['content'];
         }
-        echo "</style>\n";
-    };
+        echo "</style>";
+    }
 
-    echo "</head>\n<body>\n";
+    // Component JS
+    if ($collectedJs) {
+        echo "<script>document.addEventListener('DOMContentLoaded',function(){";
+        foreach ($collectedJs as $j) {
+            echo $j['content'];
+        }
+        echo "});</script>";
+    }
 
-    // Output pre-rendered HTML
+    echo "</head><body>";
     echo $headerHtml;
-    echo "<main>\n$componentHtml\n</main>\n";
+    echo "<main>$componentHtml</main>";
     echo $footerHtml;
-
-    // Close document
-    echo "</body>\n</html>";
+    echo "</body></html>";
     exit;
 }
 
@@ -198,4 +201,23 @@ function renderComponents(array $components, array &$collectedJs = [], array &$c
 // HTML escape helper
 function e(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+// URL helper
+function url(string $path = ''): string
+{
+    global $config; // reuse already loaded config
+    $baseUrl = rtrim($config['url'], '/');
+
+    $path = ltrim($path, '/');
+
+    if ($path === '') {
+        return $baseUrl . '/';
+    }
+
+    if (pathinfo($path, PATHINFO_EXTENSION)) {
+        return $baseUrl . '/' . $path;
+    }
+
+    return $baseUrl . '/' . rtrim($path, '/') . '/';
 }

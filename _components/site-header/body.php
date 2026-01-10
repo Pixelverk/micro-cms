@@ -5,13 +5,7 @@ return [
     /** --------------------------------------------
      * CMS-Editable Schema
      * -------------------------------------------- */
-    'schema' => [
-        'title' => [
-            'type' => 'string',
-            'label' => 'Accordion Title',
-            'required' => true,
-        ]
-    ],
+    'schema' => [],
 
     /** --------------------------------------------
      * Render function
@@ -24,11 +18,11 @@ return [
         ?>
         <header id="<?= $id ?>">
             <div class="inner">
-                <a href="/" class="logo">Acme Consulting</a>
+                <a href="<?= url() ?>" class="logo">Acme Consulting</a>
                 <nav>
-                    <a href="/">Home</a>
-                    <a href="/services/">Services</a>
-                    <a href="/contact/">Contact</a>
+                    <a href="<?= url() ?>">Home</a>
+                    <a href="<?= url('services') ?>">Services</a>
+                    <a href="<?= url('contact') ?>">Contact</a>
                 </nav>
             </div>
         </header>

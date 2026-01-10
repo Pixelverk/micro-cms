@@ -22,9 +22,9 @@ return [
                 <div class="top">
                     <div class="brand">Acme Consulting</div>
                     <nav>
-                    <a href="/">Home</a>
-                    <a href="/services/">Services</a>
-                    <a href="/contact/">Contact</a>
+                    <a href="<?= url() ?>">Home</a>
+                    <a href="<?= url('services') ?>">Services</a>
+                    <a href="<?= url('contact') ?>">Contact</a>
                     </nav>
                 </div>
 

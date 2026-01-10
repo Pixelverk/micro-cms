@@ -12,7 +12,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?php echo htmlspecialchars($username); ?> 👋</h2>
+        <h2>Welcome, <?php echo e($username); ?> 👋</h2>
         <p>Create a new user</p>
     </div>
     <div class="page-actions">
@@ -20,7 +20,7 @@ ob_start();
     </div>
 </div>
 
-<form id="create" method="post" action="user-save.php" class="form-card">
+<form id="create" method="post" action="<?= url('editor/user-save.php') ?>" class="form-card">
     <input type="hidden" name="action" value="create">
 
     <fieldset>

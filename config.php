@@ -1,6 +1,4 @@
 <?php
-// editor/_core/config.php
-
 declare(strict_types=1);
 
 return [
@@ -10,6 +8,11 @@ return [
     // --------------------------------------------------
     'env' => 'local', // local | production
 
+    // Base URL in root
+    'url' => '',
+    // Base URL in subfolder
+    //'url' => '/micro-cms',
+    
     // --------------------------------------------------
     // Session & auth
     // --------------------------------------------------
@@ -25,11 +28,11 @@ return [
     // Paths
     // --------------------------------------------------
     'paths' => [
-        'project_root' => dirname(__DIR__, 2),
-        'editor_root'  => dirname(__DIR__),
-        'pages'        => dirname(__DIR__, 2) . '/_pages',
-        'assets'       => dirname(__DIR__, 2) . '/_assets',
-        'components'   => dirname(__DIR__, 2) . '/_components',
+        'project_root' => __DIR__,
+        'editor_root'  => __DIR__ . '/editor',
+        'pages'        => __DIR__ . '/_pages',
+        'assets'       => __DIR__ . '/_assets',
+        'components'   => __DIR__ . '/_components',
     ],
 
 ];

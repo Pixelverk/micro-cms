@@ -32,7 +32,11 @@ foreach ($componentFiles as $file) {
 
 // Exclude site-header/footer
 $excluded = ['site-header','site-footer'];
-$availableComponents = array_filter($availableComponents, fn($schema, $name) => !in_array($name, $excluded), ARRAY_FILTER_USE_BOTH);
+$availableComponents = array_filter(
+    $availableComponents,
+    fn($schema, $name) => !in_array($name, $excluded),
+    ARRAY_FILTER_USE_BOTH
+);
 ksort($availableComponents);
 
 // ----------------------------
@@ -45,20 +49,20 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
 
     ob_start();
     ?>
-    <fieldset class="component" data-path="<?= htmlspecialchars($path) ?>">
-        <legend><?= htmlspecialchars($type) ?></legend>
+    <fieldset class="component" data-path="<?= e($path) ?>">
+        <legend><?= e($type) ?></legend>
 
-        <input type="hidden" name="components[<?= htmlspecialchars($path) ?>][type]" value="<?= htmlspecialchars($type) ?>">
+        <input type="hidden" name="components[<?= e($path) ?>][type]" value="<?= e($type) ?>">
 
-        <?php foreach ($schema as $name => $field): 
+        <?php foreach ($schema as $name => $field):
             $value = $comp['props'][$name] ?? $field['default'] ?? '';
         ?>
             <label>
-                <?= htmlspecialchars($field['label'] ?? $name) ?>:
+                <?= e($field['label'] ?? $name) ?>:
                 <?php if (($field['type'] ?? 'string') === 'textarea'): ?>
-                    <textarea name="components[<?= htmlspecialchars($path) ?>][props][<?= htmlspecialchars($name) ?>]"><?= htmlspecialchars($value) ?></textarea>
+                    <textarea name="components[<?= e($path) ?>][props][<?= e($name) ?>]"><?= e($value) ?></textarea>
                 <?php else: ?>
-                    <input type="text" name="components[<?= htmlspecialchars($path) ?>][props][<?= htmlspecialchars($name) ?>]" value="<?= htmlspecialchars($value) ?>">
+                    <input type="text" name="components[<?= e($path) ?>][props][<?= e($name) ?>]" value="<?= e($value) ?>">
                 <?php endif; ?>
             </label>
         <?php endforeach; ?>
@@ -102,23 +106,22 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?= htmlspecialchars($username) ?> 👋</h2>
+        <h2>Welcome, <?= e($username) ?> 👋</h2>
         <p>Create a new page</p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="save">Save Page</button>
+        <button type="submit" form="save"><?= e('Save Page') ?></button>
     </div>
 </div>
 
-<form id="save" method="post" action="page-save.php">
-    
+<form id="save" method="post" action="<?= url('editor/page-save.php') ?>">
 
     <!-- Page Info -->
     <fieldset>
         <legend>Page Info</legend>
         <label>
             Title:
-            <input type="text" name="title" id="title" value="<?= htmlspecialchars($title) ?>" required>
+            <input type="text" name="title" id="title" value="<?= e($title) ?>" required>
         </label>
         <label>
             Slug:
@@ -126,9 +129,8 @@ ob_start();
         </label>
         <label>
             Meta Description:
-            <textarea name="meta_description"><?= htmlspecialchars($metaDescription) ?></textarea>
+            <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
         </label>
-
     </fieldset>
 
     <!-- Components -->
@@ -144,7 +146,7 @@ ob_start();
         <select id="new-component-select">
             <option value="">-- Select Component --</option>
             <?php foreach (array_keys($availableComponents) as $name): ?>
-                <option value="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></option>
+                <option value="<?= e($name) ?>"><?= e($name) ?></option>
             <?php endforeach; ?>
         </select>
     </label>
@@ -154,7 +156,7 @@ ob_start();
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
 </script>
-<script type="module" src="./_assets/page-editor.js"></script>
+<script type="module" src="<?= url('editor/_assets/page-editor.js') ?>"></script>
 
 <?php
 $content = ob_get_clean();

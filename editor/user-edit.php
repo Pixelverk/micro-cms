@@ -18,17 +18,17 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
-        <p>Editing user: <strong><?= htmlspecialchars($editUsername) ?></strong></p>
+        <h2>Hello, <?= e($username) ?> 👋</h2>
+        <p>Editing user: <strong><?= e($editUsername) ?></strong></p>
     </div>
     <div class="page-actions">
         <button type="submit" form="edit">Save Changes</button>
     </div>
 </div>
 
-<form id="edit" method="post" action="user-save.php" class="form-card">
+<form id="edit" method="post" action="<?= url('editor/user-save.php') ?>" class="form-card">
     <input type="hidden" name="action" value="update">
-    <input type="hidden" name="username" value="<?= htmlspecialchars($editUsername) ?>">
+    <input type="hidden" name="username" value="<?= e($editUsername) ?>">
 
     <fieldset>
         <legend>Update Password</legend>

@@ -3,7 +3,7 @@ require_once __DIR__ . '/_core/bootstrap.php';
 
 // If already logged in, redirect to dashboard
 if (current_user()) {
-    header('Location: index.php');
+    header('Location: ' . url('editor/index.php'));
     exit;
 }
 
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (login($username, $password)) {
-        header('Location: index.php');
+        header('Location: ' . url('editor/index.php'));
         exit;
     } else {
         $error = 'Invalid username or password.';
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Editor Login - Micro CMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="_assets/style.css">
+    <link rel="stylesheet" href="<?= url('editor/_assets/style.css') ?>">
     <style>
         body {
             display: flex;
@@ -79,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-card">
         <h2>Login</h2>
         <?php if ($error): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
+            <div class="error"><?= e($error) ?></div>
         <?php endif; ?>
-        <form method="post">
+        <form method="post" action="<?= url('editor/login.php')?>">
             <input type="text" name="username" placeholder="Username" required autofocus>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Log in</button>

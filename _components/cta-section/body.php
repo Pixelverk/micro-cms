@@ -46,7 +46,7 @@ return [
             <div class="inner">
                 <h1><?= e($title) ?></h1>
                 <p><?= e($text) ?></p>
-                <a href="<?= e($url) ?>" class="cta-button">
+                <a href="<?= url($url) ?>" class="cta-button">
                     <?= e($linktext) ?>
                 </a>
                 <?php if (!empty($children)) { renderComponents($children, $collectedJs, $collectedCss); } ?>

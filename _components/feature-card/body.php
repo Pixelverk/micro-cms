@@ -43,7 +43,7 @@ return [
         ob_start();
         ?>
         <div class="card">
-            <img src="/_assets/img/<?= e($image ?? '#')?>" alt="<?= e($title)?>">
+            <img src="<?= url('_assets/img/' . $image) ?>" alt="<?= e($title) ?>">
             <div class="icon"><?= e($icon ?? '#')?></div>
             <h2><?= e($title)?></h2>
             <p><?= e($text)?></p>

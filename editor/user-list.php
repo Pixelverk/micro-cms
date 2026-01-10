@@ -13,11 +13,11 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= htmlspecialchars($username) ?> 👋</h2>
+        <h2>Hello, <?= e($username) ?> 👋</h2>
         <p>Manage users below.</p>
     </div>
     <div class="page-actions">
-        <a href="user-add.php" class="btn-primary">+ Add New User</a>
+        <a href="<?= url('editor/user-add.php') ?>" class="btn-primary">+ Add New User</a>
     </div>
 </div>
 
@@ -35,22 +35,20 @@ ob_start();
         <tbody>
         <?php foreach ($users as $name => $data): ?>
             <tr>
-                <td><?= htmlspecialchars($name) ?></td>
+                <td><?= e($name) ?></td>
                 <td>
                     <?= isset($data['created'])
                         ? date('Y-m-d H:i', (int)$data['created'])
                         : '—' ?>
                 </td>
                 <td class="actions">
-                    <a href="user-edit.php?username=<?= urlencode($name) ?>" class="btn-small">
-                        Edit
-                    </a>
+                    <a href="<?= url('editor/user-edit.php?username=' . urlencode($name)) ?>" class="btn-small">Edit</a>
 
                     <?php if ($name !== $username): ?>
                         <button
                             type="button"
                             class="btn-small btn-delete delete-user-btn"
-                            data-username="<?= htmlspecialchars($name) ?>">
+                            data-username="<?= e($name) ?>">
                             Delete
                         </button>
                     <?php else: ?>
@@ -75,8 +73,7 @@ document.querySelectorAll('.delete-user-btn').forEach(btn => {
         if (!username) return;
 
         if (confirm(`Are you sure you want to delete user "${username}"?\nThis cannot be undone.`)) {
-            window.location.href =
-                `user-remove.php?username=${encodeURIComponent(username)}`;
+            window.location.href = "<?= url('editor/user-remove.php') ?>?username=" + encodeURIComponent(username);
         }
     });
 });

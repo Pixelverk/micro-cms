@@ -24,11 +24,7 @@ $username = strtolower($username);
 
 // Allow only safe usernames
 if (!preg_match('/^[a-z0-9_-]+$/', $username)) {
-    redirect_with_toast(
-        'user-add.php',
-        'error',
-        'Username may only contain lowercase letters, numbers, dashes and underscores.'
-    );
+    redirect_with_toast('user-add.php', 'error', 'Username may only contain lowercase letters, numbers, dashes and underscores.');
 }
 
 // --------------------------------------------
@@ -50,11 +46,7 @@ if ($action === 'create') {
 
     create_user($username, $password);
 
-    redirect_with_toast(
-        'user-list.php',
-        'success',
-        "User \"$username\" created successfully."
-    );
+    redirect_with_toast('user-list.php','success', "User \"$username\" created successfully.");
 }
 
 // --------------------------------------------
@@ -71,11 +63,7 @@ if ($action === 'update') {
     // If password fields are empty → keep existing password
     if ($password !== '' || $passwordConfirm !== '') {
         if ($password !== $passwordConfirm) {
-            redirect_with_toast(
-                "user-edit.php?username=" . urlencode($username),
-                'error',
-                'Passwords do not match.'
-            );
+            redirect_with_toast("user-edit.php?username=" . urlencode($username), 'error', 'Passwords do not match.');
         }
 
         $users[$username]['password'] = password_hash(
@@ -86,10 +74,7 @@ if ($action === 'update') {
 
     save_users($users);
 
-    redirect_with_toast(
-        'user-list.php',
-        'success',
-        "User \"$username\" updated successfully."
+    redirect_with_toast('user-list.php', 'success', "User \"$username\" updated successfully."
     );
 }
 
