@@ -35,7 +35,7 @@ ob_start();
         <tbody>
             <?php foreach ($pages as $page): ?>
                 <tr>
-                    <td><?= htmlspecialchars($page['title']) ?></td>
+                    <td><a style="text-decoration:none; color:inherit;" href="/<?= urlencode($page['slug']) ?>" target="_blank" ><?= htmlspecialchars($page['title']) ?> </a></td>
                     <td>
                         <code><?= htmlspecialchars($page['slug']) ?></code>
                     </td>

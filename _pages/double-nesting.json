@@ -1,0 +1,67 @@
+{
+    "title": "Double nesting",
+    "meta": {
+        "description": "wow"
+    },
+    "layout": {
+        "header": [
+            {
+                "type": "site-header"
+            }
+        ],
+        "footer": [
+            {
+                "type": "site-footer"
+            }
+        ]
+    },
+    "components": [
+        {
+            "type": "features-section",
+            "props": [],
+            "children": [
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Default Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": [
+                        {
+                            "type": "feature-card",
+                            "props": {
+                                "title": "Default Title",
+                                "text": "Default Text",
+                                "icon": "👋",
+                                "image": "placeholder.png"
+                            },
+                            "children": []
+                        }
+                    ]
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Default Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Default Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                }
+            ]
+        }
+    ]
+}
