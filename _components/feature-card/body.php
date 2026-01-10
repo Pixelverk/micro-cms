@@ -40,7 +40,6 @@ return [
 
         extract($props, EXTR_SKIP);
 
-        ob_start();
         ?>
         <div class="card">
             <img src="<?= url('_assets/img/' . $image) ?>" alt="<?= e($title) ?>">
@@ -50,6 +49,5 @@ return [
             <?php if (!empty($children)) { renderComponents($children, $collectedJs, $collectedCss); } ?>
         </div>
         <?php
-        return ob_get_clean();
     },
 ];

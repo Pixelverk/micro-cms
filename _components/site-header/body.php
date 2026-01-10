@@ -14,7 +14,6 @@ return [
         $id = 'header-' . uniqid();
         extract($props, EXTR_SKIP);
 
-        ob_start();
         ?>
         <header id="<?= $id ?>">
             <div class="inner">
@@ -27,6 +26,5 @@ return [
             </div>
         </header>
         <?php
-        return ob_get_clean();
     },
 ];

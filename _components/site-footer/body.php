@@ -15,7 +15,6 @@ return [
         $year = date('Y');
         extract($props, EXTR_SKIP);
 
-        ob_start();
         ?>
         <footer id="<?= $id ?>">
             <div class="inner">
@@ -34,7 +33,5 @@ return [
             </div>
         </footer>
         <?php
-        return ob_get_clean();
     },
-
 ];

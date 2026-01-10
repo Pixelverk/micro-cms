@@ -34,7 +34,6 @@ return [
 
         extract($props, EXTR_SKIP);
 
-        ob_start();
         ?>
         <section id="<?= $id ?>" class="hero">
             <div class="inner">
@@ -49,7 +48,6 @@ return [
             </div>
         </section>
         <?php
-        return ob_get_clean();
     },
 ];
 

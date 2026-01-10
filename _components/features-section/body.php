@@ -15,7 +15,6 @@ return [
 
         extract($props, EXTR_SKIP);
 
-        ob_start();
         ?>
         <section id="<?= $id ?>" class="features">
             <div class="inner grid">
@@ -23,6 +22,5 @@ return [
             </div>
         </section>
         <?php
-        return ob_get_clean();
     },
 ];
