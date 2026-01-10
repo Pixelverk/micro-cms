@@ -85,6 +85,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 * Drafts or edit history with restore functionality
 * Lazy loading components and images
 * Multi-language support
+* Fiddle around with inline global css or maybe a critical.css file to avoid 1 http request
 
 ---
 
@@ -106,6 +107,8 @@ Demo account:
 The demo account is created automatically if no other users exist.
 
 Access the editor at `/editor/` to manage pages and users.
+
+---
 
 ## Code Monkey Mode
 

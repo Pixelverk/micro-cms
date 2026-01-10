@@ -5,14 +5,7 @@ return [
     /** --------------------------------------------
      * CMS-Editable Schema
      * -------------------------------------------- */
-    'schema' => [
-        'title' => [
-            'type' => 'string',
-            'label' => 'Hero Title',
-            'required' => true,
-            'default' => 'Default Title'
-        ]
-    ],
+    'schema' => [],
 
     /** --------------------------------------------
      * Render function

@@ -5,13 +5,7 @@ return [
     /** --------------------------------------------
      * CMS-Editable Schema
      * -------------------------------------------- */
-    'schema' => [
-        'title' => [
-            'type' => 'string',
-            'label' => 'Accordion Title',
-            'required' => true,
-        ]
-    ],
+    'schema' => [],
 
     /** --------------------------------------------
      * Render function
