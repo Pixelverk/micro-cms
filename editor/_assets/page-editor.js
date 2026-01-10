@@ -123,6 +123,7 @@ let slugTouched = false;
 // If slug ever changes manually, stop auto-sync
 slugInput.addEventListener('change', () => {
     slugTouched = true;
+    // slugify the value
     const slug = slugify(slugInput.value);
     slugInput.value = slug;
 });
@@ -136,11 +137,4 @@ if (titleInput.value != slugInput.value && slugInput.value != '' ){
 titleInput.addEventListener('input', () => {
     if (slugTouched) return;
     slugInput.value = slugify(titleInput.value);
-});
-
-// Update the slug input value
-titleInput.addEventListener('input', () => {
-    if (slugTouched) return;
-    const slug = slugify(titleInput.value);
-    slugInput.value = slug;
 });
