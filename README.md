@@ -64,7 +64,7 @@ All JS ends up in a script tag that runs after DOMContentLoaded.
 * Live preview of pages
 * Preview at multiple breakpoints
 * Blog CRUD and categories
-* Editable page slugs
+* Editable page slugs ✅
 * Improved editor UI/UX
 
 ### Phase 4 – Media & SEO
