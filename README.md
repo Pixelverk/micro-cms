@@ -1,13 +1,13 @@
 # Micro CMS
 
-A lightweight, fast CMS built with Web Components for flexible front-end design and PHP for simple content management.
+A lightweight, fast PHP CMS, built with components for flexible front-end design and a page editor for simple content management.
 Ideal for small websites, demos, or projects where speed, simplicity, and maintainability matter.
 
 ---
 
 ## Project Structure
 
-* `_components/` – Custom Web Components for your pages
+* `_components/` – Custom PHP components for your pages
 * `_assets/` – Global CSS, JavaScript, and images
 * `_pages/` – JSON page data (one file per page)
 * `editor/` – Admin panel for creating/editing pages and managing users
@@ -16,12 +16,19 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 
 ## Workflow
 
-1. Build your Web Components and place them in `_components/`.
+1. Build your components and place them in `_components/`.
 2. Add global CSS and assets in `_assets/`.
 3. Open the editor at `/editor/` to add or edit pages and components.
 4. Save changes—pages update instantly.
 
 **Example:** create a `hero-section` component, then add it to the homepage in the editor.
+
+---
+
+## Components
+
+A components is just a folder with three files: body.php, style.css and script.js.
+These files will be parsed and combined when a page renders. CSS end up in a style tag. JS runs after DOMContentLoaded.
 
 ---
 

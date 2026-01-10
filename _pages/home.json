@@ -26,6 +26,15 @@
             "children": []
         },
         {
+            "type": "hero-section",
+            "props": {
+                "title": "Hero Two",
+                "subtitle": "It's another hero-section component, but CSS and JS will not load twice.",
+                "image": "placeholder.png"
+            },
+            "children": []
+        },
+        {
             "type": "features-section",
             "props": [],
             "children": [

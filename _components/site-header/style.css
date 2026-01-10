@@ -1,0 +1,22 @@
+header {
+    background: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #222;
+    text-decoration: none;
+}
+
+nav a {
+    margin-left: 1.5rem;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+
+nav a:hover {
+    color: #000;
+}
