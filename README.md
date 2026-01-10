@@ -34,7 +34,7 @@ All component files will be parsed and combined when a page renders.
 
 All CSS ends up in a style tag within the page head.
 
-All JS endsup in a script tag that runs after DOMContentLoaded.
+All JS ends up in a script tag that runs after DOMContentLoaded.
 
 ---
 

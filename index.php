@@ -99,8 +99,8 @@ function serve($pageFile){
 
     // Global JS
     echo "<script src='/_assets/main.js' defer></script>\n";
-    echo "<script src='/_vendor/alpine.min.js' defer></script>\n";
-    echo "<script src='/_vendor/instant-page.min.js' defer></script>\n";
+    echo "<script src='/_assets/vendor/alpine.min.js' defer></script>\n";
+    echo "<script src='/_assets/vendor/instant-page.min.js' defer></script>\n";
     
     // Component JS
     if (!empty($collectedJs)) {
