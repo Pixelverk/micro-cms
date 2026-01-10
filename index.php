@@ -126,7 +126,7 @@ function serve(string $pageFile, string $slug): void
         foreach ($collectedJs as $j) {
             echo $j['content'];
         }
-        echo "});</script>";
+        echo "\n});\n</script>";
     }
 
     echo "</head><body>";
@@ -156,7 +156,7 @@ function renderComponent(string $name, array $props = [], array &$collectedJs = 
     if (file_exists($cssFile) && !in_array($cssFile, array_column($collectedCss, 'file'), true)) {
         $collectedCss[] = [
             'file' => $cssFile,
-            'content' => "/* CSS from {$name} */\n" . file_get_contents($cssFile)
+            'content' => "\n/* CSS from {$name} */\n" . file_get_contents($cssFile)
         ];
     }
 
@@ -167,7 +167,7 @@ function renderComponent(string $name, array $props = [], array &$collectedJs = 
     if (file_exists($jsFile) && !in_array($jsFile, array_column($collectedJs, 'file'), true)) {
         $collectedJs[] = [
             'file' => $jsFile,
-            'content' => "// JS from {$name}\n" . file_get_contents($jsFile)
+            'content' => "\n// JS from {$name}\n" . file_get_contents($jsFile)
         ];
     }
 
