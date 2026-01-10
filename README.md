@@ -28,8 +28,11 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 ## Components
 
 A component is just a folder with three files in it: body.php, style.css and script.js.
+
 All component files will be parsed and combined when a page renders.
-All CSS ends up in a style tag within the page <head>.
+
+All CSS ends up in a style tag within the page head.
+
 All JS endsup in a script tag that runs after DOMContentLoaded.
 
 ---
