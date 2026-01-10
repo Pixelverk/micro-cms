@@ -28,13 +28,13 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 
 ## Components
 
-A component is just a folder with three files in it: body.php, style.css and script.js.
+A component is a folder with three files: body.php, style.css and script.js.
 
-All component files will be parsed and combined when a page renders.
+These component files will be parsed and combined when a page renders.
 
-All CSS ends up in a style tag within the page head.
+The CSS ends up in a style tag within the page head.
 
-All JS ends up in a script tag that runs after DOMContentLoaded.
+The JS ends up in a script tag that runs after DOMContentLoaded.
 
 ---
 
@@ -106,6 +106,14 @@ Demo account:
 The demo account is created automatically if no other users exist.
 
 Access the editor at `/editor/` to manage pages and users.
+
+## Code Monkey Mode
+
+If you don't like the UI or something, just delete the `/editor/` folder.
+
+You can still build components, include assets and puzzle together the page json files by hand.
+
+Well, at that point it might be better to just build static HTML pages and avoid the PHP dependency.
 
 ---
 

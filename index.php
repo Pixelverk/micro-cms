@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // ====================================================
-// JSON-based Front Controller for Web Component CMS
+// JSON-based Front Controller for PHP Component CMS
 // ====================================================
 
 // Define the folder where page JSON files are stored
