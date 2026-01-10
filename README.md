@@ -1,6 +1,7 @@
 # Micro CMS
 
-A lightweight PHP CMS, built with components for front-end design and a page editor for content management.
+A lightweight PHP CMS, built with components for front-end design and page editor for content management.
+
 Ideal for small websites, demos, or projects where speed, simplicity, and maintainability matter.
 
 ---
