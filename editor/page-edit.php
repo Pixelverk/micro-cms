@@ -44,70 +44,6 @@ $availableComponents = array_filter($availableComponents, fn($schema, $name) => 
 ksort($availableComponents);
 
 // ----------------------------
-// Recursive function to render component fieldsets
-// ----------------------------
-function renderComponentFieldset(array $comp, array $availableComponents): string {
-    $type = $comp['type'] ?? '';
-    $schema = $availableComponents[$type] ?? [];
-    $path = $comp['path'] ?? '';
-
-    ob_start();
-    ?>
-    <fieldset class="component" data-path="<?= e($path) ?>">
-        <legend><?= e($type) ?></legend>
-
-        <input type="hidden" name="components[<?= e($path) ?>][type]" value="<?= e($type) ?>">
-
-        <?php foreach ($schema as $name => $field): 
-            $value = $comp['props'][$name] ?? $field['default'] ?? '';
-        ?>
-            <label>
-                <?= e($field['label'] ?? $name) ?>:
-                <?php if (($field['type'] ?? 'string') === 'textarea'): ?>
-                    <textarea name="components[<?= e($path) ?>][props][<?= e($name) ?>]"><?= e($value) ?></textarea>
-                <?php else: ?>
-                    <input type="text" name="components[<?= e($path) ?>][props][<?= e($name) ?>]" value="<?= e($value) ?>">
-                <?php endif; ?>
-            </label>
-        <?php endforeach; ?>
-
-        <!-- Children -->
-        <div class="children-container">
-            <?php foreach ($comp['children'] ?? [] as $child): ?>
-                <?= renderComponentFieldset($child, $availableComponents) ?>
-            <?php endforeach; ?>
-        </div>
-
-        <!-- Actions -->
-        <div class="component-actions">
-            <button type="button" class="add-child-btn">Add Child Component</button>
-            <div class="actions-right">
-                <button type="button" class="duplicate-btn">⧉</button>
-                <button type="button" class="move-up">↑</button>
-                <button type="button" class="move-down">↓</button>
-                <button type="button" class="remove-btn">×</button>
-            </div>
-        </div>
-    </fieldset>
-    <?php
-    return ob_get_clean();
-}
-
-// ----------------------------
-// Assign paths to components recursively
-// ----------------------------
-function assignPaths(array &$comps, string $prefix = '') {
-    foreach ($comps as $i => &$comp) {
-        $path = $prefix === '' ? (string)$i : $prefix . '-' . $i;
-        $comp['path'] = $path;
-        if (!empty($comp['children'])) {
-            assignPaths($comp['children'], $path);
-        }
-    }
-}
-assignPaths($components);
-
-// ----------------------------
 // Render page
 // ----------------------------
 ob_start();
@@ -150,9 +86,6 @@ ob_start();
 
     <!-- Components -->
     <div id="components-container">
-        <?php foreach ($components as $comp): ?>
-            <?= renderComponentFieldset($comp, $availableComponents) ?>
-        <?php endforeach; ?>
     </div>
 
     <!-- Add top-level component -->
@@ -170,7 +103,9 @@ ob_start();
 
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
+window.initialComponents = <?= json_encode($components) ?>;
 </script>
+<?php include __DIR__ . '/_partials/editor-templates.php'; ?>
 <script type="module" src="<?= url('editor/_assets/page-editor.js') ?>"></script>
 
 <?php

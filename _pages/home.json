@@ -42,9 +42,9 @@
                 {
                     "type": "feature-card",
                     "props": {
-                        "title": "Clear Communication",
-                        "text": "You always know what’s happening.",
-                        "icon": "💬",
+                        "title": "Proven Results",
+                        "text": "We focus on outcomes, not buzzwords.",
+                        "icon": "📈",
                         "image": "placeholder.png"
                     },
                     "children": []
@@ -52,9 +52,9 @@
                 {
                     "type": "feature-card",
                     "props": {
-                        "title": "Proven Results",
-                        "text": "We focus on outcomes, not buzzwords.",
-                        "icon": "📈",
+                        "title": "Clear Communication",
+                        "text": "You always know what’s happening.",
+                        "icon": "💬",
                         "image": "placeholder.png"
                     },
                     "children": []
