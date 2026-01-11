@@ -36,7 +36,31 @@ The CSS ends up in a style tag within the page head.
 
 The JS ends up in a script tag that runs after DOMContentLoaded.
 
-The body.php decides how a component renders, as well as which attributes are editable in the CMS and which child elements are allowed (if any).
+The body.php decides:
+* how the component html is rendered
+* which attributes are editable in the CMS
+* which child elements are allowed (if any)
+
+---
+
+## Local Development
+
+Run a local PHP server:
+
+```bash
+php -S localhost:8000
+```
+
+All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_pages/`.
+
+Demo account:
+
+* Username: `demo`
+* Password: `demo`
+
+The demo account is created automatically if no other users exist.
+
+Access the editor at `/editor/` to manage pages and users.
 
 ---
 
@@ -93,37 +117,6 @@ The body.php decides how a component renders, as well as which attributes are ed
 * Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
 * SQLite instead of JSON
-
----
-
-## Local Development
-
-Run a local PHP server:
-
-```bash
-php -S localhost:8000
-```
-
-All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_pages/`.
-
-Demo account:
-
-* Username: `demo`
-* Password: `demo`
-
-The demo account is created automatically if no other users exist.
-
-Access the editor at `/editor/` to manage pages and users.
-
----
-
-## Code Monkey Mode
-
-If you don't like the UI or something, just delete the `/editor/` folder.
-
-You can still build components, include assets and puzzle together the page json files by hand.
-
-Well, at that point it might be better to just build static HTML pages and avoid the PHP dependency.
 
 ---
 
