@@ -36,6 +36,8 @@ The CSS ends up in a style tag within the page head.
 
 The JS ends up in a script tag that runs after DOMContentLoaded.
 
+The body.php decides how a component renders, as well as which attributes are editable in the CMS and which child elements are allowed (if any).
+
 ---
 
 ## Features & Roadmap
@@ -52,7 +54,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 ### Phase 2 – Editor Enhancements
 
 * Fancier demo site layout
-* Site settings
+* Site settings (select which page to use as homepage, etc.)
 * Configuration file ✅
 * BASE_URL in config to handle subfolder hosting ✅
 * In-app how-to guide
