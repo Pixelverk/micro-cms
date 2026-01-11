@@ -202,7 +202,6 @@ button:hover {
 
 .children-container {
     margin-left: 1.5rem;
-    border-left: 2px solid #eee;
     padding-left: 1rem;
     margin-top: .5rem;
 }
@@ -218,13 +217,26 @@ button:hover {
 .component-actions {
     display:flex;
     justify-content: space-between;
+    align-items:center;
+    margin-top: 1.25rem
 }
 
-.actions-right button {
-    margin-left: 0.25rem;
+.component-actions button {
+    margin-left: 0.5rem;
+    margin-top: 0;
 }
 
-.children-select {
+.component-actions select {
+    margin-top: 0;
+    border-radius: 4px;
+    background: white;
+}
+
+.actions-left {
     display:flex;
-    gap:0.25rem;
+    align-items:center;
+}
+
+#no-children  {
+    font-size: 0.8rem;
 }

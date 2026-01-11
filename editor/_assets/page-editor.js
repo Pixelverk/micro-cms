@@ -63,6 +63,7 @@ function createComponent(type, data = {}) {
     // ----------------------------
     // Children button and dropdown
     // ----------------------------
+    const noChildren = node.querySelector('#no-children');
     const addBtn = node.querySelector('.add-child-btn');
     const select = node.querySelector('.allowed-children-select');
 
@@ -70,10 +71,17 @@ function createComponent(type, data = {}) {
     const allowedChildren = schema.allowed_children || [];
 
     if (childrenSetting !== 'none') {
-        addBtn.style.display = 'inline-block';
-        if (select) select.style.display = 'inline-block';
+
+        noChildren.style.display = 'none';
+
+        addBtn.disabled = true;      
 
         if (select) {
+
+            select.addEventListener('change', () => {
+                addBtn.disabled = !select.value;
+            });
+
             select.innerHTML = '<option value="">-- Child Component --</option>';
 
             let childOptions = [];
@@ -91,9 +99,12 @@ function createComponent(type, data = {}) {
             });
         }
     } else {
+        //noChildren.style.display = 'block';
         addBtn.style.display = 'none';
-        if (select) select.style.display = 'none';
+        select.style.display = 'none';
     }
+
+
 
     // ----------------------------
     // Recursively create children
@@ -146,9 +157,11 @@ container.addEventListener('click', e => {
 
     // Add child
     if (e.target.classList.contains('add-child-btn')) {
+        const controls = e.target.closest('.actions-left');
         const parent = e.target.closest('.component');
         const childrenContainer = parent.querySelector('.children-container');
-        const select = parent.querySelector('.allowed-children-select');
+        const select = controls.querySelector('.allowed-children-select');
+
         const type = select.value;
 
         if (!type || !availableComponents[type]) {
@@ -158,9 +171,10 @@ container.addEventListener('click', e => {
 
         const child = createComponent(type);
         childrenContainer.appendChild(child);
+
         renumberComponents();
 
-        // Reset dropdown
+        // reset UI
         select.value = '';
     }
 

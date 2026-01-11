@@ -10,13 +10,14 @@
         <div class="children-container"></div>
 
         <div class="component-actions">
-            <div class="children-select">
-                <select class="allowed-children-select" style="display:none;">
+            <div class="actions-left">
+                <select class="allowed-children-select" name="allowed-children-select">
                     <option value="">-- Child Component --</option>
                 </select>
-                <button type="button" class="add-child-btn" style="display:none;">Add</button>
+                <p id="no-children">No child components</p>
+                <button type="button" class="add-child-btn">Add</button>
             </div>
-            <div>
+            <div class="actions-right">
                 <button type="button" class="move-up">&#8593;</button>
                 <button type="button" class="move-down">&#8595;</button>
                 <button type="button" class="duplicate-btn">&#9868;</button>
