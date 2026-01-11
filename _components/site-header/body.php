@@ -8,6 +8,12 @@ return [
     'schema' => [],
 
     /** --------------------------------------------
+     * Child element options
+     * -------------------------------------------- */
+    'children' => 'none', // 'any', 'none', or 'some'
+    'allowed_children' => [], // only used if children='some'
+
+    /** --------------------------------------------
      * Render function
      * -------------------------------------------- */
     'render' => function (array $props) {

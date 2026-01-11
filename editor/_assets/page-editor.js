@@ -16,6 +16,7 @@ const emailTemplate = document.getElementById('email-template');       // email 
 // Create a component from schema and optional data
 // ----------------------------
 function createComponent(type, data = {}) {
+    // Clone template
     const node = componentTemplate.content.firstElementChild.cloneNode(true);
     node.dataset.type = type;
 
@@ -25,56 +26,78 @@ function createComponent(type, data = {}) {
     typeInput.value = type;
     typeInput.name = `components[][type]`; // will be renumbered later
 
+    // ----------------------------
+    // Fields
+    // ----------------------------
     const fieldsContainer = node.querySelector('.component-fields');
     const schema = availableComponents[type] || {};
+    const fieldSchema = schema.schema || {};
     const props = data.props || {};
 
-    // Create fields
-    for (const [name, field] of Object.entries(schema)) {
+    for (const [name, field] of Object.entries(fieldSchema)) {
         const value = props[name] ?? field.default ?? '';
-
-        // Pick template based on field type
+        const fieldType = field.type || 'string';
         let tpl;
-        switch (field.type) {
-            case 'textarea':
-                tpl = textareaTemplate;
-                break;
-            case 'number':
-                tpl = numberTemplate;
-                break;
-            case 'color':
-                tpl = colorTemplate;
-                break;
-            case 'checkbox':
-                tpl = checkboxTemplate;
-                break;
-            case 'url':
-                tpl = urlTemplate;
-                break;
-            case 'email':
-                tpl = emailTemplate;
-                break;
-            default:
-                tpl = fieldTemplate;
+
+        switch (fieldType) {
+            case 'textarea': tpl = textareaTemplate; break;
+            case 'number': tpl = numberTemplate; break;
+            case 'color': tpl = colorTemplate; break;
+            case 'checkbox': tpl = checkboxTemplate; break;
+            case 'url': tpl = urlTemplate; break;
+            case 'email': tpl = emailTemplate; break;
+            default: tpl = fieldTemplate; // string / default
         }
 
         const fieldNode = tpl.content.firstElementChild.cloneNode(true);
         fieldNode.querySelector('.field-label').textContent = field.label || name;
         const input = fieldNode.querySelector('.field-input');
 
-        // Set value appropriately
-        if (field.type === 'checkbox') {
-            input.checked = !!value;
-        } else {
-            input.value = value;
-        }
+        if (fieldType === 'checkbox') input.checked = !!value;
+        else input.value = value;
 
-        input.name = `components[][props][${name}]`; // will be renumbered later
-
+        input.name = `components[][props][${name}]`; // renumbered later
         fieldsContainer.appendChild(fieldNode);
     }
 
+    // ----------------------------
+    // Children button and dropdown
+    // ----------------------------
+    const addBtn = node.querySelector('.add-child-btn');
+    const select = node.querySelector('.allowed-children-select');
+
+    const childrenSetting = schema.children || 'any'; // 'any', 'none', 'some'
+    const allowedChildren = schema.allowed_children || [];
+
+    if (childrenSetting !== 'none') {
+        addBtn.style.display = 'inline-block';
+        if (select) select.style.display = 'inline-block';
+
+        if (select) {
+            select.innerHTML = '<option value="">-- Child Component --</option>';
+
+            let childOptions = [];
+            if (childrenSetting === 'any') {
+                childOptions = Object.keys(availableComponents);
+            } else if (childrenSetting === 'some') {
+                childOptions = allowedChildren.filter(c => availableComponents[c]);
+            }
+
+            childOptions.forEach(childType => {
+                const option = document.createElement('option');
+                option.value = childType;
+                option.textContent = childType;
+                select.appendChild(option);
+            });
+        }
+    } else {
+        addBtn.style.display = 'none';
+        if (select) select.style.display = 'none';
+    }
+
+    // ----------------------------
     // Recursively create children
+    // ----------------------------
     const childrenContainer = node.querySelector('.children-container');
     if (Array.isArray(data.children)) {
         data.children.forEach(childData => {
@@ -123,22 +146,24 @@ container.addEventListener('click', e => {
 
     // Add child
     if (e.target.classList.contains('add-child-btn')) {
-        const childrenContainer = comp.querySelector('.children-container');
+        const parent = e.target.closest('.component');
+        const childrenContainer = parent.querySelector('.children-container');
+        const select = parent.querySelector('.allowed-children-select');
+        const type = select.value;
 
-        const type = prompt(
-            'Enter component type:\n\n' +
-            Object.keys(availableComponents).join(', ')
-        );
         if (!type || !availableComponents[type]) {
-            alert('Invalid component type');
+            alert('Please select a valid child component');
             return;
         }
 
         const child = createComponent(type);
         childrenContainer.appendChild(child);
         renumberComponents();
-        return;
+
+        // Reset dropdown
+        select.value = '';
     }
+
 
     // Move up
     if (e.target.classList.contains('move-up')) {

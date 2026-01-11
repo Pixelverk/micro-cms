@@ -223,3 +223,8 @@ button:hover {
 .actions-right button {
     margin-left: 0.25rem;
 }
+
+.children-select {
+    display:flex;
+    gap:0.25rem;
+}

@@ -33,6 +33,12 @@ return [
     ],
 
     /** --------------------------------------------
+     * Child element options
+     * -------------------------------------------- */
+    'children' => 'any', // 'any', 'none', or 'some'
+    'allowed_children' => [], // only used if children='some'
+
+    /** --------------------------------------------
      * Render function
      * -------------------------------------------- */
     'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {

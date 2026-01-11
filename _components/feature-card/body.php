@@ -33,6 +33,12 @@ return [
     ],
 
     /** --------------------------------------------
+     * Child element options
+     * -------------------------------------------- */
+    'children' => 'none', // 'any', 'none', or 'some'
+    'allowed_children' => [], // only used if children='some'
+
+    /** --------------------------------------------
      * Render function
      * -------------------------------------------- */
     'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
@@ -46,7 +52,6 @@ return [
             <div class="icon"><?= e($icon ?? '#')?></div>
             <h2><?= e($title)?></h2>
             <p><?= e($text)?></p>
-            <?php if (!empty($children)) { renderComponents($children, $collectedJs, $collectedCss); } ?>
         </div>
         <?php
     },

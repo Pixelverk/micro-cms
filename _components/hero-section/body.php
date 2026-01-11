@@ -27,6 +27,12 @@ return [
     ],
 
     /** --------------------------------------------
+     * Child element options
+     * -------------------------------------------- */
+    'children' => 'none', // 'any', 'none', or 'some'
+    'allowed_children' => [], // only used if children='some'
+
+    /** --------------------------------------------
      * Render function
      * -------------------------------------------- */
     'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
@@ -44,7 +50,6 @@ return [
                 <div class="hero-img">
                     <img src="<?= url('_assets/img/' . $image) ?>" alt="<?= e($title) ?>">
                 </div>
-                <?php if (!empty($children)) { renderComponents($children, $collectedJs, $collectedCss); } ?>
             </div>
         </section>
         <?php

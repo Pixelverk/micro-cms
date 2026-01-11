@@ -8,6 +8,12 @@ return [
     'schema' => [],
 
     /** --------------------------------------------
+     * Child element options
+     * -------------------------------------------- */
+    'children' => 'some', // 'any', 'none', or 'some'
+    'allowed_children' => ['feature-card'], // only used if children='some'
+
+    /** --------------------------------------------
      * Render function
      * -------------------------------------------- */
     'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {

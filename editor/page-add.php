@@ -27,14 +27,20 @@ $availableComponents = [];
 foreach ($componentFiles as $file) {
     $name = basename(dirname($file));
     $component = require $file;
-    $availableComponents[$name] = $component['schema'] ?? [];
+
+    // Build proper JS structure
+    $availableComponents[$name] = [
+        'schema' => $component['schema'] ?? [],
+        'children' => $component['children'] ?? 'any',
+        'allowed_children' => $component['allowed_children'] ?? []
+    ];
 }
 
 // Exclude site-header/footer
 $excluded = ['site-header','site-footer'];
 $availableComponents = array_filter(
     $availableComponents,
-    fn($schema, $name) => !in_array($name, $excluded),
+    fn($c, $name) => !in_array($name, $excluded),
     ARRAY_FILTER_USE_BOTH
 );
 ksort($availableComponents);
