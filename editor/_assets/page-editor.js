@@ -148,8 +148,20 @@ container.addEventListener('click', e => {
     const comp = e.target.closest('.component');
     if (!comp) return;
 
-    // Remove
+    // Remove component (with confirmation)
     if (e.target.classList.contains('remove-btn')) {
+        const comp = e.target.closest('.component');
+        const type = comp.dataset.type;
+
+        const hasChildren = comp.querySelector('.children-container')?.children.length > 0;
+
+        let message = `Remove "${type}" component?`;
+        if (hasChildren) {
+            message += `\n\nThis will also remove all child components.`;
+        }
+
+        if (!confirm(message)) return;
+
         comp.remove();
         renumberComponents();
         return;

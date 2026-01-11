@@ -101,7 +101,7 @@ ob_start();
 
     <!-- Add top-level component -->
     <label>
-        Select component to add:
+        Select top-level component to add:
         <select id="new-component-select">
             <option value="">-- Select Component --</option>
             <?php foreach (array_keys($availableComponents) as $name): ?>
