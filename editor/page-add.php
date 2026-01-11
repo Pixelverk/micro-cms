@@ -77,7 +77,11 @@ function renderComponentFieldset(array $comp, array $availableComponents): strin
         <!-- Actions -->
         <div class="component-actions">
             <button type="button" class="add-child-btn">Add Child Component</button>
-            <button type="button" class="remove-btn">×</button>
+            <div class="actions-right">
+                <button type="button" class="move-up">↑</button>
+                <button type="button" class="move-down">↓</button>
+                <button type="button" class="remove-btn">×</button>
+            </div>
         </div>
     </fieldset>
     <?php

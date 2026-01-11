@@ -23,7 +23,17 @@
                 {
                     "type": "feature-card",
                     "props": {
-                        "title": "Default Title",
+                        "title": "Second Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "First Title",
                         "text": "Default Text",
                         "icon": "👋",
                         "image": "placeholder.png"
@@ -44,17 +54,7 @@
                 {
                     "type": "feature-card",
                     "props": {
-                        "title": "Default Title",
-                        "text": "Default Text",
-                        "icon": "👋",
-                        "image": "placeholder.png"
-                    },
-                    "children": []
-                },
-                {
-                    "type": "feature-card",
-                    "props": {
-                        "title": "Default Title",
+                        "title": "Third Title",
                         "text": "Default Text",
                         "icon": "👋",
                         "image": "placeholder.png"

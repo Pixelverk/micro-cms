@@ -219,3 +219,7 @@ button:hover {
     display:flex;
     justify-content: space-between;
 }
+
+.actions-right button {
+    margin-left: 0.25rem;
+}

@@ -60,11 +60,27 @@ function addComponent(type, parentContainer = container, parentPath = null) {
     addChildBtn.className = 'add-child-btn';
     actionsDiv.appendChild(addChildBtn);
 
+    const actionsRight = document.createElement('div');
+    actionsRight.className = 'actions-right';
+    actionsDiv.appendChild(actionsRight);
+
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.textContent = '↑';
+    upBtn.className = 'move-up';
+    actionsRight.appendChild(upBtn);
+
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.textContent = '↓';
+    downBtn.className = 'move-down';
+    actionsRight.appendChild(downBtn);
+
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.textContent = '×';
     removeBtn.className = 'remove-btn';
-    actionsDiv.appendChild(removeBtn);
+    actionsRight.appendChild(removeBtn);
 
     fs.appendChild(actionsDiv);
     parentContainer.appendChild(fs);
@@ -138,3 +154,57 @@ titleInput.addEventListener('input', () => {
     if (slugTouched) return;
     slugInput.value = slugify(titleInput.value);
 });
+
+//
+// Listen for clicks on move up/down buttons
+//
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('move-up')) {
+        const comp = e.target.closest('.component');
+        const prev = comp.previousElementSibling;
+        if (prev) prev.before(comp);
+        renumberComponents();
+    }
+
+    if (e.target.classList.contains('move-down')) {
+        const comp = e.target.closest('.component');
+        const next = comp.nextElementSibling;
+        if (next) next.after(comp);
+        renumberComponents();
+    }
+});
+
+// reorder components
+function renumberComponents() {
+    const root = document.getElementById('components-container');
+    renumberContainer(root, '');
+}
+
+function renumberContainer(container, prefix) {
+    const components = container.querySelectorAll(':scope > .component');
+
+    components.forEach((comp, index) => {
+        const path = prefix === '' ? String(index) : `${prefix}-${index}`;
+        comp.dataset.path = path;
+
+        // Update hidden type input
+        const typeInput = comp.querySelector('input[name$="[type]"]');
+        if (typeInput) {
+            typeInput.name = `components[${path}][type]`;
+        }
+
+        // Update props
+        comp.querySelectorAll('[name^="components["]').forEach(input => {
+            input.name = input.name.replace(
+                /components\[[^\]]+\]/,
+                `components[${path}]`
+            );
+        });
+
+        // Recurse children
+        const children = comp.querySelector('.children-container');
+        if (children) {
+            renumberContainer(children, path);
+        }
+    });
+}

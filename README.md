@@ -56,7 +56,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 * Configuration file ✅
 * BASE_URL in config to handle subfolder hosting ✅
 * In-app how-to guide
-* Drag-and-drop / reorder components
+* Button to reorder components ✅
 * Clone/duplicate existing components
 * layout components vs content components
 * Fancy toast notifications for success/error ✅
@@ -88,6 +88,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 * Lazy loading components and images
 * Multi-language support
 * Fiddle around with inline global css or maybe a critical.css file to avoid 1 http request
+* Proper drag and drop of components
 
 ---
 
