@@ -33,23 +33,52 @@
                 {
                     "type": "feature-card",
                     "props": {
+                        "title": "Second Title 2",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
                         "title": "First Title",
                         "text": "Default Text",
                         "icon": "👋",
                         "image": "placeholder.png"
                     },
-                    "children": [
-                        {
-                            "type": "feature-card",
-                            "props": {
-                                "title": "asdasdasd",
-                                "text": "Default Text",
-                                "icon": "👋",
-                                "image": "placeholder.png"
-                            },
-                            "children": []
-                        }
-                    ]
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Third Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Third Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "feature-card",
+                    "props": {
+                        "title": "Third Title",
+                        "text": "Default Text",
+                        "icon": "👋",
+                        "image": "placeholder.png"
+                    },
+                    "children": []
                 },
                 {
                     "type": "feature-card",

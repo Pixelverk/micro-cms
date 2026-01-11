@@ -57,7 +57,7 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 * BASE_URL in config to handle subfolder hosting ✅
 * In-app how-to guide
 * Button to reorder components ✅
-* Clone/duplicate existing components
+* Clone/duplicate existing components ✅
 * layout components vs content components
 * Fancy toast notifications for success/error ✅
 
@@ -83,12 +83,14 @@ The JS ends up in a script tag that runs after DOMContentLoaded.
 ### Future Ideas
 
 * Integrate Alpine.js for reactive UI
-* Image optimization and conversion
-* Drafts or edit history with restore functionality
+* Image optimization and webp conversion with png fallback
 * Lazy loading components and images
+* Image placeholders, LQIP or CSS blurry blob
+* Drafts or edit history with restore functionality
 * Multi-language support
-* Fiddle around with inline global css or maybe a critical.css file to avoid 1 http request
+* Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
+* SQLite instead of JSON
 
 ---
 

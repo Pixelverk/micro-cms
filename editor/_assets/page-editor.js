@@ -8,6 +8,23 @@ let componentCount = Math.max(
         .flat()
 ) + 1;
 
+// Element builder helper bro
+function el(tag, { className, text, attrs } = {}, children = []) {
+    const node = document.createElement(tag);
+
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+
+    if (attrs) {
+        for (const [k, v] of Object.entries(attrs)) {
+            node.setAttribute(k, v);
+        }
+    }
+
+    children.forEach(child => node.appendChild(child));
+    return node;
+}
+
 // ----------------------------
 // Add a component dynamically
 // ----------------------------
@@ -17,73 +34,63 @@ function addComponent(type, parentContainer = container, parentPath = null) {
     const schema = availableComponents[type];
     const path = parentPath !== null ? `${parentPath}-${componentCount}` : `${componentCount}`;
 
-    const fs = document.createElement('fieldset');
-    fs.classList.add('component');
-    fs.dataset.path = path;
+    const fieldset = el('fieldset', {
+        className: 'component',
+        attrs: { 'data-path': path }
+    }, [
+        el('legend', { text: type }),
 
-    // Legend
-    const legend = document.createElement('legend');
-    legend.textContent = type;
-    fs.appendChild(legend);
+        el('input', {
+            attrs: {
+                type: 'hidden',
+                name: `components[${path}][type]`,
+                value: type
+            }
+        })
+    ]);
 
-    // Hidden type input
-    const hiddenType = document.createElement('input');
-    hiddenType.type = 'hidden';
-    hiddenType.name = `components[${path}][type]`;
-    hiddenType.value = type;
-    fs.appendChild(hiddenType);
-
-    // Props inputs
+    // Props
     for (const [propName, field] of Object.entries(schema)) {
-        const label = document.createElement('label');
-        const value = field.default || '';
-        if ((field.type || 'string') === 'textarea') {
-            label.innerHTML = `${field.label || propName}: <textarea name="components[${path}][props][${propName}]">${value}</textarea>`;
-        } else {
-            label.innerHTML = `${field.label || propName}: <input type="text" name="components[${path}][props][${propName}]" value="${value}">`;
-        }
-        fs.appendChild(label);
+        const inputName = `components[${path}][props][${propName}]`;
+        const value = field.default ?? '';
+        const labelText = field.label || propName;
+
+        const input = field.type === 'textarea'
+            ? el('textarea', { attrs: { name: inputName } }, [])
+            : el('input', { attrs: { type: 'text', name: inputName, value } });
+
+        if (field.type === 'textarea') input.value = value;
+
+        fieldset.appendChild(
+            el('label', {}, [
+                document.createTextNode(`${labelText}: `),
+                input
+            ])
+        );
     }
 
     // Children container
-    const childrenDiv = document.createElement('div');
-    childrenDiv.className = 'children-container';
-    fs.appendChild(childrenDiv);
+    const childrenDiv = el('div', { className: 'children-container' });
+    fieldset.appendChild(childrenDiv);
 
     // Actions
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = 'component-actions';
+    fieldset.appendChild(
+        el('div', { className: 'component-actions' }, [
+            el('button', {
+                className: 'add-child-btn',
+                text: 'Add Child Component',
+                attrs: { type: 'button' }
+            }),
+            el('div', { className: 'actions-right' }, [
+                el('button', { className: 'duplicate-btn', text: '⧉', attrs: { type: 'button' } }),
+                el('button', { className: 'move-up', text: '↑', attrs: { type: 'button' } }),
+                el('button', { className: 'move-down', text: '↓', attrs: { type: 'button' } }),
+                el('button', { className: 'remove-btn', text: '×', attrs: { type: 'button' } })
+            ])
+        ])
+    );
 
-    const addChildBtn = document.createElement('button');
-    addChildBtn.type = 'button';
-    addChildBtn.textContent = 'Add Child Component';
-    addChildBtn.className = 'add-child-btn';
-    actionsDiv.appendChild(addChildBtn);
-
-    const actionsRight = document.createElement('div');
-    actionsRight.className = 'actions-right';
-    actionsDiv.appendChild(actionsRight);
-
-    const upBtn = document.createElement('button');
-    upBtn.type = 'button';
-    upBtn.textContent = '↑';
-    upBtn.className = 'move-up';
-    actionsRight.appendChild(upBtn);
-
-    const downBtn = document.createElement('button');
-    downBtn.type = 'button';
-    downBtn.textContent = '↓';
-    downBtn.className = 'move-down';
-    actionsRight.appendChild(downBtn);
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.textContent = '×';
-    removeBtn.className = 'remove-btn';
-    actionsRight.appendChild(removeBtn);
-
-    fs.appendChild(actionsDiv);
-    parentContainer.appendChild(fs);
+    parentContainer.appendChild(fieldset);
     componentCount++;
 }
 
@@ -207,4 +214,30 @@ function renumberContainer(container, prefix) {
             renumberContainer(children, path);
         }
     });
+}
+
+// listen for duplicate click
+document.addEventListener('click', e => {
+    if (!e.target.classList.contains('duplicate-btn')) return;
+
+    const original = e.target.closest('.component');
+    if (!original) return;
+
+    duplicateComponent(original);
+});
+
+function duplicateComponent(original) {
+    const clone = original.cloneNode(true);
+
+    // Remove path – will be reassigned
+    delete clone.dataset.path;
+
+    // Remove any IDs inside the clone
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+
+    // Insert after original
+    original.after(clone);
+
+    // Renumber everything
+    renumberComponents();
 }
