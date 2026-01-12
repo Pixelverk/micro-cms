@@ -1,6 +1,10 @@
 # Ignore the very safe json storage
 /editor/_core/users.json
 
+# Ignore local notes and reference files
+notes*
+reference*
+
 # Build outputs or temp files
 *.log
 *.tmp

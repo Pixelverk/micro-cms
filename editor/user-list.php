@@ -81,4 +81,15 @@ document.querySelectorAll('.delete-user-btn').forEach(btn => {
 
 <?php
 $content = ob_get_clean();
+
+// page help
+ob_start();
+?>
+<h3>User list</h3>
+<p>This screen has a list of all CMS users.</p>
+<p>Use the buttons to edit or delete users, or add a new user.</p>
+<p>You may not delete your own user account, that would just be silly.</p>
+<?php
+$pageHelp = ob_get_clean();
+
 include __DIR__ . '/_partials/layout.php';

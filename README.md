@@ -77,18 +77,17 @@ Access the editor at `/editor/` to manage pages and users.
 
 ### Phase 2 – Editor Enhancements
 
-* Fancier demo site layout
 * Site settings (select which page to use as homepage, etc.)
+* In-app how-to guide ✅
 * Configuration file ✅
 * BASE_URL in config to handle subfolder hosting ✅
-* In-app how-to guide
 * Button to reorder components ✅
 * Clone/duplicate existing components ✅
-* layout components vs content components
 * Fancy toast notifications for success/error ✅
 
 ### Phase 3 – Live Preview & Blog
 
+* Fancier demo site layout
 * Live preview of pages
 * Preview at multiple breakpoints
 * Blog CRUD and categories

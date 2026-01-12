@@ -5,5 +5,6 @@
     <?= $content ?? '' ?>
 </main>
 
+<?php include __DIR__ . '/help.php'; ?>
 <?php include __DIR__ . '/toasts.php'; ?>
 <?php include __DIR__ . '/footer.php'; ?>

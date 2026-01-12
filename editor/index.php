@@ -7,9 +7,9 @@ require_login();
 $pageTitle = 'Dashboard';
 $username = $_SESSION['user_id'] ?? 'User';
 
+// page content
 ob_start();
 ?>
-
 <div class="page-header">
     <div class="page-title">
         <h2>Welcome, <?php echo e($username); ?> 👋</h2>
@@ -41,4 +41,18 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+// page help
+ob_start();
+?>
+<h3>Dashboard page</h3>
+<p>This screen has links to the CMS features.</p>
+<ul>
+    <li>Click 'Manage pages' to manage your pages.</li>
+    <li>Click 'Manage users' to manage your users.</li>
+    <li>Click 'View site' to open the front-end site in a new tab.</li>
+</ul>
+<?php
+$pageHelp = ob_get_clean();
+
 include __DIR__ . '/_partials/layout.php';

@@ -8,6 +8,7 @@ $pageTitle = 'Pages';
 $username = $_SESSION['user_id'] ?? 'User';
 $pages = list_pages();
 
+//page content
 ob_start();
 ?>
 
@@ -78,4 +79,15 @@ document.querySelectorAll('.delete-page-btn').forEach(btn => {
 
 <?php
 $content = ob_get_clean();
+
+// page help
+ob_start();
+?>
+<h3>Page list</h3>
+<p>This screen has a list of all active pages.</p>
+<p>You can choose to edit or delete pages, or add a new page using the buttons.</p>
+<p>Clicking the page title will take you to the page on the front-end.</p>
+<?php
+$pageHelp = ob_get_clean();
+
 include __DIR__ . '/_partials/layout.php';
