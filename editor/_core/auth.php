@@ -8,7 +8,7 @@ declare(strict_types=1);
 // --------------------------------------------------
 
 // For now: JSON file with hashed passwords
-define('USER_FILE', __DIR__ . '/../_data/users.json');
+define('USER_FILE', __DIR__ . '/../../_data/users.json');
 
 // --------------------------------------------------
 // Load users

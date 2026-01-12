@@ -1,6 +1,6 @@
 <?php
 
-define('SETTINGS_FILE', __DIR__ . '/../_data/settings.json');
+define('SETTINGS_FILE', __DIR__ . '/../../_data/settings.json');
 
 function load_settings(): array {
     if (!file_exists(SETTINGS_FILE)) {

@@ -10,7 +10,8 @@ Ideal for small websites, demos, or projects where speed, simplicity, and mainta
 
 * `_components/` – Custom PHP components for your pages
 * `_assets/` – Global CSS, JavaScript, and images
-* `_pages/` – JSON page data (one file per page)
+* `_data/` – Settings and user data in JSON storage
+* `_data/pages/` – JSON page data (one file per page)
 * `editor/` – Admin panel for creating/editing pages and managing users
 
 ---
@@ -51,7 +52,7 @@ Run a local PHP server:
 php -S localhost:8000
 ```
 
-All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_pages/`.
+All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_data/pages/`.
 
 Demo account:
 
