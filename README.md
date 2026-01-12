@@ -75,15 +75,15 @@ Access the editor at `/editor/` to manage pages and users.
 * Basic login / authentication
 * User CRUD
 
-### Phase 2 – Editor Enhancements
+### Phase 2 – Editor Enhancements ✅
 
 * Site settings (select which page to use as homepage, etc.)
-* In-app how-to guide ✅
-* Configuration file ✅
-* BASE_URL in config to handle subfolder hosting ✅
-* Button to reorder components ✅
-* Clone/duplicate existing components ✅
-* Fancy toast notifications for success/error ✅
+* In-app how-to guide
+* Configuration file
+* BASE_URL in config to handle subfolder hosting
+* Button to reorder components
+* Clone/duplicate existing components
+* Fancy toast notifications for success/error
 
 ### Phase 3 – Live Preview & Blog
 
@@ -92,7 +92,8 @@ Access the editor at `/editor/` to manage pages and users.
 * Preview at multiple breakpoints
 * Blog CRUD and categories
 * Editable page slugs ✅
-* Improved editor UI/UX
+* Improved editor UI/UX/Responsiveness
+* Write help for all pages
 
 ### Phase 4 – Media & SEO
 

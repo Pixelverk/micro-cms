@@ -10,6 +10,9 @@ $config = require __DIR__ . '/config.php';
 $pagesDir = $config['paths']['pages'];
 $baseUrl  = rtrim($config['url'], '/');
 
+// Load Settings
+require __DIR__ . '/editor/_core/settings.php';
+
 // ---------------------------
 // 1. Parse the requested URL
 // ---------------------------
@@ -33,7 +36,7 @@ if ($path !== '/' && substr($path, -1) !== '/') {
 
 // Normalize slug
 $slug = trim($path, '/');
-$slug = $slug === '' ? 'home' : $slug;
+$slug = $slug === '' ? e(get_setting('homepage_slug')) : $slug;
 
 // ---------------------------
 // 2. Locate page JSON file
@@ -97,13 +100,17 @@ function serve(string $pageFile, string $slug): void
 
     header('Content-Type: text/html; charset=utf-8');
 
+    $pageTitle = e($pageData['title'] ?? $slug);
+    $siteTitle = e(get_setting('site_title', 'My Site'));
+    $metaDescription = $pageData['meta']['description'] ?? '';
+
     echo "<!DOCTYPE html><html lang='en'><head>";
     echo "<meta charset='UTF-8'>";
     echo "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    echo "<title>" . e($pageData['title'] ?? $slug) . "</title>";
+    echo "<title>$pageTitle - $siteTitle</title>";
 
-    if (!empty($pageData['meta']['description'])) {
-        echo "<meta name='description' content='" . e($pageData['meta']['description']) . "'>";
+    if ($metaDescription !== '') {
+        echo "<meta name='description' content='" . e($metaDescription) . "'>";
     }
 
     // Assets

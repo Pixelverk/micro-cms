@@ -66,7 +66,7 @@ ob_start();
         <p>Editing page: <strong><?= e($title) ?></strong></p>
     </div>
     <div class="page-actions">
-        <a style="color:inherit; margin-right:2rem;" href="<?= url($slug == 'home' ? '' : $slug) ?>" target="_blank">Visit Page</a>
+        <a style="color:inherit; margin-right:2rem;" href="<?= url($slug ==  e(get_setting('homepage_slug')) ? '' : $slug) ?>" target="_blank">Visit Page</a>
         <button type="submit" form="save">Save Page</button>
     </div>
 </div>

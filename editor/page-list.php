@@ -38,7 +38,7 @@ ob_start();
                 <tr>
                     <td>
                         <a style="text-decoration:none; color:inherit;" 
-                           href="<?= url($page['slug'] == 'home' ? '' : $page['slug'] ) ?>" 
+                           href="<?= url($page['slug'] == e(get_setting('homepage_slug')) ? '' : $page['slug'] ) ?>" 
                            target="_blank">
                             <?= e($page['title']) ?>
                         </a>

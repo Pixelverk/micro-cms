@@ -1,5 +1,6 @@
 <?php
 $pageTitle = $pageTitle ?? 'Micro CMS Editor';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

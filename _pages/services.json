@@ -1,5 +1,5 @@
 {
-    "title": "Services – Demo Site",
+    "title": "Services",
     "meta": {
         "description": "Our services and how we help your business grow."
     },
@@ -64,10 +64,10 @@
         {
             "type": "cta-section",
             "props": {
-                "url": "\/contact\/",
-                "linktext": "Get in touch",
                 "title": "Let’s work together",
-                "text": "Tell us about your project and we’ll take it from there."
+                "text": "Tell us about your project and we’ll take it from there.",
+                "url": "\/contact\/",
+                "linktext": "Get in touch"
             },
             "children": []
         }

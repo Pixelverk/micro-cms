@@ -33,6 +33,12 @@ ob_start();
     </div>
 
     <div class="card">
+        <h2>Settings</h2>
+        <p>Edit site and CMS settings.</p>
+        <a href="<?= url('editor/settings.php') ?>">Manage settings →</a>
+    </div>
+
+    <div class="card">
         <h2>Site Preview</h2>
         <p>Open the public site in a new tab.</p>
         <a href="<?= url() ?>" target="_blank">View site →</a>

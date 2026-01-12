@@ -20,7 +20,8 @@
 #help-panel {
     position: fixed;
     bottom: 5.5rem;
-    right: 1.5rem;
+    right: 2rem;
+    margin-left:2rem;
     width: fit-content;
     max-width: calc(100vw - 3rem);
     background: #fff;

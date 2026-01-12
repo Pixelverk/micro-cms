@@ -1,34 +1,40 @@
 {
-  "is404": true,
-  "title": "404 – Demo Site",
-  "meta": {
-    "description": "The page you are looking for could not be found."
-  },
-  "layout": {
-    "header": [
-      { "type": "site-header" }
-    ],
-    "footer": [
-      { "type": "site-footer" }
-    ]
-  },
-  "components": [
-    {
-      "type": "hero-section",
-      "props": {
-        "title": "404 – Not found",
-        "subtitle": "There could be a page here, but we didn’t make one. Sorry!",
-        "image": "placeholder.png"
-      }
+    "is404": true,
+    "title": "404",
+    "meta": {
+        "description": "The page you are looking for could not be found."
     },
-    {
-      "type": "cta-section",
-      "props": {
-        "url": "/",
-        "linktext": "Go to Home Page",
-        "title": "Try visiting the home page",
-        "text": "It’s very nice."
-      }
-    }
-  ]
+    "layout": {
+        "header": [
+            {
+                "type": "site-header"
+            }
+        ],
+        "footer": [
+            {
+                "type": "site-footer"
+            }
+        ]
+    },
+    "components": [
+        {
+            "type": "hero-section",
+            "props": {
+                "title": "404 – Not found",
+                "subtitle": "There could be a page here, but we didn’t make one. Sorry!",
+                "image": "placeholder.png"
+            },
+            "children": []
+        },
+        {
+            "type": "cta-section",
+            "props": {
+                "title": "Try visiting the home page",
+                "text": "It’s very nice.",
+                "url": "\/",
+                "linktext": "Go to Home Page"
+            },
+            "children": []
+        }
+    ]
 }
