@@ -5,7 +5,13 @@ return [
     /** --------------------------------------------
      * CMS-Editable Schema
      * -------------------------------------------- */
-    'schema' => [],
+    'schema' => [
+        'menu' => [
+            'type' => 'menu',
+            'label' => 'Menu slot: site-footer',
+            'default' => 'main'
+        ]
+    ],
 
     /** --------------------------------------------
      * Child element options

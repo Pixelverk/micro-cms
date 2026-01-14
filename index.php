@@ -228,3 +228,40 @@ function url(string $path = ''): string
 
     return $baseUrl . '/' . rtrim($path, '/') . '/';
 }
+
+/* load menus from storage */
+function load_menus(): array
+{
+    if (!file_exists( __DIR__ . '/_data/menus.json')) {
+        return [];
+    }
+
+    $json = file_get_contents( __DIR__ . '/_data/menus.json');
+    $data = json_decode($json, true);
+
+    return is_array($data) ? $data : [];
+}
+
+/**
+ * Get the items of a menu by key.
+ *
+ * @param string $menuKey
+ * @return array
+ */
+function get_menu_items(string $menuKey): array
+{
+    $menus = load_menus();
+    return $menus[$menuKey]['items'] ?? [];
+}
+
+/**
+ * Get the label of a menu by key.
+ *
+ * @param string $menuKey
+ * @return string
+ */
+function get_menu_label(string $menuKey): string
+{
+    $menus = load_menus();
+    return $menus[$menuKey]['label'] ?? '';
+}

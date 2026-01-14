@@ -98,7 +98,7 @@ ob_start();
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
 </script>
-<?php include __DIR__ . '/_partials/editor-templates.php'; ?>
+<?php include __DIR__ . '/_partials/page-editor-templates.php'; ?>
 <script type="module" src="<?= url('editor/_assets/page-editor.js') ?>"></script>
 
 <?php

@@ -33,6 +33,12 @@ ob_start();
     </div>
 
     <div class="card">
+        <h2>Menus</h2>
+        <p>Create and manage menus.</p>
+        <a href="<?= url('editor/menu-edit.php') ?>">Manage menus →</a>
+    </div>
+
+    <div class="card">
         <h2>Settings</h2>
         <p>Edit site and CMS settings.</p>
         <a href="<?= url('editor/settings.php') ?>">Manage settings →</a>

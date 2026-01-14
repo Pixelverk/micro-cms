@@ -94,6 +94,7 @@ Access the editor at `/editor/` to manage pages and users.
 * Live preview of pages
 * Preview at multiple breakpoints
 * Blog CRUD and categories
+* Menu manager / use in component ✅ 
 * Editable page slugs ✅
 * Improved editor UI/UX/Responsiveness
 * Write help for all pages
@@ -120,6 +121,7 @@ Access the editor at `/editor/` to manage pages and users.
 * Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
 * SQLite instead of JSON
+* Login history ?
 
 ---
 

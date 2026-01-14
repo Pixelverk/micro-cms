@@ -1,13 +1,13 @@
 <?php
-// editor/_core/pages.php
-// helpers for page crud
-
 declare(strict_types=1);
 
+define('MENUS_FILE', __DIR__ . '/../../_data/menus.json');
+
+
 /**
- * Return a list of editable pages.
+ * Return a list of editable menus.
  */
-function list_pages(): array
+function list_menus(): array
 {
     $pages = [];
 
@@ -50,41 +50,29 @@ function list_pages(): array
     return $pages;
 }
 
-/**
- * Load a page as an associative array from JSON
- */
-function load_page(string $slug): ?array
-{
-    $path = PAGES_DIR . '/' . $slug . '.json';
 
-    if (!file_exists($path)) {
-        return null;
+function load_menus(): array
+{
+    if (!file_exists(MENUS_FILE)) {
+        return [];
     }
 
-    $json = file_get_contents($path);
+    $json = file_get_contents(MENUS_FILE);
     $data = json_decode($json, true);
 
-    if (!is_array($data)) {
-        return null; // invalid JSON
-    }
-
-    return $data;
+    return is_array($data) ? $data : [];
 }
 
-/**
- * Save a page as JSON back to disk
- */
-function save_page(string $slug, array $data): bool
+function save_menus(array $menus): bool
 {
-    $path = PAGES_DIR . '/' . $slug . '.json';
+    $json = json_encode($menus, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($json === false) return false;
 
-    // Optional: validate structure here if you want
-
-    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    if ($json === false) {
-        return false; // encoding failed
-    }
-
-    return file_put_contents($path, $json, LOCK_EX) !== false;
+    return file_put_contents(MENUS_FILE, $json, LOCK_EX) !== false;
 }
 
+function get_menu(string $name): array
+{
+    $menus = load_menus();
+    return $menus[$name] ?? [];
+}
