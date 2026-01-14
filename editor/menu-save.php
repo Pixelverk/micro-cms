@@ -65,12 +65,7 @@ function processMenuItems(array $items): array {
             'children' => []
         ];
 
-        // Type-specific link
-        if ($type === 'page') {
-            $entry['slug'] = $item['slug'] ?? '';
-        } elseif ($type === 'url') {
-            $entry['url'] = $item['url'] ?? '';
-        }
+        $entry['slug'] = $item['slug'] ?? '';
 
         // Recursively process children
         if (!empty($item['children']) && is_array($item['children'])) {

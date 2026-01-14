@@ -20,10 +20,7 @@ function createMenuItem(data = {}) {
         if (input.type === 'checkbox') {
             input.checked = !!data[key];
         } else {
-            // Assign slug/url fields
-            if (key === 'slug' && data.type === 'page') input.value = data.slug || '';
-            else if (key === 'url' && data.type === 'url') input.value = data.url || '';
-            else input.value = data[key] || '';
+            input.value = data[key] ?? '';
         }
     });
 
@@ -167,8 +164,12 @@ function extractMenuItemData(el) {
     el.querySelectorAll('.field-input').forEach(input => {
         const key = input.dataset.field;
         if (!key) return;
-        if (input.type === 'checkbox') data[key] = input.checked;
-        else data[key] = input.value;
+
+        if (input.type === 'checkbox') {
+            data[key] = input.checked;
+        } else {
+            data[key] = input.value;
+        }
     });
 
     el.querySelectorAll(':scope > .children-container > .menu-item')
@@ -177,6 +178,8 @@ function extractMenuItemData(el) {
     if (children.length) data.children = children;
     return data;
 }
+
+
 
 // ----------------------------
 // Renumber menu item inputs for POST

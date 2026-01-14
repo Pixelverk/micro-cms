@@ -45,11 +45,11 @@
         "label": "header1",
         "items": [
             {
-                "type": "page",
+                "type": "url",
                 "label": "Home",
                 "target": "_self",
                 "children": [],
-                "slug": "home"
+                "slug": "\/"
             },
             {
                 "type": "page",

@@ -4,7 +4,7 @@ A lightweight PHP CMS, built with components for front-end design and page edito
 
 Ideal for small websites, demos, or projects where speed, simplicity, and maintainability matter.
 
-The goal is to have a good user experience, both for developers and content-editors, with as few moving parts as possible.
+The goal is to have a good user experience, for both developers and editors, with very few moving parts.
 
 ---
 
