@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Default Layout
+| Landing Layout, a.k.a no header or footer
 |--------------------------------------------------------------------------
 |
 | Variables available:

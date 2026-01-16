@@ -137,7 +137,7 @@ function admin_not_found(): void
 
 /*
 |--------------------------------------------------------------------------
-| Redirect helpers
+| Admin redirect helpers
 |--------------------------------------------------------------------------
 */
 function redirect(string $path): void
