@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Contact - Awesome Site</title>
+<meta name='description' content='Contact us to discuss your project or ask a question.'>
+<link rel='stylesheet' href='/theme/assets/style.css'>
+<script src='/theme/assets/main.js' defer></script>
+<script src='/theme/assets/vendor/instant-page.min.js' defer></script>
+<style>
+
+/* CSS from site-header */
+header {
+    background: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #222;
+    text-decoration: none;
+}
+
+nav a {
+    margin-left: 1.5rem;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+
+nav a:hover {
+    color: #000;
+}
+
+/* CSS from hero-section */
+.hero {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #333;
+    color: #fff;
+}
+
+.hero img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 2rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: #ddd;
+}
+
+.hero .inner {
+    gap: 4rem;
+}
+
+/* CSS from cta-section */
+.cta {
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #e0f7fa;
+}
+
+.cta .inner {
+    display: block;
+}
+
+.cta h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.cta p {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #00796b;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+/* CSS from site-footer */
+footer {
+    background: #111;
+    color: #ccc;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.brand {
+    font-weight: 600;
+    color: #fff;
+}
+
+footer nav a {
+    margin-right: 1.25rem;
+    text-decoration: none;
+    color: #ccc;
+    font-size: 0.95rem;
+}
+
+footer nav a:hover {
+    color: #fff;
+}
+
+.bottom {
+    font-size: 0.85rem;
+    color: #888;
+    border-top: 1px solid #222;
+    padding-top: 1rem;
+}
+
+footer .inner {
+    display:block;
+}
+</style>
+<script>document.addEventListener('DOMContentLoaded', function(){
+
+// JS from site-header
+const currentPage = window.location.pathname;
+document.querySelectorAll('nav a').forEach(link => {
+    if (link.getAttribute('href') === currentPage) {
+        link.style.fontWeight = '700';
+    }
+});
+});</script>
+</head>
+<body>
+<header>
+            <header id="header-6969ac86186e6">
+            <div class="inner">
+                <a href="/" class="logo">Acme Consulting</a>
+                <nav class="site-nav">
+                                            <a href="/" target="_self">Homey</a>
+                                            <a href="/services/" target="_self">Services</a>
+                                            <a href="/contact/" target="_self">Contact</a>
+                                    </nav>
+            </div>
+        </header>
+        </header>
+
+<main>
+            <section id="hero-6969ac8618720" class="hero">
+            <div class="inner">
+                <div class="hero-text">
+                    <h1>Contact Us</h1>
+                    <p>We’d love to hear about your goals and challenges.</p>
+                </div>
+                <div class="hero-img">
+                    <img src="/theme/assets/img/placeholder.png" alt="Contact Us">
+                </div>
+            </div>
+        </section>
+                <section id="cta-6969ac861873c" class="cta">
+            <div class="inner">
+                <h1>Start the conversation</h1>
+                <p>Reach out by email and we’ll get back to you shortly.</p>
+                <a href="/mailto:hello@example.com" class="cta-button">
+                    Email us                </a>
+                            </div>
+        </section>
+        </main>
+
+<footer>
+            <footer id="footer-6969ac8618757">
+            <div class="inner">
+                <div class="top">
+                    <div class="brand">Acme Consulting</div>
+                    <nav>
+                    <a href="/">Home</a>
+                    <a href="/services/">Services</a>
+                    <a href="/contact/">Contact</a>
+                    </nav>
+                </div>
+
+                <div class="bottom">
+                    © 2026 Acme Consulting. All rights reserved.
+                </div>
+            </div>
+        </footer>
+        </footer>
+</body>
+</html>

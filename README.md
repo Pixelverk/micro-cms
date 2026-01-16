@@ -10,19 +10,20 @@ The goal is to have a good user experience, for both developers and editors, wit
 
 ## Project Structure
 
-* `_components/` – Custom PHP components for your pages
-* `_assets/` – Global CSS, JavaScript, and images
-* `_data/` – Settings and user data in JSON storage
-* `_data/pages/` – JSON page data (one file per page)
-* `editor/` – Admin panel for creating/editing pages and managing users
+* `theme/components/` – Custom PHP components for your pages
+* `theme/assets/` – Global CSS, JavaScript, and images
+* `storage/` – Cache, uploads, and other data in JSON storage
+* `storage/pages/` – JSON page data (one file per page)
+* `core/admin/` – Admin panel for creating/editing pages and managing users
+* `core/` – All the things that make it go
 
 ---
 
 ## Workflow
 
-1. Build your components and place them in `_components/`.
-2. Add global CSS and assets in `_assets/`.
-3. Open the editor at `/editor/` to add or edit pages and components.
+1. Build your components and place them in `theme/components/`.
+2. Add global CSS and assets in `theme/assets/`.
+3. Open the editor at `/admin/` to add or edit pages and components.
 4. Save changes—pages update instantly.
 
 **Example:** create a `hero-section` component, then add it to the homepage in the editor.
@@ -54,7 +55,7 @@ Run a local PHP server:
 php -S localhost:8000
 ```
 
-All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `_data/pages/`.
+All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `storage/pages/`.
 
 Demo account:
 
@@ -63,7 +64,7 @@ Demo account:
 
 The demo account is created automatically if no other users exist.
 
-Access the editor at `/editor/` to manage pages and users.
+Access the editor at `/admin/` to manage pages and users.
 
 ---
 
@@ -105,6 +106,7 @@ Access the editor at `/editor/` to manage pages and users.
 * Image uploads / media manager
 * Sitemap generator (XML)
 * Optional SEO enhancements (meta, OpenGraph, etc.)
+* Caching .html for speedy speeds ✅
 
 ### Phase 5 – Refactor & Optimization
 

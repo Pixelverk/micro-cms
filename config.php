@@ -17,22 +17,18 @@ return [
     // Session & auth
     // --------------------------------------------------
     'session' => [
-        'timeout' => 3600, // seconds (1 hour)
+        'timeout' => 3600, // seconds
     ],
 
     'security' => [
         'password_min_length' => 10,
     ],
 
-    // --------------------------------------------------
-    // Paths
-    // --------------------------------------------------
-    'paths' => [
-        'project_root' => __DIR__,
-        'editor_root'  => __DIR__ . '/editor',
-        'pages'        => __DIR__ . '/_data/pages',
-        'assets'       => __DIR__ . '/_assets',
-        'components'   => __DIR__ . '/_components',
+    'defaults' => [
+        'layout' => 'default',
+        'status' => 'published',
     ],
+
+    'cache_lifetime' => 3600, // seconds
 
 ];
