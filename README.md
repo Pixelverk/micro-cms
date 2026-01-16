@@ -47,6 +47,16 @@ The body.php decides:
 
 ---
 
+## Requirements
+
+* PHP 8.0 or higher
+* PDO extension (when using SQLite)
+* JSON extension (built-in in PHP 5.2+)
+* File write permissions for `storage/` (for pages, cache, users, uploads)
+* Apache with `.htaccess` support or another web server capable of rewriting all requests to `index.php`
+
+---
+
 ## Local Development
 
 Run a local PHP server:
