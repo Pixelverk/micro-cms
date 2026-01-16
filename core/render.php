@@ -131,10 +131,11 @@ function render_components(array $components, array &$collectedJs = [], array &$
 | Render a Single Component
 |--------------------------------------------------------------------------
 */
-function component(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void
-{
-    $componentDir = theme("components/{$name}");
-    $componentFile = "{$componentDir}/body.php";
+
+function component(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void {
+    
+    // get the file
+    $componentFile = theme("components/{$name}.php");
 
     if (!file_exists($componentFile)) {
         throw new RuntimeException("Component '{$name}' not found at {$componentFile}");
@@ -143,24 +144,22 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
     $component = require $componentFile;
 
     // -----------------------------
-    // Collect CSS
+    // Add CSS once
     // -----------------------------
-    $cssFile = "{$componentDir}/style.css";
-    if (file_exists($cssFile) && !in_array($cssFile, array_column($collectedCss, 'file'), true)) {
+    if (!empty($component['css']) && !in_array($name, array_column($collectedCss, 'file'), true)) {
         $collectedCss[] = [
-            'file' => $cssFile,
-            'content' => "\n/* CSS from {$name} */\n" . file_get_contents($cssFile),
+            'file'    => $name,
+            'content' => "/* CSS from component: {$name} */\n" . $component['css'],
         ];
     }
 
     // -----------------------------
-    // Collect JS
+    // Add JS once
     // -----------------------------
-    $jsFile = "{$componentDir}/script.js";
-    if (file_exists($jsFile) && !in_array($jsFile, array_column($collectedJs, 'file'), true)) {
+    if (!empty($component['js']) && !in_array($name, array_column($collectedJs, 'file'), true)) {
         $collectedJs[] = [
-            'file' => $jsFile,
-            'content' => "\n// JS from {$name}\n" . file_get_contents($jsFile),
+            'file'    => $name,
+            'content' => "/* JS from component: {$name} */\n" . $component['js'],
         ];
     }
 
@@ -171,6 +170,5 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
         throw new RuntimeException("Component '{$name}' has no render function.");
     }
 
-    // Execute render function
-    echo $component['render']($props, $collectedJs, $collectedCss);
+    $component['render']($props, $collectedJs, $collectedCss);
 }

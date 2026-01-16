@@ -17,18 +17,18 @@ if ($slug && !preg_match('/^[a-z0-9_-]+$/', $slug)) {
 // ----------------------------
 // Load available components & schemas
 // ----------------------------
-$componentFiles = glob( CMS_PATH . '/theme/components/*/body.php');
+$componentFiles = glob(CMS_PATH . '/theme/components/*.php');
 $availableComponents = [];
 
 foreach ($componentFiles as $file) {
-    $name = basename(dirname($file));
+    $name = basename($file, '.php');
     $component = require $file;
 
-    // Build proper JS structure
+    // Build proper JS structure for editor
     $availableComponents[$name] = [
         'schema' => $component['schema'] ?? [],
         'children' => $component['children'] ?? 'any',
-        'allowed_children' => $component['allowed_children'] ?? []
+        'allowed_children' => $component['allowed_children'] ?? [],
     ];
 }
 

@@ -24,7 +24,7 @@ The goal is to have a good user experience, for both developers and editors, wit
 1. Build your components and place them in `theme/components/`.
 2. Add global CSS and assets in `theme/assets/`.
 3. Open the editor at `/admin/` to add or edit pages and components.
-4. Save changes—pages update instantly.
+4. Save changes and pages should update instantly.
 
 **Example:** create a `hero-section` component, then add it to the homepage in the editor.
 
@@ -32,18 +32,19 @@ The goal is to have a good user experience, for both developers and editors, wit
 
 ## Components
 
-A component is a folder with three files: body.php, style.css and script.js.
+A component is a single file with a render function and specific css, js and editable fields.
 
-These component files will be parsed and combined when a page renders.
+These parts files will be parsed and combined when a page renders.
 
 The CSS ends up in a style tag within the page head.
 
 The JS ends up in a script tag that runs after DOMContentLoaded.
 
-The body.php decides:
+The componentName.php basically decides:
 * how the component html is rendered
 * which attributes are editable in the CMS
 * which child elements are allowed (if any)
+* CSS and JS to load only if component is on page
 
 ---
 
@@ -65,7 +66,9 @@ Run a local PHP server:
 php -S localhost:8000
 ```
 
-All requests go through `index.php` in the root. Pages are dynamically built from JSON files in `storage/pages/`.
+All requests go through `index.php` in the root.
+
+Pages are dynamically built from JSON files in `storage/pages/`.
 
 Demo account:
 
