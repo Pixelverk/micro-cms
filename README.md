@@ -120,6 +120,7 @@ Access the editor at `/admin/` to manage pages and users.
 * Sitemap generator (XML)
 * Optional SEO enhancements (meta, OpenGraph, etc.)
 * Caching .html for speedy speeds ✅
+* Minify rendered output if 'env' = 'production' ✅
 
 ### Phase 5 – Refactor & Optimization
 

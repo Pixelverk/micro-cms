@@ -33,3 +33,11 @@ function invalidate_cache(string $path = ''): void
         @unlink($cacheFile);
     }
 }
+
+function minify_html(string $html): string {
+    // Remove newlines, tabs, multiple spaces
+    $html = preg_replace('/\s+/', ' ', $html);
+    // Remove spaces between tags
+    $html = preg_replace('/>\s+</', '><', $html);
+    return trim($html);
+}

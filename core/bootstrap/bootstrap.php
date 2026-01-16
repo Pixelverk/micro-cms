@@ -70,11 +70,11 @@ function bootstrap(string $mode): void
     */
     switch ($mode) {
         case 'frontend':
-            handle_frontend_request($config);
+            handle_frontend_request();
             break;
 
         case 'admin':
-            handle_admin_request($config);
+            handle_admin_request();
             break;
 
         default:
@@ -84,7 +84,7 @@ function bootstrap(string $mode): void
     }
 }
 
-function handle_frontend_request(array $config): void
+function handle_frontend_request(): void
 {
     // Cache setup
     define('CACHE_LIFETIME', $config['cache_lifetime']);
@@ -121,7 +121,7 @@ function handle_frontend_request(array $config): void
     }
 }
 
-function handle_admin_request(array $config): void
+function handle_admin_request(): void
 {
     // Start session if needed
     if (session_status() === PHP_SESSION_NONE) session_start();

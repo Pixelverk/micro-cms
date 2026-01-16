@@ -8,8 +8,10 @@ declare(strict_types=1);
 */
 function render_page(array $page): array
 {
+    $theme = theme_config();
+
     // Use page layout string, or fallback to site default
-    $layoutName = $page['layout'] ?? get_setting('default_layout', null) ?? theme_config()['defaults']['layout'];
+    $layoutName = $page['layout'] ?? get_setting('default_layout', null) ?? $theme['defaults']['layout'];
 
     $collectedCss = [];
     $collectedJs  = [];
@@ -17,8 +19,6 @@ function render_page(array $page): array
     ob_start();
     render_layout($layoutName, $page, $collectedJs, $collectedCss);
     $bodyContent = ob_get_clean();
-
-    $theme = theme_config();
 
     $siteTitle = e(get_setting('site_title', 'My Site'));
     $pageTitle = e($page['title'] ?? 'Untitled');
@@ -78,6 +78,11 @@ function render_page(array $page): array
     $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language')) . "'>\n<head>\n{$head}</head>\n<body>\n";
     $html .= $bodyContent;
     $html .= "</body>\n</html>";
+
+    // Minify based on environment, defaults to 'production'
+    if (config('env', 'production') === 'production') {
+        $html = minify_html($html);
+    }
 
     return [
         'status'  => ($page['status'] ?? '') === '404' ? 404 : 200,

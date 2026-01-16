@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 function config(string $key, mixed $default = null): mixed
 {
-    global $config;
+    $config = require CMS_PATH . '/config.php';
 
     $segments = explode('.', $key);
     $value = $config;
@@ -20,7 +20,6 @@ function config(string $key, mixed $default = null): mixed
         }
         $value = $value[$segment];
     }
-    var_dump($value);
 
     return $value;
 }
