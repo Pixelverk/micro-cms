@@ -1,4 +1,5 @@
 {
     "site_title": "Awesome Site",
-    "homepage_slug": "home"
+    "homepage_slug": "home",
+    "site_language": "en"
 }

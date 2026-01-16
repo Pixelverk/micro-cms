@@ -8,7 +8,6 @@ declare(strict_types=1);
 */
 function render_page(array $page): array
 {
-    //$layoutName = config('defaults.layout'); // string
     $layoutName = 'default';
 
     $collectedCss = [];
@@ -18,22 +17,43 @@ function render_page(array $page): array
     render_layout($layoutName, $page, $collectedJs, $collectedCss);
     $bodyContent = ob_get_clean();
 
+    $theme = theme_config();
+
     $siteTitle = e(get_setting('site_title', 'My Site'));
     $pageTitle = e($page['title'] ?? 'Untitled');
     $metaDesc  = e($page['meta']['description'] ?? '');
 
-    $head = "<meta charset='UTF-8'>\n";
-    $head .= "<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
+    $head = '';
+
+    // Charset & viewport
+    $meta = $theme['meta'] ?? [];
+    $head .= "<meta charset='" . e($meta['charset'] ?? 'UTF-8') . "'>\n";
+    $head .= "<meta name='viewport' content='" . e($meta['viewport'] ?? 'width=device-width, initial-scale=1.0') . "'>\n";
+
+    // Title
     $head .= "<title>{$pageTitle} - {$siteTitle}</title>\n";
 
+    // Meta description
     if ($metaDesc !== '') {
         $head .= "<meta name='description' content='{$metaDesc}'>\n";
     }
 
-    // Core assets — use asset() helper
-    $head .= "<link rel='stylesheet' href='" . asset('style.css') . "'>\n";
-    $head .= "<script src='" . asset('main.js') . "' defer></script>\n";
-    $head .= "<script src='" . asset('vendor/instant-page.min.js') . "' defer></script>\n";
+    // Icons
+    if (!empty($theme['icons']['favicon'])) {
+        $head .= "<link rel='icon' href='" . asset($theme['icons']['favicon']) . "'>\n";
+    }
+
+    // Styles
+    foreach ($theme['styles'] ?? [] as $style) {
+        $head .= "<link rel='stylesheet' href='" . asset($style) . "'>\n";
+    }
+
+    // Scripts
+    foreach ($theme['scripts'] ?? [] as $script) {
+        $src   = asset($script['src']);
+        $defer = !empty($script['defer']) ? ' defer' : '';
+        $head .= "<script src='{$src}'{$defer}></script>\n";
+    }
 
     // Component CSS
     if ($collectedCss) {
@@ -46,14 +66,15 @@ function render_page(array $page): array
 
     // Component JS
     if ($collectedJs) {
-        $head .= "<script>document.addEventListener('DOMContentLoaded', function(){\n";
+        $head .= "<script>\n";
+        $head .= "document.addEventListener('DOMContentLoaded', function() {\n";
         foreach ($collectedJs as $j) {
             $head .= $j['content'] . "\n";
         }
-        $head .= "});</script>\n";
+        $head .= "});\n</script>\n";
     }
 
-    $html = "<!DOCTYPE html>\n<html lang='en'>\n<head>\n{$head}</head>\n<body>\n";
+    $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language')) . "'>\n<head>\n{$head}</head>\n<body>\n";
     $html .= $bodyContent;
     $html .= "\n</body>\n</html>";
 
@@ -152,27 +173,4 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
 
     // Execute render function
     echo $component['render']($props, $collectedJs, $collectedCss);
-}
-
-/*
-|--------------------------------------------------------------------------
-| Render given child components
-| Used in component body.php like this: <?php if (!empty($children)) {render_children($children, $collectedJs, $collectedCss);} ?>
-|--------------------------------------------------------------------------
-*/
-function render_children(array $children, array &$collectedJs = [], array &$collectedCss = []): void
-{
-    foreach ($children as $child) {
-        $name = $child['type'] ?? $child['component'] ?? null;
-        if (!$name) continue;
-
-        $props = $child['props'] ?? [];
-
-        // Merge nested children recursively
-        if (!empty($child['children'])) {
-            $props['children'] = $child['children'];
-        }
-
-        component($name, $props, $collectedJs, $collectedCss);
-    }
 }

@@ -139,3 +139,25 @@ function img(string $path): string
 {
     return url("theme/assets/img/" . ltrim($path, '/'));
 }
+
+/**
+ * Returns the /theme/theme.php config file
+ */
+function theme_config(): array
+{
+    static $theme;
+
+    if ($theme !== null) {
+        return $theme;
+    }
+
+    $file = CMS_PATH . '/theme/theme.php';
+
+    if (!file_exists($file)) {
+        throw new RuntimeException('theme.php not found');
+    }
+
+    $theme = require $file;
+
+    return is_array($theme) ? $theme : [];
+}

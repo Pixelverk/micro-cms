@@ -14,6 +14,7 @@ declare(strict_types=1);
 */
 
 ?>
+
 <?php render_components($page['layout']['header'] ?? [], $collectedJs, $collectedCss); ?>
 
 <main>
