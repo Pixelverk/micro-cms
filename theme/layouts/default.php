@@ -14,14 +14,10 @@ declare(strict_types=1);
 */
 
 ?>
-<header>
-    <?php render_components($page['layout']['header'] ?? [], $collectedJs, $collectedCss); ?>
-</header>
+<?php render_components($page['layout']['header'] ?? [], $collectedJs, $collectedCss); ?>
 
 <main>
     <?php render_components($page['components'] ?? [], $collectedJs, $collectedCss); ?>
 </main>
 
-<footer>
-    <?php render_components($page['layout']['footer'] ?? [], $collectedJs, $collectedCss); ?>
-</footer>
+<?php render_components($page['layout']['footer'] ?? [], $collectedJs, $collectedCss); ?>
