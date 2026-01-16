@@ -49,7 +49,6 @@ function bootstrap(string $mode): void
     */
     require CORE_PATH . '/helpers/common.php';
     require CORE_PATH . '/helpers/cache.php';
-    require CORE_PATH . '/helpers/components.php';
     require CORE_PATH . '/helpers/pages.php';
     require CORE_PATH . '/helpers/menus.php';
     require CORE_PATH . '/helpers/settings.php';

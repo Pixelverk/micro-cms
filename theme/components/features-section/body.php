@@ -24,7 +24,7 @@ return [
         ?>
         <section id="<?= $id ?>" class="features">
             <div class="inner grid">
-                <?php if (!empty($children)) {render_children($children, $collectedJs, $collectedCss);} ?>
+                <?php if (!empty($children)) {render_components($children, $collectedJs, $collectedCss);} ?>
             </div>
         </section>
         <?php

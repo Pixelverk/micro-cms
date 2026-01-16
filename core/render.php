@@ -73,7 +73,7 @@ function render_page(array $page): array
 */
 function render_layout(string $layout, array $page, array &$collectedJs = [], array &$collectedCss = []): void
 {
-    $layoutFile = theme("layout/{$layout}.php");
+    $layoutFile = theme("layouts/{$layout}.php");
 
     if (!file_exists($layoutFile)) {
         throw new RuntimeException("Layout not found: {$layout}");
@@ -152,4 +152,27 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
 
     // Execute render function
     echo $component['render']($props, $collectedJs, $collectedCss);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Render given child components
+| Used in component body.php like this: <?php if (!empty($children)) {render_children($children, $collectedJs, $collectedCss);} ?>
+|--------------------------------------------------------------------------
+*/
+function render_children(array $children, array &$collectedJs = [], array &$collectedCss = []): void
+{
+    foreach ($children as $child) {
+        $name = $child['type'] ?? $child['component'] ?? null;
+        if (!$name) continue;
+
+        $props = $child['props'] ?? [];
+
+        // Merge nested children recursively
+        if (!empty($child['children'])) {
+            $props['children'] = $child['children'];
+        }
+
+        component($name, $props, $collectedJs, $collectedCss);
+    }
 }

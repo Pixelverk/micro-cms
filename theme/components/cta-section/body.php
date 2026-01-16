@@ -54,7 +54,7 @@ return [
                 <a href="<?= url($url) ?>" class="cta-button">
                     <?= e($linktext) ?>
                 </a>
-                <?php if (!empty($children)) {render_children($children, $collectedJs, $collectedCss);} ?>
+                <?php if (!empty($children)) {render_components($children, $collectedJs, $collectedCss);} ?>
             </div>
         </section>
         <?php
