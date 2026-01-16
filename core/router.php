@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Route Request → Page
+| Route Request → Page (front-end)
 |--------------------------------------------------------------------------
 | Returns a $page array ready for render_page()
 |--------------------------------------------------------------------------
@@ -11,83 +11,61 @@ declare(strict_types=1);
 function route_request(): array
 {
     $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-    $path = rtrim($path, '/');
+    $path = trim($path, '/');
 
-    if ($path === '') {
-        $path = '/';
+    // Normalize slug
+    $slug = $path === '' ? 'home' : $path;
+
+    // Security: only allow safe slugs
+    if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
+        return load_fallback_404();
     }
 
-    // If you are using JSON files for storage:
-    $slug = $path === '/' ? 'home' : ltrim($path, '/');
-    $pageFile = STORAGE_PATH . "/pages/{$slug}.json";
-
-    if (file_exists($pageFile)) {
-        return load_page_from_json($pageFile, $slug);
+    // Try exact page
+    $page = load_page_by_slug($slug);
+    if ($page) {
+        return $page;
     }
 
-    // If you decide to use SQLite later, uncomment:
-    /*
-    $stmt = db()->prepare("
-        SELECT * FROM contents
-        WHERE slug = :slug
-          AND status = 'published'
-        LIMIT 1
-    ");
-    $stmt->execute(['slug' => $path]);
-    $row = $stmt->fetch();
-    if ($row) {
-        return normalize_page($row);
-    }
-    */
-
-    return not_found_page();
+    // Fallback to 404 page
+    return load_fallback_404();
 }
 
-/*
-|--------------------------------------------------------------------------
-| Normalize Page Row (for DB-backed pages)
-|--------------------------------------------------------------------------
-*/
-function normalize_page(array $row): array
+function load_page_by_slug(string $slug): ?array
 {
-    $data = json_decode_safe($row['data']);
+    $file = STORAGE_PATH . "/pages/{$slug}.json";
 
-    return [
-        'id'         => (int) $row['id'],
-        'type'       => $row['type'],
-        'slug'       => $row['slug'],
-        'status'     => $row['status'],
-        'title'      => $data['title'] ?? '',
-        'layout'     => $data['layout'] ?? config('defaults.layout'),
-        'components' => $data['components'] ?? [],
-        'updated_at' => (int) $row['updated_at'],
-    ];
+    if (!is_file($file)) {
+        return null;
+    }
+
+    return load_page_from_json($file, $slug);
 }
 
-/*
-|--------------------------------------------------------------------------
-| 404 Page
-|--------------------------------------------------------------------------
-*/
-function not_found_page(): array
+function load_fallback_404(): array
 {
-    return [
-        'id'         => null,
-        'type'       => 'page',
-        'slug'       => '',
-        'status'     => '404',
-        'title'      => 'Page Not Found',
-        'layout'     => config('defaults.layout'),
-        'components' => [
-            [
-                'component' => 'hero',
-                'props' => [
-                    'title' => '404 – Page Not Found',
-                ],
-            ],
-        ],
-        'updated_at' => time(),
-    ];
+    http_response_code(404);
+
+    $page = load_page_by_slug('404');
+
+    // Absolute last-resort fallback (should never happen)
+    if (!$page) {
+        return [
+            'id'         => null,
+            'type'       => 'page',
+            'slug'       => '404',
+            'status'     => '404',
+            'title'      => 'Page Not Found',
+            'layout'     => config('defaults.layout'),
+            'components' => [],
+            'updated_at' => time(),
+        ];
+    }
+
+    // Force 404 status even if editor forgot
+    $page['status'] = '404';
+
+    return $page;
 }
 
 /*
@@ -115,7 +93,7 @@ function route_admin_request(): void
 
     // Whitelist allowed characters
     if (!preg_match('/^[a-z0-9\-]+$/', $page)) {
-        admin_not_found();
+        redirect_with_toast('dashboard', 'error', 'Wow, that slug has some unsafe characters');
         return;
     }
 
@@ -125,14 +103,7 @@ function route_admin_request(): void
         return;
     }
 
-    admin_not_found();
-}
-
-function admin_not_found(): void
-{
-    http_response_code(404);
-    echo "<h1>404 – Admin page not found</h1>";
-    echo "<p><a href='/admin/'>Back to Dashboard</a></p>";
+    redirect_with_toast('dashboard', 'error', 'That admin page does not exist');
 }
 
 /*

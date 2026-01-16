@@ -21,23 +21,24 @@ function db(): PDO
 */
 function load_page_from_json(string $pageFile, string $slug): array
 {
-    if (!file_exists($pageFile)) {
-        return [
-            'status' => '404',
-            'title'  => 'Page Not Found',
-            'components' => [],
-        ];
-    }
-
     $json = file_get_contents($pageFile);
-    $pageData = json_decode($json, true);
 
+    $pageData = json_decode($json, true);
     if (!is_array($pageData)) {
         throw new RuntimeException("Invalid JSON in {$pageFile}");
     }
 
-    $pageData['status'] = !empty($pageData['is404']) ? '404' : '200';
-    return $pageData;
+    return [
+        'id'         => $pageData['id'] ?? null,
+        'type'       => 'page',
+        'slug'       => $slug,
+        'status'     => $pageData['status'] ?? 'published',
+        'title'      => $pageData['title'] ?? '',
+        'layout'     => $pageData['layout'] ?? config('defaults.layout'),
+        'components' => $pageData['components'] ?? [],
+        'meta'       => $pageData['meta'] ?? [],
+        'updated_at' => $pageData['updated_at'] ?? filemtime($pageFile),
+    ];
 }
 
 
