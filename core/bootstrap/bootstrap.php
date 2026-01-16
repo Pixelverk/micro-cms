@@ -70,7 +70,7 @@ function bootstrap(string $mode): void
     */
     switch ($mode) {
         case 'frontend':
-            handle_frontend_request();
+            handle_frontend_request($config);
             break;
 
         case 'admin':
@@ -84,7 +84,7 @@ function bootstrap(string $mode): void
     }
 }
 
-function handle_frontend_request(): void
+function handle_frontend_request($config): void
 {
     // Cache setup
     define('CACHE_LIFETIME', $config['cache_lifetime']);
