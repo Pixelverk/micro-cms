@@ -1,5 +1,8 @@
 {
-    "site_title": "Awesome Site",
+    "site_title": "Awesome site",
     "homepage_slug": "home",
-    "site_language": "en"
+    "site_language": "en",
+    "default_layout": "default",
+    "default_header": "site-header",
+    "default_footer": "site-footer"
 }

@@ -21,26 +21,29 @@ function db(): PDO
 */
 function load_page_from_json(string $pageFile, string $slug): array
 {
-    $json = file_get_contents($pageFile);
+    if (!file_exists($pageFile)) {
+        return not_found_page();
+    }
 
+    $json = file_get_contents($pageFile);
     $pageData = json_decode($json, true);
+
     if (!is_array($pageData)) {
         throw new RuntimeException("Invalid JSON in {$pageFile}");
     }
 
-    return [
-        'id'         => $pageData['id'] ?? null,
-        'type'       => 'page',
-        'slug'       => $slug,
-        'status'     => $pageData['status'] ?? 'published',
-        'title'      => $pageData['title'] ?? '',
-        'layout'     => $pageData['layout'] ?? config('defaults.layout'),
-        'components' => $pageData['components'] ?? [],
-        'meta'       => $pageData['meta'] ?? [],
-        'updated_at' => $pageData['updated_at'] ?? filemtime($pageFile),
-    ];
-}
+    $theme = theme_config();
+    $settings = load_settings();
 
+    // --- Normalize layout/header/footer as strings ---
+    $pageData['layout'] = $pageData['layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'];
+    $pageData['header'] = $pageData['header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
+    $pageData['footer'] = $pageData['footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
+
+    $pageData['status'] = !empty($pageData['is404']) ? '404' : '200';
+
+    return $pageData;
+}
 
 /* example JSON storage helpers I don't even use yet, might make them work in the future?
 function load_data(string $file): array {

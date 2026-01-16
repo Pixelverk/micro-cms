@@ -8,7 +8,8 @@ declare(strict_types=1);
 */
 function render_page(array $page): array
 {
-    $layoutName = 'default';
+    // Use page layout string, or fallback to site default
+    $layoutName = $page['layout'] ?? get_setting('default_layout', null) ?? theme_config()['defaults']['layout'];
 
     $collectedCss = [];
     $collectedJs  = [];
@@ -76,7 +77,7 @@ function render_page(array $page): array
 
     $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language')) . "'>\n<head>\n{$head}</head>\n<body>\n";
     $html .= $bodyContent;
-    $html .= "\n</body>\n</html>";
+    $html .= "</body>\n</html>";
 
     return [
         'status'  => ($page['status'] ?? '') === '404' ? 404 : 200,
@@ -92,16 +93,23 @@ function render_page(array $page): array
 | Expects $collectedJs and $collectedCss arrays passed by reference
 |--------------------------------------------------------------------------
 */
-function render_layout(string $layout, array $page, array &$collectedJs = [], array &$collectedCss = []): void
+function render_layout(string $layout, array $page, array &$collectedJs = [], array &$collectedCss = [])
 {
     $layoutFile = theme("layouts/{$layout}.php");
 
+    $theme = theme_config();
+    $settings = load_settings();
+
     if (!file_exists($layoutFile)) {
-        throw new RuntimeException("Layout not found: {$layout}");
+        throw new RuntimeException("Layout '{$layout}' not found.");
     }
 
-    // Make $page, $collectedJs, $collectedCss available to layout
+    $headerComponent = $page['header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
+    $footerComponent = $page['footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
+
+    // Include the layout
     require $layoutFile;
+
 }
 
 /*

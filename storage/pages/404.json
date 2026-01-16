@@ -4,18 +4,9 @@
     "meta": {
         "description": "The page you are looking for could not be found."
     },
-    "layout": {
-        "header": [
-            {
-                "type": "site-header"
-            }
-        ],
-        "footer": [
-            {
-                "type": "site-footer"
-            }
-        ]
-    },
+    "layout": "default",
+    "header": "site-header",
+    "footer": "site-footer",
     "components": [
         {
             "type": "hero-section",

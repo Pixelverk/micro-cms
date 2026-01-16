@@ -1,5 +1,5 @@
 // ----------------------------
-// Menu Editor JS
+// Page Editor JS
 // ----------------------------
 
 const container = document.getElementById('components-container');

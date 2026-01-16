@@ -3,18 +3,9 @@
     "meta": {
         "description": "Contact us to discuss your project or ask a question."
     },
-    "layout": {
-        "header": [
-            {
-                "type": "site-header"
-            }
-        ],
-        "footer": [
-            {
-                "type": "site-footer"
-            }
-        ]
-    },
+    "layout": "default",
+    "header": "site-header",
+    "footer": "site-footer",
     "components": [
         {
             "type": "hero-section",

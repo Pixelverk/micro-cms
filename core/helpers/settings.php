@@ -1,16 +1,30 @@
 <?php
+declare(strict_types=1);
 
+/*
+|--------------------------------------------------------------------------
+| Load All Settings
+|--------------------------------------------------------------------------
+*/
 function load_settings(): array {
-    if (!file_exists(SETTINGS_FILE)) {
-        return [];
+    $settings = [];
+
+    if (file_exists(SETTINGS_FILE)) {
+        $json = file_get_contents(SETTINGS_FILE);
+        $data = json_decode($json, true);
+        if (is_array($data)) {
+            $settings = $data;
+        }
     }
 
-    $json = file_get_contents(SETTINGS_FILE);
-    $data = json_decode($json, true);
-
-    return is_array($data) ? $data : [];
+    return $settings;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Save Settings
+|--------------------------------------------------------------------------
+*/
 function save_settings(array $settings): void {
     file_put_contents(
         SETTINGS_FILE,
@@ -19,11 +33,26 @@ function save_settings(array $settings): void {
     invalidate_cache();
 }
 
+/*
+|--------------------------------------------------------------------------
+| Get a single setting
+|--------------------------------------------------------------------------
+*/
 function get_setting(string $key, $default = null) {
     $settings = load_settings();
-    return $settings[$key] ?? $default;
+
+    if (array_key_exists($key, $settings)) {
+        return $settings[$key];
+    }
+
+    return $default;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Set a single setting
+|--------------------------------------------------------------------------
+*/
 function set_setting(string $key, $value): void {
     $settings = load_settings();
     $settings[$key] = $value;

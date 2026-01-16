@@ -12,6 +12,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Available Layouts / Headers  / Footers
+    |--------------------------------------------------------------------------
+    */
+    'layouts' => [
+        'default' => 'Default Layout',
+        'landing' => 'Landing Page Layout',
+    ],
+
+    'headers' => [
+        'site-header' => 'Default Header',
+    ],
+
+    'footers' => [
+        'site-footer' => 'Default Footer',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Layout / Header / Footer (user may override in site settings)
+    |------------------------------------------------------------ --------------
+    */
+    'defaults' => [
+        'layout' => 'default',        // layout file in /theme/layouts/
+        'header' => 'site-header',    // component name for top of page
+        'footer' => 'site-footer',    // component name for bottom of page
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Head meta
     |--------------------------------------------------------------------------
     */

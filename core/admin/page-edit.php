@@ -22,6 +22,19 @@ $title = $pageData['title'] ?? '';
 $metaDescription = $pageData['meta']['description'] ?? '';
 $components = $pageData['components'] ?? [];
 
+// Load available layouts / headers / footers
+$theme = theme_config();
+$settings = load_settings();
+
+$availableLayouts = $theme['layouts'] ?? [];
+$availableHeaders = $theme['headers'] ?? [];
+$availableFooters = $theme['footers'] ?? [];
+
+// Current page values or fallbacks
+$pageLayout = $pageData['layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'];
+$pageHeader = $pageData['header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
+$pageFooter = $pageData['footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
+
 // ----------------------------
 // Load available components & schemas
 // ----------------------------
@@ -40,13 +53,19 @@ foreach ($componentFiles as $file) {
     ];
 }
 
-// Exclude site-header/footer
-$excluded = ['site-header','site-footer'];
+// Collect component names used as headers or footers
+$excludedComponents = array_unique(array_merge(
+    array_keys($availableHeaders),
+    array_keys($availableFooters)
+));
+
+// Exclude header/footer components from normal component list
 $availableComponents = array_filter(
     $availableComponents,
-    fn($c, $name) => !in_array($name, $excluded),
+    fn($c, $name) => !in_array($name, $excludedComponents, true),
     ARRAY_FILTER_USE_BOTH
 );
+
 ksort($availableComponents);
 
 // ----------------------------
@@ -61,7 +80,7 @@ ob_start();
         <p>Editing page: <strong><?= e($title) ?></strong></p>
     </div>
     <div class="page-actions">
-        <a style="color:inherit; margin-right:2rem;" href="<?= url($slug ==  e(get_setting('homepage_slug')) ? '' : $slug) ?>" target="_blank">Visit Page</a>
+        <a style="color:inherit; margin-right:2rem;" href="<?= url($slug == e($settings['homepage_slug']) ? '' : $slug) ?>" target="_blank">Visit Page</a>
         <button type="submit" form="save">Save Page</button>
     </div>
 </div>
@@ -87,6 +106,44 @@ ob_start();
             <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
         </label>
 
+    </fieldset>
+    
+    <!-- Layout and Theme -->
+    <fieldset>
+        <legend>Layout & Theme</legend>
+
+        <label>
+            Layout:
+            <select name="layout">
+                <?php foreach ($availableLayouts as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageLayout ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label>
+            Header:
+            <select name="header">
+                <?php foreach ($availableHeaders as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageHeader ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label>
+            Footer:
+            <select name="footer">
+                <?php foreach ($availableFooters as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageFooter ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
 
     </fieldset>
 
@@ -109,7 +166,7 @@ ob_start();
 
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
-window.initialComponents = <?= json_encode($components) ?>;
+window.initialComponents   = <?= json_encode($components) ?>;
 </script>
 <?php include __DIR__ . '/partials/page-editor-templates.php'; ?>
 <script type="module" src="<?= url('core/admin/assets/page-editor.js') ?>"></script>

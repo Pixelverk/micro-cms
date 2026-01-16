@@ -3,18 +3,9 @@
     "meta": {
         "description": "Helping your business shrink with strategic consulting."
     },
-    "layout": {
-        "header": [
-            {
-                "type": "site-header"
-            }
-        ],
-        "footer": [
-            {
-                "type": "site-footer"
-            }
-        ]
-    },
+    "layout": "default",
+    "header": "site-header",
+    "footer": "site-footer",
     "components": [
         {
             "type": "hero-section",

@@ -3,16 +3,27 @@
 $pageTitle = 'Add Page';
 $username = $_SESSION['user_id'] ?? 'User';
 
-// Start with empty page
+// ----------------------------
+// Initial empty page state
+// ----------------------------
 $title = '';
 $metaDescription = '';
 $components = [];
 
-// Optional: validate query param 'slug' if passed, otherwise rely on save
-$slug = $_GET['slug'] ?? '';
-if ($slug && !preg_match('/^[a-z0-9_-]+$/', $slug)) {
-    redirect_with_toast('page-list', 'error', 'Invalid slug in URL.');
-}
+// ----------------------------
+// Load theme config and settings
+// ----------------------------
+$theme = theme_config();
+$settings = load_settings();
+
+$availableLayouts = $theme['layouts'] ?? [];
+$availableHeaders = $theme['headers'] ?? [];
+$availableFooters = $theme['footers'] ?? [];
+
+// Defaults from site settings or theme
+$pageLayout = $settings['default_layout'] ?? $theme['defaults']['layout'];
+$pageHeader = $settings['default_header'] ?? $theme['defaults']['header'];
+$pageFooter = $settings['default_footer'] ?? $theme['defaults']['footer'];
 
 // ----------------------------
 // Load available components & schemas
@@ -24,21 +35,27 @@ foreach ($componentFiles as $file) {
     $name = basename($file, '.php');
     $component = require $file;
 
-    // Build proper JS structure for editor
     $availableComponents[$name] = [
-        'schema' => $component['schema'] ?? [],
-        'children' => $component['children'] ?? 'any',
+        'schema'           => $component['schema'] ?? [],
+        'children'         => $component['children'] ?? 'any',
         'allowed_children' => $component['allowed_children'] ?? [],
     ];
 }
 
-// Exclude site-header/footer
-$excluded = ['site-header','site-footer'];
+// ----------------------------
+// Exclude headers & footers from addable components
+// ----------------------------
+$excluded = array_merge(
+    array_keys($availableHeaders),
+    array_keys($availableFooters)
+);
+
 $availableComponents = array_filter(
     $availableComponents,
-    fn($c, $name) => !in_array($name, $excluded),
+    fn ($c, $name) => !in_array($name, $excluded, true),
     ARRAY_FILTER_USE_BOTH
 );
+
 ksort($availableComponents);
 
 // ----------------------------
@@ -75,6 +92,45 @@ ob_start();
         </label>
     </fieldset>
 
+    <!-- Layout and Theme -->
+    <fieldset>
+        <legend>Layout & Theme</legend>
+
+        <label>
+            Layout:
+            <select name="layout">
+                <?php foreach ($availableLayouts as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageLayout ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label>
+            Header:
+            <select name="header">
+                <?php foreach ($availableHeaders as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageHeader ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label>
+            Footer:
+            <select name="footer">
+                <?php foreach ($availableFooters as $val => $label): ?>
+                    <option value="<?= e($val) ?>" <?= $val === $pageFooter ? 'selected' : '' ?>>
+                        <?= e($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+    </fieldset>
+
     <!-- Components -->
     <div id="components-container"></div>
 
@@ -93,6 +149,7 @@ ob_start();
 
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
+window.initialComponents   = <?= json_encode($components) ?>;
 </script>
 <?php include __DIR__ . '/partials/page-editor-templates.php'; ?>
 <script type="module" src="<?= url('core/admin/assets/page-editor.js') ?>"></script>

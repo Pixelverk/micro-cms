@@ -8,46 +8,60 @@ if (!$slug) {
     redirect_with_toast('page-list', 'error', 'Save - Missing page slug.');
 }
 
-// Sanitize slug
 $slug = sanitize_slug($slug);
 if (!$slug) {
     redirect_with_toast('page-list', 'error', 'Invalid page slug.');
 }
 
 // ----------------------------
-// Load existing page JSON, or start fresh if creating a new page
-$pageData = load_page($slug);
-if (!$pageData) {
-    $pageData = [
-        'title' => $_POST['title'] ?? 'New Page',
-        'meta' => ['description' => $_POST['meta_description'] ?? ''],
-        'layout' => [
-            'header' => [
-                ['type' => 'site-header']
-            ],
-            'footer' => [
-                ['type' => 'site-footer']
-            ]
-        ],
-        'components' => []
-    ];
+// Load existing page JSON or create new
+// ----------------------------
+$pageData = load_page($slug) ?: [];
+
+// ----------------------------
+// Update basic fields
+// ----------------------------
+$pageData['title'] = trim($_POST['title'] ?? $pageData['title'] ?? 'New Page');
+$pageData['meta']['description'] = trim(
+    $_POST['meta_description'] ?? $pageData['meta']['description'] ?? ''
+);
+
+// ----------------------------
+// Layout / header / footer
+// ----------------------------
+$layout = $_POST['layout'] ?? null;
+$header = $_POST['header'] ?? null;
+$footer = $_POST['footer'] ?? null;
+
+// Only save if explicitly set (otherwise let defaults apply)
+if ($layout !== null && $layout !== '') {
+    $pageData['layout'] = $layout;
+} else {
+    unset($pageData['layout']);
+}
+
+if ($header !== null && $header !== '') {
+    $pageData['header'] = $header;
+} else {
+    unset($pageData['header']);
+}
+
+if ($footer !== null && $footer !== '') {
+    $pageData['footer'] = $footer;
+} else {
+    unset($pageData['footer']);
 }
 
 // ----------------------------
-// Update main fields
-$pageData['title'] = $_POST['title'] ?? $pageData['title'];
-$pageData['meta']['description'] = $_POST['meta_description'] ?? $pageData['meta']['description'];
-
-// Keep layout (even for new pages)
-$pageData['layout']['header'] = $pageData['layout']['header'] ?? [];
-$pageData['layout']['footer'] = $pageData['layout']['footer'] ?? [];
-
-// ----------------------------
 // Rebuild nested components from POST
+// ----------------------------
 $postedComponents = $_POST['components'] ?? [];
-$postedComponents = array_filter($postedComponents, fn($c) => !empty($c['type']));
+$postedComponents = array_filter(
+    $postedComponents,
+    fn ($c) => !empty($c['type'])
+);
 
-function setNestedComponent(array &$tree, array $parts, array $comp) {
+function setNestedComponent(array &$tree, array $parts, array $comp): void {
     $index = array_shift($parts);
 
     if (!isset($tree[$index])) {
@@ -56,17 +70,14 @@ function setNestedComponent(array &$tree, array $parts, array $comp) {
 
     if (count($parts) === 0) {
         $tree[$index] = [
-            'type' => $comp['type'] ?? '',
-            'props' => $comp['props'] ?? [],
-            'children' => []
+            'type'     => $comp['type'],
+            'props'    => $comp['props'] ?? [],
+            'children' => [],
         ];
         return;
     }
 
-    if (!isset($tree[$index]['children'])) {
-        $tree[$index]['children'] = [];
-    }
-
+    $tree[$index]['children'] ??= [];
     setNestedComponent($tree[$index]['children'], $parts, $comp);
 }
 
@@ -76,14 +87,14 @@ foreach ($postedComponents as $path => $comp) {
     setNestedComponent($componentsTree, $parts, $comp);
 }
 
-// Reindex arrays recursively
+// Reindex recursively
 function reindexRecursive(array $array): array {
     $result = [];
-    foreach ($array as $v) {
-        if (isset($v['children'])) {
-            $v['children'] = reindexRecursive($v['children']);
+    foreach ($array as $item) {
+        if (isset($item['children'])) {
+            $item['children'] = reindexRecursive($item['children']);
         }
-        $result[] = $v;
+        $result[] = $item;
     }
     return $result;
 }
@@ -91,20 +102,21 @@ function reindexRecursive(array $array): array {
 $pageData['components'] = reindexRecursive($componentsTree);
 
 // ----------------------------
-// Save JSON page (will create new file if necessary)
+// Save page JSON
+// ----------------------------
 if (!save_page($slug, $pageData)) {
     redirect_with_toast('page-list', 'error', 'Failed to save page.');
 }
 
 // ----------------------------
-// Success toast
+// Success
 // ----------------------------
 redirect_with_toast(
     'page-edit',
-    'success', 
+    'success',
     'Page saved successfully!',
     [
         'slug'  => $slug,
-        'saved' => 1
+        'saved' => 1,
     ]
 );

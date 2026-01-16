@@ -37,6 +37,23 @@ function theme(string $path = ''): string
     return $path ? $base . '/' . ltrim($path, '/') : $base;
 }
 
+function theme_config(): array
+{
+    $themeFile = theme('theme.php');
+
+    if (!file_exists($themeFile)) {
+        throw new RuntimeException("Theme config not found at {$themeFile}");
+    }
+
+    $config = require $themeFile;
+
+    if (!is_array($config)) {
+        throw new RuntimeException("Theme config at {$themeFile} must return an array");
+    }
+
+    return $config;
+}
+
 /*
 |--------------------------------------------------------------------------
 | HTML Escaping
@@ -138,26 +155,4 @@ function asset(string $path): string
 function img(string $path): string
 {
     return url("theme/assets/img/" . ltrim($path, '/'));
-}
-
-/**
- * Returns the /theme/theme.php config file
- */
-function theme_config(): array
-{
-    static $theme;
-
-    if ($theme !== null) {
-        return $theme;
-    }
-
-    $file = CMS_PATH . '/theme/theme.php';
-
-    if (!file_exists($file)) {
-        throw new RuntimeException('theme.php not found');
-    }
-
-    $theme = require $file;
-
-    return is_array($theme) ? $theme : [];
 }

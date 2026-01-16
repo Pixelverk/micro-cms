@@ -8,17 +8,22 @@ declare(strict_types=1);
 |
 | Variables available:
 | - $page (array)
+| - $headerComponent
+| - $footerComponent
 | - &$collectedJs
 | - &$collectedCss
 |
 */
 
-?>
+// Render header
+component($headerComponent, [], $collectedJs, $collectedCss);
 
-<?php render_components($page['layout']['header'] ?? [], $collectedJs, $collectedCss); ?>
+// Render page components
+if (!empty($page['components'])) {
+    echo('<main>');
+    render_components($page['components'], $collectedJs, $collectedCss);
+    echo('</main>');
+}
 
-<main>
-    <?php render_components($page['components'] ?? [], $collectedJs, $collectedCss); ?>
-</main>
-
-<?php render_components($page['layout']['footer'] ?? [], $collectedJs, $collectedCss); ?>
+// Render footer
+component($footerComponent, [], $collectedJs, $collectedCss);

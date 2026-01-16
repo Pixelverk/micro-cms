@@ -13,8 +13,6 @@ declare(strict_types=1);
 |
 */
 
-?>
-
-<main>
-    <?php render_components($page['components'] ?? [], $collectedJs, $collectedCss); ?>
-</main>
+echo('<main>');
+render_components($page['components'], $collectedJs, $collectedCss);
+echo('</main>');
