@@ -73,7 +73,7 @@ function render_page(array $page): array
 */
 function render_layout(string $layout, array $page, array &$collectedJs = [], array &$collectedCss = []): void
 {
-    $layoutFile = theme("components/layout/{$layout}.php");
+    $layoutFile = theme("layout/{$layout}.php");
 
     if (!file_exists($layoutFile)) {
         throw new RuntimeException("Layout not found: {$layout}");
