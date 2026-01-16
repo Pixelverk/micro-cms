@@ -1,5 +1,5 @@
 <?php
-// config/manifest for the theme, declase assets here.
+// config / manifest for the theme, declare assets here.
 
 return [
 
