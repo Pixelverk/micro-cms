@@ -66,6 +66,12 @@ $settingFields = [
         'options' => $availableFooters,
         'default' => $settings['default_footer'] ?? $theme['defaults']['footer'],
     ],
+    'contact_email' => [
+    'type'    => 'text',
+    'label'   => 'Contact form email',
+    'help'    => 'Messages from contact forms will be sent to this address.',
+    'default' => '',
+    ],
 ];
 
 // Add content type prefix fields dynamically
@@ -92,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Allow empty for prefixes
             if (!str_starts_with($key, 'prefix_')) {
                 redirect_with_toast('site-settings', 'error', "{$meta['label']} cannot be empty.");
+            }
+        }
+
+        if ($key === 'contact_email' && $value !== '') {
+            if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                redirect_with_toast('settings', 'error', 'Invalid contact email address.');
             }
         }
 

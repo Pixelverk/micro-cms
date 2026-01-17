@@ -9,5 +9,6 @@
         "page": "",
         "blog_post": "blawg",
         "portfolio_item": "portfolio"
-    }
+    },
+    "contact_email": "test-admin@domain.com"
 }

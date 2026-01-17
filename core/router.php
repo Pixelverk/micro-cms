@@ -13,6 +13,13 @@ declare(strict_types=1);
 function route_request(): array
 {
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
+
+    // Contact form post endpoint
+    if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        require CORE_PATH . '/contact.php';
+        exit;
+    }
+
     $slug = $path === '' ? 'home' : $path;
 
     // No bad stuff in slug
