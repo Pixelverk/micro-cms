@@ -1,9 +1,14 @@
 <?php include __DIR__ . '/head.php'; ?>
 <?php include __DIR__ . '/header.php'; ?>
 
-<main>
-    <?= $content ?? '' ?>
-</main>
+<div class="admin-layout">
+    <aside>
+        <?php include __DIR__ . '/sidebar.php'; ?>
+    </aside>
+    <main>
+        <?= $content ?? '' ?>
+    </main>
+</div>
 
 <?php include __DIR__ . '/help.php'; ?>
 <?php include __DIR__ . '/toasts.php'; ?>

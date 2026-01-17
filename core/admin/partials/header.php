@@ -1,5 +1,5 @@
 <header>
-    <h1><a href="<?= url('admin')?>">Micro CMS - <?= $pageTitle ?></a></h1>
+    <h1><a href="<?= url('admin/dashboard')?>">Micro CMS - <?= $pageTitle ?></a></h1>
     <nav>
         <a href="<?= url('admin/dashboard/')?>">Dashboard</a>
         <a href="<?= url('admin/content-list/')?>">Content</a>

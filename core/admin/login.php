@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (login($username, $password)) {
-        redirect('');
+        redirect_with_toast('dashboard', 'success', 'Login success');
         exit;
     } else {
         $error = 'Invalid username or password.';
@@ -81,5 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </main>
+<?php include __DIR__ . '/partials/toasts.php'; ?>
 </body>
 </html>
