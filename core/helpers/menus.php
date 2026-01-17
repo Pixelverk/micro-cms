@@ -8,11 +8,11 @@ function list_menus(): array
 {
     $pages = [];
 
-    if (!is_dir(PAGES_PATH)) {
+    if (!is_dir(CONTENT_PATH)) {
         return $pages;
     }
 
-    $files = scandir(PAGES_PATH);
+    $files = scandir(CONTENT_PATH);
 
     foreach ($files as $file) {
         if ($file === '.' || $file === '..') {
@@ -24,7 +24,7 @@ function list_menus(): array
             continue;
         }
 
-        $pageFile = PAGES_PATH . '/' . $file;
+        $pageFile = CONTENT_PATH . '/' . $file;
         $slug = pathinfo($file, PATHINFO_FILENAME);
 
         $json = file_get_contents($pageFile);

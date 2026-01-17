@@ -11,7 +11,7 @@ function bootstrap(string $mode): void
     define('CMS_PATH', dirname(__DIR__, 2));
     define('CORE_PATH', CMS_PATH . '/core');
     define('STORAGE_PATH', CMS_PATH . '/storage');
-    define('PAGES_PATH', STORAGE_PATH . '/pages');
+    define('CONTENT_PATH', STORAGE_PATH . '/content');
     define('MENUS_FILE', STORAGE_PATH . '/menus.json');
     define('USER_FILE', STORAGE_PATH . '/users.json');
     define('SETTINGS_FILE', STORAGE_PATH . '/settings.json');
@@ -49,7 +49,7 @@ function bootstrap(string $mode): void
     */
     require CORE_PATH . '/helpers/common.php';
     require CORE_PATH . '/helpers/cache.php';
-    require CORE_PATH . '/helpers/pages.php';
+    require CORE_PATH . '/helpers/content.php';
     require CORE_PATH . '/helpers/menus.php';
     require CORE_PATH . '/helpers/settings.php';
 

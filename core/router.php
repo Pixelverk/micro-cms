@@ -5,66 +5,49 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | Route Request → Page (front-end)
 |--------------------------------------------------------------------------
-| Returns a $page array ready for render_page()
-|--------------------------------------------------------------------------
 */
+
+/**
+ * Determine which content to serve based on the URL
+ */
 function route_request(): array
 {
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-    $path = trim($path, '/');
-
-    // Normalize slug
+    $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
     $slug = $path === '' ? 'home' : $path;
 
-    // Security: only allow safe slugs
     if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
         return load_fallback_404();
     }
 
-    // Try exact page
-    $page = load_page_by_slug($slug);
-    if ($page) {
-        return $page;
-    }
+    $item = load_content_by_slug($slug); // pass full slug
+    if ($item) return $item;
 
-    // Fallback to 404 page
     return load_fallback_404();
-}
-
-function load_page_by_slug(string $slug): ?array
-{
-    $file = STORAGE_PATH . "/pages/{$slug}.json";
-
-    if (!is_file($file)) {
-        return null;
-    }
-
-    return load_page_from_json($file, $slug);
 }
 
 function load_fallback_404(): array
 {
     http_response_code(404);
 
-    $page = load_page_by_slug('404');
+    $page = load_content_by_slug('404');
 
-    // Absolute last-resort fallback (should never happen)
     if (!$page) {
+        $theme = theme_config();
+        $settings = load_settings();
+
         return [
             'id'         => null,
             'type'       => 'page',
             'slug'       => '404',
             'status'     => '404',
             'title'      => 'Page Not Found',
-            'layout'     => config('defaults.layout'),
+            'layout'     => $settings['default_layout'] ?? $theme['defaults']['layout'] ?? 'default',
             'components' => [],
             'updated_at' => time(),
         ];
     }
 
-    // Force 404 status even if editor forgot
     $page['status'] = '404';
-
     return $page;
 }
 

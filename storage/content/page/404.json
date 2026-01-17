@@ -1,5 +1,6 @@
 {
     "is404": true,
+    "type": "page",
     "title": "404",
     "meta": {
         "description": "The page you are looking for could not be found."

@@ -14,57 +14,76 @@ function db(): PDO
     return $pdo;
 }
 
-/*
-|--------------------------------------------------------------------------
-| JSON Page Loader
-|--------------------------------------------------------------------------
-*/
-function load_page_from_json(string $pageFile, string $slug): array
+/**
+ * Load a content item (page, blog post, etc.) as associative array from JSON
+ */
+function load_content_from_file(string $file, string $type, string $slug): array
 {
-    if (!file_exists($pageFile)) {
-        return not_found_page();
-    }
+    $json = file_get_contents($file);
+    $data = json_decode($json, true);
 
-    $json = file_get_contents($pageFile);
-    $pageData = json_decode($json, true);
-
-    if (!is_array($pageData)) {
-        throw new RuntimeException("Invalid JSON in {$pageFile}");
+    if (!is_array($data)) {
+        throw new RuntimeException("Invalid JSON in {$file}");
     }
 
     $theme = theme_config();
     $settings = load_settings();
+    $ctConfig = $theme['content_types'][$type] ?? [];
 
-    // --- Normalize layout/header/footer as strings ---
-    $pageData['layout'] = $pageData['layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'];
-    $pageData['header'] = $pageData['header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
-    $pageData['footer'] = $pageData['footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
+    $data['type']   = $type;
+    $data['slug']   = $slug;
 
-    $pageData['status'] = !empty($pageData['is404']) ? '404' : '200';
+    $data['layout'] = $data['layout'] ?? $ctConfig['default_layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'];
+    $data['header'] = $data['header'] ?? $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
+    $data['footer'] = $data['footer'] ?? $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
 
-    return $pageData;
+    $data['status'] = '200';
+
+    return $data;
 }
 
-/* example JSON storage helpers I don't even use yet, might make them work in the future?
-function load_data(string $file): array {
-    if (!file_exists($file)) return [];
-    $json = file_get_contents($file);
-    return json_decode($json, true) ?: [];
+function load_content_by_slug(string $slug): ?array
+{
+    $theme = theme_config();
+    $settings = load_settings();
+
+    $contentTypes = array_keys($theme['content_types'] ?? []);
+    $prefixes = $settings['content_prefixes'] ?? [];
+
+    foreach ($contentTypes as $type) {
+        $prefix = $prefixes[$type] ?? '';
+
+        if ($prefix) {
+            // Skip this type if the slug does not start with the prefix
+            if (!str_starts_with($slug, $prefix . '/')) {
+                continue;
+            }
+            $relativeSlug = substr($slug, strlen($prefix) + 1);
+        } else {
+            $relativeSlug = $slug;
+        }
+
+        $file = STORAGE_PATH . "/content/{$type}/{$relativeSlug}.json";
+
+        if (is_file($file)) {
+            return load_content_from_file($file, $type, $relativeSlug);
+        }
+    }
+
+    return null;
 }
 
-function save_data(string $file, array $data): void {
-    $temp = $file . '.tmp';
-    file_put_contents($temp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-    rename($temp, $file);
+/**
+ * Returns a default not-found structure for content type
+ */
+function not_found_content(string $type, string $slug): array
+{
+    return [
+        'title'   => 'Not Found',
+        'slug'    => $slug,
+        'type'    => $type,
+        'status'  => '404',
+        'components' => [],
+        'meta'    => [],
+    ];
 }
-
-function get_item(string $file, string $key, $default = null) {
-    $data = load_data($file);
-    return $data[$key] ?? $default;
-}
-
-function set_item(string $file, string $key, $value): void {
-    $data = load_data($file);
-    $data[$key] = $value;
-    save_data($file, $data);
-} */

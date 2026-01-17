@@ -12,10 +12,10 @@ declare(strict_types=1);
 |
 */
 
-function invalidate_cache(string $path = ''): void
+function invalidate_cache(string $path = '', string $type = ''): void
 {
     // If path is empty, delete all cache files
-    if ($path === '') {
+    if ($path === '/') {
         $files = glob(STORAGE_PATH . '/cache/*.html');
         if ($files) {
             foreach ($files as $file) {
@@ -25,8 +25,14 @@ function invalidate_cache(string $path = ''): void
         return;
     }
 
+    // check for prefix
+    $settings = load_settings();
+    $prefixes = $settings['content_prefixes'] ?? [];
+    $prefix = $prefixes[$type] ?? '';
+    $cachePath = $prefix ? "{$prefix}/{$path}" : $path;
+
     // Sanitize path into cache filename
-    $key = trim($path, '/') ?: 'home';
+    $key = trim($cachePath, '/') ?: 'home';
     $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
 
     if (file_exists($cacheFile)) {

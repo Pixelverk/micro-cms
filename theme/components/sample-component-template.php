@@ -8,7 +8,7 @@ return [
  * -------------------------------------------- */
 'schema' => [
     'title' => [
-        'type' => 'text', // type of input field, text, textarea, checkbox, color, etc. Available ones listed in page-editor-templates.php
+        'type' => 'text', // type of input field, text, textarea, checkbox, color, etc. Available ones listed in content-editor-templates.php
         'label' => 'Title',
         'default' => 'Default Title',
     ],

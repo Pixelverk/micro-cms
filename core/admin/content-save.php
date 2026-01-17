@@ -4,26 +4,29 @@
 // Get POST data
 // ----------------------------
 $slug = $_POST['slug'] ?? '';
+$contentType = $_POST['type'] ?? 'page'; // default to 'page'
+
 if (!$slug) {
-    redirect_with_toast('page-list', 'error', 'Save - Missing page slug.');
+    redirect_with_toast('content-list', 'error', "Save - Missing slug for {$contentType}.");
 }
 
 $slug = sanitize_slug($slug);
 if (!$slug) {
-    redirect_with_toast('page-list', 'error', 'Invalid page slug.');
+    redirect_with_toast('content-list', 'error', "Invalid slug for {$contentType}.");
 }
 
 // ----------------------------
-// Load existing page JSON or create new
+// Load existing content JSON or create new
 // ----------------------------
-$pageData = load_page($slug) ?: [];
+$contentData = load_content($contentType, $slug) ?: [];
 
 // ----------------------------
 // Update basic fields
 // ----------------------------
-$pageData['title'] = trim($_POST['title'] ?? $pageData['title'] ?? 'New Page');
-$pageData['meta']['description'] = trim(
-    $_POST['meta_description'] ?? $pageData['meta']['description'] ?? ''
+$contentData['type'] = $contentType;
+$contentData['title'] = trim($_POST['title'] ?? $contentData['title'] ?? "New {$contentType}");
+$contentData['meta']['description'] = trim(
+    $_POST['meta_description'] ?? $contentData['meta']['description'] ?? ''
 );
 
 // ----------------------------
@@ -33,23 +36,23 @@ $layout = $_POST['layout'] ?? null;
 $header = $_POST['header'] ?? null;
 $footer = $_POST['footer'] ?? null;
 
-// Only save if explicitly set (otherwise let defaults apply)
+// Only save if explicitly set
 if ($layout !== null && $layout !== '') {
-    $pageData['layout'] = $layout;
+    $contentData['layout'] = $layout;
 } else {
-    unset($pageData['layout']);
+    unset($contentData['layout']);
 }
 
 if ($header !== null && $header !== '') {
-    $pageData['header'] = $header;
+    $contentData['header'] = $header;
 } else {
-    unset($pageData['header']);
+    unset($contentData['header']);
 }
 
 if ($footer !== null && $footer !== '') {
-    $pageData['footer'] = $footer;
+    $contentData['footer'] = $footer;
 } else {
-    unset($pageData['footer']);
+    unset($contentData['footer']);
 }
 
 // ----------------------------
@@ -99,24 +102,25 @@ function reindexRecursive(array $array): array {
     return $result;
 }
 
-$pageData['components'] = reindexRecursive($componentsTree);
+$contentData['components'] = reindexRecursive($componentsTree);
 
 // ----------------------------
-// Save page JSON
+// Save content JSON
 // ----------------------------
-if (!save_page($slug, $pageData)) {
-    redirect_with_toast('page-list', 'error', 'Failed to save page.');
+if (!save_content($contentType, $slug, $contentData)) {
+    redirect_with_toast("content-list", 'error', "Failed to save {$contentType}.");
 }
 
 // ----------------------------
 // Success
 // ----------------------------
 redirect_with_toast(
-    'page-edit',
+    'content-edit',
     'success',
-    'Page saved successfully!',
+    ucfirst($contentType) . ' saved successfully!',
     [
         'slug'  => $slug,
+        'type'  => $contentType,
         'saved' => 1,
     ]
 );

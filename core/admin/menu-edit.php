@@ -10,7 +10,7 @@ $menuKey = $_GET['menu'] ?? '';
 $currentMenu = $menus[$menuKey] ?? ['label' => '', 'items' => []];
 
 // Load pages for left panel
-$pages = list_pages();
+$pages = list_content('page');
 
 // Render
 ob_start();

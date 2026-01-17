@@ -17,9 +17,9 @@ ob_start();
 
 <div class="cards">
     <div class="card">
-        <h2>Pages</h2>
-        <p>View, edit, add, or remove pages.</p>
-        <a href="<?= url('admin/page-list/') ?>">Manage pages →</a>
+        <h2>Content</h2>
+        <p>View, edit, add, or remove content.</p>
+        <a href="<?= url('admin/content-list/') ?>">Manage content →</a>
     </div>
 
     <div class="card">
@@ -56,7 +56,7 @@ ob_start();
 <h3>Dashboard page</h3>
 <p>This screen has links to the CMS features.</p>
 <ul>
-    <li>Click 'Manage pages' to manage your pages.</li>
+    <li>Click 'Manage content' to manage your content.</li>
     <li>Click 'Manage users' to manage your users.</li>
     <li>Click 'View site' to open the front-end site in a new tab.</li>
 </ul>

@@ -4,5 +4,10 @@
     "site_language": "en",
     "default_layout": "default",
     "default_header": "site-header",
-    "default_footer": "site-footer"
+    "default_footer": "site-footer",
+    "content_prefixes": {
+        "page": "",
+        "blog_post": "blawg",
+        "portfolio_item": "portfolio"
+    }
 }

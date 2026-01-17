@@ -80,25 +80,25 @@ nav a:hover {
     gap: 1rem;
 }
 
-.pages-table {
+.content-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
 }
 
-.pages-table th,
-.pages-table td {
+.content-table th,
+.content-table td {
     padding: 0.75rem 0;
     border-bottom: 1px solid #ddd;
     text-align: left;
 }
 
-.pages-table th {
+.content-table th {
     background: #f5f5f5;
     font-weight: bold;
 }
 
-.pages-table tr:hover {
+.content-table tr:hover {
     background: #fafafa;
 }
 

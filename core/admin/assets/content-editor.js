@@ -1,42 +1,47 @@
 // ----------------------------
-// Page Editor JS
+// Content Editor JS
 // ----------------------------
 
 const container = document.getElementById('components-container');
 const availableComponents = window.availableComponents || {};
 const initialComponents = window.initialComponents || [];
+const contentType = window.contentType || 'page'; // NEW: generic content type
 
-// component templates
+// Templates
 const componentTemplate = document.getElementById('component-template');
-const fieldTemplate = document.getElementById('field-template');       // default text input
-const textareaTemplate = document.getElementById('textarea-template'); // multi-line text
-const numberTemplate = document.getElementById('number-template');     // number input
-const colorTemplate = document.getElementById('color-template');       // color picker
-const checkboxTemplate = document.getElementById('checkbox-template'); // checkbox
-const urlTemplate = document.getElementById('url-template');           // URL input
-const emailTemplate = document.getElementById('email-template');       // email input
+const fieldTemplate = document.getElementById('field-template');
+const textareaTemplate = document.getElementById('textarea-template');
+const numberTemplate = document.getElementById('number-template');
+const colorTemplate = document.getElementById('color-template');
+const checkboxTemplate = document.getElementById('checkbox-template');
+const urlTemplate = document.getElementById('url-template');
+const emailTemplate = document.getElementById('email-template');
 
 // ----------------------------
-// Create a component from schema and optional data
+// Create a component from schema + data
 // ----------------------------
 function createComponent(type, data = {}) {
-    // Clone template
+    if (!availableComponents[type]) {
+        console.warn(`Unknown component type "${type}"`);
+        return document.createComment(`Unknown component: ${type}`);
+    }
+
     const node = componentTemplate.content.firstElementChild.cloneNode(true);
     node.dataset.type = type;
 
-    // Set title and hidden type input
     node.querySelector('.component-title').textContent = type;
+
     const typeInput = node.querySelector('.component-type');
     typeInput.value = type;
-    typeInput.name = `components[][type]`; // will be renumbered later
+    typeInput.name = `components[][type]`;
 
-    // ----------------------------
     // Fields
-    // ----------------------------
     const fieldsContainer = node.querySelector('.component-fields');
     const schema = availableComponents[type] || {};
     const fieldSchema = schema.schema || {};
     const props = data.props || {};
+
+
 
     for (const [name, field] of Object.entries(fieldSchema)) {
         const value = props[name] ?? field.default ?? '';
@@ -50,7 +55,7 @@ function createComponent(type, data = {}) {
             case 'checkbox': tpl = checkboxTemplate; break;
             case 'url': tpl = urlTemplate; break;
             case 'email': tpl = emailTemplate; break;
-            default: tpl = fieldTemplate; // string / default
+            default: tpl = fieldTemplate;
         }
 
         const fieldNode = tpl.content.firstElementChild.cloneNode(true);
@@ -60,40 +65,29 @@ function createComponent(type, data = {}) {
         if (fieldType === 'checkbox') input.checked = !!value;
         else input.value = value;
 
-        input.name = `components[][props][${name}]`; // renumbered later
+        input.name = `components[][props][${name}]`; // renumber later
         fieldsContainer.appendChild(fieldNode);
     }
 
-    // ----------------------------
-    // Children button and dropdown
-    // ----------------------------
+    // Children
     const noChildren = node.querySelector('#no-children');
     const addBtn = node.querySelector('.add-child-btn');
     const select = node.querySelector('.allowed-children-select');
 
-    const childrenSetting = schema.children || 'any'; // 'any', 'none', 'some'
+    const childrenSetting = schema.children || 'any';
     const allowedChildren = schema.allowed_children || [];
 
     if (childrenSetting !== 'none') {
-
         noChildren.style.display = 'none';
-
-        addBtn.disabled = true;      
+        addBtn.disabled = true;
 
         if (select) {
-
-            select.addEventListener('change', () => {
-                addBtn.disabled = !select.value;
-            });
-
+            select.addEventListener('change', () => { addBtn.disabled = !select.value; });
             select.innerHTML = '<option value="">-- Child Component --</option>';
 
             let childOptions = [];
-            if (childrenSetting === 'any') {
-                childOptions = Object.keys(availableComponents);
-            } else if (childrenSetting === 'some') {
-                childOptions = allowedChildren.filter(c => availableComponents[c]);
-            }
+            if (childrenSetting === 'any') childOptions = Object.keys(availableComponents);
+            else if (childrenSetting === 'some') childOptions = allowedChildren.filter(c => availableComponents[c]);
 
             childOptions.forEach(childType => {
                 const option = document.createElement('option');
@@ -103,16 +97,10 @@ function createComponent(type, data = {}) {
             });
         }
     } else {
-        //noChildren.style.display = 'block';
         addBtn.style.display = 'none';
         select.style.display = 'none';
     }
 
-
-
-    // ----------------------------
-    // Recursively create children
-    // ----------------------------
     const childrenContainer = node.querySelector('.children-container');
     if (Array.isArray(data.children)) {
         data.children.forEach(childData => {
@@ -127,45 +115,48 @@ function createComponent(type, data = {}) {
 // ----------------------------
 // Load initial components
 // ----------------------------
-initialComponents.forEach(data => {
-    const compNode = createComponent(data.type, data);
-    container.appendChild(compNode);
-});
+if (Array.isArray(initialComponents)) {
+    initialComponents.forEach(data => {
+        container.appendChild(createComponent(data.type, data));
+    });
+} else if (initialComponents && typeof initialComponents === 'object') {
+    Object.values(initialComponents).forEach(data => {
+        container.appendChild(createComponent(data.type, data));
+    });
+}
+
 renumberComponents();
 
 // ----------------------------
-// Top-level Add Component
+// Add top-level component
 // ----------------------------
-document.getElementById('add-component').addEventListener('click', () => {
-    const type = document.getElementById('new-component-select').value;
-    if (!type || !availableComponents[type]) return;
+const addBtn = document.getElementById('add-component');
+const select = document.getElementById('new-component-select');
 
-    const comp = createComponent(type);
-    container.appendChild(comp);
-    renumberComponents();
-});
+if (addBtn && select) {
+    addBtn.addEventListener('click', () => {
+        const type = select.value;
+        if (!type || !availableComponents[type]) return;
+
+        container.appendChild(createComponent(type));
+        renumberComponents();
+    });
+}
 
 // ----------------------------
-// Event delegation: remove, add-child, move, duplicate
+// Event delegation (remove, add-child, move, duplicate)
 // ----------------------------
 container.addEventListener('click', e => {
     const comp = e.target.closest('.component');
     if (!comp) return;
 
-    // Remove component (with confirmation)
+    // Remove
     if (e.target.classList.contains('remove-btn')) {
-        const comp = e.target.closest('.component');
         const type = comp.dataset.type;
-
         const hasChildren = comp.querySelector('.children-container')?.children.length > 0;
-
         let message = `Remove "${type}" component?`;
-        if (hasChildren) {
-            message += `\n\nThis will also remove all child components.`;
-        }
-
+        if (hasChildren) message += '\n\nThis will also remove all child components.';
         if (!confirm(message)) return;
-
         comp.remove();
         renumberComponents();
         return;
@@ -179,21 +170,12 @@ container.addEventListener('click', e => {
         const select = controls.querySelector('.allowed-children-select');
 
         const type = select.value;
+        if (!type || !availableComponents[type]) { alert('Please select a valid child component'); return; }
 
-        if (!type || !availableComponents[type]) {
-            alert('Please select a valid child component');
-            return;
-        }
-
-        const child = createComponent(type);
-        childrenContainer.appendChild(child);
-
+        childrenContainer.appendChild(createComponent(type));
         renumberComponents();
-
-        // reset UI
         select.value = '';
     }
-
 
     // Move up
     if (e.target.classList.contains('move-up')) {
@@ -219,30 +201,23 @@ container.addEventListener('click', e => {
 });
 
 // ----------------------------
-// Duplicate Component
+// Duplicate
 // ----------------------------
-function extractComponentData(componentEl) {
-    const type = componentEl.dataset.type;
+function extractComponentData(compEl) {
+    const type = compEl.dataset.type;
     const props = {};
     const children = [];
 
-    // Extract props from inputs & textareas
-    componentEl.querySelectorAll('input[name], textarea[name]').forEach(input => {
+    compEl.querySelectorAll('input[name], textarea[name]').forEach(input => {
         const nameMatch = input.name.match(/\[([^\]]+)\]$/);
         if (!nameMatch) return;
         const propName = nameMatch[1];
-
-        if (input.type === 'checkbox') {
-            props[propName] = input.checked;
-        } else if (input.type === 'number') {
-            props[propName] = input.value !== '' ? parseFloat(input.value) : '';
-        } else {
-            props[propName] = input.value;
-        }
+        if (input.type === 'checkbox') props[propName] = input.checked;
+        else if (input.type === 'number') props[propName] = input.value !== '' ? parseFloat(input.value) : '';
+        else props[propName] = input.value;
     });
 
-    // Recursively extract children
-    const childrenContainer = componentEl.querySelector('.children-container');
+    const childrenContainer = compEl.querySelector('.children-container');
     if (childrenContainer) {
         childrenContainer.querySelectorAll(':scope > .component').forEach(child => {
             children.push(extractComponentData(child));
@@ -252,31 +227,26 @@ function extractComponentData(componentEl) {
     return { type, props, children };
 }
 
-function duplicateComponent(componentEl) {
-    const data = extractComponentData(componentEl);
+function duplicateComponent(compEl) {
+    const data = extractComponentData(compEl);
     const clone = createComponent(data.type, data);
-    componentEl.after(clone);
+    compEl.after(clone);
     renumberComponents();
 }
 
 // ----------------------------
-// Renumber components for form POST
+// Renumber
 // ----------------------------
-function renumberComponents() {
-    renumberContainer(container, '');
-}
+function renumberComponents() { renumberContainer(container, ''); }
 
-function renumberContainer(parentContainer, prefix) {
-    const components = parentContainer.querySelectorAll(':scope > .component');
-    components.forEach((comp, i) => {
+function renumberContainer(parent, prefix) {
+    parent.querySelectorAll(':scope > .component').forEach((comp, i) => {
         const path = prefix === '' ? String(i) : `${prefix}-${i}`;
         comp.dataset.path = path;
 
-        // Hidden type input
         const typeInput = comp.querySelector('.component-type');
         if (typeInput) typeInput.name = `components[${path}][type]`;
 
-        // Fields
         comp.querySelectorAll('.field-input').forEach(input => {
             const nameMatch = input.name.match(/\[([^\]]+)\]$/);
             if (!nameMatch) return;
@@ -284,11 +254,8 @@ function renumberContainer(parentContainer, prefix) {
             input.name = `components[${path}][props][${propName}]`;
         });
 
-        // Recurse children
         const childrenContainer = comp.querySelector('.children-container');
-        if (childrenContainer) {
-            renumberContainer(childrenContainer, path);
-        }
+        if (childrenContainer) renumberContainer(childrenContainer, path);
     });
 }
 
@@ -304,9 +271,23 @@ function slugify(value) {
 }
 
 const titleInput = document.getElementById('title');
-const slugInput = document.getElementById('slug');
-let slugTouched = false;
+const slugInput  = document.getElementById('slug');
 
-slugInput.addEventListener('change', () => { slugTouched = true; slugInput.value = slugify(slugInput.value); });
-if (titleInput.value != slugInput.value && slugInput.value != '') slugTouched = true;
-titleInput.addEventListener('input', () => { if (!slugTouched) slugInput.value = slugify(titleInput.value); });
+if (titleInput && slugInput) {
+    let slugTouched = false;
+
+    slugInput.addEventListener('change', () => {
+        slugTouched = true;
+        slugInput.value = slugify(slugInput.value);
+    });
+
+    if (titleInput.value !== slugInput.value && slugInput.value !== '') {
+        slugTouched = true;
+    }
+
+    titleInput.addEventListener('input', () => {
+        if (!slugTouched) {
+            slugInput.value = slugify(titleInput.value);
+        }
+    });
+}

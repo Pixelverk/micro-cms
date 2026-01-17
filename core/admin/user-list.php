@@ -20,7 +20,7 @@ ob_start();
 <?php if (empty($users)): ?>
     <p>No users found.</p>
 <?php else: ?>
-    <table class="pages-table">
+    <table class="content-table">
         <thead>
             <tr>
                 <th>Username</th>

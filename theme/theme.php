@@ -30,13 +30,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Layout / Header / Footer (user may override in site settings)
+    | Available Content Types
     |------------------------------------------------------------ --------------
     */
-    'defaults' => [
-        'layout' => 'default',        // layout file in /theme/layouts/
-        'header' => 'site-header',    // component name for top of page
-        'footer' => 'site-footer',    // component name for bottom of page
+    'content_types' => [
+        'page' => [
+            'label' => 'Page',
+            'default_layout' => 'default',
+            'default_header' => 'site-header',
+            'default_footer' => 'site-footer',
+            'available_components' => [
+                'hero-section',
+                'features-section',
+                'feature-card',
+                'cta-section',
+            ],
+            'url_prefix' => '',
+        ],
+        'blog_post' => [
+            'label' => 'Blog Post',
+            'default_layout' => 'blog',
+            'default_header' => 'blog-header',
+            'default_footer' => 'blog-footer',
+            'available_components' => [
+                'hero-section',
+                'features-section',
+                'feature-card',
+                'cta-section',
+            ],
+            'url_prefix' => 'blog',
+        ],
+        'portfolio_item' => [
+            'label' => 'Portfolio Item',
+            'default_layout' => 'portfolio',
+            'default_header' => 'portfolio-header',
+            'default_footer' => 'portfolio-footer',
+            'available_components' => [
+                'hero-section',
+                'features-section',
+                'feature-card',
+                'cta-section',
+            ],
+            'url_prefix' => 'portfolio',
+        ],
     ],
 
     /*

@@ -1,0 +1,21 @@
+{
+    "type": "blog_post",
+    "title": "Awesome article",
+    "meta": {
+        "description": "this is meta"
+    },
+    "layout": "default",
+    "header": "site-header",
+    "footer": "site-footer",
+    "components": [
+        {
+            "type": "hero-section",
+            "props": {
+                "title": "THis is blog post",
+                "subtitle": "Default Text",
+                "image": "placeholder.png"
+            },
+            "children": []
+        }
+    ]
+}

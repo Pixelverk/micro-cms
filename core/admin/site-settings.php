@@ -8,7 +8,7 @@ $username = $_SESSION['user_id'] ?? 'User';
 // Load current settings
 // ----------------------------
 $settings = load_settings();
-$pages    = list_pages();
+$pages    = list_content('page');
 
 // ----------------------------
 // Load theme config for layouts, headers, footers
@@ -68,27 +68,51 @@ $settingFields = [
     ],
 ];
 
+// Add content type prefix fields dynamically
+foreach ($theme['content_types'] ?? [] as $type => $config) {
+    $label = $config['label'] ?? ucfirst($type);
+    $settingFields["prefix_$type"] = [
+        'type'    => 'text',
+        'label'   => "$label URL Prefix",
+        'help'    => "Optional URL prefix for $label (e.g., 'blog' → /blog/slug). Leave blank for root-level.",
+        'default' => $settings['content_prefixes'][$type] ?? $config['url_prefix'] ?? '',
+    ];
+}
+
 // ----------------------------
 // Handle save
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $newPrefixes = [];
+
     foreach ($settingFields as $key => $meta) {
         $value = $_POST[$key] ?? null;
 
-        // Validate text fields
         if ($meta['type'] === 'text' && trim($value) === '') {
-            redirect_with_toast('settings', 'error', "{$meta['label']} cannot be empty.");
+            // Allow empty for prefixes
+            if (!str_starts_with($key, 'prefix_')) {
+                redirect_with_toast('site-settings', 'error', "{$meta['label']} cannot be empty.");
+            }
         }
 
-        // Validate select fields
         if ($meta['type'] === 'select' && !array_key_exists($value, $meta['options'])) {
-            redirect_with_toast('settings', 'error', "Invalid selection for {$meta['label']}.");
+            redirect_with_toast('site-settings', 'error', "Invalid selection for {$meta['label']}.");
         }
 
-        set_setting($key, $value);
+        // Save prefix values separately
+        if (str_starts_with($key, 'prefix_')) {
+            $type = substr($key, strlen('prefix_'));
+            $newPrefixes[$type] = trim($value);
+        } else {
+            set_setting($key, $value);
+        }
     }
 
-    redirect_with_toast('settings', 'success', 'Settings saved successfully.');
+    if ($newPrefixes) {
+        set_setting('content_prefixes', $newPrefixes);
+    }
+
+    redirect_with_toast('site-settings', 'success', 'Settings saved successfully.');
 }
 
 // ----------------------------
@@ -118,7 +142,6 @@ ob_start();
                         type="text"
                         name="<?= e($key) ?>"
                         value="<?= e($settings[$key] ?? $meta['default'] ?? '') ?>"
-                        required
                     >
                     <?php if (!empty($meta['help'])): ?>
                         <small><?= e($meta['help']) ?></small>
