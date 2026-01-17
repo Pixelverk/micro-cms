@@ -125,6 +125,7 @@ Access the editor at `/admin/` to manage content and users.
 ### Phase 5 – Refactor & Optimization
 
 * Refactor codebase for maintainability and performance
+* Figure out security and things like CSRF, form honeypot / captcha
 
 ### Future Ideas
 

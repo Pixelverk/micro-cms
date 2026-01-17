@@ -96,6 +96,13 @@ return [
 .contact-form .message.error {
     color: #c62828;
 }
+.contact-form .special-field {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    height: 0;
+    overflow: hidden;
+}
 CSS,
 
 /** --------------------------------------------
@@ -163,6 +170,12 @@ JS,
             data-success="<?= e($success_message) ?>"
             data-error="<?= e($error_message) ?>"
         >
+
+            <label class="special-field">
+                Company
+                <input type="text" name="company" tabindex="-1" autocomplete="off">
+            </label>
+
             <label>
                 Name
                 <input type="text" name="name" required>

@@ -9,6 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Honeypot check
+if (!empty($_POST['company'])) {
+    // Pretend success to confuse bots
+    http_response_code(200);
+    exit;
+}
+
 $settings = load_settings();
 $to = $settings['contact_email'] ?? '';
 
