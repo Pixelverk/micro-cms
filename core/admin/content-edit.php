@@ -45,6 +45,7 @@ if ($isEdit) {
 // Content values
 // ----------------------------
 $title           = $contentData['title'] ?? '';
+$status          = $contentData['status'] ?? 'draft';
 $metaDescription = $contentData['meta']['description'] ?? '';
 $components      = $contentData['components'] ?? [];
 
@@ -161,6 +162,13 @@ ob_start();
         <label>
             Meta Description:
             <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
+        </label>
+        <label>
+            Status:
+            <select name="status">
+                <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
+                <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
+            </select>
         </label>
     </fieldset>
 

@@ -20,6 +20,17 @@ if (!$slug) {
 // ----------------------------
 $contentData = load_content($contentType, $slug) ?: [];
 
+// status
+$contentData['status'] = $_POST['status'] ?? 'published';
+
+// current updated_at time
+$currentTime = time();
+$contentData['updated_at'] = $currentTime;
+// if no created_at time, set it
+if (!$contentData['created_at']) {
+    $contentData['created_at'] = $currentTime;
+}
+
 // ----------------------------
 // Update basic fields
 // ----------------------------

@@ -117,7 +117,7 @@ Access the editor at `/admin/` to manage pages and users.
 
 * Working contact form
 * Image uploads / media manager
-* Sitemap generator (XML)
+* Sitemap generator (XML) ✅
 * Optional SEO enhancements (meta, OpenGraph, etc.)
 * Caching .html for speedy speeds ✅
 * Minify rendered output if 'env' = 'production' ✅

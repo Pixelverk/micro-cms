@@ -102,8 +102,10 @@ function save_content(string $type, string $slug, array $data): bool
     if ($json === false) {
         return false; // encoding failed
     }
-
+    
+    $result = file_put_contents($path, $json, LOCK_EX) !== false;
+    save_sitemap();
     invalidate_cache($slug, $type);
-
-    return file_put_contents($path, $json, LOCK_EX) !== false;
+    
+    return $result;
 }

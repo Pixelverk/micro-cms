@@ -56,6 +56,7 @@ if (!unlink($path)) {
 // Success
 // ----------------------------
 invalidate_cache($slug, $type);
+save_sitemap();
 
 redirect_with_toast(
     'content-list',

@@ -15,13 +15,16 @@ function route_request(): array
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
     $slug = $path === '' ? 'home' : $path;
 
+    // No bad stuff in slug
     if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
         return load_fallback_404();
     }
 
-    $item = load_content_by_slug($slug); // pass full slug
+    // go get the content
+    $item = load_content_by_slug($slug);
     if ($item) return $item;
 
+    // whoops, not found
     return load_fallback_404();
 }
 

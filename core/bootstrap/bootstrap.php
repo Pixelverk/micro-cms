@@ -52,6 +52,7 @@ function bootstrap(string $mode): void
     require CORE_PATH . '/helpers/content.php';
     require CORE_PATH . '/helpers/menus.php';
     require CORE_PATH . '/helpers/settings.php';
+    require CORE_PATH . '/helpers/sitemap.php';
 
     /*
     |--------------------------------------------------------------------------
