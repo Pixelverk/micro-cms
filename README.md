@@ -13,8 +13,8 @@ The goal is to have a good user experience, for both developers and editors, wit
 * `theme/components/` – Custom PHP components for your pages
 * `theme/assets/` – Global CSS, JavaScript, and images
 * `storage/` – Cache, uploads, and other data in JSON storage
-* `storage/pages/` – JSON page data (one file per page)
-* `core/admin/` – Admin panel for creating/editing pages and managing users
+* `storage/content/` – JSON content data (one file per content item)
+* `core/admin/` – Admin panel for creating/editing content and managing users
 * `core/` – All the things that make it go
 
 ---
@@ -23,7 +23,7 @@ The goal is to have a good user experience, for both developers and editors, wit
 
 1. Build your components and place them in `theme/components/`.
 2. Add global CSS and assets in `theme/assets/`.
-3. Open the editor at `/admin/` to add or edit pages and components.
+3. Open the editor at `/admin/` to add or edit content and components.
 4. Save changes and pages should update instantly.
 
 **Example:** create a `hero-section` component, then add it to the homepage in the editor.
@@ -53,7 +53,7 @@ The componentName.php basically decides:
 * PHP 8.0 or higher
 * PDO extension (when using SQLite)
 * JSON extension (built-in in PHP 5.2+)
-* File write permissions for `storage/` (for pages, cache, users, uploads)
+* File write permissions for `storage/` (for content, cache, users, uploads)
 * Apache with `.htaccess` support or another web server capable of rewriting all requests to `index.php`
 
 ---
@@ -68,7 +68,7 @@ php -S localhost:8000
 
 All requests go through `index.php` in the root.
 
-Pages are dynamically built from JSON files in `storage/pages/`.
+Content items are dynamically built from JSON files in `storage/content/`.
 
 Demo account:
 
@@ -77,7 +77,7 @@ Demo account:
 
 The demo account is created automatically if no other users exist.
 
-Access the editor at `/admin/` to manage pages and users.
+Access the editor at `/admin/` to manage content and users.
 
 ---
 
