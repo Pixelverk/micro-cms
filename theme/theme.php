@@ -44,6 +44,7 @@ return [
                 'features-section',
                 'feature-card',
                 'cta-section',
+                'contact-section',
             ],
             'url_prefix' => '',
         ],
