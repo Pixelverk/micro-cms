@@ -43,7 +43,7 @@ ob_start();
     <div class="card">
         <h2>Media</h2>
         <p>Add and manage media files.</p>
-        <a href="<?= url('admin/settings/') ?>">Manage settings →</a>
+        <a href="<?= url('admin/media/') ?>">Manage media →</a>
     </div>
 
     <div class="card">

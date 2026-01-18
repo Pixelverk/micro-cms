@@ -20,16 +20,9 @@ if (is_dir($mediaRoot)) {
 
         $relativePath = str_replace($mediaRoot . '/', '', $file->getPathname());
 
-        // might be unnecessary
-        if (config('env') === 'local'){
-            $fileUrl = url('storage/media/' . $relativePath);
-        } else {
-            $fileUrl = url('media/' . $relativePath);
-        }
-
         $mediaFiles[] = [
             'path' => $relativePath,
-            'url'  => $fileUrl,
+            'url'  => url('media/' . $relativePath),
             'name' => $file->getFilename(),
             'size' => round($file->getSize() / 1024, 1) . ' KB',
             'time' => date('Y-m-d', $file->getMTime()),

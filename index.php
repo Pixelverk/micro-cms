@@ -6,6 +6,7 @@ declare(strict_types=1);
 | Determine Mode Based on Request Path
 |--------------------------------------------------------------------------
 */
+
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
 $path = rtrim($path, '/');
 

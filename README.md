@@ -60,13 +60,11 @@ The componentName.php basically decides:
 
 ## Local Development
 
-Run a local PHP server:
+Run apache, point the document root to wherever you put `index.php`.
 
-```bash
-php -S localhost:8000
-```
+All requests should go through `index.php` and the .htaccess for proper handling.
 
-All requests go through `index.php` in the root.
+Make sure to give sufficient permissions for php to write files.
 
 Content items are dynamically built from JSON files in `storage/content/`.
 
