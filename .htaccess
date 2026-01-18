@@ -4,7 +4,7 @@ RewriteEngine On
 # Block access to core internals
 # ---------------------------------------
 RewriteRule ^core/ - [F,L]
-RewriteRule ^storage/(?!uploads/) - [F,L]
+RewriteRule ^storage/(?!media/) - [F,L]
 RewriteRule ^theme/(components|layouts)/ - [F,L]
 
 # ---------------------------------------

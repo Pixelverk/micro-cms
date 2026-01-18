@@ -17,11 +17,10 @@ function is_content_type_active(string $type): string
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
     $page = preg_replace('#^admin/?#', '', $path);
 
+    $contentPages = ['content-list', 'content-edit'];
     $currentType = $_GET['type'] ?? 'page';
 
-    return ($page === 'content-list' && $currentType === $type)
-        ? 'active'
-        : '';
+    return (in_array($page, $contentPages, true) && $currentType === $type) ? 'active' : '';
 }
 
 ?>
@@ -72,7 +71,7 @@ function is_content_type_active(string $type): string
             Media
         </a>
 
-        <a href="<?= url('admin/site-settings') ?>" class="sidebar-link <?= is_active('site-settings', $currentPath) ?>">
+        <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>">
             Settings
         </a>
     </div>

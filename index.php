@@ -11,6 +11,8 @@ $path = rtrim($path, '/');
 
 if (str_starts_with($path, '/admin')) {
     $mode = 'admin';
+} else if (str_starts_with($path, '/storage/media')) {
+    $mode = 'media';
 } else {
     $mode = 'frontend';
 }

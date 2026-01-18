@@ -28,7 +28,7 @@ function bootstrap(string $mode): void
     | Ensure Storage Directories Exist
     |--------------------------------------------------------------------------
     */
-    foreach (['', '/cache', '/uploads'] as $dir) {
+    foreach (['', '/cache', '/media', '/content', '/logs'] as $dir) {
         $full = STORAGE_PATH . $dir;
         if (!is_dir($full)) mkdir($full, 0775, true);
     }
@@ -78,6 +78,10 @@ function bootstrap(string $mode): void
             handle_admin_request();
             break;
 
+        case 'media':
+            handle_media_request();
+            break;
+            
         default:
             http_response_code(404);
             echo "<h1>404 – Unknown mode</h1>";
@@ -132,4 +136,19 @@ function handle_admin_request(): void
 
     // Dispatch to admin router
     route_admin_request();
+}
+
+function handle_media_request(): void
+{
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+    $path = rtrim($path, '/');
+
+    $file = STORAGE_PATH . '/' . $path;
+    if (!is_file($file)) {
+        http_response_code(404);
+        exit;
+    }
+    header('Content-Type: ' . mime_content_type($file));
+    readfile($file);
+    exit;
 }

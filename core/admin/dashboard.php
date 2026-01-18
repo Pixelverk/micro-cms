@@ -37,7 +37,7 @@ ob_start();
     <div class="card">
         <h2>Settings</h2>
         <p>Edit site and CMS settings.</p>
-        <a href="<?= url('admin/site-settings/') ?>">Manage settings →</a>
+        <a href="<?= url('admin/settings/') ?>">Manage settings →</a>
     </div>
 
     <div class="card">

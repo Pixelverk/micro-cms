@@ -13,15 +13,14 @@ declare(strict_types=1);
 function route_request(): array
 {
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
+    $slug = $path === '' ? 'home' : $path; //for the home page
 
-    // Contact form post endpoint
+    // Contact form case
     if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         require CORE_PATH . '/contact.php';
         exit;
     }
-
-    $slug = $path === '' ? 'home' : $path;
-
+    
     // No bad stuff in slug
     if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
         return load_fallback_404();

@@ -1,5 +1,5 @@
 <?php
-// core/admin/site-settings.php
+// core/admin/settings.php
 
 $pageTitle = 'Settings';
 $username = $_SESSION['user_id'] ?? 'User';
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($meta['type'] === 'text' && trim($value) === '') {
             // Allow empty for prefixes
             if (!str_starts_with($key, 'prefix_')) {
-                redirect_with_toast('site-settings', 'error', "{$meta['label']} cannot be empty.");
+                redirect_with_toast('settings', 'error', "{$meta['label']} cannot be empty.");
             }
         }
 
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($meta['type'] === 'select' && !array_key_exists($value, $meta['options'])) {
-            redirect_with_toast('site-settings', 'error', "Invalid selection for {$meta['label']}.");
+            redirect_with_toast('settings', 'error', "Invalid selection for {$meta['label']}.");
         }
 
         // Save prefix values separately
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('content_prefixes', $newPrefixes);
     }
 
-    redirect_with_toast('site-settings', 'success', 'Settings saved successfully.');
+    redirect_with_toast('settings', 'success', 'Settings saved successfully.');
 }
 
 // ----------------------------
