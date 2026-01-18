@@ -8,7 +8,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?php echo e($username); ?> 👋</h2>
+        <h2>Hello, <?php echo e($username); ?> 👋</h2>
         <p>Create a new user</p>
     </div>
     <div class="page-actions">

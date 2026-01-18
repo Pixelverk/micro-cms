@@ -18,7 +18,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?= e($username) ?> 👋</h2>
+        <h2>Hello, <?= e($username) ?> 👋</h2>
         <p>Edit your navigation menu</p>
     </div>
     <div class="page-actions">

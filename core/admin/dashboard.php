@@ -41,6 +41,12 @@ ob_start();
     </div>
 
     <div class="card">
+        <h2>Media</h2>
+        <p>Add and manage media files.</p>
+        <a href="<?= url('admin/settings/') ?>">Manage settings →</a>
+    </div>
+
+    <div class="card">
         <h2>Site Preview</h2>
         <p>Open the public site in a new tab.</p>
         <a href="<?= url() ?>" target="_blank">View site →</a>

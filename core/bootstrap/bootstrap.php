@@ -81,7 +81,7 @@ function bootstrap(string $mode): void
         case 'media':
             handle_media_request();
             break;
-            
+
         default:
             http_response_code(404);
             echo "<h1>404 – Unknown mode</h1>";
@@ -140,15 +140,29 @@ function handle_admin_request(): void
 
 function handle_media_request(): void
 {
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-    $path = rtrim($path, '/');
+    $uriPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '';
 
-    $file = STORAGE_PATH . '/' . $path;
+    // Strip "/media" prefix
+    $relative = substr($uriPath, strlen('/media'));
+    $relative = ltrim($relative, '/');
+
+    // Block traversal
+    if ($relative === '' || str_contains($relative, '..')) {
+        http_response_code(400);
+        exit;
+    }
+
+    $file = STORAGE_PATH . '/media/' . $relative;
+
     if (!is_file($file)) {
         http_response_code(404);
         exit;
     }
+
     header('Content-Type: ' . mime_content_type($file));
+    header('Content-Length: ' . filesize($file));
+    header('Cache-Control: public, max-age=31536000');
+
     readfile($file);
     exit;
 }
