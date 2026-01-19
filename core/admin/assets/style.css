@@ -12,6 +12,7 @@ header {
     padding: 1.25rem 2rem;
     display:flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 header h1 {
@@ -25,9 +26,23 @@ header h1 a {
 }
 
 main {
+    flex: 1;
+    height: 100%;
+}
+
+aside {
+    flex-shrink: 0;
+}
+
+.main-content {
+    max-width: 1200px;
     padding: 2rem;
-    max-width: 1000px;
     margin: 0 auto;
+}
+
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
 }
 
 .cards {
@@ -242,9 +257,7 @@ button:hover {
 }
 
 .admin-sidebar {
-    width: 240px;
-    min-height: 100vh;
-    height: 100%;
+    width: 220px;
     background: #0f172a;
     color: #cbd5f5;
     padding: 1rem;
@@ -253,6 +266,15 @@ button:hover {
 
 .sidebar-section {
     margin-bottom: 1.5rem;
+}
+
+.sidebar-header {
+    margin-bottom: 2.5rem;
+    
+}
+
+.sidebar-header h1 {
+    margin: 0;
 }
 
 .sidebar-title {
@@ -281,17 +303,4 @@ button:hover {
 
 .sidebar-link.danger {
     color: #fca5a5;
-}
-
-.admin-layout {
-    display: flex;
-}
-
-aside {
-    flex-shrink: 0;
-}
-
-main {
-    flex: 1;
-    padding: 2rem;
 }

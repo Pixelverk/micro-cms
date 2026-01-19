@@ -3,18 +3,6 @@
         "label": "My Lovely Menu",
         "items": []
     },
-    "my-menu": {
-        "label": "Fancy Label",
-        "items": [
-            {
-                "type": "url",
-                "label": "asdasd",
-                "target": "_self",
-                "children": [],
-                "url": ""
-            }
-        ]
-    },
     "aqwesome": {
         "label": "this is a label",
         "items": [

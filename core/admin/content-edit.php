@@ -89,6 +89,7 @@ foreach ($componentFiles as $file) {
     $component = require $file;
 
     $availableComponents[$name] = [
+        'label'            => $component['label'] ?? $name,
         'schema'           => $component['schema'] ?? [],
         'children'         => $component['children'] ?? 'any',
         'allowed_children' => $component['allowed_children'] ?? [],
@@ -216,9 +217,9 @@ ob_start();
     <label>
         Add component:
         <select id="new-component-select">
-            <option value="">-- Select --</option>
+            <option value="">-- Select Component--</option>
             <?php foreach (array_keys($availableComponents) as $name): ?>
-                <option value="<?= e($name) ?>"><?= e($name) ?></option>
+                <option value="<?= e($name) ?>"><?= e($availableComponents[$name]['label']) ?></option>
             <?php endforeach; ?>
         </select>
     </label>

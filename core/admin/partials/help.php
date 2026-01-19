@@ -2,15 +2,12 @@
 
 <style>
 #help-fab {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 2rem;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     color: #2563eb;
     background: #fff;
-    font-size: 1.25rem;
+    padding:0;
     border: 1px solid;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,.25);
@@ -19,12 +16,13 @@
 
 #help-panel {
     position: fixed;
-    bottom: 5.5rem;
+    top: 6.5rem;
     right: 2rem;
     margin-left:2rem;
     width: fit-content;
     max-width: calc(100vw - 3rem);
     background: #fff;
+    color: #222;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,.25);
     padding: 1rem 1.25rem;

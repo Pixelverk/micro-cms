@@ -114,7 +114,8 @@ Access the editor at `/admin/` to manage content and users.
 ### Phase 4 – Media & SEO
 
 * Working contact form ✅
-* Image uploads / media manager
+* Image uploads / media manager ✅
+* Component input - pick from media manager 
 * Sitemap generator (XML) ✅
 * Optional SEO enhancements (meta, OpenGraph, etc.)
 * Caching .html for speedy speeds ✅
