@@ -149,26 +149,24 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
     
     // set the file name
     $componentFile = theme("components/{$name}.php");
-    $fileExists = true;
 
-    // log if file is missing
+    // handle missing file
     if (!file_exists($componentFile)) {
-        //throw new RuntimeException("'{$name}' not found at {$componentFile}");
         trigger_error("Component '{$name}' not found at {$componentFile}", E_USER_WARNING);
-        $fileExists = false;
-    }
-
-    // attempt to load the file
-    if ($fileExists) {
-        $component = require $componentFile;
-    } else {
         echo "<div style='width:fit-content; margin: 3rem auto;'> {$name} - component not found </div>";
         return;
     }
 
-    // -----------------------------
-    // Add CSS once
-    // -----------------------------
+    // attempt to load the file
+    $component = require $componentFile;
+
+    // panic if component is not array
+    if (!is_array($component)) {
+        trigger_error("Component '{$name}' must return an array.", E_USER_WARNING);
+        return;
+    }
+
+    // Add component CSS to collection
     if (!empty($component['css']) && !in_array($name, array_column($collectedCss, 'file'), true)) {
         $collectedCss[] = [
             'file'    => $name,
@@ -176,9 +174,7 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
         ];
     }
 
-    // -----------------------------
-    // Add JS once
-    // -----------------------------
+    // Add component JS to collection
     if (!empty($component['js']) && !in_array($name, array_column($collectedJs, 'file'), true)) {
         $collectedJs[] = [
             'file'    => $name,
@@ -186,13 +182,12 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
         ];
     }
 
-    // -----------------------------
-    // Render HTML
-    // -----------------------------
-    if (!is_callable($component['render'])) {
-        //throw new RuntimeException("Component '{$name}' has no render function.");
+    // handle missing render
+    if (!is_callable($component['render'] ?? null)) {
         trigger_error("Component '{$name}' has no render function.", E_USER_WARNING);
+        return;
     }
 
+    // render component html
     $component['render']($props, $collectedJs, $collectedCss);
 }
