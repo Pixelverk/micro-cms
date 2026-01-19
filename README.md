@@ -54,17 +54,17 @@ The componentName.php basically decides:
 * PDO extension (when using SQLite)
 * JSON extension (built-in in PHP 5.2+)
 * File write permissions for `storage/` (for content, cache, users, uploads)
-* Apache with `.htaccess` support or another web server capable of rewriting all requests to `index.php`
+* Apache for `.htaccess` rules and rewriting all requests to `index.php`.
 
 ---
 
 ## Local Development
 
-Run apache, point the document root to wherever you put `index.php`.
+Download the repo, have php installed, setup apache or use something like XAMPP.
 
 All requests should go through `index.php` and the .htaccess for proper handling.
 
-Make sure to give sufficient permissions for php to write files.
+Make sure there are sufficient permissions to write files in `storage`.
 
 Content items are dynamically built from JSON files in `storage/content/`.
 

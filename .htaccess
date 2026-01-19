@@ -2,27 +2,29 @@ RewriteEngine On
 
 # ---------------------------------------
 # Block access to core internals, except admin assets
-# ---------------------------------------
-# Allow requests to core/admin/assets/ and its subfolders
 RewriteCond %{REQUEST_URI} !^/core/admin/assets/
 RewriteRule ^core/ - [F,L]
 
+# ---------------------------------------
 # Block storage folders, except maybe media
 # RewriteCond %{REQUEST_URI} !^/storage/media/
 RewriteRule ^storage/ - [F,L]
 
+# ---------------------------------------
 # Block theme internals except publicly safe files (like theme/assets)
 RewriteCond %{REQUEST_URI} !^/theme/assets/
 RewriteRule ^theme/(components|layouts)/ - [F,L]
 
 # ---------------------------------------
-# Serve existing files/directories directly
+# Allow sitemap.xml to be routed through PHP
+RewriteRule ^sitemap\.xml$ index.php [L]
+
 # ---------------------------------------
+# Serve existing files/directories directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
 # ---------------------------------------
 # Catch-all: route everything else to index.php
-# ---------------------------------------
 RewriteRule ^ index.php [L,QSA]

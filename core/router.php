@@ -13,11 +13,25 @@ declare(strict_types=1);
 function route_request(): array
 {
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
-    $slug = $path === '' ? 'home' : $path; //for the home page
+    $slug = $path === '' ? get_setting('homepage_slug') : $path; //empty path should show user-defined homepage
 
-    // Contact form case
+    // Contact post case
     if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         require CORE_PATH . '/contact.php';
+        exit;
+    }
+
+    // Sitemap case
+    if ($path === 'sitemap.xml') {
+        $file = STORAGE_PATH . '/sitemap.xml';
+
+        if (!is_file($file)) {
+            return load_fallback_404();
+        }
+
+        header('Content-Type: application/xml; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        readfile($file);
         exit;
     }
     
@@ -25,8 +39,8 @@ function route_request(): array
     if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
         return load_fallback_404();
     }
-
-    // go get the content
+    
+    // standard case
     $item = load_content_by_slug($slug);
     if ($item) return $item;
 
@@ -36,10 +50,13 @@ function route_request(): array
 
 function load_fallback_404(): array
 {
+    // hey, it's a 404
     http_response_code(404);
 
+    // get the nice 404 page in theme
     $page = load_content_by_slug('404');
 
+    // if no nice 404 page exist, make an empty page and return that
     if (!$page) {
         $theme = theme_config();
         $settings = load_settings();
@@ -56,6 +73,7 @@ function load_fallback_404(): array
         ];
     }
 
+    // return the nice 404 page
     $page['status'] = '404';
     return $page;
 }

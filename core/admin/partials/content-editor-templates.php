@@ -82,3 +82,19 @@
         <input class="field-input" type="email">
     </label>
 </template>
+
+<!-- Raw HTML -->
+<template id="raw-html-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <textarea class="field-input"></textarea>
+    </label>
+</template>
+
+<!-- Quill Editor -->
+<template id="quill-editor-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <div id="quill-editor" class="field-input quill-editor-input"></div>
+    </label>
+</template>

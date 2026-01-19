@@ -72,5 +72,5 @@ function generate_sitemap(): string
 function save_sitemap(): void
 {
     $xml = generate_sitemap();
-    file_put_contents(CMS_PATH . '/sitemap.xml', $xml);
+    file_put_contents(STORAGE_PATH . '/sitemap.xml', $xml);
 }

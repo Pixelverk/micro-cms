@@ -72,18 +72,3 @@ function load_content_by_slug(string $slug): ?array
 
     return null;
 }
-
-/**
- * Returns a default not-found structure for content type
- */
-function not_found_content(string $type, string $slug): array
-{
-    return [
-        'title'   => 'Not Found',
-        'slug'    => $slug,
-        'type'    => $type,
-        'status'  => '404',
-        'components' => [],
-        'meta'    => [],
-    ];
-}
