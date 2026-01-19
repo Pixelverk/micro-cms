@@ -68,7 +68,7 @@ function load_fallback_404(): array
             'status'     => '404',
             'title'      => 'Page Not Found',
             'layout'     => $settings['default_layout'] ?? $theme['defaults']['layout'] ?? 'default',
-            'components' => [],
+            'components' => [ ['type' => '404', 'props' => [], 'children' => [] ] ],
             'updated_at' => time(),
         ];
     }
