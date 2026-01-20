@@ -1,5 +1,5 @@
 <?php
-// core/admin/media.php
+// admin/media.php
 
 $pageTitle = 'Media Manager';
 $username  = $_SESSION['user_id'] ?? 'User';

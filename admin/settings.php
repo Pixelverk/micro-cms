@@ -1,5 +1,5 @@
 <?php
-// core/admin/settings.php
+// admin/settings.php
 
 $pageTitle = 'Settings';
 $username = $_SESSION['user_id'] ?? 'User';

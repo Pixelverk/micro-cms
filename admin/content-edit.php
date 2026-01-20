@@ -233,7 +233,7 @@ window.contentType         = '<?= e($type) ?>';
 </script>
 
 <?php include __DIR__ . '/partials/content-editor-templates.php'; ?>
-<script type="module" src="<?= url('core/admin/assets/content-editor.js') ?>"></script>
+<script type="module" src="<?= url('admin/assets/content-editor.js') ?>"></script>
 
 <?php
 $content = ob_get_clean();

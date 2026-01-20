@@ -8,10 +8,11 @@ function bootstrap(string $mode): void
     | Core Paths
     |--------------------------------------------------------------------------
     */
-    define('CMS_PATH', dirname(__DIR__, 2));
+    define('CMS_PATH', dirname(__DIR__));
     define('CORE_PATH', CMS_PATH . '/core');
     define('STORAGE_PATH', CMS_PATH . '/storage');
     define('CONTENT_PATH', STORAGE_PATH . '/content');
+
     define('MENUS_FILE', STORAGE_PATH . '/menus.json');
     define('USER_FILE', STORAGE_PATH . '/users.json');
     define('SETTINGS_FILE', STORAGE_PATH . '/settings.json');
@@ -37,10 +38,12 @@ function bootstrap(string $mode): void
     |--------------------------------------------------------------------------
     | First Run DB Setup
     |--------------------------------------------------------------------------
-    */
+    /
+
     if (!file_exists(STORAGE_PATH . '/data.sqlite')) {
         require CORE_PATH . '/bootstrap/db_setup.php';
     }
+    */
 
     /*
     |--------------------------------------------------------------------------

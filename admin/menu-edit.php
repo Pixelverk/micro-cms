@@ -93,7 +93,7 @@ ob_start();
 
 <!-- Menu item template -->
 <?php include __DIR__ . '/partials/menu-editor-templates.php'; ?>
-<script type="module" src="<?= url('core/admin/assets/menu-editor.js') ?>"></script>
+<script type="module" src="<?= url('admin/assets/menu-editor.js') ?>"></script>
 
 <script>
     window.initialMenuItems = <?= json_encode($currentMenu['items']) ?>;

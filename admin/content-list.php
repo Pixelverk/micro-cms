@@ -1,5 +1,5 @@
 <?php
-// core/admin/content-list.php
+// admin/content-list.php
 
 $pageTitle = 'Content';
 $username  = $_SESSION['user_id'] ?? 'User';

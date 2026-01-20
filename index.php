@@ -23,7 +23,7 @@ if (str_starts_with($path, '/admin')) {
 | Load Le Bootstraps
 |--------------------------------------------------------------------------
 */
-require __DIR__ . '/core/bootstrap/bootstrap.php';
+require __DIR__ . '/core/bootstrap.php';
 
 /*
 |--------------------------------------------------------------------------

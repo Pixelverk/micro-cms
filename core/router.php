@@ -94,7 +94,7 @@ function route_admin_request(): void
 
     // Public admin routes
     if ($page === 'login') {
-        require CORE_PATH . '/admin/login.php';
+        require CMS_PATH . '/admin/login.php';
         return;
     }
 
@@ -107,7 +107,7 @@ function route_admin_request(): void
         return;
     }
 
-    $file = CORE_PATH . '/admin/' . $page . '.php';
+    $file = CMS_PATH . '/admin/' . $page . '.php';
     if (is_file($file)) {
         require $file;
         return;

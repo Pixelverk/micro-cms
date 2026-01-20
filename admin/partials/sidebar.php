@@ -1,5 +1,5 @@
 <?php
-// core/admin/partials/sidebar.php
+// admin/partials/sidebar.php
 
 $currentPath = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $currentPath = preg_replace('#^admin/?#', '', $currentPath);

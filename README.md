@@ -14,7 +14,7 @@ The goal is to have a good user experience, for both developers and editors, wit
 * `theme/assets/` – Global CSS, JavaScript, and images
 * `storage/` – Cache, uploads, and other data in JSON storage
 * `storage/content/` – JSON content data (one file per content item)
-* `core/admin/` – Admin panel for creating/editing content and managing users
+* `admin/` – Admin panel for creating/editing content and managing users
 * `core/` – All the things that make it go
 
 ---
