@@ -7,8 +7,7 @@ body {
 }
 
 header {
-    background: #1f2933;
-    color: #fff;
+    background: #fff;
     padding: 1.25rem 2rem;
     display:flex;
     justify-content: space-between;
@@ -35,7 +34,7 @@ aside {
 }
 
 .main-content {
-    max-width: 1200px;
+    max-width: 1240px;
     padding: 2rem;
     margin: 0 auto;
 }
@@ -343,4 +342,33 @@ button:hover {
 .status-published {
     background: #e6f4ea;
     color: #2f855a;
+}
+
+/* icon stuff */
+.icon {
+    fill: currentColor;
+    stroke: #000;
+    cursor: pointer;
+}
+
+.header-icon, .sidebar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.header-left, .header-right {
+    display:flex;
+    gap: 1.25rem;
+}
+
+.sidebar-section a{
+    display:flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-icon svg path{
+    stroke: #fff;
 }

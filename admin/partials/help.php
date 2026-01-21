@@ -1,22 +1,9 @@
 <?php if (empty($pageHelp)) return; ?>
 
 <style>
-#help-fab {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: #2563eb;
-    background: #fff;
-    padding:0;
-    border: 1px solid;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,.25);
-    z-index: 9998;
-}
-
 #help-panel {
     position: fixed;
-    top: 6.5rem;
+    top: 5.75rem;
     right: 2rem;
     margin-left:2rem;
     width: fit-content;
@@ -35,7 +22,7 @@
 }
 </style>
 
-<button id="help-fab" type="button" aria-label="Page help">?</button>
+<span id="help-fab" class="header-icon" type="button" aria-label="Page help"><?= icon('help-circle') ?></span>
 
 <div id="help-panel">
     <?= $pageHelp ?>

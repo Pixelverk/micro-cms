@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Editor Login - Micro CMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="<?= url('admin/assets/style.css') ?>">
+    <link rel='icon' href="<?= url('admin/assets/favicon.ico')?>">
     <style>
         body {
             display: flex;
