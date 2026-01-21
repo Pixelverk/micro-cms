@@ -3,7 +3,7 @@
 <style>
 #help-panel {
     position: fixed;
-    top: 5.75rem;
+    top: 6.5rem;
     right: 2rem;
     margin-left:2rem;
     width: fit-content;

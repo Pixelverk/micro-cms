@@ -1,4 +1,25 @@
+/* reset ? */
+* {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
 
+ul, ol {
+	list-style: none;
+}
+
+a {
+	cursor: pointer;
+	text-decoration: none;
+	color: inherit;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+/* base elements */
 body {
     font-family: system-ui, sans-serif;
     margin: 0;
@@ -6,32 +27,17 @@ body {
     color: #222;
 }
 
-header {
-    background: #fff;
-    padding: 1.25rem 2rem;
-    display:flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 1.4rem;
-}
-
-header h1 a {
-    text-decoration: none;
-    color:inherit;
-}
-
 main {
     flex: 1;
     height: 100%;
 }
 
-aside {
-    flex-shrink: 0;
+h1,
+h2 {
+    margin-bottom: .5rem
 }
+
+/* layout */
 
 .main-content {
     max-width: 1240px;
@@ -71,6 +77,8 @@ aside {
     font-weight: 500;
 }
 
+/* navigation */
+
 nav {
     margin-top: 0.5rem;
     font-size: 0.9rem;
@@ -86,41 +94,42 @@ nav a:hover {
     text-decoration: underline;
 }
 
-.page-header {
-    display:flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    gap: 1rem;
+/* forms / inputs */
+
+fieldset {
+    border: 1px solid #ccc;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative
 }
 
-.content-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-}
-
-.content-table th,
-.content-table td {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-}
-
-.content-table th {
-    background: #f5f5f5;
+legend {
     font-weight: bold;
+    padding: 0 .5rem
 }
 
-.content-table tr:hover {
-    background: #fafafa;
+label {
+    display: block;
+    margin-bottom: .75rem
 }
 
-.actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: space-between;
+input[type=text],
+input[type=password],
+textarea,
+select {
+    width: 100%;
+    padding: .5rem;
+    margin-top: .25rem;
+    box-sizing: border-box
 }
+
+
+textarea {
+    resize: vertical;
+    min-height: 60px
+}
+
+/* buttons */
 
 .btn-primary {
     display: inline-block;
@@ -156,49 +165,6 @@ nav a:hover {
     cursor:not-allowed;
 }
 
-.page-actions {
-    margin-bottom: 1rem;
-}
-
-h1,
-h2 {
-    margin-bottom: .5rem
-}
-
-fieldset {
-    border: 1px solid #ccc;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1.5rem;
-    position: relative
-}
-
-legend {
-    font-weight: bold;
-    padding: 0 .5rem
-}
-
-label {
-    display: block;
-    margin-bottom: .75rem
-}
-
-input[type=text],
-input[type=password],
-textarea,
-select {
-    width: 100%;
-    padding: .5rem;
-    margin-top: .25rem;
-    box-sizing: border-box
-}
-
-
-
-textarea {
-    resize: vertical;
-    min-height: 60px
-}
-
 button {
     padding: .5rem 1rem;
     font-size: 1rem;
@@ -214,12 +180,6 @@ button:hover {
     background: #004d40
 }
 
-.children-container {
-    margin-left: 1.5rem;
-    padding-left: 1rem;
-    margin-top: .5rem;
-}
-
 .add-component-btn {
     margin-bottom: 1rem;
 }
@@ -228,83 +188,43 @@ button:hover {
     background: #b71c1c;
 }
 
-.component-actions {
+/* all pages */
+
+.page-header {
     display:flex;
     justify-content: space-between;
-    align-items:center;
-    margin-top: 1.25rem
+    align-items: center;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
 }
 
-.component-actions button {
-    margin-left: 0.5rem;
-    margin-top: 0;
+.page-actions {
+    margin-bottom: 1rem;
 }
 
-.component-actions select {
-    margin-top: 0;
-    border-radius: 4px;
-    background: white;
+/* content-list page */
+
+.content-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
 }
 
-.actions-left {
-    display:flex;
-    align-items:center;
+.content-table th,
+.content-table td {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
 }
 
-#no-children  {
-    font-size: 0.8rem;
+.content-table th {
+    background: #f5f5f5;
+    font-weight: bold;
 }
 
-.admin-sidebar {
-    width: 220px;
-    background: #0f172a;
-    color: #cbd5f5;
-    padding: 1rem;
-    margin-top: 0;
+.content-table tr:hover {
+    background: #fafafa;
 }
-
-.sidebar-section {
-    margin-bottom: 1.5rem;
-}
-
-.sidebar-header {
-    margin-bottom: 2.5rem;
-    
-}
-
-.sidebar-header h1 {
-    margin: 0;
-}
-
-.sidebar-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    opacity: 0.6;
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-link {
-    display: block;
-    padding: 0.6rem 0.75rem;
-    color: inherit;
-    text-decoration: none;
-    border-radius: 6px;
-}
-
-.sidebar-link:hover {
-    background: rgba(255,255,255,0.08);
-}
-
-.sidebar-link.active {
-    background: rgba(255,255,255,0.15);
-    font-weight: 600;
-}
-
-.sidebar-link.danger {
-    color: #fca5a5;
-}
-
-/* content list stuff */
 
 .badge {
     display: inline-block;
@@ -344,18 +264,67 @@ button:hover {
     color: #2f855a;
 }
 
-/* icon stuff */
-.icon {
-    fill: currentColor;
-    stroke: #000;
-    cursor: pointer;
+
+/* content edit page */ 
+
+.children-container {
+    margin-left: 1.5rem;
+    padding-left: 1rem;
+    margin-top: .5rem;
+}
+
+.component-actions {
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-top: 1.25rem
+}
+
+.component-actions button {
+    margin-left: 0.5rem;
+    margin-top: 0;
+}
+
+.component-actions select {
+    margin-top: 0;
+    border-radius: 4px;
+    background: white;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.actions-left {
+    display:flex;
+    align-items:center;
+}
+
+#no-children  {
+    font-size: 0.8rem;
+}
+
+/* header stuff */
+
+header {
+    background: #fff;
+    padding: 1.25rem 2rem;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 5rem;
 }
 
 .header-icon, .sidebar-icon {
-    display: inline-flex;
+     cursor: pointer;
+}
+
+.header-left a {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    gap: 0.25rem;
 }
 
 .header-left, .header-right {
@@ -363,10 +332,64 @@ button:hover {
     gap: 1.25rem;
 }
 
+/* sidebar stuff */
+
+.admin-sidebar {
+    width: 15rem;
+    background: #0f172a;
+    color: #cbd5f5;
+    margin-top: 0;
+}
+
+.sidebar-section {
+    margin: 0 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
 .sidebar-section a{
     display:flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.sidebar-header {
+    margin-bottom: 2rem;
+    height: 5rem;
+    border-bottom: 1px solid #f4f6f8;
+    align-content: center;
+}
+
+.sidebar-header h1 {
+    margin: 0 1.25rem;
+}
+
+.sidebar-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-link {
+    display: block;
+    padding: 0.6rem 0.75rem;
+    margin: 0.25rem 0;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+.sidebar-link:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+.sidebar-link.active {
+    background: rgba(255,255,255,0.15);
+    font-weight: 600;
+}
+
+.sidebar-link.danger {
+    color: #fca5a5;
 }
 
 .sidebar-icon svg path{

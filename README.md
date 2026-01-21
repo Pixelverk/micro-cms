@@ -129,7 +129,11 @@ Access the editor at `/admin/` to manage content and users.
 * Lazy loading components and images
 * Image placeholders, LQIP or CSS blurry blob
 * Drafts or edit history with restore functionality
-* Multi-language support
+* Multi-language front-end support
+* Multi-language admin area
+* Light/Dark mode admin area
+* Fullscreen admin area
+* Quill JS as a component type
 * Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
 * SQLite instead of JSON ✅

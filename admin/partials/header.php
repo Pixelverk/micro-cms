@@ -2,7 +2,10 @@
     <div class="header-left">
         <span id="sidebar-close" class="header-icon"><?= icon('sidebar-collapse') ?></span>
         <span id="sidebar-open" class="header-icon"><?= icon('sidebar-expand') ?></span>
-        <span id="user-blob" class="header-icon"><?= icon('open-in-browser') ?> <a href="/" target="_blank" style="margin-left:0.5rem;color:inherit;"> View Website </a></span>
+        <a href="/" target="_blank" class="header-icon">
+            <span><?= icon('open-in-browser') ?></span>
+            View Website
+        </a>
     </div>
     <div class="header-right">
         <?php include __DIR__ . '/help.php'; ?>

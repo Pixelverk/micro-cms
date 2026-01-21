@@ -27,7 +27,7 @@ function is_content_type_active(string $type): string
 
 <nav class="admin-sidebar">
 
-    <div class="sidebar-section sidebar-header">
+    <div class="sidebar-header">
         <h1><a href="<?= url('admin/dashboard')?>">Micro CMS</a></h1>
     </div>
 
