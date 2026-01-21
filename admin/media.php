@@ -60,7 +60,7 @@ ob_start();
         <?php foreach ($mediaFiles as $file): ?>
             <div class="media-item">
                 <?php if (str_starts_with($file['type'], 'image/')): ?>
-                    <img src="<?= e($file['url']) ?>" alt="">
+                    <img src="<?= e($file['url']) ?>" alt="<?= e($file['name']) ?>">
                 <?php else: ?>
                     <div class="media-file">
                         <?= e($file['name']) ?>
@@ -73,11 +73,12 @@ ob_start();
                 </div>
 
                 <div class="media-actions">
-                    <button type="button"
-                        onclick="navigator.clipboard.writeText('<?= e($file['url']) ?>')">
+                    <!-- Copy URL button -->
+                    <button type="button" class="copy-url-btn" data-url="<?= e($file['url']) ?>">
                         Copy URL
                     </button>
 
+                    <!-- Delete form -->
                     <form action="<?= url('admin/media-remove') ?>" method="post"
                           onsubmit="return confirm('Delete this file?')">
                         <input type="hidden" name="path" value="<?= e($file['path']) ?>">
@@ -134,9 +135,58 @@ ob_start();
 
 .media-actions button {
     font-size: 0.8rem;
+    cursor: pointer;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll('.copy-url-btn');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const url = btn.dataset.url;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                // Modern async API
+                navigator.clipboard.writeText(url)
+                    .then(() => {
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => btn.textContent = 'Copy URL', 1500);
+                    })
+                    .catch(err => {
+                        fallbackCopy(url, btn);
+                    });
+            } else {
+                // Fallback for older browsers or non-secure context
+                fallbackCopy(url, btn);
+            }
+        });
+    });
+
+    function fallbackCopy(text, btn) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            const success = document.execCommand('copy');
+            if (success) {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy URL', 1500);
+            } else {
+                alert('Failed to copy to clipboard.');
+            }
+        } catch (err) {
+            alert('Failed to copy to clipboard: ' + err);
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+});
+</script>
 
 <?php
 $content = ob_get_clean();
 include __DIR__ . '/partials/layout.php';
+?>

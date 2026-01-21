@@ -1,94 +1,87 @@
 <?php
+declare(strict_types=1);
 
 // ----------------------------
 // Read input
 // ----------------------------
-$menu  = trim($_POST['menu'] ?? '');
-$label = trim($_POST['label'] ?? '');
-$items = $_POST['items'] ?? [];
+$menuSlug = trim($_POST['menu'] ?? '');
+$label    = trim($_POST['label'] ?? '');
+$items    = $_POST['items'] ?? [];
 
 // ----------------------------
-// Validate menu name
+// Validate menu slug
 // ----------------------------
-if ($menu === '') {
+if ($menuSlug === '') {
     redirect_with_toast('menu-edit', 'error', 'Menu name is required.');
 }
 
-// Normalize menu key
-$menu = strtolower($menu);
-$menu = preg_replace('/[\s_]+/', '-', $menu);
-$menu = preg_replace('/[^a-z0-9\-]/', '', $menu); // allow letters, numbers, dash
-$menu = preg_replace('/-+/', '-', $menu);
-$menu = trim($menu, '-');
+// Normalize menu slug
+$menuSlug = strtolower($menuSlug);
+$menuSlug = preg_replace('/[\s_]+/', '-', $menuSlug);
+$menuSlug = preg_replace('/[^a-z0-9\-]/', '', $menuSlug);
+$menuSlug = preg_replace('/-+/', '-', $menuSlug);
+$menuSlug = trim($menuSlug, '-');
 
-if ($menu === '') {
+if ($menuSlug === '') {
     redirect_with_toast('menu-edit', 'error', 'Invalid menu name.');
 }
 
 // ----------------------------
-// Load existing menus
+// Load existing menu if any
 // ----------------------------
-$menus = load_menus();
-
-// ----------------------------
-// Create menu if it doesn't exist
-if (!isset($menus[$menu])) {
-    $menus[$menu] = [
-        'label' => $label ?: ucfirst($menu),
-        'items' => []
-    ];
-} else {
-    // Update label
-    $menus[$menu]['label'] = $label ?: $menus[$menu]['label'];
-}
+$existingMenu = get_menu($menuSlug);
 
 // ----------------------------
 // Recursive function to process menu items
 // ----------------------------
 function processMenuItems(array $items): array {
     $result = [];
-
     foreach ($items as $item) {
         $type = $item['type'] ?? 'page';
-
         $entry = [
-            'type' => $type,
-            'label' => $item['label'] ?? '',
-            'target' => $item['target'] ?? '_self',
-            'children' => []
+            'type'     => $type,
+            'label'    => $item['label'] ?? '',
+            'slug'     => $item['slug'] ?? '',
+            'target'   => $item['target'] ?? '_self',
+            'children' => [],
         ];
 
-        $entry['slug'] = $item['slug'] ?? '';
-
-        // Recursively process children
         if (!empty($item['children']) && is_array($item['children'])) {
             $entry['children'] = processMenuItems($item['children']);
         }
 
         $result[] = $entry;
     }
-
     return $result;
 }
 
 // ----------------------------
-// Save menu items
+// Build menu data
 // ----------------------------
-$menus[$menu]['items'] = processMenuItems($items);
+$menuData = [
+    'slug'  => $menuSlug,
+    'label' => $label ?: ($existingMenu['label'] ?? ucfirst($menuSlug)),
+    'items' => processMenuItems($items),
+];
 
 // ----------------------------
-// Save JSON
+// Save menu using helper
 // ----------------------------
-if (!save_menus($menus)) {
-    redirect_with_toast('menu-edit', 'error', 'Failed to save menu.', $menu ? ['menu' => $menu] : [] );
+if (!save_menu($menuData)) {
+    redirect_with_toast(
+        'menu-edit',
+        'error',
+        'Failed to save menu.',
+        ['menu' => $menuSlug]
+    );
 }
 
 // ----------------------------
-// Success redirect
+// Success
 // ----------------------------
 redirect_with_toast(
     'menu-edit',
     'success',
-    "Menu \"{$menus[$menu]['label']}\" saved successfully.",
-    ['menu' => $menu]
+    "Menu \"{$menuData['label']}\" saved successfully.",
+    ['menu' => $menuSlug]
 );

@@ -25,6 +25,7 @@ ob_start();
             <tr>
                 <th>Username</th>
                 <th>Created</th>
+                <th>Last Login</th>
                 <th style="width: 180px;">Actions</th>
             </tr>
         </thead>
@@ -33,8 +34,13 @@ ob_start();
             <tr>
                 <td><?= e($name) ?></td>
                 <td>
-                    <?= isset($data['created'])
-                        ? date('Y-m-d H:i', (int)$data['created'])
+                    <?= isset($data['created_at'])
+                        ? date('Y-m-d H:i', (int)$data['created_at'])
+                        : '—' ?>
+                </td>
+                <td>
+                    <?= isset($data['last_login'])
+                        ? date('Y-m-d H:i', (int)$data['last_login'])
                         : '—' ?>
                 </td>
                 <td class="actions">
@@ -82,9 +88,9 @@ $content = ob_get_clean();
 ob_start();
 ?>
 <h3>User list</h3>
-<p>This screen has a list of all CMS users.</p>
+<p>This screen lists all CMS users.</p>
 <p>Use the buttons to edit or delete users, or add a new user.</p>
-<p>You may not delete your own user account, that would just be silly.</p>
+<p>You cannot delete your own account while logged in.</p>
 <?php
 $pageHelp = ob_get_clean();
 

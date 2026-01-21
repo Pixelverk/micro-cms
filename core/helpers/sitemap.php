@@ -1,65 +1,67 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Generate sitemap XML from database content.
+ */
 function generate_sitemap(): string
 {
-    $theme = theme_config();
-    $settings = load_settings();
-    $prefixes = $settings['content_prefixes'] ?? [];
-    $contentTypes = array_keys($theme['content_types'] ?? []);
-    $homepageSlug = $settings['homepage_slug'] ?? 'home';
+    $theme     = theme_config();
+    $settings  = load_settings();
+    $prefixes  = $settings['content_prefixes'] ?? [];
+    $types     = array_keys($theme['content_types'] ?? []);
+    $homeSlug  = $settings['homepage_slug'] ?? 'home';
 
-    // Determine current base URL dynamically
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $baseUrl = $protocol . '://' . $host;
+    // Prefer configured base URL
+    $baseUrl = rtrim(
+        config('site.url')
+        ?? ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+            . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')),
+        '/'
+    );
 
+    $pdo  = db();
     $urls = [];
 
-    foreach ($contentTypes as $type) {
+    foreach ($types as $type) {
         $prefix = $prefixes[$type] ?? '';
-        $folder = STORAGE_PATH . "/content/{$type}/";
 
-        if (!is_dir($folder)) continue;
+        $stmt = $pdo->prepare("
+            SELECT slug, updated_at, published_at
+            FROM content
+            WHERE type = :type
+              AND status = 'published'
+        ");
+        $stmt->execute(['type' => $type]);
 
-        foreach (glob($folder . '*.json') as $file) {
-            $slug = basename($file, '.json');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-            $data = json_decode(file_get_contents($file), true);
-            
-            // Skip empty files
-            if (!$data) continue;
+            // Prefer published date
+            $timestamp = $row['published_at'] ?: $row['updated_at'];
+            $lastmod   = date('Y-m-d', (int)$timestamp);
 
-            // Skip drafts
-            if (($data['status'] ?? 'draft') !== 'published') {
-                continue;
-            }
-
-            $updated = isset($data['updated_at']) ? date('Y-m-d', $data['updated_at']) : date('Y-m-d');
-
-            // If this is the homepage, make URL path root
-            if ($slug === $homepageSlug) {
-                $urlPath = ''; // root
+            // Homepage handling
+            if ($row['slug'] === $homeSlug) {
+                $path = '';
             } else {
-                $urlPath = trim(($prefix ? "{$prefix}/" : '') . $slug, '/');
+                $path = trim(($prefix ? "{$prefix}/" : '') . $row['slug'], '/');
             }
 
             $urls[] = [
-                'loc' => $baseUrl . '/' . $urlPath,
-                'lastmod' => $updated,
+                'loc'        => $baseUrl . '/' . $path,
+                'lastmod'    => $lastmod,
                 'changefreq' => 'weekly',
-                'priority' => '0.8',
+                'priority'   => $type === 'page' ? '1.0' : '0.7',
             ];
         }
     }
 
-    // Build XML
     $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><urlset/>');
     $xml->addAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
 
     foreach ($urls as $u) {
         $url = $xml->addChild('url');
-        $url->addChild('loc', htmlspecialchars($u['loc'], ENT_QUOTES | ENT_XML1));
+        $url->addChild('loc', htmlspecialchars($u['loc'], ENT_XML1));
         $url->addChild('lastmod', $u['lastmod']);
         $url->addChild('changefreq', $u['changefreq']);
         $url->addChild('priority', $u['priority']);
@@ -68,7 +70,9 @@ function generate_sitemap(): string
     return $xml->asXML();
 }
 
-
+/**
+ * Save sitemap to storage.
+ */
 function save_sitemap(): void
 {
     $xml = generate_sitemap();

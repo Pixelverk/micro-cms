@@ -47,7 +47,7 @@ if ($isEdit) {
 $title           = $contentData['title'] ?? '';
 $status          = $contentData['status'] ?? 'draft';
 $metaDescription = $contentData['meta']['description'] ?? '';
-$components      = $contentData['components'] ?? [];
+$components      = $contentData['body'] ?? [];
 
 // ----------------------------
 // Layout / header / footer defaults

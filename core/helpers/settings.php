@@ -7,14 +7,13 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 function load_settings(): array {
+    $pdo = db();
+
+    $stmt = $pdo->query("SELECT `key` FROM settings");
     $settings = [];
 
-    if (file_exists(SETTINGS_FILE)) {
-        $json = file_get_contents(SETTINGS_FILE);
-        $data = json_decode($json, true);
-        if (is_array($data)) {
-            $settings = $data;
-        }
+    while ($row = $stmt->fetch()) {
+        $settings[$row['key']] = get_setting($row['key']);
     }
 
     return $settings;
@@ -22,14 +21,27 @@ function load_settings(): array {
 
 /*
 |--------------------------------------------------------------------------
-| Save Settings
+| Save All Settings
 |--------------------------------------------------------------------------
 */
-function save_settings(array $settings): void {
-    file_put_contents(
-        SETTINGS_FILE,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-    );
+function save_settings(array $settings): void
+{
+    $pdo = db();
+    $started = false;
+
+    if (!$pdo->inTransaction()) {
+        $pdo->beginTransaction();
+        $started = true;
+    }
+
+    foreach ($settings as $key => $value) {
+        set_setting($key, $value);
+    }
+
+    if ($started) {
+        $pdo->commit();
+    }
+
     invalidate_cache();
 }
 
@@ -39,13 +51,28 @@ function save_settings(array $settings): void {
 |--------------------------------------------------------------------------
 */
 function get_setting(string $key, $default = null) {
-    $settings = load_settings();
+    $pdo = db();
 
-    if (array_key_exists($key, $settings)) {
-        return $settings[$key];
+    $stmt = $pdo->prepare("SELECT value FROM settings WHERE `key` = :key LIMIT 1");
+    $stmt->execute(['key' => $key]);
+    $row = $stmt->fetch();
+
+    if ($row === false) {
+        return $default;
     }
 
-    return $default;
+    $value = $row['value'];
+
+    // Try JSON decode
+    $decoded = json_decode($value, true);
+
+    // If valid JSON, return decoded value
+    if (json_last_error() === JSON_ERROR_NONE) {
+        return $decoded;
+    }
+
+    // Otherwise return raw value
+    return $value;
 }
 
 /*
@@ -53,8 +80,26 @@ function get_setting(string $key, $default = null) {
 | Set a single setting
 |--------------------------------------------------------------------------
 */
-function set_setting(string $key, $value): void {
-    $settings = load_settings();
-    $settings[$key] = $value;
-    save_settings($settings);
+function set_setting(string $key, $value): void
+{
+    $pdo = db();
+
+    // Encode arrays as JSON
+    if (is_array($value)) {
+        $value = json_encode($value, JSON_THROW_ON_ERROR);
+    }
+
+    $stmt = $pdo->prepare("
+        INSERT INTO settings (`key`, `value`, updated_at)
+        VALUES (:key, :value, :updated_at)
+        ON CONFLICT(`key`) DO UPDATE SET
+            value = excluded.value,
+            updated_at = excluded.updated_at
+    ");
+
+    $stmt->execute([
+        'key'        => $key,
+        'value'      => $value,
+        'updated_at' => time(),
+    ]);
 }

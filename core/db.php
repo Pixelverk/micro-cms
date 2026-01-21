@@ -1,6 +1,9 @@
 <?php
+declare(strict_types=1);
 
-// Connect SQLITE
+/**
+ * Get a PDO connection to the SQLite database
+ */
 function db(): PDO
 {
     static $pdo;
@@ -15,60 +18,112 @@ function db(): PDO
 }
 
 /**
- * Load a content item (page, blog post, etc.) as associative array from JSON
+ * Load a content item by slug and type (if provided)
  */
-function load_content_from_file(string $file, string $type, string $slug): array
+function load_content_by_slug(string $slug, ?string $type = null): ?array
 {
-    $json = file_get_contents($file);
-    $data = json_decode($json, true);
-
-    if (!is_array($data)) {
-        throw new RuntimeException("Invalid JSON in {$file}");
-    }
-
-    $theme = theme_config();
+    $theme    = theme_config();
     $settings = load_settings();
-    $ctConfig = $theme['content_types'][$type] ?? [];
-
-    $data['type']   = $type;
-    $data['slug']   = $slug;
-
-    $data['layout'] = $data['layout'] ?? $ctConfig['default_layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'];
-    $data['header'] = $data['header'] ?? $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
-    $data['footer'] = $data['footer'] ?? $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'];
-
-    $data['status'] = '200';
-
-    return $data;
-}
-
-function load_content_by_slug(string $slug): ?array
-{
-    $theme = theme_config();
-    $settings = load_settings();
-
-    $contentTypes = array_keys($theme['content_types'] ?? []);
+    $types    = array_keys($theme['content_types'] ?? []);
     $prefixes = $settings['content_prefixes'] ?? [];
 
-    foreach ($contentTypes as $type) {
-        $prefix = $prefixes[$type] ?? '';
+    $pdo = db();
+
+    foreach ($types as $ct) {
+        if ($type !== null && $type !== $ct) continue;
+
+        $prefix = $prefixes[$ct] ?? '';
 
         if ($prefix) {
-            // Skip this type if the slug does not start with the prefix
-            if (!str_starts_with($slug, $prefix . '/')) {
-                continue;
-            }
+            if (!str_starts_with($slug, $prefix . '/')) continue;
             $relativeSlug = substr($slug, strlen($prefix) + 1);
         } else {
             $relativeSlug = $slug;
         }
 
-        $file = STORAGE_PATH . "/content/{$type}/{$relativeSlug}.json";
+        $stmt = $pdo->prepare("
+            SELECT *
+            FROM content
+            WHERE slug = :slug
+              AND type = :type
+              AND status = 'published'
+            LIMIT 1
+        ");
 
-        if (is_file($file)) {
-            return load_content_from_file($file, $type, $relativeSlug);
+        $stmt->execute([
+            'slug' => $relativeSlug,
+            'type' => $ct,
+        ]);
+
+        $row = $stmt->fetch();
+        if (!$row) continue;
+
+        // Decode JSON columns safely
+        $body = json_decode($row['body'] ?? '', true);
+        $meta = json_decode($row['meta'] ?? '', true);
+
+        if (!is_array($body)) {
+            throw new RuntimeException("Invalid body JSON for {$ct}/{$relativeSlug}");
         }
+
+        if ($meta !== null && !is_array($meta)) {
+            throw new RuntimeException("Invalid meta JSON for {$ct}/{$relativeSlug}");
+        }
+
+        $ctConfig = $theme['content_types'][$ct] ?? [];
+
+        return [
+            'id'         => (int) $row['id'],
+            'type'       => $ct,
+            'slug'       => $relativeSlug,
+            'title'      => $row['title'],
+            'status'     => $row['status'],
+            'layout'     => $row['layout'] ?? $ctConfig['default_layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'],
+            'header'     => $row['header'] ?? $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'],
+            'footer'     => $row['footer'] ?? $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'],
+            'meta'       => $meta ?? [],
+            'components' => $body ?? [],
+            'created_at' => (int) $row['created_at'],
+            'updated_at' => (int) $row['updated_at'],
+            'published_at' => $row['published_at'] ? (int) $row['published_at'] : null,
+        ];
     }
 
     return null;
+}
+
+/**
+ * Optional helper to fetch all content of a type, with filters
+ */
+function get_contents(string $type, array $filters = []): array
+{
+    $pdo = db();
+    $sql = "SELECT * FROM content WHERE type = :type";
+    $params = ['type' => $type];
+
+    if (isset($filters['status'])) {
+        $sql .= " AND status = :status";
+        $params['status'] = $filters['status'];
+    }
+
+    if (isset($filters['order_by'])) {
+        $order = strtoupper($filters['order_by']);
+        $sql .= " ORDER BY " . ($order === 'ASC' ? 'created_at ASC' : 'created_at DESC');
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    $results = [];
+    while ($row = $stmt->fetch()) {
+        $data = json_decode($row['data'], true);
+        $data['slug'] = $row['slug'];
+        $data['type'] = $row['type'];
+        $data['status'] = $row['status'];
+        $data['created_at'] = $row['created_at'];
+        $data['updated_at'] = $row['updated_at'];
+        $results[] = $data;
+    }
+
+    return $results;
 }

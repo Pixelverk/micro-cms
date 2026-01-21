@@ -13,10 +13,6 @@ function bootstrap(string $mode): void
     define('STORAGE_PATH', CMS_PATH . '/storage');
     define('CONTENT_PATH', STORAGE_PATH . '/content');
 
-    define('MENUS_FILE', STORAGE_PATH . '/menus.json');
-    define('USER_FILE', STORAGE_PATH . '/users.json');
-    define('SETTINGS_FILE', STORAGE_PATH . '/settings.json');
-
     /*
     |--------------------------------------------------------------------------
     | Load Config
@@ -29,21 +25,19 @@ function bootstrap(string $mode): void
     | Ensure Storage Directories Exist
     |--------------------------------------------------------------------------
     */
-    foreach (['', '/cache', '/media', '/content', '/logs'] as $dir) {
+    foreach (['', '/cache', '/media', '/logs'] as $dir) {
         $full = STORAGE_PATH . $dir;
         if (!is_dir($full)) mkdir($full, 0775, true);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | First Run DB Setup
+    | First Run SQLite Setup
     |--------------------------------------------------------------------------
-    /
-
-    if (!file_exists(STORAGE_PATH . '/data.sqlite')) {
-        require CORE_PATH . '/bootstrap/db_setup.php';
-    }
     */
+    if (!file_exists(STORAGE_PATH . '/data.sqlite')) {
+        require CORE_PATH . '/db_setup.php';
+    }
 
     /*
     |--------------------------------------------------------------------------

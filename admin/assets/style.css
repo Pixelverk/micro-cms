@@ -304,3 +304,43 @@ button:hover {
 .sidebar-link.danger {
     color: #fca5a5;
 }
+
+/* content list stuff */
+
+.badge {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0.15em 0.45em;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+    background: #e9ecef;
+    color: #555;
+}
+
+.badge-home {
+    background: #eef3ff;
+    color: #3b5bcc;
+}
+
+.status {
+    display: inline-block;
+    padding: 0.2em 0.45em;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.status-draft {
+    background: #f1f1f1;
+    color: #666;
+}
+
+.status-published {
+    background: #e6f4ea;
+    color: #2f855a;
+}

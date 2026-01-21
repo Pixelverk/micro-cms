@@ -103,11 +103,14 @@ ob_start();
     const menuKeyInput   = document.getElementById('menu-key');
 
     menuLabelInput.addEventListener('input', () => {
-        menuKeyInput.value = menuLabelInput.value.toLowerCase()
-            .replace(/[\s_]+/g, '-')
-            .replace(/[^a-z0-9\-]/g, '')
-            .replace(/-+/g, '-')
-            .replace(/^-+|-+$/g, '');
+        // Only auto-generate if creating new menu
+        if (!<?= json_encode((bool)$menuKey) ?>) {
+            menuKeyInput.value = menuLabelInput.value.toLowerCase()
+                .replace(/[\s_]+/g, '-')
+                .replace(/[^a-z0-9\-]/g, '')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
     });
 
     // Delete menu button

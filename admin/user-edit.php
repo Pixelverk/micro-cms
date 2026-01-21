@@ -9,6 +9,10 @@ if (!$editUsername || !user_exists($editUsername)) {
 
 $pageTitle = 'Edit User: ' . $editUsername;
 
+// Load user data
+$users = load_users();
+$user = $users[$editUsername] ?? [];
+
 ob_start();
 ?>
 
@@ -18,13 +22,38 @@ ob_start();
         <p>Editing user: <strong><?= e($editUsername) ?></strong></p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="edit">Save Changes</button>
+        <button type="submit" form="edit-user">Save Changes</button>
     </div>
 </div>
 
-<form id="edit" method="post" action="<?= url('admin/user-save') ?>" class="form-card">
+<form id="edit-user" method="post" action="<?= url('admin/user-save') ?>" class="form-card">
     <input type="hidden" name="action" value="update">
-    <input type="hidden" name="username" value="<?= e($editUsername) ?>">
+    <input type="hidden" name="original_username" value="<?= e($editUsername) ?>">
+
+    <fieldset>
+        <legend>User Info</legend>
+
+        <label>
+            Username:
+            <input type="text" name="username" value="<?= e($user['username'] ?? '') ?>" readonly>
+            <small>Username cannot be changed.</small>
+        </label>
+
+        <label>
+            First Name:
+            <input type="text" name="first_name" value="<?= e($user['first_name'] ?? '') ?>">
+        </label>
+
+        <label>
+            Last Name:
+            <input type="text" name="last_name" value="<?= e($user['last_name'] ?? '') ?>">
+        </label>
+
+        <label>
+            Email:
+            <input type="email" name="email" value="<?= e($user['email'] ?? '') ?>">
+        </label>
+    </fieldset>
 
     <fieldset>
         <legend>Update Password</legend>

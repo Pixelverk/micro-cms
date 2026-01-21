@@ -70,14 +70,14 @@ JS,
  * -------------------------------------------- */
 'render' => function (array $props) {
     $id = 'header-' . uniqid();
-    $menu = get_menu_items('header1');
+    $menu = get_menu('header1');
     extract($props, EXTR_SKIP);
     ?>
     <header id="<?= $id ?>">
         <div class="inner">
             <a href="<?= url() ?>" class="logo">Acme Consulting</a>
             <nav class="site-nav">
-                <?php foreach ($menu as $item): ?>
+                <?php foreach ($menu['items'] as $item): ?>
                     <a href="<?= e($item['type'] === 'page' ? url($item['slug']) : $item['slug']) ?>" target="<?= e($item['target'] ?? '_self') ?>"><?= e($item['label']) ?></a>
                 <?php endforeach; ?>
             </nav>

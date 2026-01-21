@@ -27,7 +27,7 @@ $contentData['status'] = $_POST['status'] ?? 'published';
 $currentTime = time();
 $contentData['updated_at'] = $currentTime;
 // if no created_at time, set it
-if (!$contentData['created_at']) {
+if (!isset($contentData['created_at'])) {
     $contentData['created_at'] = $currentTime;
 }
 
@@ -36,6 +36,7 @@ if (!$contentData['created_at']) {
 // ----------------------------
 $contentData['type'] = $contentType;
 $contentData['title'] = trim($_POST['title'] ?? $contentData['title'] ?? "New {$contentType}");
+$contentData['meta'] ??= [];
 $contentData['meta']['description'] = trim(
     $_POST['meta_description'] ?? $contentData['meta']['description'] ?? ''
 );
@@ -113,10 +114,11 @@ function reindexRecursive(array $array): array {
     return $result;
 }
 
-$contentData['components'] = reindexRecursive($componentsTree);
+$contentData['body'] ??= [];
+$contentData['body'] = reindexRecursive($componentsTree);
 
 // ----------------------------
-// Save content JSON
+// Save content
 // ----------------------------
 if (!save_content($contentType, $slug, $contentData)) {
     redirect_with_toast("content-list", 'error', "Failed to save {$contentType}.");

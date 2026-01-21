@@ -12,8 +12,7 @@ The goal is to have a good user experience, for both developers and editors, wit
 
 * `theme/components/` – Custom PHP components for your pages
 * `theme/assets/` – Global CSS, JavaScript, and images
-* `storage/` – Cache, uploads, and other data in JSON storage
-* `storage/content/` – JSON content data (one file per content item)
+* `storage/` – Cache, logs, media uploads, SQLlite file, sitemap.xml.
 * `admin/` – Admin panel for creating/editing content and managing users
 * `core/` – All the things that make it go
 
@@ -51,10 +50,9 @@ The componentName.php basically decides:
 ## Requirements
 
 * PHP 8.0 or higher
-* PDO extension (when using SQLite)
-* JSON extension (built-in in PHP 5.2+)
-* File write permissions for `storage/` (for content, cache, users, uploads)
-* Apache for `.htaccess` rules and rewriting all requests to `index.php`.
+* PDO extension (for using SQLite)
+* File write permissions for `storage/`
+* Apache for `.htaccess` rules and rewriting requests to `index.php`.
 
 ---
 
@@ -66,14 +64,12 @@ All requests should go through `index.php` and the .htaccess for proper handling
 
 Make sure there are sufficient permissions to write files in `storage`.
 
-Content items are dynamically built from JSON files in `storage/content/`.
-
 Demo account:
 
 * Username: `demo`
 * Password: `demo`
 
-The demo account is created automatically if no other users exist.
+The demo data and storage folder is created automatically if no data.sqlite file exists.
 
 Access the editor at `/admin/` to manage content and users.
 
@@ -84,7 +80,7 @@ Access the editor at `/admin/` to manage content and users.
 ### Phase 1 – Core Features ✅
 
 * Front controller (`index.php`) to route requests
-* JSON-based page storage
+* JSON-based page storage (it's SQLite now)
 * Page CRUD (create, edit, delete)
 * Add/remove components, including nested components
 * Basic login / authentication
@@ -136,7 +132,7 @@ Access the editor at `/admin/` to manage content and users.
 * Multi-language support
 * Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
-* SQLite instead of JSON
+* SQLite instead of JSON ✅
 * Login history ?
 
 ---
@@ -149,4 +145,4 @@ Feel free to open issues, submit pull requests, or create new components to enha
 
 ## License
 
-Naaah
+Do what you want

@@ -1,111 +1,183 @@
 <?php
-// core/helpers/content.php
-
 declare(strict_types=1);
 
 /**
- * List all content items of a given type.
+ * List *specific fields* from all content items of a given type
  *
- * @param string $type Content type (e.g., 'page', 'blog', etc.)
- * @return array List of content items with keys: slug, path, title
+ * @param string $type Content type (e.g., 'page', 'blog_post')
+ * @return array List of content items with keys: slug, title, status, published_at, created_at, updated_at
  */
 function list_content(string $type): array
 {
-    $contentPath = STORAGE_PATH . "/content/{$type}";
+    $pdo = db();
 
-    $items = [];
+    $stmt = $pdo->prepare("
+        SELECT slug, title, status, published_at, created_at, updated_at
+        FROM content
+        WHERE type = :type
+        ORDER BY title COLLATE NOCASE ASC
+    ");
+    $stmt->execute(['type' => $type]);
 
-    if (!is_dir($contentPath)) {
-        return $items;
-    }
-
-    $files = scandir($contentPath);
-
-    foreach ($files as $file) {
-        if ($file === '.' || $file === '..') {
-            continue;
-        }
-
-        $ext = pathinfo($file, PATHINFO_EXTENSION);
-        if ($ext !== 'json') {
-            continue;
-        }
-
-        $filePath = $contentPath . '/' . $file;
-        $slug = pathinfo($file, PATHINFO_FILENAME);
-
-        $json = file_get_contents($filePath);
-        $data = json_decode($json, true);
-
-        if (!is_array($data)) {
-            continue;
-        }
-
-        $items[] = [
-            'slug'  => $slug,
-            'path'  => $filePath,
-            'title' => $data['title'] ?? ucfirst($slug),
-        ];
-    }
-
-    // Optional: sort alphabetically by title
-    usort($items, fn($a, $b) => strcmp($a['title'], $b['title']));
-
-    return $items;
+    return $stmt->fetchAll() ?: [];
 }
 
 /**
- * Load a content item of a given type as an associative array from JSON
+ * Load a content item of a given type by slug
  *
- * @param string $type Content type (e.g., 'page', 'blog')
- * @param string $slug Slug/filename without .json
+ * @param string $type
+ * @param string $slug
  * @return array|null
  */
 function load_content(string $type, string $slug): ?array
 {
-    $path = STORAGE_PATH . "/content/{$type}/{$slug}.json";
+    $pdo = db();
 
-    if (!file_exists($path)) {
-        return null;
-    }
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM content
+        WHERE type = :type AND slug = :slug
+        LIMIT 1
+    ");
 
-    $json = file_get_contents($path);
-    $data = json_decode($json, true);
+    $stmt->execute([
+        'type' => $type,
+        'slug' => $slug,
+    ]);
 
-    if (!is_array($data)) {
-        return null; // invalid JSON
-    }
+    $row = $stmt->fetch();
+    if (!$row) return null;
 
-    return $data;
+    return [
+        'id'           => (int) $row['id'],
+        'type'         => $row['type'],
+        'slug'         => $row['slug'],
+        'title'        => $row['title'],
+        'status'       => $row['status'],
+        'layout'       => $row['layout'],
+        'header'       => $row['header'],
+        'footer'       => $row['footer'],
+        'meta'         => $row['meta'] ? json_decode($row['meta'], true) : [],
+        'body'         => json_decode($row['body'], true),
+        'published_at' => $row['published_at'],
+        'created_at'   => $row['created_at'],
+        'updated_at'   => $row['updated_at'],
+    ];
 }
 
 /**
- * Save a content item of a given type to JSON
+ * Save or update a content item to the database
  *
- * @param string $type Content type
- * @param string $slug Slug/filename
- * @param array  $data Content array to save
+ * @param string $type
+ * @param string $slug
+ * @param array  $data
  * @return bool
  */
 function save_content(string $type, string $slug, array $data): bool
 {
-    $dir = STORAGE_PATH . "/content/{$type}";
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    $pdo = db();
+    $now = time();
+
+    // Ensure required structures exist
+    $data['meta'] ??= [];
+    $data['body'] ??= [];
+
+    $status = $data['status'] ?? 'draft';
+    $publishedAt = $status === 'published'
+        ? ($data['published_at'] ?? $now)
+        : null;
+
+    // Does content already exist?
+    $stmt = $pdo->prepare("
+        SELECT id FROM content
+        WHERE type = :type AND slug = :slug
+        LIMIT 1
+    ");
+    $stmt->execute([
+        'type' => $type,
+        'slug' => $slug,
+    ]);
+
+    $existingId = $stmt->fetchColumn();
+
+    if ($existingId) {
+        // UPDATE
+        $stmt = $pdo->prepare("
+            UPDATE content SET
+                title        = :title,
+                status       = :status,
+                layout       = :layout,
+                header       = :header,
+                footer       = :footer,
+                meta         = :meta,
+                body         = :body,
+                published_at = :published_at,
+                updated_at   = :updated_at
+            WHERE id = :id
+        ");
+
+        $result = $stmt->execute([
+            'id'           => $existingId,
+            'title'        => $data['title'],
+            'status'       => $status,
+            'layout'       => $data['layout'] ?? null,
+            'header'       => $data['header'] ?? null,
+            'footer'       => $data['footer'] ?? null,
+            'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
+            'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
+            'published_at' => $publishedAt,
+            'updated_at'   => $now,
+        ]);
+    } else {
+        // INSERT
+        $stmt = $pdo->prepare("
+            INSERT INTO content (
+                type,
+                slug,
+                title,
+                status,
+                layout,
+                header,
+                footer,
+                meta,
+                body,
+                published_at,
+                created_at,
+                updated_at
+            ) VALUES (
+                :type,
+                :slug,
+                :title,
+                :status,
+                :layout,
+                :header,
+                :footer,
+                :meta,
+                :body,
+                :published_at,
+                :created_at,
+                :updated_at
+            )
+        ");
+
+        $result = $stmt->execute([
+            'type'         => $type,
+            'slug'         => $slug,
+            'title'        => $data['title'],
+            'status'       => $status,
+            'layout'       => $data['layout'] ?? null,
+            'header'       => $data['header'] ?? null,
+            'footer'       => $data['footer'] ?? null,
+            'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
+            'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
+            'published_at' => $publishedAt,
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ]);
     }
 
-    $path = $dir . '/' . $slug . '.json';
-
-    // Optional: validate structure here
-
-    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    if ($json === false) {
-        return false; // encoding failed
-    }
-    
-    $result = file_put_contents($path, $json, LOCK_EX) !== false;
-    save_sitemap();
     invalidate_cache($slug, $type);
-    
-    return $result;
+    save_sitemap();
+
+    return (bool)$result;
 }

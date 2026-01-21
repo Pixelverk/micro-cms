@@ -1,35 +1,72 @@
 <?php
-// core/auth.php
-
 declare(strict_types=1);
 
 // --------------------------------------------------
-// Load users
+// Authentication & User Management (SQLite)
 // --------------------------------------------------
 
+/**
+ * Get all users from the database.
+ * Returns array keyed by username for convenience.
+ */
 function load_users(): array
 {
-    if (!file_exists(USER_FILE)) {
-        return [];
+    $pdo = db();
+
+    $stmt = $pdo->query("SELECT * FROM users");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $users = [];
+    foreach ($rows as $row) {
+        $users[$row['username']] = $row;
     }
 
-    $json = file_get_contents(USER_FILE);
-    $users = json_decode($json, true);
-
-    return is_array($users) ? $users : [];
+    return $users;
 }
 
-// --------------------------------------------------
-// Save users
-// --------------------------------------------------
-
-function save_users(array $users): void
+/**
+ * Save a new or updated user to the database.
+ */
+function save_user(array $user): void
 {
-    file_put_contents(
-        USER_FILE,
-        json_encode($users, JSON_PRETTY_PRINT),
-        LOCK_EX
-    );
+    $pdo = db();
+
+    if (!empty($user['id'])) {
+        // Update existing user
+        $stmt = $pdo->prepare("
+            UPDATE users
+            SET username = :username,
+                first_name = :first_name,
+                last_name = :last_name,
+                email = :email,
+                password_hash = :password_hash,
+                last_login = :last_login
+            WHERE id = :id
+        ");
+        $stmt->execute([
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'first_name' => $user['first_name'] ?? null,
+            'last_name' => $user['last_name'] ?? null,
+            'email' => $user['email'] ?? null,
+            'password_hash' => $user['password_hash'],
+            'last_login' => $user['last_login'] ?? null,
+        ]);
+    } else {
+        // Insert new user
+        $stmt = $pdo->prepare("
+            INSERT INTO users (username, first_name, last_name, email, password_hash, created_at)
+            VALUES (:username, :first_name, :last_name, :email, :password_hash, :created_at)
+        ");
+        $stmt->execute([
+            'username' => $user['username'],
+            'first_name' => $user['first_name'] ?? null,
+            'last_name' => $user['last_name'] ?? null,
+            'email' => $user['email'] ?? null,
+            'password_hash' => $user['password_hash'],
+            'created_at' => time(),
+        ]);
+    }
 }
 
 // --------------------------------------------------
@@ -38,23 +75,27 @@ function save_users(array $users): void
 
 function login(string $username, string $password): bool
 {
-    $users = load_users();
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
+    $stmt->execute(['username' => $username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!isset($users[$username])) {
-        return false;
-    }
-
-    $hash = $users[$username]['password'] ?? '';
-
-    if (!password_verify($password, $hash)) {
+    if (!$user || !password_verify($password, $user['password_hash'])) {
         return false;
     }
 
     // Regenerate session ID on login (important)
     session_regenerate_id(true);
 
-    $_SESSION['user_id'] = $username;
+    $_SESSION['user_id'] = $user['username'];
     $_SESSION['login_time'] = time();
+
+    // Update last login
+    $stmt = $pdo->prepare("UPDATE users SET last_login = :last_login WHERE id = :id");
+    $stmt->execute([
+        'last_login' => time(),
+        'id' => $user['id'],
+    ]);
 
     return true;
 }
@@ -80,40 +121,44 @@ function logout(): void
 }
 
 // --------------------------------------------------
-// User management helpers
+// User helpers
 // --------------------------------------------------
 
-function create_user(string $username, string $password): void
+function create_user(string $username, string $password, ?string $firstName = null, ?string $lastName = null, ?string $email = null): void
 {
-    $users = load_users();
+    $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-    $users[$username] = [
-        'password' => password_hash($password, PASSWORD_DEFAULT),
-        'created'  => time(),
-    ];
-
-    save_users($users);
+    save_user([
+        'username' => $username,
+        'password_hash' => $hashed,
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+        'email' => $email,
+    ]);
 }
 
 function user_exists(string $username): bool
 {
-    $users = load_users();
-    return isset($users[$username]);
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :username");
+    $stmt->execute(['username' => $username]);
+    return (bool)$stmt->fetchColumn();
 }
 
-function current_user(): ?string
+function current_user(): ?array
 {
-    return $_SESSION['user_id'] ?? null;
-}
+    if (empty($_SESSION['user_id'])) {
+        return null;
+    }
 
-// create a demo user if no user exists
-if (config('env') === 'local' && count(load_users()) < 1) {
-    create_user('demo', 'demo');
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
+    $stmt->execute(['username' => $_SESSION['user_id']]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
-
 
 // --------------------------------------------------
-// Login helpers
+// Login status
 // --------------------------------------------------
 
 function is_logged_in(): bool
@@ -132,6 +177,7 @@ function require_login(): void
 // --------------------------------------------------
 // Session timeout
 // --------------------------------------------------
+
 function session_timeout_check(): void
 {
     $timeout = config('session.timeout');

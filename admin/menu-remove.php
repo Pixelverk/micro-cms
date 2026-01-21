@@ -1,33 +1,34 @@
 <?php
+declare(strict_types=1);
 
 // ----------------------------
-// Get menu name from query
+// Get menu slug from query
 // ----------------------------
-$menu = trim($_GET['menu'] ?? '');
-if ($menu === '') {
+$menuSlug = trim($_GET['menu'] ?? '');
+if ($menuSlug === '') {
     redirect_with_toast('menu-edit', 'error', 'Missing menu name.');
 }
 
 // ----------------------------
-// Load existing menus
+// Load menu to get label for feedback
 // ----------------------------
-$menus = load_menus();
-
-if (!isset($menus[$menu])) {
+$menu = get_menu($menuSlug);
+if (!$menu['label']) {
     redirect_with_toast('menu-edit', 'error', 'Menu not found.');
 }
 
 // ----------------------------
-// Remove menu
+// Delete menu
 // ----------------------------
-unset($menus[$menu]);
-
-if (!save_menus($menus)) {
-    redirect_with_toast('menu-edit', 'error', 'Failed to remove menu.');
+if (!delete_menu($menuSlug)) {
+    redirect_with_toast('menu-edit', 'error', "Failed to delete menu \"{$menu['label']}\".");
 }
 
 // ----------------------------
 // Success
 // ----------------------------
-invalidate_cache();
-redirect_with_toast('menu-edit', 'success', "Menu \"$menu\" removed successfully.");
+redirect_with_toast(
+    'menu-edit',
+    'success',
+    "Menu \"{$menu['label']}\" removed successfully."
+);

@@ -8,15 +8,15 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?php echo e($username); ?> 👋</h2>
+        <h2>Hello, <?= e($username) ?> 👋</h2>
         <p>Create a new user</p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="create">Create User</button>
+        <button type="submit" form="create-user">Create User</button>
     </div>
 </div>
 
-<form id="create" method="post" action="<?= url('admin/user-save') ?>" class="form-card">
+<form id="create-user" method="post" action="<?= url('admin/user-save') ?>" class="form-card">
     <input type="hidden" name="action" value="create">
 
     <fieldset>
@@ -29,6 +29,34 @@ ob_start();
                 name="username"
                 required
                 autocomplete="off"
+                placeholder="Enter username"
+            >
+        </label>
+
+        <label>
+            First Name:
+            <input
+                type="text"
+                name="first_name"
+                placeholder="Optional"
+            >
+        </label>
+
+        <label>
+            Last Name:
+            <input
+                type="text"
+                name="last_name"
+                placeholder="Optional"
+            >
+        </label>
+
+        <label>
+            Email:
+            <input
+                type="email"
+                name="email"
+                placeholder="Optional"
             >
         </label>
 
@@ -38,6 +66,7 @@ ob_start();
                 type="password"
                 name="password"
                 required
+                placeholder="Enter password"
             >
         </label>
 
@@ -47,6 +76,7 @@ ob_start();
                 type="password"
                 name="password_confirm"
                 required
+                placeholder="Confirm password"
             >
         </label>
     </fieldset>

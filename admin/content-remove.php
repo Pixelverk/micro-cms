@@ -1,4 +1,9 @@
 <?php
+declare(strict_types=1);
+
+//require_once __DIR__ . '/../core/bootstrap/bootstrap.php';
+
+$pdo = db();
 
 // ----------------------------
 // Get slug and type
@@ -27,11 +32,13 @@ if (!isset($contentTypes[$type])) {
 }
 
 // ----------------------------
-// Build file path
+// Check if content exists
 // ----------------------------
-$path = STORAGE_PATH . "/content/{$type}/{$slug}.json";
+$stmt = $pdo->prepare("SELECT id FROM content WHERE type = :type AND slug = :slug LIMIT 1");
+$stmt->execute(['type' => $type, 'slug' => $slug]);
+$content = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!is_file($path)) {
+if (!$content) {
     redirect_with_toast(
         'content-list',
         'error',
@@ -41,19 +48,13 @@ if (!is_file($path)) {
 }
 
 // ----------------------------
-// Delete
+// Delete content
 // ----------------------------
-if (!unlink($path)) {
-    redirect_with_toast(
-        'content-list',
-        'error',
-        'Failed to delete ' . $type . '.',
-        ['type' => $type]
-    );
-}
+$stmt = $pdo->prepare("DELETE FROM content WHERE id = :id");
+$stmt->execute(['id' => $content['id']]);
 
 // ----------------------------
-// Success
+// Post-delete housekeeping
 // ----------------------------
 invalidate_cache($slug, $type);
 save_sitemap();

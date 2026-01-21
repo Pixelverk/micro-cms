@@ -13,15 +13,15 @@ declare(strict_types=1);
 function route_request(): array
 {
     $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
-    $slug = $path === '' ? get_setting('homepage_slug') : $path; //empty path should show user-defined homepage
+    $slug = $path === '' ? get_setting('homepage_slug') : $path; // empty path means user-defined home page
 
-    // Contact post case
+    // Contact POST
     if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         require CORE_PATH . '/contact.php';
         exit;
     }
 
-    // Sitemap case
+    // Sitemap
     if ($path === 'sitemap.xml') {
         $file = STORAGE_PATH . '/sitemap.xml';
 
@@ -34,19 +34,21 @@ function route_request(): array
         readfile($file);
         exit;
     }
-    
-    // No bad stuff in slug
-    if (!preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
+
+    // Validate slug
+    if (!is_string($slug) || !preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
         return load_fallback_404();
     }
-    
-    // standard case
-    $item = load_content_by_slug($slug);
-    if ($item) return $item;
 
-    // whoops, not found
+    // Load from DB
+    $item = load_content_by_slug($slug);
+    if ($item) {
+        return $item;
+    }
+
     return load_fallback_404();
 }
+
 
 function load_fallback_404(): array
 {

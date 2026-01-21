@@ -71,7 +71,4 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
     redirect_with_toast('media', 'error', 'Failed to move uploaded file.');
 }
 
-// Build public URL (via symlink)
-$publicPath = ($subdir ? $subdir . '/' : '') . $filename;
-
 redirect_with_toast('media', 'success', 'File uploaded.');
