@@ -77,23 +77,6 @@ h2 {
     font-weight: 500;
 }
 
-/* navigation */
-
-nav {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-}
-
-nav a {
-    color: #c7d2fe;
-    margin-right: 1rem;
-    text-decoration: none;
-}
-
-nav a:hover {
-    text-decoration: underline;
-}
-
 /* forms / inputs */
 
 fieldset {
@@ -318,7 +301,19 @@ header {
 }
 
 .header-icon, .sidebar-icon {
-     cursor: pointer;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-icon svg {
+    display: block;
+}
+
+.header-icon:hover svg {
+    transform: scale(1.2);
+    fill: #f4f6f8;
 }
 
 .header-left a {

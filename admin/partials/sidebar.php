@@ -52,44 +52,67 @@ function is_content_type_active(string $type): string
     </div>
 
     <div class="sidebar-section">
-        <div class="sidebar-title">Menus</div>
+        <div class="sidebar-title">Collections</div>
+
+        <a href="<?= url('admin/categories') ?>" class="sidebar-link <?= is_active('categories', $currentPath) ?>">
+            <span class="sidebar-icon"><?= icon('bookmark-book', 18) ?></span>
+            Categories
+        </a>
+
+        <a href="<?= url('admin/tags') ?>" class="sidebar-link <?= is_active('tags', $currentPath) ?>">
+            <span class="sidebar-icon"><?= icon('label', 18) ?></span>
+            Tags
+        </a>
+
+    </div>  
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">More</div>
 
         <a href="<?= url('admin/menu-edit') ?>" class="sidebar-link <?= is_active('menu-edit', $currentPath) ?>">
             <span class="sidebar-icon"><?= icon('menu', 18) ?></span>
-            Menu List
+            Menus
         </a>
-
-    </div>
-
-    <div class="sidebar-section">
-        <div class="sidebar-title">Users</div>
-
-        <a href="<?= url('admin/user-list') ?>" class="sidebar-link <?= is_active('user-list', $currentPath) ?>">
-            <span class="sidebar-icon"><?= icon('group', 18) ?></span>
-            User List
-        </a>
-
-        <a href="<?= url('admin/user-add') ?>" class="sidebar-link <?= is_active('user-add', $currentPath) ?>">
-            <span class="sidebar-icon"><?= icon('user-plus', 18) ?></span>
-            Add New
-        </a>
-    </div>
-
-    <div class="sidebar-section">
-        <div class="sidebar-title">System</div>
 
         <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>">
             <span class="sidebar-icon"><?= icon('media-image-list', 18) ?></span>
             Media
         </a>
 
+        <a href="<?= url('admin/metrics') ?>" class="sidebar-link <?= is_active('metrics', $currentPath) ?>">
+            <span class="sidebar-icon"><?= icon('clipboard-check', 18) ?></span>
+            Metrics
+        </a>
+
+    </div>    
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">System</div>
+
+        <a href="<?= url('admin/user-list') ?>" class="sidebar-link <?= is_active('user-list', $currentPath) ?>">
+            <span class="sidebar-icon"><?= icon('group', 18) ?></span>
+            Users
+        </a>
+
         <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>">
             <span class="sidebar-icon"><?= icon('settings', 18) ?></span>
             Settings
         </a>
+
+        <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= is_active('utilities', $currentPath) ?>">
+            <span class="sidebar-icon"><?= icon('wrench', 18) ?></span>
+            Utilities
+        </a>
     </div>
 
     <div class="sidebar-section sidebar-footer">
+        <div class="sidebar-title">Account</div>
+
+        <a href="<?= url('admin/pforile') ?>" class="sidebar-link danger">
+            <span class="sidebar-icon"><?= icon('profile-circle', 18) ?></span>
+            Profile
+        </a>
+
         <a href="<?= url('admin/logout') ?>" class="sidebar-link danger">
             <span class="sidebar-icon"><?= icon('log-out', 18) ?></span>
             Logout
