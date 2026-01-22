@@ -45,6 +45,7 @@ return [
                 'feature-card',
                 'cta-section',
                 'contact-section',
+                'quill-editor',
             ],
             'url_prefix' => '',
         ],

@@ -147,18 +147,23 @@ function render_components(array $components, array &$collectedJs = [], array &$
 
 function component(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void {
     
-    // set the file name
-    $componentFile = theme("components/{$name}.php");
+ 
+    // get component path in theme or core
+    $componentPath = theme("components/{$name}.php");
+
+    if (!file_exists($componentPath)) {
+        $componentPath = CORE_PATH . "/components/{$name}.php";
+    }
 
     // handle missing file
-    if (!file_exists($componentFile)) {
-        trigger_error("Component '{$name}' not found at {$componentFile}", E_USER_WARNING);
+    if (!file_exists($componentPath)) {
+        trigger_error("Component '{$name}' not found at {$componentPath}", E_USER_WARNING);
         echo "<div style='width:fit-content; margin: 3rem auto;'> {$name} - component not found </div>";
         return;
     }
 
     // attempt to load the file
-    $component = require $componentFile;
+    $component = require $componentPath;
 
     // panic if component is not array
     if (!is_array($component)) {

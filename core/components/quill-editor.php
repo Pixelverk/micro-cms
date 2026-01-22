@@ -7,7 +7,7 @@ return [
 /** --------------------------------------------
  * User-facing name/label
  * -------------------------------------------- */
-'label' => 'Quill Editor',
+'label' => 'Rich Text',
 
 /** --------------------------------------------
  * CMS-Editable Schema
@@ -15,7 +15,7 @@ return [
 'schema' => [
     'content' => [
         'type' => 'quill',
-        'label' => 'Quill Editor',
+        'label' => 'Rich Text',
         'default' => 'Write something nice here'
     ]
 ],
@@ -30,14 +30,12 @@ return [
  * Component CSS (optional)
  * -------------------------------------------- */
 'css' => <<<CSS
-
 CSS,
 
 /** --------------------------------------------
  * Component JS (optional)
  * -------------------------------------------- */
 'js' => <<<JS
-
 JS,
 
 /** --------------------------------------------

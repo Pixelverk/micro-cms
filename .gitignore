@@ -1,5 +1,5 @@
 # Ignore the very safe json storage
-/storage/*
+/storage/**
 
 # Ignore local notes and reference files
 notes*

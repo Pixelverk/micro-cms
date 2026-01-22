@@ -76,7 +76,10 @@ $pageFooter = $contentData['footer']
 // ----------------------------
 $allowedComponents = $ctConfig['available_components'] ?? [];
 
-$componentFiles = glob(CMS_PATH . '/theme/components/*.php');
+$coreComponentFiles = glob(CORE_PATH . '/components/*.php');
+$themeComponentFiles = glob(CMS_PATH . '/theme/components/*.php');
+$componentFiles = array_merge($coreComponentFiles, $themeComponentFiles);
+
 $availableComponents = [];
 
 foreach ($componentFiles as $file) {
