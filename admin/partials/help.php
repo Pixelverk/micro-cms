@@ -22,7 +22,7 @@
 }
 </style>
 
-<span id="help-fab" class="header-icon" type="button" aria-label="Page help"><?= icon('help-circle', 28) ?></span>
+<span id="help-fab" class="header-icon" type="button" aria-label="Page help"><?= icon('help-circle', 26) ?></span>
 
 <div id="help-panel">
     <?= $pageHelp ?>

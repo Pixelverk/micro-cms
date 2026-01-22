@@ -10,9 +10,9 @@ declare(strict_types=1);
 /**
  * Determine which content to serve based on the URL
  */
-function route_request(): array
+function route_request($path): array
 {
-    $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/');
+    $path = trim($path, '/');
     $slug = $path === '' ? get_setting('homepage_slug') : $path; // empty path means user-defined home page
 
     // Contact POST

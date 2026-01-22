@@ -313,7 +313,7 @@ header {
 
 .header-icon:hover svg {
     transform: scale(1.2);
-    fill: #f4f6f8;
+    fill: #f4f6f8; 
 }
 
 .header-left a {

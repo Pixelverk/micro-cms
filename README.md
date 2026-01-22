@@ -102,7 +102,6 @@ Access the editor at `/admin/` to manage content and users.
 
 * Fancier demo site layout
 * Live preview of pages
-* Preview at multiple breakpoints
 * Multiple content types, e.g. blog ✅
 * Menu manager / use in component ✅ 
 * Editable page slugs ✅

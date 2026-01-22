@@ -75,7 +75,7 @@ function is_content_type_active(string $type): string
         </a>
 
         <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>">
-            <span class="sidebar-icon"><?= icon('media-image-list', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('media-image', 18) ?></span>
             Media
         </a>
 
@@ -108,7 +108,7 @@ function is_content_type_active(string $type): string
     <div class="sidebar-section sidebar-footer">
         <div class="sidebar-title">Account</div>
 
-        <a href="<?= url('admin/pforile') ?>" class="sidebar-link danger">
+        <a href="<?= url('admin/pforile') ?>" class="sidebar-link">
             <span class="sidebar-icon"><?= icon('profile-circle', 18) ?></span>
             Profile
         </a>

@@ -90,7 +90,7 @@ function createComponent(type, data = {}) {
             else if (childrenSetting === 'some') childOptions = allowedChildren.filter(c => availableComponents[c]);
 
             childOptions.forEach(childType => {
-                console.log(childOptions);
+                /* console.log(childOptions); */
                 const option = document.createElement('option');
                 option.value = childType;
                 option.textContent = availableComponents[childType]['label'];

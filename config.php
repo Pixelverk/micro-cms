@@ -12,6 +12,8 @@ return [
     'url' => '',
     // Base URL in subfolder
     //'url' => '/micro-cms',
+
+    'perf_logging' => false,  // saves to /storage/logs if true
     
     // --------------------------------------------------
     // Session & auth

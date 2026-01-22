@@ -1,3 +1,4 @@
+<?php if (!empty($_SESSION['toast'])): ?>
 <style>
 #toast-container {
     position: fixed;
@@ -33,6 +34,7 @@
     to { opacity: 0; }
 }
 </style>
+
 <div id="toast-container"></div>
 
 <script>
@@ -50,10 +52,7 @@ function showToast(message, type = 'info', duration = 4000) {
         toast.addEventListener('animationend', () => toast.remove());
     }, duration);
 }
-</script>
 
-<?php if (!empty($_SESSION['toast'])): ?>
-<script>
 document.addEventListener('DOMContentLoaded', () => {
     showToast(
         <?= json_encode($_SESSION['toast']['message']) ?>,
