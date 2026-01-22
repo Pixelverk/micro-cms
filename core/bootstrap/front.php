@@ -1,24 +1,5 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Little Helpers
-|--------------------------------------------------------------------------
-*/
-require CORE_PATH . '/helpers/common.php';
-require CORE_PATH . '/helpers/cache.php';
-require CORE_PATH . '/helpers/settings.php';
-require CORE_PATH . '/helpers/menus.php';
-
-/*
-|--------------------------------------------------------------------------
-| Core Systems
-|--------------------------------------------------------------------------
-*/
-require CORE_PATH . '/db.php';
-require CORE_PATH . '/render.php';
-require CORE_PATH . '/router.php';
-
 function checkCache($request, $config) {
     $key = trim($request, '/') ?: 'home';
     $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
@@ -47,6 +28,17 @@ function serveCached($file, $config){
 }
 
 function serveFresh($request){
+
+    // helpers
+    require CORE_PATH . '/helpers/common.php';
+    require CORE_PATH . '/helpers/cache.php';
+    require CORE_PATH . '/helpers/settings.php';
+    require CORE_PATH . '/helpers/menus.php';
+
+    // Core Systems
+    require CORE_PATH . '/db.php';
+    require CORE_PATH . '/render.php';
+    require CORE_PATH . '/router.php';
 
     // Resolve page and render
     $page = route_request($request);
