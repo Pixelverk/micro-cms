@@ -1,14 +1,25 @@
 <?php
 declare(strict_types=1);
 
-/*
-|--------------------------------------------------------------------------
-| Create SQLite Database (First Run)
-|--------------------------------------------------------------------------
-*/
+// Ensure Storage Directories Exist
+foreach (['', '/cache', '/media', '/logs'] as $dir) {
+    $full = STORAGE_PATH . $dir;
+    if (!is_dir($full)) mkdir($full, 0775, true);
+}
 
 $dbPath = STORAGE_PATH . '/data.sqlite';
 
+if (file_exists($dbPath)) {
+    echo 'First setup tried to run, but there is already a file at /storage/data.sqlite <br>';
+    echo 'Either remove the file or set the value of "setup_completed" in config.php to "true" <br>';
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Create SQLite Database
+|--------------------------------------------------------------------------
+*/
 $pdo = new PDO('sqlite:' . $dbPath);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
@@ -528,10 +539,43 @@ $stmt->execute([
     'published_at' => $notFoundData['published_at'],
 ]);
 
+/* update the config to say setup has been done */
+function update_config_value(string $key, mixed $value): bool
+{
+    $configFile = CMS_PATH . '/config.php';
+
+    if (!is_writable($configFile)) {
+        return false;
+    }
+
+    $contents = file_get_contents($configFile);
+    if ($contents === false) {
+        return false;
+    }
+
+    // Convert value to PHP literal
+    $exported = var_export($value, true);
+
+    // Replace only the specific key (top-level)
+    $pattern = "/(['\"]" . preg_quote($key, '/') . "['\"]\s*=>\s*)([^,]+),/";
+    $replacement = "$1{$exported},";
+
+    $updated = preg_replace($pattern, $replacement, $contents, 1, $count);
+
+    if ($count !== 1) {
+        return false; // key not found or ambiguous
+    }
+
+    return file_put_contents($configFile, $updated, LOCK_EX) !== false;
+}
+
+update_config_value('setup_completed', true);
+
 /*
 |--------------------------------------------------------------------------
 | First Run Complete
 |--------------------------------------------------------------------------
 */
-header("Refresh: 0");
+echo('Initial setup completed, the page will now refresh.');
+header('Refresh: 3');
 exit;

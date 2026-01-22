@@ -6,10 +6,16 @@ declare(strict_types=1);
  */
 function db(): PDO
 {
+    $dbPath = STORAGE_PATH . '/data.sqlite';
+
+    if (!file_exists($dbPath)) {
+        return false;
+    }
+
     static $pdo;
 
     if (!$pdo) {
-        $pdo = new PDO('sqlite:' . STORAGE_PATH . '/data.sqlite');
+        $pdo = new PDO('sqlite:' . $dbPath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     }
