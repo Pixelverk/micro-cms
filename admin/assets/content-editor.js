@@ -61,9 +61,32 @@ function createComponent(type, data = {}) {
         }
 
         const fieldNode = tpl.content.firstElementChild.cloneNode(true);
-        fieldNode.querySelector('.field-label').textContent = field.label || name;
+        fieldNode.querySelector('.field-label').textContent = field.label || name;       
         const input = fieldNode.querySelector('.field-input');
 
+        // quill special
+        if (fieldType === 'quill') {
+            const editorEl = fieldNode.querySelector('.quill-editor');
+            const hiddenInput = fieldNode.querySelector('.quill-hidden');
+
+            hiddenInput.name = `components[][props][${name}]`;
+            hiddenInput.value = value || '';
+
+            const quill = new Quill(editorEl, {
+                theme: 'snow'
+            });
+
+            quill.root.innerHTML = hiddenInput.value;
+
+            quill.on('text-change', () => {
+                hiddenInput.value = quill.root.innerHTML;
+            });
+
+            fieldsContainer.appendChild(fieldNode);
+            continue;
+        }
+
+        // regular fields
         if (fieldType === 'checkbox') input.checked = !!value;
         else input.value = value;
 
@@ -260,6 +283,7 @@ function renumberContainer(parent, prefix) {
         const childrenContainer = comp.querySelector('.children-container');
         if (childrenContainer) renumberContainer(childrenContainer, path);
     });
+
 }
 
 // ----------------------------

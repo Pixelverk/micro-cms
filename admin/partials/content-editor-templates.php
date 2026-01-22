@@ -87,6 +87,7 @@
 <template id="quill-editor-template">
     <label class="field wow">
         <span class="field-label"></span>
-        <div id="quill-editor" class="field-input quill-editor-input">Nothing right now because this is not an input element</div>
+        <input type="hidden" class="field-input quill-hidden"> <!-- the actual thing submitted with form -->
+        <div class="quill-editor">JS will put the editor here</div> <!-- the visual input for the user -->
     </label>
 </template>
