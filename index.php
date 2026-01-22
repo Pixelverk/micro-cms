@@ -8,15 +8,16 @@ define('STORAGE_PATH', CMS_PATH . '/storage');
 
 // get some info
 $config = require 'config.php';
-
 $logging = ($config['perf_logging'] ?? false) === true;
+$doSetup = ($config['setup_completed'] ?? false) !== true;
+
 // check for performance logging
 if ($logging) {
     require CORE_PATH . '/helpers/perf.php';
 }
 
 // check for first run setup
-if ( ($config['setup_completed'] ?? false) !== true) {
+if ($doSetup) {
     require CORE_PATH . '/helpers/setup.php';
 }
 

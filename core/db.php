@@ -9,7 +9,11 @@ function db(): PDO
     $dbPath = STORAGE_PATH . '/data.sqlite';
 
     if (!file_exists($dbPath)) {
-        return false;
+        echo'No database file found!<br>';
+        echo'Set the value of "setup_completed" in config.php to false and reload the page.<br>';
+        echo'That should run the intial setup and create a DB with some default content.<br>';
+        echo'If things still fail, you might not have the PDO extension activated in PHP.<br>';
+        exit;
     }
 
     static $pdo;
