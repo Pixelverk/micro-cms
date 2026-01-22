@@ -85,9 +85,9 @@
 
 <!-- Quill Editor -->
 <template id="quill-editor-template">
-    <label class="field wow">
+    <div class="field">
         <span class="field-label"></span>
-        <input type="hidden" class="field-input quill-hidden"> <!-- the actual thing submitted with form -->
+        <input type="hidden" class="field-input quill-hidden">  <!-- the actual thing submitted with form -->
         <div class="quill-editor">JS will put the editor here</div> <!-- the visual input for the user -->
-    </label>
+    </div>
 </template>

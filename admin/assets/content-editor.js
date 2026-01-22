@@ -61,7 +61,7 @@ function createComponent(type, data = {}) {
         }
 
         const fieldNode = tpl.content.firstElementChild.cloneNode(true);
-        fieldNode.querySelector('.field-label').textContent = field.label || name;       
+        fieldNode.querySelector('.field-label').textContent = field.label || name;
         const input = fieldNode.querySelector('.field-input');
 
         // quill special
