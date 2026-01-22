@@ -42,16 +42,14 @@ JS,
  * Render function
  * -------------------------------------------- */
 'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
-    $id = 'cta-' . uniqid();
+    $id = 'quill-' . uniqid();
 
     extract($props, EXTR_SKIP);
 
     ?>
-    <section id="<?= $id ?>" class="quill-editor-output">
-        <div class="inner">
-            <?= $content?>
-        </div>
-    </section>
+    <div id="<?= $id ?>" class="quill-editor-output">
+        <?= $content?>
+    </div>
     <?php
 },
 
