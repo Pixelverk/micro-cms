@@ -83,18 +83,10 @@
     </label>
 </template>
 
-<!-- Raw HTML -->
-<template id="raw-html-template">
-    <label class="field">
-        <span class="field-label"></span>
-        <textarea class="field-input"></textarea>
-    </label>
-</template>
-
 <!-- Quill Editor -->
 <template id="quill-editor-template">
-    <label class="field">
+    <label class="field wow">
         <span class="field-label"></span>
-        <div id="quill-editor" class="field-input quill-editor-input"></div>
+        <div id="quill-editor" class="field-input quill-editor-input">Nothing right now because this is not an input element</div>
     </label>
 </template>

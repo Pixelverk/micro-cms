@@ -16,6 +16,7 @@ const colorTemplate = document.getElementById('color-template');
 const checkboxTemplate = document.getElementById('checkbox-template');
 const urlTemplate = document.getElementById('url-template');
 const emailTemplate = document.getElementById('email-template');
+const quillTemplate = document.getElementById('quill-editor-template');
 
 // ----------------------------
 // Create a component from schema + data
@@ -41,13 +42,13 @@ function createComponent(type, data = {}) {
     const fieldSchema = schema.schema || {};
     const props = data.props || {};
 
-
-
+    // 
     for (const [name, field] of Object.entries(fieldSchema)) {
         const value = props[name] ?? field.default ?? '';
         const fieldType = field.type || 'string';
         let tpl;
 
+        // check field type
         switch (fieldType) {
             case 'textarea': tpl = textareaTemplate; break;
             case 'number': tpl = numberTemplate; break;
@@ -55,6 +56,7 @@ function createComponent(type, data = {}) {
             case 'checkbox': tpl = checkboxTemplate; break;
             case 'url': tpl = urlTemplate; break;
             case 'email': tpl = emailTemplate; break;
+            case 'quill': tpl = quillTemplate; break;
             default: tpl = fieldTemplate;
         }
 
