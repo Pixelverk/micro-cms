@@ -11,6 +11,7 @@ $pageTitle = $pageTitle ?? 'Micro CMS Editor';
         <title><?= e($pageTitle) ?> - Micro CMS</title>
         <link rel="stylesheet" href="<?= url('admin/assets/style.css')?>">
         <link rel='icon' href="<?= url('admin/assets/favicon.ico')?>">
+        <script src="<?= url('admin/assets/main.js')?>" defer></script>
     </head>
 
     <body>

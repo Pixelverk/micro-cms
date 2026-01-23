@@ -107,7 +107,6 @@ Access the editor at `/admin/` to manage content and users.
 * Lazy loading components and images
 * Image placeholders, LQIP or CSS blurry blob
 * Light/Dark mode admin area
-* Fullscreen admin area
 * Proper drag and drop of components
 * Built-in analytics
 * Content categories and tags
