@@ -79,66 +79,51 @@ Access the editor at `/admin/` to manage content and users.
 
 ## Features & Roadmap
 
-### Phase 1 – Core Features ✅
+### Implemented
 
-* Front controller (`index.php`) to route requests
-* JSON-based page storage (it's SQLite now)
-* Page CRUD (create, edit, delete)
-* Add/remove components, including nested components
-* Basic login / authentication
+* Content CRUD
 * User CRUD
-
-### Phase 2 – Editor Enhancements ✅
-
+* Menu CRUD
+* Basic login / authentication
+* Content editor, add/remove/copy components, nesting, clone
+* Multiple content types, e.g. blog, services and other stuff
+* Component system with theme components and core components
 * Site settings (select which page to use as homepage, etc.)
-* In-app how-to guide
-* Configuration file
-* BASE_URL in config to handle subfolder hosting
-* Button to reorder components
-* Clone/duplicate existing components
-* Fancy toast notifications for success/error
+* Sitemap generator (XML)
+* .html cache and minification
+* Contact forms with email sendout
+* Image uploads / media manager
+* Performance measurements
 
-### Phase 3 – Live Preview & Blog
+### Planned
 
-* Fancier demo site layout
-* Live preview of pages
-* Multiple content types, e.g. blog ✅
-* Menu manager / use in component ✅ 
-* Editable page slugs ✅
-* Improved editor UI/UX/Responsiveness
-* Write help for all pages
-
-### Phase 4 – Media & SEO
-
-* Working contact form ✅
-* Image uploads / media manager ✅
+* Fancier default site
+* Fancier admin area
+* CMS user documentation (in-app)
+* Theme dev documentation (wiki)
 * Component input - pick from media manager 
-* Sitemap generator (XML) ✅
-* Optional SEO enhancements (meta, OpenGraph, etc.)
-* Caching .html for speedy speeds ✅
-* Minify rendered output if 'env' = 'production' ✅
-
-### Phase 5 – Refactor & Optimization
-
-* Refactor codebase for maintainability and performance
-* Figure out security and things like CSRF, form honeypot / captcha
-
-### Future Ideas
-
-* Integrate Alpine.js for reactive UI
+* Drafts or edit history with restore functionality
 * Image optimization and webp conversion with png fallback
 * Lazy loading components and images
 * Image placeholders, LQIP or CSS blurry blob
-* Drafts or edit history with restore functionality
-* Multi-language front-end support
-* Multi-language admin area
 * Light/Dark mode admin area
 * Fullscreen admin area
-* Quill JS as a component type
-* Fiddle around with inline global css or maybe a critical.css file to avoid 1 blocking request
 * Proper drag and drop of components
-* SQLite instead of JSON ✅
-* Login history ?
+* Built-in analytics
+* Content categories and tags
+* Utility page with 1-button tools
+* Page nesting
+* Bulk-edit actions
+
+### Maybe
+
+* Live preview in content editor
+* SEO metadata (Meta, OpenGraph, etc.)
+* Activity history, not just 'last login date'
+* Multi-language front-end support
+* Multi-language admin area
+* Scheduled publishing of content
+* Front-end search
 
 ---
 

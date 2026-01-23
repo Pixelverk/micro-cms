@@ -54,12 +54,12 @@ function is_content_type_active(string $type): string
     <div class="sidebar-section">
         <div class="sidebar-title">Collections</div>
 
-        <a href="<?= url('admin/categories') ?>" class="sidebar-link <?= is_active('categories', $currentPath) ?>">
+        <a href="<?= url('admin/categories-list') ?>" class="sidebar-link <?= is_active('categories', $currentPath) ?>">
             <span class="sidebar-icon"><?= icon('bookmark-book', 18) ?></span>
             Categories
         </a>
 
-        <a href="<?= url('admin/tags') ?>" class="sidebar-link <?= is_active('tags', $currentPath) ?>">
+        <a href="<?= url('admin/tags-list') ?>" class="sidebar-link <?= is_active('tags', $currentPath) ?>">
             <span class="sidebar-icon"><?= icon('label', 18) ?></span>
             Tags
         </a>
@@ -108,7 +108,7 @@ function is_content_type_active(string $type): string
     <div class="sidebar-section sidebar-footer">
         <div class="sidebar-title">Account</div>
 
-        <a href="<?= url('admin/pforile') ?>" class="sidebar-link">
+        <a href="<?= url('admin/profile') ?>" class="sidebar-link">
             <span class="sidebar-icon"><?= icon('profile-circle', 18) ?></span>
             Profile
         </a>

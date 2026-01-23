@@ -13,6 +13,6 @@
         <span id="light-mode" class="header-icon"><?= icon('sun-light', 26) ?></span>
         <span id="dark-mode" class="header-icon"><?= icon('half-moon', 26) ?></span>
         <span id="full-screen" class="header-icon"><?= icon('expand', 26) ?></span>
-        <span id="user-blob" class="header-icon"><?= icon('profile-circle', 26) ?></span>
+        <a href="<?= url('admin/profile') ?>"><span id="user-blob" class="header-icon"><?= icon('profile-circle', 26) ?></span></a>
     </div>
 </header>

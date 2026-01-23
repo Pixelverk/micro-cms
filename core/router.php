@@ -124,7 +124,7 @@ function route_admin_request(): void
 |--------------------------------------------------------------------------
 */
 function redirect(string $path): void
-{
+{   
     header('Location: ' . url('admin/' . $path));
     exit;
 }
