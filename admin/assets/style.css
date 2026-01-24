@@ -348,6 +348,13 @@ header {
     gap: 1.25rem;
 }
 
+/* Small screens */
+@media (max-width: 768px) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+}
+
 /* sidebar stuff */
 
 .sidebar {

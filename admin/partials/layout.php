@@ -10,7 +10,7 @@ $pageTitle = $pageTitle ?? 'Micro CMS Editor';
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><?= e($pageTitle) ?> - Micro CMS</title>
         <link rel="stylesheet" href="<?= url('admin/assets/style.css')?>">
-        <link rel='icon' href="<?= url('admin/assets/favicon.ico')?>">
+        <link rel='icon' href="<?= url('admin/assets/favicon.png')?>">
         <script src="<?= url('admin/assets/main.js')?>" defer></script>
     </head>
 
