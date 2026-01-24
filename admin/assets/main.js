@@ -80,7 +80,8 @@ lightBtn.addEventListener('click', () => applyTheme('light'));
 /* sidebar switch */
 
 const shrinkBtn = document.getElementById('sidebar-collapse');
-const growBtn   = document.getElementById('sidebar-expand');
+const growBtn = document.getElementById('sidebar-expand');
+const sideBarTitle = document.querySelector('.sidebar-header h1 a');
 
 const SIDEBAR_KEY = 'adminSidebarCollapsed';
 
@@ -89,6 +90,7 @@ function setSidebar(collapsed) {
 
     shrinkBtn.style.display = collapsed ? 'none' : 'inline-flex';
     growBtn.style.display   = collapsed ? 'inline-flex' : 'none';
+    sideBarTitle.textContent = collapsed ? 'CMS' : 'Micro CMS';
 
     localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
 }

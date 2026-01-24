@@ -24,7 +24,7 @@ a:hover {
     --bg: #f4f6f8;
     --text: #222;
     --sidebar-collapsed-width: 7rem;
-    --sidebar-width: 15rem;
+    --sidebar-width: 14rem;
 }
 
 /* no movement on initial render */
@@ -428,6 +428,7 @@ body.sidebar-collapsed .sidebar-link:hover::after {
 
 .sidebar-header h1 {
     margin: 0 1.25rem;
+    text-wrap: nowrap;
 }
 
 .sidebar-title {

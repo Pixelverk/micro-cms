@@ -35,7 +35,7 @@ function is_content_type_active(string $type): string
         <div class="sidebar-title">Welcome</div>
         
         <a href="<?= url('admin/dashboard') ?>" class="sidebar-link <?= is_active('dashboard', $currentPath) ?>" data-label="Dashboard">
-            <span class="sidebar-icon"><?= icon('view-grid', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('view-grid', 20) ?></span>
             Dashboard
         </a>
     </div>
@@ -47,7 +47,7 @@ function is_content_type_active(string $type): string
                class="sidebar-link <?= is_content_type_active($type) ?>"
                data-label="<?= e($config['label']) ?>"
                >
-               <span class="sidebar-icon"><?= icon('post', 18) ?></span>
+               <span class="sidebar-icon"><?= icon('post', 20) ?></span>
                <?= e($config['label'] ?? ucfirst($type)) . 's' ?>
             </a>
         <?php endforeach; ?>
@@ -57,12 +57,12 @@ function is_content_type_active(string $type): string
         <div class="sidebar-title">Collections</div>
 
         <a href="<?= url('admin/categories-list') ?>" class="sidebar-link <?= is_active('categories', $currentPath) ?>" data-label="Categories">
-            <span class="sidebar-icon"><?= icon('bookmark-book', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
             Categories
         </a>
 
         <a href="<?= url('admin/tags-list') ?>" class="sidebar-link <?= is_active('tags', $currentPath) ?>" data-label="Tags">
-            <span class="sidebar-icon"><?= icon('label', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('label', 20) ?></span>
             Tags
         </a>
 
@@ -72,17 +72,17 @@ function is_content_type_active(string $type): string
         <div class="sidebar-title">More</div>
 
         <a href="<?= url('admin/menu-edit') ?>" class="sidebar-link <?= is_active('menu-edit', $currentPath) ?>" data-label="Menus">
-            <span class="sidebar-icon"><?= icon('menu', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('menu', 20) ?></span>
             Menus
         </a>
 
         <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>" data-label="Media">
-            <span class="sidebar-icon"><?= icon('media-image', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('media-image', 20) ?></span>
             Media
         </a>
 
         <a href="<?= url('admin/metrics') ?>" class="sidebar-link <?= is_active('metrics', $currentPath) ?>" data-label="Metrics">
-            <span class="sidebar-icon"><?= icon('clipboard-check', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
             Metrics
         </a>
 
@@ -92,17 +92,17 @@ function is_content_type_active(string $type): string
         <div class="sidebar-title">System</div>
 
         <a href="<?= url('admin/user-list') ?>" class="sidebar-link <?= is_active('user-list', $currentPath) ?>" data-label="Users">
-            <span class="sidebar-icon"><?= icon('group', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('group', 20) ?></span>
             Users
         </a>
 
         <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>" data-label="Settings">
-            <span class="sidebar-icon"><?= icon('settings', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('settings', 20) ?></span>
             Settings
         </a>
 
         <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= is_active('utilities', $currentPath) ?>" data-label="Utilities">
-            <span class="sidebar-icon"><?= icon('wrench', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('wrench', 20) ?></span>
             Utilities
         </a>
     </div>
@@ -111,12 +111,12 @@ function is_content_type_active(string $type): string
         <div class="sidebar-title">Account</div>
 
         <a href="<?= url('admin/profile') ?>" class="sidebar-link" data-label="Profile">
-            <span class="sidebar-icon"><?= icon('profile-circle', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('profile-circle', 20) ?></span>
             Profile
         </a>
 
         <a href="<?= url('admin/logout') ?>" class="sidebar-link danger" data-label="Logout">
-            <span class="sidebar-icon"><?= icon('log-out', 18) ?></span>
+            <span class="sidebar-icon"><?= icon('log-out', 20) ?></span>
             Logout
         </a>
     </div>
