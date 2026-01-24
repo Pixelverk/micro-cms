@@ -14,7 +14,7 @@ $pageTitle = $pageTitle ?? 'Micro CMS Editor';
         <script src="<?= url('admin/assets/main.js')?>" defer></script>
     </head>
 
-    <body>
+    <body class="no-transitions">
 
         <div class="admin-layout">
             <?php include __DIR__ . '/sidebar.php'; ?>

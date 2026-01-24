@@ -12,8 +12,8 @@ function toggleFullscreen() {
 function syncUI() {
     const active = !!document.fullscreenElement;
 
-    expandBtn.style.display = active ? 'none' : 'block';
-    collapseBtn.style.display = active ? 'block' : 'none';
+    expandBtn.style.display = active ? 'none' : 'inline-flex';
+    collapseBtn.style.display = active ? 'inline-flex' : 'none';
 
     localStorage.setItem('inFullScreen', active ? '1' : '0');
 }
@@ -36,20 +36,20 @@ syncUI();
 const lightBtn = document.getElementById('light-mode');
 const darkBtn  = document.getElementById('dark-mode');
 
-const STORAGE_KEY = 'adminColorMode';
+const COLOR_KEY = 'adminColorMode';
 const mediaQuery  = window.matchMedia('(prefers-color-scheme: dark)');
-const savedTheme  = localStorage.getItem(STORAGE_KEY);
+const savedTheme  = localStorage.getItem(COLOR_KEY);
 
 function applyTheme(theme, persist = true) {
     const isDark = theme === 'dark';
 
     document.documentElement.classList.toggle('dark', isDark);
 
-    darkBtn.style.display  = isDark ? 'none' : 'block';
-    lightBtn.style.display = isDark ? 'block' : 'none';
+    darkBtn.style.display  = isDark ? 'none' : 'inline-flex';
+    lightBtn.style.display = isDark ? 'inline-flex' : 'none';
 
     if (persist) {
-        localStorage.setItem(STORAGE_KEY, theme);
+        localStorage.setItem(COLOR_KEY, theme);
     }
 }
 
@@ -74,3 +74,36 @@ if (savedTheme) {
 // ----------------------------
 darkBtn.addEventListener('click', () => applyTheme('dark'));
 lightBtn.addEventListener('click', () => applyTheme('light'));
+
+
+
+/* sidebar switch */
+
+const shrinkBtn = document.getElementById('sidebar-collapse');
+const growBtn   = document.getElementById('sidebar-expand');
+
+const SIDEBAR_KEY = 'adminSidebarCollapsed';
+
+function setSidebar(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+
+    shrinkBtn.style.display = collapsed ? 'none' : 'inline-flex';
+    growBtn.style.display   = collapsed ? 'inline-flex' : 'none';
+
+    localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
+}
+
+// Restore state
+const saved = localStorage.getItem(SIDEBAR_KEY) === '1';
+setSidebar(saved);
+
+// Click handlers
+shrinkBtn.addEventListener('click', () => setSidebar(true));
+growBtn.addEventListener('click',   () => setSidebar(false));
+
+
+
+/* only let things move after dom loaded and animation frames start */
+requestAnimationFrame(() => {
+    document.body.classList.remove('no-transitions');
+});

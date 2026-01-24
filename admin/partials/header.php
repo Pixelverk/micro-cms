@@ -1,7 +1,7 @@
 <header>
     <div class="header-left">
-        <span id="sidebar-close" class="header-icon"><?= icon('sidebar-collapse', 26) ?></span>
-        <span id="sidebar-open" class="header-icon"><?= icon('sidebar-expand', 26) ?></span>
+        <span id="sidebar-collapse" class="header-icon"><?= icon('sidebar-collapse', 26) ?></span>
+        <span id="sidebar-expand" class="header-icon"><?= icon('sidebar-expand', 26) ?></span>
         <a href="/" target="_blank" class="header-icon">
             <span ><?= icon('open-in-browser', 26) ?></span>
             View Website
