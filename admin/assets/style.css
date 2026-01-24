@@ -353,6 +353,9 @@ header {
     .hide-on-mobile {
         display: none !important;
     }
+    .hide-text-on-mobile {
+        font-size:0;
+    }
 }
 
 /* sidebar stuff */

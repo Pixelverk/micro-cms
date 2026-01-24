@@ -2,7 +2,7 @@
     <div class="header-left">
         <span id="sidebar-collapse" class="header-icon"><?= icon('sidebar-collapse', 26) ?></span>
         <span id="sidebar-expand" class="header-icon"><?= icon('sidebar-expand', 26) ?></span>
-        <a href="/" target="_blank" id="visit-site" class="header-icon hide-on-mobile">
+        <a href="/" target="_blank" id="visit-site" class="header-icon hide-text-on-mobile">
             <span ><?= icon('open-in-browser', 26) ?></span>
             View Website
         </a>
