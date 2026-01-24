@@ -19,12 +19,23 @@ a:hover {
 	text-decoration: underline;
 }
 
+/* light & dark */
+:root {
+    --bg: #f4f6f8;
+    --text: #222;
+}
+
+html.dark {
+    --bg: #0f172a;
+    --text: #e5e7eb;
+}
+
 /* base elements */
 body {
     font-family: system-ui, sans-serif;
     margin: 0;
-    background: #f4f6f8;
-    color: #222;
+    background: var(--bg);
+    color: var(--text);
 }
 
 main {
@@ -313,7 +324,7 @@ header {
 
 .header-icon:hover svg {
     transform: scale(1.2);
-    fill: #f4f6f8; 
+    fill: var(--bg); 
 }
 
 .header-left a {
@@ -350,7 +361,7 @@ header {
 .sidebar-header {
     margin-bottom: 2rem;
     height: 5rem;
-    border-bottom: 1px solid #f4f6f8;
+    border-bottom: 1px solid var(--bg);
     align-content: center;
 }
 
