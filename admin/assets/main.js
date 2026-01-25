@@ -120,11 +120,16 @@ const cancelBtn = document.getElementById('confirm-cancel');
 
 let onConfirm = null;
 
-function confirmModal({ title = 'Confirm', message = 'Are you sure?' } = {}) {
+function confirmModal({ title = 'Confirm', message = 'Are you sure?', simple = false } = {}) {
     titleEl.textContent = title;
     messageEl.textContent = message;
 
     modal.style.display = 'flex';
+
+    if(simple){
+        cancelBtn.style.display = 'none';
+        okBtn.textContent = 'OK';
+    }
 
     return new Promise(resolve => {
         onConfirm = () => resolve(true);

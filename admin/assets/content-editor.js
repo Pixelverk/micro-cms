@@ -160,9 +160,17 @@ const addBtn = document.getElementById('add-component');
 const select = document.getElementById('new-component-select');
 
 if (addBtn && select) {
-    addBtn.addEventListener('click', () => {
+    addBtn.addEventListener('click', async () => {
         const type = select.value;
-        if (!type || !availableComponents[type]) return;
+
+        if (!type || !availableComponents[type]) {
+            await window.confirmModal({
+                title: 'Invalid component',
+                message: 'Please select a valid component.',
+                simple: true,
+            });
+            return;
+        }
 
         container.appendChild(createComponent(type));
         renumberComponents();
@@ -196,7 +204,6 @@ container.addEventListener('click', async e => {
         return;
     }
 
-
     // Add child
     if (e.target.classList.contains('add-child-btn')) {
         const controls = e.target.closest('.actions-left');
@@ -205,7 +212,15 @@ container.addEventListener('click', async e => {
         const select = controls.querySelector('.allowed-children-select');
 
         const type = select.value;
-        if (!type || !availableComponents[type]) { alert('Please select a valid child component'); return; }
+
+        if (!type || !availableComponents[type]) {
+            await window.confirmModal({
+                title: 'Invalid component',
+                message: 'Please select a valid child component.',
+                simple: true,
+            });
+            return;
+        }
 
         childrenContainer.appendChild(createComponent(type));
         renumberComponents();

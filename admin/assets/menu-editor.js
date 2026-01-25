@@ -61,9 +61,17 @@ renumberMenuItems();
 // ----------------------------
 // Add top-level page item
 // ----------------------------
-document.getElementById('add-page-item').addEventListener('click', () => {
+document.getElementById('add-page-item').addEventListener('click', async () => {
     const pageSelect = document.getElementById('new-item-page');
-    if (!pageSelect.value) return alert('Select a page first.');
+
+    if (!pageSelect.value) {
+        await window.confirmModal({
+            title: 'Missing selection',
+            message: 'Select a page first.',
+            simple: true,
+        });
+        return;
+    }
 
     const selectedOption = pageSelect.selectedOptions[0];
     const itemData = {
@@ -82,12 +90,19 @@ document.getElementById('add-page-item').addEventListener('click', () => {
 // ----------------------------
 // Add top-level custom URL item
 // ----------------------------
-document.getElementById('add-url-item').addEventListener('click', () => {
+document.getElementById('add-url-item').addEventListener('click', async () => {
     const urlInput = document.getElementById('new-item-url');
     const labelInput = document.getElementById('new-item-label');
     const targetSelect = document.getElementById('new-item-target');
 
-    if (!urlInput.value || !labelInput.value) return alert('Enter both URL and label.');
+    if (!urlInput.value || !labelInput.value) {
+        await window.confirmModal({
+            title: 'Missing information',
+            message: 'Enter both URL and label.',
+            simple: true,
+        });
+        return;
+    }
 
     const itemData = {
         type: 'url',
