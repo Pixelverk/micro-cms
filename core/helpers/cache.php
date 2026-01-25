@@ -15,7 +15,7 @@ declare(strict_types=1);
 function invalidate_cache(string $path = '', string $type = ''): void
 {
     // If path is empty, delete all cache files
-    if ($path === '/') {
+    if ($path === '/' || $path === '') {
         $files = glob(STORAGE_PATH . '/cache/*.html');
         if ($files) {
             foreach ($files as $file) {

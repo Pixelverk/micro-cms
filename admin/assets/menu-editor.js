@@ -96,7 +96,7 @@ document.getElementById('add-url-item').addEventListener('click', async () => {
     const targetSelect = document.getElementById('new-item-target');
 
     if (!urlInput.value || !labelInput.value) {
-        await window.confirmModal({
+        await confirmModal({
             title: 'Missing information',
             message: 'Enter both URL and label.',
             simple: true,
