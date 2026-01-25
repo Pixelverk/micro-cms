@@ -29,6 +29,7 @@ $pageTitle = $pageTitle ?? 'Micro CMS Editor';
             </main>
 
             <?php include __DIR__ . '/toasts.php'; ?>
+            <?php include __DIR__ . '/confirm.php'; ?>
         </div>   
 
     </body>

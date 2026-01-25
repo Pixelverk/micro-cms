@@ -87,7 +87,12 @@ ob_start();
     </div>
 
     <?php if ($menuKey): ?>
-        <button type="button" id="delete-menu-btn" style="background:#e74c3c; color:white;">Delete Menu</button>
+        <a href="<?= url('admin/menu-remove') ?>?menu=<?= urlencode($menuKey) ?>"
+            class="js-confirm btn-delete btn-small"
+            data-confirm="Do you want to remove this menu: <?= e($menuKey)?>"
+            data-confirm-title="Delete menu">
+            Delete
+        </a>
     <?php endif; ?>
 </form>
 
@@ -113,16 +118,6 @@ ob_start();
         }
     });
 
-    // Delete menu button
-    const deleteBtn = document.getElementById('delete-menu-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
-            const menu = menuKeyInput.value;
-            if (!menu) return;
-            if (!confirm(`Delete menu "${menu}"?\nThis cannot be undone.`)) return;
-            window.location.href = "<?= url('admin/menu-remove') ?>?menu=" + encodeURIComponent(menu);
-        });
-    }
 </script>
 
 <?php

@@ -47,12 +47,12 @@ ob_start();
                     <a href="<?= url('admin/user-edit') . '?username=' . urlencode($name) ?>" class="btn-small">Edit</a>
 
                     <?php if ($name !== $username): ?>
-                        <button
-                            type="button"
-                            class="btn-small btn-delete delete-user-btn"
-                            data-username="<?= e($name) ?>">
+                        <a href="<?= url('admin/user-remove') ?>?username=<?= urlencode($name) ?>"
+                            class="js-confirm btn-delete btn-small"
+                            data-confirm="Do you want to remove this user: <?= e($name)?>"
+                            data-confirm-title="Delete user">
                             Delete
-                        </button>
+                        </a>
                     <?php else: ?>
                         <button
                             type="button"
@@ -66,22 +66,8 @@ ob_start();
         <?php endforeach; ?>
         </tbody>
     </table>
-<?php endif; ?>
+<?php endif; 
 
-<script>
-document.querySelectorAll('.delete-user-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const username = btn.dataset.username;
-        if (!username) return;
-
-        if (confirm(`Are you sure you want to delete user "${username}"?\nThis cannot be undone.`)) {
-            window.location.href = "<?= url('admin/user-remove') ?>?username=" + encodeURIComponent(username);
-        }
-    });
-});
-</script>
-
-<?php
 $content = ob_get_clean();
 
 // page help

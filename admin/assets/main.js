@@ -109,3 +109,68 @@ growBtn.addEventListener('click',   () => setSidebar(false));
 requestAnimationFrame(() => {
     document.body.classList.remove('no-transitions');
 });
+
+/* confirm modal helper */
+
+const modal = document.getElementById('confirm-modal');
+const titleEl = document.getElementById('confirm-title');
+const messageEl = document.getElementById('confirm-message');
+const okBtn = document.getElementById('confirm-ok');
+const cancelBtn = document.getElementById('confirm-cancel');
+
+let onConfirm = null;
+
+function confirmModal({ title = 'Confirm', message = 'Are you sure?' } = {}) {
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+
+    modal.style.display = 'flex';
+
+    return new Promise(resolve => {
+        onConfirm = () => resolve(true);
+        cancelBtn.onclick = () => resolve(false);
+    });
+}
+
+okBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+    onConfirm?.();
+});
+
+cancelBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+/* Listen for clicks on confirm buttons */
+document.addEventListener('click', async e => {
+    const el = e.target.closest('.js-confirm');
+    if (!el) return;
+
+    e.preventDefault();
+
+    const ok = await confirmModal({
+        title: el.dataset.confirmTitle,
+        message: el.dataset.confirm
+    });
+
+    if (ok) {
+        window.location.href = el.href;
+    }
+});
+
+/* the confirm modal works on forms too */
+document.addEventListener('submit', async e => {
+    const form = e.target.closest('.js-confirm-form');
+    if (!form) return;
+
+    e.preventDefault();
+
+    const ok = await confirmModal({
+        title: form.dataset.confirmTitle,
+        message: form.dataset.confirm
+    });
+
+    if (ok) {
+        form.submit();
+    }
+});

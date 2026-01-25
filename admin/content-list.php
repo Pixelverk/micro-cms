@@ -110,12 +110,12 @@ ob_start();
                         Edit
                     </a>
 
-                    <button
-                        type="button"
-                        class="btn-delete btn-small delete-content-btn"
-                        data-slug="<?= e($item['slug']) ?>">
+                    <a href="<?= url('admin/content-remove') ?>?type=<?= urlencode($type) ?>&slug=<?= urlencode($item['slug']) ?>"
+                        class="js-confirm btn-delete btn-small"
+                        data-confirm="Do you want to remove this item: <?= e($item['title'])?>"
+                        data-confirm-title="Delete content">
                         Delete
-                    </button>
+                    </a>
                 </td>
             </tr>
         <?php endforeach; ?>
@@ -124,17 +124,6 @@ ob_start();
 <?php endif; ?>
 
 <script>
-document.querySelectorAll('.delete-content-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const slug = btn.dataset.slug;
-        if (confirm(`Delete "${slug}"?\nThis cannot be undone.`)) {
-            window.location.href =
-                "<?= url('admin/content-remove') ?>" +
-                "?type=<?= urlencode($type) ?>&slug=" + encodeURIComponent(slug);
-        }
-    });
-});
-
 const typeSelect = document.getElementById('content-type-select');
 if (typeSelect) {
     typeSelect.addEventListener('change', () => {

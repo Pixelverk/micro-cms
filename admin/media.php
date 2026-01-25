@@ -78,12 +78,12 @@ ob_start();
                         Copy URL
                     </button>
 
-                    <!-- Delete form -->
-                    <form action="<?= url('admin/media-remove') ?>" method="post"
-                          onsubmit="return confirm('Delete this file?')">
+                    <!-- Delete form -->                   
+                    <form action="<?= url('admin/media-remove') ?>" method="post" class="js-confirm-form" data-confirm-title="Delete media" data-confirm="Do you want to remove <?= e($file['name']) ?>">
                         <input type="hidden" name="path" value="<?= e($file['path']) ?>">
-                        <button type="submit">Delete</button>
+                        <button type="submit" class="btn-delete">Delete</button>
                     </form>
+
                 </div>
             </div>
         <?php endforeach; ?>

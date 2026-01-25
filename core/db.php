@@ -16,6 +16,7 @@ function db(): PDO
         exit;
     }
 
+    // important, static = same the entire request, avoids repeated db connection.
     static $pdo;
 
     if (!$pdo) {
