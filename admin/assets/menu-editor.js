@@ -110,16 +110,26 @@ document.getElementById('add-url-item').addEventListener('click', () => {
 // ----------------------------
 // Event delegation for menu item buttons
 // ----------------------------
-container.addEventListener('click', e => {
+container.addEventListener('click', async e => {
     const item = e.target.closest('.menu-item');
     if (!item) return;
 
     // Remove
     if (e.target.classList.contains('remove')) {
-        const hasChildren = item.querySelector('.children-container')?.children.length > 0;
-        let msg = 'Remove this menu item?';
-        if (hasChildren) msg += '\n\nThis will also remove all child items.';
-        if (!confirm(msg)) return;
+        const hasChildren =
+            item.querySelector('.children-container')?.children.length > 0;
+
+        let message = 'Remove this menu item?';
+        if (hasChildren) {
+            message = 'Remove this menu item and child items?';
+        }
+
+        const ok = await confirmModal({
+            title: 'Remove menu item',
+            message: message,
+        });
+
+        if (!ok) return;
 
         item.remove();
         renumberMenuItems();

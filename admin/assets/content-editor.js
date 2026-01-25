@@ -172,7 +172,7 @@ if (addBtn && select) {
 // ----------------------------
 // Event delegation (remove, add-child, move, duplicate)
 // ----------------------------
-container.addEventListener('click', e => {
+container.addEventListener('click', async e => {
     const comp = e.target.closest('.component');
     if (!comp) return;
 
@@ -180,13 +180,22 @@ container.addEventListener('click', e => {
     if (e.target.classList.contains('remove-btn')) {
         const type = comp.dataset.type;
         const hasChildren = comp.querySelector('.children-container')?.children.length > 0;
+
         let message = `Remove "${type}" component?`;
-        if (hasChildren) message += '\n\nThis will also remove all child components.';
-        if (!confirm(message)) return;
+        if (hasChildren) message = `Remove "${type}" and child components?`;
+
+        const ok = await confirmModal({
+            title: 'Remove component',
+            message: message,
+        });
+
+        if (!ok) return;
+
         comp.remove();
         renumberComponents();
         return;
     }
+
 
     // Add child
     if (e.target.classList.contains('add-child-btn')) {
