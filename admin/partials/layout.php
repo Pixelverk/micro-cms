@@ -22,7 +22,7 @@ $pageTitle = $pageTitle ?? 'Micro CMS Editor';
             <main>
                 <?php include __DIR__ . '/header.php'; ?>
 
-                <div class="main-content">
+                <div class="main-container">
                     <?= $content ?? '' ?>
                 </div>
 

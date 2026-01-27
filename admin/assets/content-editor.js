@@ -95,7 +95,7 @@ function createComponent(type, data = {}) {
     }
 
     // Children
-    const noChildren = node.querySelector('#no-children');
+    const noChildren = node.querySelector('.no-children');
     const addBtn = node.querySelector('.add-child-btn');
     const select = node.querySelector('.allowed-children-select');
 

@@ -14,7 +14,7 @@
                 <select class="allowed-children-select" name="allowed-children-select">
                     <option value="">-- Child Component --</option>
                 </select>
-                <p id="no-children">No child components allowed</p>
+                <p class="no-children">No child components allowed</p>
                 <button type="button" class="add-child-btn">Add</button>
             </div>
             <div class="actions-right">
