@@ -1,20 +1,20 @@
 <!-- Component container -->
 <template id="component-template">
     <fieldset class="component">
-        <legend class="component-title"></legend>
+        <legend class="component-title text-small"></legend>
 
         <input type="hidden" class="component-type">
 
         <div class="component-fields"></div>
 
-        <div class="children-container"></div>
+        <div class="children-container flex gap-lg"></div>
 
         <div class="component-actions">
             <div class="actions-left">
                 <select class="allowed-children-select" name="allowed-children-select">
                     <option value="">-- Child Component --</option>
                 </select>
-                <p class="no-children">No child components allowed</p>
+                <p class="no-children text-small">No child components allowed</p>
                 <button type="button" class="add-child-btn">Add</button>
             </div>
             <div class="actions-right">

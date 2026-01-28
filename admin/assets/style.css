@@ -117,7 +117,6 @@ img {
     --sidebar-collapsed-width: 7rem;
 
     --header-height: 5rem;
-    --container-max-width: 1240px;
 
     --radius-sm: 4px;
     --radius-md: 6px;
@@ -355,7 +354,7 @@ tr:hover {
 /* 5.1 Admin shell */
 
 .main-container {
-    max-width: 1240px;
+    max-width: 1320px;
     padding: 2rem;
     margin: 0 auto;
 }
@@ -647,18 +646,21 @@ header {
     border: 1px solid var(--border);
 }
 
+.component {
+    min-width: fit-content;
+    flex-grow:1;
+}
+
 .sidebar-container {
     margin-top: -0.5rem;
     position: sticky;
-    /* top: calc(var(--header-height) + 1.5rem); */
     top: 1.5rem;
     height: fit-content;
 }
 
 .children-container {
-    margin-left: 1.5rem;
-    padding-left: 1rem;
     margin-top: .5rem;
+    flex-wrap: wrap;
 }
 
 .component-actions {
@@ -682,10 +684,6 @@ header {
 .actions-left {
     display:flex;
     align-items:center;
-}
-
-.no-children  {
-    font-size: 0.8rem;
 }
 
 /* 8. State-Dependent Styles */

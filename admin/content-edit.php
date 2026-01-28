@@ -226,7 +226,7 @@ ob_start();
         <fieldset class="card">
             <legend>Component Lists</legend>
             <label>
-                All component:
+                All components:
                 <select id="new-component-select">
                     <option value="">-- Select Component--</option>
                     <?php foreach (array_keys($availableComponents) as $name): ?>

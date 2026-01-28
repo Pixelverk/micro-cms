@@ -30,7 +30,9 @@ function createComponent(type, data = {}) {
     const node = componentTemplate.content.firstElementChild.cloneNode(true);
     node.dataset.type = type;
 
-    node.querySelector('.component-title').textContent = type;
+    const titleEl = node.querySelector('.component-title');
+    const label = availableComponents[type]?.label || type.replace(/-/g, ' ');
+    titleEl.dataset.baseLabel = label;
 
     const typeInput = node.querySelector('.component-type');
     typeInput.value = type;
@@ -293,12 +295,22 @@ function renumberComponents() { renumberContainer(container, ''); }
 
 function renumberContainer(parent, prefix) {
     parent.querySelectorAll(':scope > .component').forEach((comp, i) => {
+
         const path = prefix === '' ? String(i) : `${prefix}-${i}`;
         comp.dataset.path = path;
 
+        // update title
+        const titleEl = comp.querySelector('.component-title');
+        if (titleEl) {
+            const label = titleEl.dataset.baseLabel || comp.dataset.type;
+            titleEl.textContent = `${formatPath(path)} – ${label}`;
+        }
+
+        // type input
         const typeInput = comp.querySelector('.component-type');
         if (typeInput) typeInput.name = `components[${path}][type]`;
 
+        // fields
         comp.querySelectorAll('.field-input').forEach(input => {
             const nameMatch = input.name.match(/\[([^\]]+)\]$/);
             if (!nameMatch) return;
@@ -306,10 +318,19 @@ function renumberContainer(parent, prefix) {
             input.name = `components[${path}][props][${propName}]`;
         });
 
+        // recursive children
         const childrenContainer = comp.querySelector('.children-container');
-        if (childrenContainer) renumberContainer(childrenContainer, path);
+        if (childrenContainer && childrenContainer.children.length > 0) renumberContainer(childrenContainer, path);
     });
 
+}
+
+function formatPath(path) {
+    // "0-1-2" → "1.2.3"
+    return path
+        .split('-')
+        .map(n => Number(n) + 1)
+        .join('.');
 }
 
 // ----------------------------
