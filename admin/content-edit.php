@@ -145,90 +145,100 @@ ob_start();
     </div>
 </div>
 
-<form id="save" method="post" action="<?= url('admin/content-save') ?>">
+<form class="flex flex-row gap-lg" id="save" method="post" action="<?= url('admin/content-save') ?>">
     <input type="hidden" name="type" value="<?= e($type) ?>">
     <?php if ($isEdit): ?>
         <input type="hidden" name="original_slug" value="<?= e($slug) ?>">
     <?php endif; ?>
 
-    <!-- Content Info -->
-    <fieldset>
-        <legend><?= e($typeLabel) ?> Info</legend>
-
-        <label>
-            Title:
-            <input type="text" name="title" value="<?= e($title) ?>" required>
-        </label>
-
-        <label>
-            Slug:
-            <input type="text" name="slug" value="<?= e($slug) ?>">
-        </label>
-
-        <label>
-            Meta Description:
-            <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
-        </label>
-        <label>
-            Status:
-            <select name="status">
-                <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
-                <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
-            </select>
-        </label>
-    </fieldset>
-
-    <!-- Layout -->
-    <fieldset>
-        <legend>Layout & Theme</legend>
-
-        <label>
-            Layout:
-            <select name="layout">
-                <?php foreach ($availableLayouts as $val => $label): ?>
-                    <option value="<?= e($val) ?>" <?= $val === $pageLayout ? 'selected' : '' ?>>
-                        <?= e($label) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <label>
-            Header:
-            <select name="header">
-                <?php foreach ($availableHeaders as $val => $label): ?>
-                    <option value="<?= e($val) ?>" <?= $val === $pageHeader ? 'selected' : '' ?>>
-                        <?= e($label) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <label>
-            Footer:
-            <select name="footer">
-                <?php foreach ($availableFooters as $val => $label): ?>
-                    <option value="<?= e($val) ?>" <?= $val === $pageFooter ? 'selected' : '' ?>>
-                        <?= e($label) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-    </fieldset>
-
     <!-- Components -->
-    <div id="components-container"></div>
+    <div id="components-container" class="card components-container"></div>
 
-    <label>
-        Add component:
-        <select id="new-component-select">
-            <option value="">-- Select Component--</option>
-            <?php foreach (array_keys($availableComponents) as $name): ?>
-                <option value="<?= e($name) ?>"><?= e($availableComponents[$name]['label']) ?></option>
-            <?php endforeach; ?>
-        </select>
-    </label>
-    <button type="button" id="add-component">Add</button>
+    <!-- Sidebar -->
+    <div id="sidebar-container" class="sidebar-container">
+
+        <!-- Content Info -->
+        <fieldset class="card">
+            <legend><?= e($typeLabel) ?> Info</legend>
+
+            <label>
+                Title:
+                <input type="text" name="title" value="<?= e($title) ?>" required>
+            </label>
+
+            <label>
+                Slug:
+                <input type="text" name="slug" value="<?= e($slug) ?>">
+            </label>
+
+            <label>
+                Meta Description:
+                <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
+            </label>
+            <label>
+                Status:
+                <select name="status">
+                    <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
+                    <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
+                </select>
+            </label>
+        </fieldset>
+
+        <!-- Layout -->
+        <fieldset class="card">
+            <legend>Layout & Theme</legend>
+
+            <label>
+                Layout:
+                <select name="layout">
+                    <?php foreach ($availableLayouts as $val => $label): ?>
+                        <option value="<?= e($val) ?>" <?= $val === $pageLayout ? 'selected' : '' ?>>
+                            <?= e($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <label>
+                Header:
+                <select name="header">
+                    <?php foreach ($availableHeaders as $val => $label): ?>
+                        <option value="<?= e($val) ?>" <?= $val === $pageHeader ? 'selected' : '' ?>>
+                            <?= e($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <label>
+                Footer:
+                <select name="footer">
+                    <?php foreach ($availableFooters as $val => $label): ?>
+                        <option value="<?= e($val) ?>" <?= $val === $pageFooter ? 'selected' : '' ?>>
+                            <?= e($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </fieldset>
+
+        <!-- Component list -->
+        <fieldset class="card">
+            <legend>Component Lists</legend>
+            <label>
+                All component:
+                <select id="new-component-select">
+                    <option value="">-- Select Component--</option>
+                    <?php foreach (array_keys($availableComponents) as $name): ?>
+                        <option value="<?= e($name) ?>"><?= e($availableComponents[$name]['label']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <button type="button" id="add-component">Add</button>
+        </fieldset>
+
+    </div>
+
 </form>
 
 <script>

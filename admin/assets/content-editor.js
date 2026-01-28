@@ -158,8 +158,10 @@ renumberComponents();
 // ----------------------------
 const addBtn = document.getElementById('add-component');
 const select = document.getElementById('new-component-select');
+addBtn.disabled = true;
 
 if (addBtn && select) {
+    select.addEventListener('change', () => { addBtn.disabled = !select.value; });
     addBtn.addEventListener('click', async () => {
         const type = select.value;
 

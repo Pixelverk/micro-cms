@@ -642,6 +642,19 @@ header {
 
 /*   7.1 Content editor */
 
+.components-container {
+    flex:1;
+    border: 1px solid var(--border);
+}
+
+.sidebar-container {
+    margin-top: -0.5rem;
+    position: sticky;
+    /* top: calc(var(--header-height) + 1.5rem); */
+    top: 1.5rem;
+    height: fit-content;
+}
+
 .children-container {
     margin-left: 1.5rem;
     padding-left: 1rem;
