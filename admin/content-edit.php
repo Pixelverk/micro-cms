@@ -122,13 +122,11 @@ ob_start();
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 
 <div class="page-header">
-    <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-
+    <div class="page-title">        
         <?php if ($isEdit): ?>
-            <p>Editing <?= e($typeLabel) ?>: <strong><?= e($title) ?></strong></p>
+            <h2>Editing <?= e($typeLabel) ?>: <?= e($title) ?></h2>
         <?php else: ?>
-            <p>Create new <?= e($typeLabel) ?></p>
+            <h2>Create new <?= e($typeLabel) ?></h2>
         <?php endif; ?>
     </div>
 
@@ -152,7 +150,10 @@ ob_start();
     <?php endif; ?>
 
     <!-- Components -->
-    <div id="components-container" class="card components-container"></div>
+    <fieldset class="card components-container">
+        <legend>Components</legend>
+        <div id="components-container" class=""></div>
+    </fieldset>
 
     <!-- Sidebar -->
     <div id="sidebar-container" class="sidebar-container">

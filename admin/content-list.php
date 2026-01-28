@@ -32,12 +32,11 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p>Manage your <?= e($typeLabel) ?>s below.</p>
+        <h2><?= e($typeLabel) ?>s</h2>
     </div>
 
-    <div class="page-actions" style="display:flex; gap:0.75rem; align-items:center;">
-        <label style="display:flex; align-items:center; gap:0.5rem; margin:0;">
+    <div class="page-actions flex gap-md items-center">
+        <label class="flex items-center gap-sm mb-0">
             <span>Type:</span>
             <select id="content-type-select">
                 <?php foreach ($contentTypes as $key => $config): ?>

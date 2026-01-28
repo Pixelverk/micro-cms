@@ -226,6 +226,7 @@ html.dark {
 
 /* 3.4 Spacing helpers (just margins) */
 
+.mb-0  { margin-bottom: 0;}
 .mb-xs { margin-bottom: 0.25rem; }
 .mb-sm { margin-bottom: 0.5rem; }
 .mb-md { margin-bottom: 1rem; }
@@ -391,12 +392,8 @@ header {
     display:flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
     gap: 1rem;
-}
-
-.page-actions {
-    margin-bottom: 1rem;
 }
 
 /* 5.3 Sidebar */
@@ -652,7 +649,6 @@ header {
 }
 
 .sidebar-container {
-    margin-top: -0.5rem;
     position: sticky;
     top: 1.5rem;
     height: fit-content;
