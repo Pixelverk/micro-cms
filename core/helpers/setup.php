@@ -44,6 +44,7 @@ CREATE TABLE content (
     meta JSON,
     body JSON NOT NULL,
     published_at INTEGER,
+    scheduled_at INTEGER,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     UNIQUE(type, parent_id, slug)

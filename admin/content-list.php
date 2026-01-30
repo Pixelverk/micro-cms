@@ -70,6 +70,7 @@ ob_start();
                 <th>Slug</th>
                 <th>Status</th>
                 <th>Published</th>
+                <th>Scheduled</th>
                 <th>Updated</th>
                 <th style="width:180px;">Actions</th>
             </tr>
@@ -101,13 +102,15 @@ ob_start();
                 </td>
 
                 <td>
-                    <?= $item['published_at']
-                        ? date('Y-m-d', (int)$item['published_at'])
-                        : '—' ?>
+                    <?= format_local_datetime($item['published_at'], 'Y-m-d') ?>
                 </td>
 
                 <td>
-                    <?= date('Y-m-d', (int)$item['updated_at']) ?>
+                    <?= format_local_datetime($item['scheduled_at'], 'Y-m-d H:i') ?>
+                </td>
+
+                <td>
+                    <?= format_local_datetime($item['updated_at'], 'Y-m-d') ?>
                 </td>
 
                 <td class="actions">

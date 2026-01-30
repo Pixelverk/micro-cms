@@ -2,36 +2,52 @@
 declare(strict_types=1);
 
 /**
- * List *specific fields* from all content items of a given type
+ * List content items of a given type
  *
- * @param string $type Content type (e.g., 'page', 'blog_post')
- * @return array List of content items with keys: slug, title, status, published_at, created_at, updated_at
+ * @param string $type
+ * @return array
  */
 function list_content(string $type): array
 {
     $pdo = db();
+    $now = time();
 
-    $stmt = $pdo->prepare("
-        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at
+    // Base query
+    $sql = "
+        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at, scheduled_at
         FROM content
         WHERE type = :type
-        ORDER BY title COLLATE NOCASE ASC
-    ");
-    $stmt->execute(['type' => $type]);
+    ";
+
+    $params = ['type' => $type];
+
+    // If frontend, only show published items that are due
+    if (!is_logged_in()) {
+        $sql .= " AND status = 'published' AND published_at <= :now";
+        $params['now'] = $now;
+    }
+
+    $sql .= " ORDER BY title COLLATE NOCASE ASC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 
     return $stmt->fetchAll() ?: [];
 }
+
 
 /**
  * Load a content item of a given type by slug
  *
  * @param string $type
  * @param string $slug
+ * @param int|null $parentId
  * @return array|null
  */
 function load_content(string $type, string $slug, ?int $parentId = null): ?array
 {
     $pdo = db();
+    $now = time();
 
     $sql = "
         SELECT *
@@ -42,8 +58,6 @@ function load_content(string $type, string $slug, ?int $parentId = null): ?array
         LIMIT 1
     ";
 
-    $stmt = $pdo->prepare($sql);
-
     $params = [
         'type' => $type,
         'slug' => $slug,
@@ -53,9 +67,17 @@ function load_content(string $type, string $slug, ?int $parentId = null): ?array
         $params['parent_id'] = $parentId;
     }
 
+    $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $row = $stmt->fetch();
     if (!$row) return null;
+
+    // Frontend visibility check
+    if (!is_logged_in()) {
+        if ($row['status'] !== 'published' || (int)$row['published_at'] > $now) {
+            return null; // hide drafts or scheduled content
+        }
+    }
 
     return [
         'id'           => (int) $row['id'],
@@ -68,8 +90,9 @@ function load_content(string $type, string $slug, ?int $parentId = null): ?array
         'header'       => $row['header'],
         'footer'       => $row['footer'],
         'meta'         => $row['meta'] ? json_decode($row['meta'], true) : [],
-        'body'         => json_decode($row['body'], true),
+        'body'         => $row['body'] ? json_decode($row['body'], true) : [],
         'published_at' => $row['published_at'],
+        'scheduled_at' => $row['scheduled_at'],
         'created_at'   => $row['created_at'],
         'updated_at'   => $row['updated_at'],
     ];
@@ -81,6 +104,7 @@ function load_content(string $type, string $slug, ?int $parentId = null): ?array
 function load_content_by_id(int $id): ?array
 {
     $pdo = db();
+    $now = time();
 
     $stmt = $pdo->prepare("SELECT * FROM content WHERE id = :id LIMIT 1");
     $stmt->execute(['id' => $id]);
@@ -88,24 +112,31 @@ function load_content_by_id(int $id): ?array
 
     if (!$row) return null;
 
+    // Frontend visibility check
+    if (!is_logged_in()) {
+        if ($row['status'] !== 'published' || (int)$row['published_at'] > $now) {
+            return null; // hide drafts or scheduled content from visitors
+        }
+    }
+
     return [
-        'id'         => (int) $row['id'],
-        'parent_id'  => $row['parent_id'] !== null ? (int)$row['parent_id'] : null,
-        'type'       => $row['type'],
-        'slug'       => $row['slug'],
-        'title'      => $row['title'],
-        'status'     => $row['status'],
-        'layout'     => $row['layout'],
-        'header'     => $row['header'],
-        'footer'     => $row['footer'],
-        'meta'       => $row['meta'] ? json_decode($row['meta'], true) : [],
-        'body'       => json_decode($row['body'], true),
+        'id'           => (int) $row['id'],
+        'parent_id'    => $row['parent_id'] !== null ? (int)$row['parent_id'] : null,
+        'type'         => $row['type'],
+        'slug'         => $row['slug'],
+        'title'        => $row['title'],
+        'status'       => $row['status'],
+        'layout'       => $row['layout'],
+        'header'       => $row['header'],
+        'footer'       => $row['footer'],
+        'meta'         => $row['meta'] ? json_decode($row['meta'], true) : [],
+        'body'         => $row['body'] ? json_decode($row['body'], true) : [],
         'published_at' => $row['published_at'],
+        'scheduled_at' => $row['scheduled_at'],
         'created_at'   => $row['created_at'],
         'updated_at'   => $row['updated_at'],
     ];
 }
-
 
 /**
  * Save or update a content item to the database
@@ -125,7 +156,34 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
     $data['meta'] ??= [];
     $data['body'] ??= [];
 
+    // ----------------------------
+    // Scheduled publishing
+    // ----------------------------
+    $scheduledAt = $data['scheduled_at'] ?? null;
+
+    if ($scheduledAt !== null && $scheduledAt !== '') {
+        if (is_numeric($scheduledAt)) {
+            $scheduledAt = (int)$scheduledAt;
+        } elseif (is_string($scheduledAt)) {
+            $scheduledAt = strtotime($scheduledAt) ?: null;
+        } else {
+            $scheduledAt = null;
+        }
+    } else {
+        $scheduledAt = null;
+    }
+
+    // ----------------------------
+    // Determine actual status
+    // ----------------------------
     $status = $data['status'] ?? 'draft';
+
+    // If published but scheduled in future, mark as 'scheduled'
+    if ($status === 'published' && $scheduledAt && $scheduledAt > $now) {
+        $status = 'scheduled';
+    }
+
+    // Only set published_at if actually published
     $publishedAt = $status === 'published'
         ? ($data['published_at'] ?? $now)
         : null;
@@ -140,10 +198,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
     // Determine whether to update or insert
     // ----------------------------
     if ($id) {
-        // Force update by ID
         $existingId = $id;
     } else {
-        // Identity = (type, parent_id, slug)
         $sql = "
             SELECT id
             FROM content
@@ -152,18 +208,11 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
               AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
             LIMIT 1
         ";
-
         $stmt = $pdo->prepare($sql);
-
-        $params = [
-            'type' => $type,
-            'slug' => $slug,
-        ];
-
+        $params = ['type' => $type, 'slug' => $slug];
         if ($parentId !== null) {
             $params['parent_id'] = $parentId;
         }
-
         $stmt->execute($params);
         $existingId = $stmt->fetchColumn();
     }
@@ -174,20 +223,20 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
         // ----------------------------
         $stmt = $pdo->prepare("
             UPDATE content SET
-                parent_id    = :parent_id,
-                title        = :title,
-                status       = :status,
-                layout       = :layout,
-                header       = :header,
-                footer       = :footer,
-                meta         = :meta,
-                body         = :body,
-                published_at = :published_at,
-                updated_at   = :updated_at
+                parent_id     = :parent_id,
+                title         = :title,
+                status        = :status,
+                layout        = :layout,
+                header        = :header,
+                footer        = :footer,
+                meta          = :meta,
+                body          = :body,
+                published_at  = :published_at,
+                scheduled_at  = :scheduled_at,
+                updated_at    = :updated_at
             WHERE id = :id
         ");
-
-        $result = $stmt->execute([
+        $stmt->execute([
             'id'           => $existingId,
             'parent_id'    => $parentId,
             'title'        => $data['title'],
@@ -198,6 +247,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
             'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
             'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
             'published_at' => $publishedAt,
+            'scheduled_at' => $scheduledAt,
             'updated_at'   => $now,
         ]);
 
@@ -220,6 +270,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
                 meta,
                 body,
                 published_at,
+                scheduled_at,
                 created_at,
                 updated_at
             ) VALUES (
@@ -234,12 +285,12 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
                 :meta,
                 :body,
                 :published_at,
+                :scheduled_at,
                 :created_at,
                 :updated_at
             )
         ");
-
-        $result = $stmt->execute([
+        $stmt->execute([
             'type'         => $type,
             'parent_id'    => $parentId,
             'slug'         => $slug,
@@ -251,6 +302,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
             'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
             'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
             'published_at' => $publishedAt,
+            'scheduled_at' => $scheduledAt,
             'created_at'   => $now,
             'updated_at'   => $now,
         ]);
@@ -266,7 +318,6 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
 
     return $idToReturn;
 }
-
 
 /**
  * Build full slug path recursively for a single page

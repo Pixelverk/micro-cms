@@ -6,6 +6,9 @@ define('CMS_PATH', __DIR__);
 define('CORE_PATH', CMS_PATH . '/core');
 define('STORAGE_PATH', CMS_PATH . '/storage');
 
+// decide timezone
+date_default_timezone_set('UTC');
+
 // get some info
 $config = require 'config.php';
 $logging = ($config['perf_logging'] ?? false) === true;

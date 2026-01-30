@@ -653,6 +653,7 @@ header {
     position: sticky;
     top: 1.5rem;
     height: fit-content;
+    max-width: 350px;
 }
 
 .children-container {

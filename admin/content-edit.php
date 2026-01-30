@@ -54,6 +54,16 @@ $status          = $contentData['status'] ?? 'draft';
 $metaDescription = $contentData['meta']['description'] ?? '';
 $components      = $contentData['body'] ?? [];
 
+$scheduledDate = '';
+if (!empty($contentData['scheduled_at'])) {
+    $dt = new DateTime(
+        '@' . (int) $contentData['scheduled_at'] // force UTC
+    );
+    $dt->setTimezone(new DateTimeZone(SITE_TIMEZONE));
+
+    $scheduledDate = $dt->format('Y-m-d\TH:i');
+}
+
 // parent stuff
 if ($isEdit) {
     $allItems = list_content($type); // get all items of this type
@@ -210,6 +220,7 @@ ob_start();
                 Meta Description:
                 <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
             </label>
+
             <label>
                 Parent:
                 <select name="parent_id">
@@ -224,13 +235,26 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </label>
+
             <label>
                 Status:
                 <select name="status">
                     <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
                     <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
+                    <option value="scheduled" <?= $status === 'scheduled' ? 'selected' : '' ?>>Scheduled</option>
                 </select>
             </label>
+
+            <label id="scheduled-container">
+                Scheduled Publish:
+                <input 
+                    type="datetime-local" 
+                    name="scheduled_at" 
+                    value="<?= $scheduledDate ?>"
+                >
+                <small>Leave blank for immediate publishing</small>
+            </label>
+
         </fieldset>
 
         <!-- Layout -->

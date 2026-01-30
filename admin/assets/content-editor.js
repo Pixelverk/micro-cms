@@ -396,3 +396,25 @@ if (titleInput && slugInput) {
         slugInput.value = slugify(titleInput.value);
     }
 }
+
+// clear timedate input if draft or publish status selected
+document.addEventListener('DOMContentLoaded', () => {
+    const statusSelect = document.querySelector('select[name="status"]');
+    const scheduledContainer = document.getElementById('scheduled-container');
+    const scheduledInput = scheduledContainer.querySelector('input[name="scheduled_at"]');
+
+    function updateScheduledVisibility() {
+        if (statusSelect.value === 'scheduled') {
+            scheduledContainer.style.display = '';
+        } else {
+            scheduledContainer.style.display = 'none';
+            scheduledInput.value = ''; // clear input if hidden
+        }
+    }
+
+    // Initial check on page load
+    updateScheduledVisibility();
+
+    // Update whenever the status changes
+    statusSelect.addEventListener('change', updateScheduledVisibility);
+});

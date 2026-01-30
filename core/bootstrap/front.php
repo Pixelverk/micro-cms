@@ -16,8 +16,18 @@ function checkCache($request, $config) {
 
 function serveCached($file, $config){
 
+    //helpers
+    require CORE_PATH . '/helpers/cache.php';
+    require CORE_PATH . '/helpers/sitemap.php';
+
+    //core systems
+    require CORE_PATH . '/db.php';
+
     // Start session
     if (session_status() === PHP_SESSION_NONE) session_start();
+
+    // check for scheduled content items after request is done
+    register_shutdown_function('publishing_check');
 
     // Serve cached page if valid
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
@@ -39,6 +49,7 @@ function serveFresh($request){
     require CORE_PATH . '/helpers/content.php';
     require CORE_PATH . '/helpers/settings.php';
     require CORE_PATH . '/helpers/menus.php';
+    require CORE_PATH . '/helpers/sitemap.php';
 
     // Core Systems
     require CORE_PATH . '/db.php';
@@ -47,6 +58,9 @@ function serveFresh($request){
 
     // Start session
     if (session_status() === PHP_SESSION_NONE) session_start();
+
+    // check for scheduled content items after request is done
+    register_shutdown_function('publishing_check');
 
     // Resolve page and render
     $page = route_request($request);
@@ -73,3 +87,51 @@ function serveFresh($request){
     }
 
 }
+
+// Runs after the page has been served and checks for any cheduled content items that need to be published
+function publishing_check() {
+    $pdo = db();
+    $now = time();
+
+    // Find all scheduled content that should be published
+    $stmt = $pdo->prepare("
+        SELECT id
+        FROM content
+        WHERE status = 'scheduled'
+          AND scheduled_at IS NOT NULL
+          AND scheduled_at <= :now
+    ");
+    $stmt->execute(['now' => $now]);
+    $items = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (empty($items)) {
+        return;
+    }
+
+    // Publish each item
+    $update = $pdo->prepare("
+        UPDATE content
+        SET status = 'published',
+            published_at = :now,
+            scheduled_at = NULL,
+            updated_at = :now
+        WHERE id = :id
+    ");
+
+    foreach ($items as $id) {
+        $update->execute([
+            'id'  => $id,
+            'now' => $now,
+        ]);
+
+        // Optional: invalidate cache / update sitemap for this item
+        $stmt = $pdo->prepare("SELECT slug, type FROM content WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+        $slug = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($slug) {
+            invalidate_cache($slug['slug'], $slug['type']);
+        }
+    }
+    save_sitemap();
+};

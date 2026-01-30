@@ -1,17 +1,18 @@
 <?php
 // admin/content-save.php
 
+declare(strict_types=1);
+
 // ----------------------------
 // Get POST data
 // ----------------------------
-$id = $_POST['id'] ?? null; // editing existing content
+$id          = $_POST['id'] ?? null; // editing existing content
 $contentType = $_POST['type'] ?? 'page'; // default type
 
 // ----------------------------
 // Load existing content or create new
 // ----------------------------
 $contentData = [];
-
 if ($id) {
     $contentData = load_content_by_id((int)$id) ?: [];
 }
@@ -19,24 +20,21 @@ if ($id) {
 // ----------------------------
 // Slug handling
 // ----------------------------
-$slug = $_POST['slug'] ?? '';
-
+$slug = trim($_POST['slug'] ?? '');
 if (!$slug) {
     redirect_with_toast('content-list', 'error', "Save - Missing slug for {$contentType}.");
 }
-
 $slug = sanitize_slug($slug);
 if (!$slug) {
     redirect_with_toast('content-list', 'error', "Invalid slug for {$contentType}.");
 }
-
 $contentData['slug'] = $slug;
 
 // ----------------------------
 // Parent ID / Nested Pages
 // ----------------------------
 $parentId = $_POST['parent_id'] ?? null;
-$parentId = ($parentId === '' || $parentId === null) ? null : (int) $parentId;
+$parentId = ($parentId === '' || $parentId === null) ? null : (int)$parentId;
 
 if ($id && $parentId) {
     // Prevent self or descendant as parent
@@ -53,30 +51,66 @@ if ($id && $parentId) {
 
     $allItems = list_content($contentType);
     $invalidParentIds = array_merge([$id], get_descendant_ids($id, $allItems));
-
     if (in_array($parentId, $invalidParentIds, true)) {
         $parentId = null; // reset to top level
     }
 }
-
 $contentData['parent_id'] = $parentId;
 
 // ----------------------------
-// Status & timestamps
+// Status, scheduled_at & timestamps
 // ----------------------------
-$status = $_POST['status'] ?? 'published';
-$contentData['status'] = $status;
+$status      = $_POST['status'] ?? 'draft';
+$currentTime = time(); // UTC
 
-$currentTime = time();
+// Ensure timestamps exist
 $contentData['updated_at'] = $currentTime;
-if (!isset($contentData['created_at'])) {
-    $contentData['created_at'] = $currentTime;
+$contentData['created_at'] ??= $currentTime;
+
+// ----------------------------
+// Scheduled date (LOCAL → UTC)
+// ----------------------------
+$scheduledAt = null;
+
+if ($status === 'scheduled' && !empty($_POST['scheduled_at'])) {
+    $tzLocal = new DateTimeZone(SITE_TIMEZONE);
+    $tzUtc   = new DateTimeZone('UTC');
+
+    $dt = DateTime::createFromFormat(
+        'Y-m-d\TH:i',
+        $_POST['scheduled_at'],
+        $tzLocal
+    );
+
+    if ($dt !== false) {
+        $dt->setTimezone($tzUtc);
+        $scheduledAt = $dt->getTimestamp();
+    }
 }
+
+// Always explicitly set (allows clearing)
+$contentData['scheduled_at'] = $scheduledAt;
+
+// ----------------------------
+// Adjust status if publishing in future
+// ----------------------------
+if ($status === 'published' && $scheduledAt && $scheduledAt > $currentTime) {
+    $status = 'scheduled';
+}
+
+// ----------------------------
+// published_at handling
+// ----------------------------
+$contentData['published_at'] = $status === 'published'
+    ? ($contentData['published_at'] ?? $currentTime)
+    : null;
+
+$contentData['status'] = $status;
 
 // ----------------------------
 // Basic fields
 // ----------------------------
-$contentData['type'] = $contentType;
+$contentData['type']  = $contentType;
 $contentData['title'] = trim($_POST['title'] ?? $contentData['title'] ?? "New {$contentType}");
 $contentData['meta'] ??= [];
 $contentData['meta']['description'] = trim($_POST['meta_description'] ?? $contentData['meta']['description'] ?? '');
@@ -88,40 +122,19 @@ $layout = $_POST['layout'] ?? null;
 $header = $_POST['header'] ?? null;
 $footer = $_POST['footer'] ?? null;
 
-if ($layout !== null && $layout !== '') {
-    $contentData['layout'] = $layout;
-} else {
-    unset($contentData['layout']);
-}
-
-if ($header !== null && $header !== '') {
-    $contentData['header'] = $header;
-} else {
-    unset($contentData['header']);
-}
-
-if ($footer !== null && $footer !== '') {
-    $contentData['footer'] = $footer;
-} else {
-    unset($contentData['footer']);
-}
+if ($layout !== null && $layout !== '') $contentData['layout'] = $layout; else unset($contentData['layout']);
+if ($header !== null && $header !== '') $contentData['header'] = $header; else unset($contentData['header']);
+if ($footer !== null && $footer !== '') $contentData['footer'] = $footer; else unset($contentData['footer']);
 
 // ----------------------------
 // Rebuild nested components from POST
 // ----------------------------
 $postedComponents = $_POST['components'] ?? [];
-$postedComponents = array_filter(
-    $postedComponents,
-    fn($c) => !empty($c['type'])
-);
+$postedComponents = array_filter($postedComponents, fn($c) => !empty($c['type']));
 
 function setNestedComponent(array &$tree, array $parts, array $comp): void {
     $index = array_shift($parts);
-
-    if (!isset($tree[$index])) {
-        $tree[$index] = [];
-    }
-
+    if (!isset($tree[$index])) $tree[$index] = [];
     if (count($parts) === 0) {
         $tree[$index] = [
             'type'     => $comp['type'],
@@ -130,36 +143,31 @@ function setNestedComponent(array &$tree, array $parts, array $comp): void {
         ];
         return;
     }
-
     $tree[$index]['children'] ??= [];
     setNestedComponent($tree[$index]['children'], $parts, $comp);
 }
 
 $componentsTree = [];
 foreach ($postedComponents as $path => $comp) {
-    $parts = explode('-', $path);
+    $parts = explode('-', (string)$path);
     setNestedComponent($componentsTree, $parts, $comp);
 }
 
-// Reindex recursively
 function reindexRecursive(array $array): array {
     $result = [];
     foreach ($array as $item) {
-        if (isset($item['children'])) {
-            $item['children'] = reindexRecursive($item['children']);
-        }
+        if (isset($item['children'])) $item['children'] = reindexRecursive($item['children']);
         $result[] = $item;
     }
     return $result;
 }
 
-$contentData['body'] ??= [];
 $contentData['body'] = reindexRecursive($componentsTree);
 
 // ----------------------------
 // Save content
 // ----------------------------
-$id = save_content($contentType, $slug, $contentData, $id);
+$id = save_content($contentType, $slug, $contentData, $id !== null ? (int)$id : null);
 
 if (!$id) {
     redirect_with_toast("content-list", 'error', "Failed to save {$contentType}.");

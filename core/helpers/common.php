@@ -162,3 +162,31 @@ function debug_log(string $msg): void {
     $time = date('Y-m-d H:i:s');
     file_put_contents($file, "[{$time}] {$msg}\n", FILE_APPEND);
 }
+
+
+// login status? 
+function is_logged_in(): bool
+{
+    return !empty($_SESSION['user_id']);
+}
+
+function require_login(): void
+{
+    if (!is_logged_in()) {
+        redirect('login');
+        exit;
+    }
+}
+
+// timezone convert
+function format_local_datetime(?int $timestamp, string $format = 'Y-m-d H:i'): string
+{
+    if (!$timestamp) {
+        return '—';
+    }
+
+    $dt = new DateTime('@' . $timestamp); // UTC
+    $dt->setTimezone(new DateTimeZone(SITE_TIMEZONE));
+
+    return $dt->format($format);
+}
