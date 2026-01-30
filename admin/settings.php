@@ -29,15 +29,15 @@ $settingFields = [
         'help'    => 'This will appear in the browser tab and site header.',
         'default' => 'My Site',
     ],
-    'homepage_slug' => [
+    'homepage_id' => [
         'type'    => 'select',
         'label'   => 'Homepage',
         'help'    => 'Select which page is the homepage.',
         'options' => array_combine(
-            array_column($pages, 'slug'),
+            array_column($pages, 'id'),
             array_column($pages, 'title')
         ),
-        'default' => $pages[0]['slug'] ?? '',
+        'default' => $pages[0]['id'] ?? null,
     ],
     'site_language' => [
         'type'    => 'text',
@@ -119,7 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException("Invalid selection for {$meta['label']}.");
             }
 
-            if (str_starts_with($key, 'prefix_')) {
+            if ($key === 'homepage_id') {
+                // Save as integer ID
+                $value = (int)$value;
+                set_setting($key, $value);
+            } elseif (str_starts_with($key, 'prefix_')) {
                 $type = substr($key, 7);
                 $newPrefixes[$type] = trim($value);
             } else {
@@ -138,8 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_with_toast('settings', 'error', $e->getMessage());
     }
 }
-
-
 
 // ----------------------------
 // Render page
@@ -160,7 +162,9 @@ ob_start();
 <form id="settings" method="post" class="form-card">
     <?php foreach ($settingFields as $key => $meta): ?>
         <?php
-        if (str_starts_with($key, 'prefix_')) {
+        if ($key === 'homepage_id') {
+            $value = $settings['homepage_id'] ?? $meta['default'] ?? '';
+        } elseif (str_starts_with($key, 'prefix_')) {
             $type  = substr($key, strlen('prefix_'));
             $value = $settings['content_prefixes'][$type] ?? $meta['default'] ?? '';
         } else {
@@ -182,7 +186,7 @@ ob_start();
                 <label>
                     <select name="<?= e($key) ?>">
                         <?php foreach ($meta['options'] as $val => $label): ?>
-                            <option value="<?= e($val) ?>" <?= $val === $value ? 'selected' : '' ?>>
+                            <option value="<?= e($val) ?>" <?= ((string)$val === (string)$value) ? 'selected' : '' ?>>
                                 <?= e($label) ?>
                             </option>
                         <?php endforeach; ?>

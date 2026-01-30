@@ -13,7 +13,22 @@ declare(strict_types=1);
 function route_request($path): array
 {
     $path = trim($path, '/');
-    $slug = $path === '' ? get_setting('homepage_slug') : $path; // empty path means user-defined home page
+    $settings = load_settings();
+
+    // Front page
+    if ($path === '') {
+        $homepageId = $settings['homepage_id'] ?? null;
+        if ($homepageId) {
+            $item = load_content_by_id((int)$homepageId);
+            if ($item) {
+                $path = $item['slug'] ?? '';
+            }
+        }
+
+        if (!isset($item) || !$item) {
+            return load_fallback_404();
+        }
+    }
 
     // Contact POST
     if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,12 +51,12 @@ function route_request($path): array
     }
 
     // Validate slug
-    if (!is_string($slug) || !preg_match('/^[a-z0-9\-\/]+$/i', $slug)) {
+    if (!preg_match('/^[a-z0-9\-\/]+$/i', $path)) {
         return load_fallback_404();
     }
 
-    // Load from DB
-    $item = load_content_by_slug($slug);
+    // Normal page: load by slug
+    $item = load_content_by_slug($path);
     if ($item) {
         return $item;
     }

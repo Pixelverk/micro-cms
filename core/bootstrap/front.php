@@ -36,6 +36,7 @@ function serveFresh($request){
     // helpers
     require CORE_PATH . '/helpers/common.php';
     require CORE_PATH . '/helpers/cache.php';
+    require CORE_PATH . '/helpers/content.php';
     require CORE_PATH . '/helpers/settings.php';
     require CORE_PATH . '/helpers/menus.php';
 

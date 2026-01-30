@@ -16,6 +16,18 @@ function load_settings(): array {
         $settings[$row['key']] = get_setting($row['key']);
     }
 
+    // If homepage_id is set, add homepage_slug and homepage_title for convenience
+    if (!empty($settings['homepage_id'])) {
+        $page = load_content_by_id((int)$settings['homepage_id']);
+        if ($page) {
+            $settings['homepage_slug']  = $page['slug'];
+            $settings['homepage_title'] = $page['title'];
+        } else {
+            $settings['homepage_slug']  = '';
+            $settings['homepage_title'] = '';
+        }
+    }
+
     return $settings;
 }
 

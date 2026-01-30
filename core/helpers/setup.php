@@ -124,7 +124,7 @@ $stmt->execute([
 
 $settings = [
     'site_title'      => 'Awesome site',
-    'homepage_slug'   => 'home',
+    'homepage_id'     => '1',
     'site_language'   => 'en',
     'default_layout'  => 'default',
     'default_header'  => 'site-header',

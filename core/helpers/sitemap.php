@@ -10,9 +10,9 @@ function generate_sitemap(): string
     $settings  = load_settings();
     $prefixes  = $settings['content_prefixes'] ?? [];
     $types     = array_keys($theme['content_types'] ?? []);
-    $homeSlug  = $settings['homepage_slug'] ?? 'home';
+    $homepageId = $settings['homepage_id'] ?? null;
 
-    // Prefer configured base URL
+    // Base URL
     $baseUrl = rtrim(
         config('site.url')
         ?? ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
@@ -27,7 +27,7 @@ function generate_sitemap(): string
         $prefix = $prefixes[$type] ?? '';
 
         $stmt = $pdo->prepare("
-            SELECT slug, updated_at, published_at
+            SELECT id, slug, updated_at, published_at
             FROM content
             WHERE type = :type
               AND status = 'published'
@@ -40,8 +40,8 @@ function generate_sitemap(): string
             $timestamp = $row['published_at'] ?: $row['updated_at'];
             $lastmod   = date('Y-m-d', (int)$timestamp);
 
-            // Homepage handling
-            if ($row['slug'] === $homeSlug) {
+            // Homepage handling: only hide path if this is the homepage
+            if ($homepageId && (int)$row['id'] === (int)$homepageId) {
                 $path = '';
             } else {
                 $path = trim(($prefix ? "{$prefix}/" : '') . $row['slug'], '/');
