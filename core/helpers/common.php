@@ -155,3 +155,10 @@ function img(string $path): string
 {
     return url("theme/assets/img/" . ltrim($path, '/'));
 }
+
+// Debug log message
+function debug_log(string $msg): void {
+    $file = STORAGE_PATH . '/logs/debug.log';
+    $time = date('Y-m-d H:i:s');
+    file_put_contents($file, "[{$time}] {$msg}\n", FILE_APPEND);
+}

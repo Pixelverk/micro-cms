@@ -25,7 +25,7 @@ require CORE_PATH . '/router.php';
 
 function serveAdmin($request) {
 
-    // Start session if needed
+    // Start session
     if (session_status() === PHP_SESSION_NONE) session_start();
 
     // Check session timeout

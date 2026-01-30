@@ -15,6 +15,10 @@ function checkCache($request, $config) {
 }
 
 function serveCached($file, $config){
+
+    // Start session
+    if (session_status() === PHP_SESSION_NONE) session_start();
+
     // Serve cached page if valid
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && file_exists($file)
@@ -40,6 +44,9 @@ function serveFresh($request){
     require CORE_PATH . '/render.php';
     require CORE_PATH . '/router.php';
 
+    // Start session
+    if (session_status() === PHP_SESSION_NONE) session_start();
+
     // Resolve page and render
     $page = route_request($request);
     $response = render_page($page);
@@ -48,8 +55,14 @@ function serveFresh($request){
     foreach ($response['headers'] ?? [] as $header) header($header);
     echo $response['body'];
 
-    // Cache successful GET responses
-    if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($response['status'] ?? 200) === 200) {
+    // Cache successful GET responses, but skip drafts and admin visits
+    $isAdminVisit = !empty($_SESSION['user_id']);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET'
+        && ($response['status'] ?? 200) === 200
+        && ($page['status'] ?? '') !== 'draft'
+        && !$isAdminVisit
+    ) {
         $key = trim($request, '/') ?: 'home';
         $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
 

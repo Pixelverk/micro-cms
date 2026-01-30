@@ -40,6 +40,9 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
 
     $pdo = db();
 
+    // Are we an admin/preview user?
+    $isAdminPreview = isset($_SESSION['user_id']) && $_SESSION['user_id'] !== '';
+
     foreach ($types as $ct) {
         if ($type !== null && $type !== $ct) continue;
 
@@ -56,22 +59,19 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
         if ($relativeSlug === '') continue;
 
         // Split path into segments
-        $segments = array_values(array_filter(
-            explode('/', $relativeSlug),
-            'strlen'
-        ));
+        $segments = array_values(array_filter(explode('/', $relativeSlug), 'strlen'));
 
         $parentId = null;
         $row      = null;
 
         // Walk the hierarchy
         foreach ($segments as $segment) {
+
             $sql = "
                 SELECT *
                 FROM content
                 WHERE slug = :slug
                   AND type = :type
-                  AND status = 'published'
                   AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
                 LIMIT 1
             ";
@@ -99,6 +99,11 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
 
         if (!$row) continue;
 
+        // Draft check — only block if not admin/preview
+        if (!$isAdminPreview && $row['status'] !== 'published') {
+            return null;
+        }
+
         // Decode JSON columns safely
         $body = json_decode($row['body'] ?? '', true);
         $meta = json_decode($row['meta'] ?? '', true);
@@ -117,21 +122,12 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
             'id'           => (int) $row['id'],
             'parent_id'    => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
             'type'         => $ct,
-            'slug'         => end($segments), // leaf slug
+            'slug'         => end($segments),
             'title'        => $row['title'],
             'status'       => $row['status'],
-            'layout'       => $row['layout']
-                ?? $ctConfig['default_layout']
-                ?? $settings['default_layout']
-                ?? $theme['defaults']['layout'],
-            'header'       => $row['header']
-                ?? $ctConfig['default_header']
-                ?? $settings['default_header']
-                ?? $theme['defaults']['header'],
-            'footer'       => $row['footer']
-                ?? $ctConfig['default_footer']
-                ?? $settings['default_footer']
-                ?? $theme['defaults']['footer'],
+            'layout'       => $row['layout'] ?? $ctConfig['default_layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'],
+            'header'       => $row['header'] ?? $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'],
+            'footer'       => $row['footer'] ?? $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'],
             'meta'         => $meta ?? [],
             'components'   => $body ?? [],
             'created_at'   => (int) $row['created_at'],

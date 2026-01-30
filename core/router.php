@@ -36,7 +36,7 @@ function route_request($path): array
     }
 
     // Validate slug
-    if (!is_string($slug) || !preg_match('/^[a-z0-9\-\/]+$/', $slug)) {
+    if (!is_string($slug) || !preg_match('/^[a-z0-9\-\/]+$/i', $slug)) {
         return load_fallback_404();
     }
 
