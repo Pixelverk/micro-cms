@@ -18,6 +18,7 @@ function serveCached($file, $config){
 
     //helpers
     require CORE_PATH . '/helpers/cache.php';
+    require CORE_PATH . '/helpers/settings.php';
     require CORE_PATH . '/helpers/sitemap.php';
 
     //core systems
