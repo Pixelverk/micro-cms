@@ -42,15 +42,50 @@ if (!$content) {
 }
 
 // ----------------------------
-// Delete content
+// Recursive function to orphan and collect descendants
+// ----------------------------
+function collect_and_orphan(PDO $pdo, int $parentId): array {
+    $stmt = $pdo->prepare("SELECT id, slug FROM content WHERE parent_id = :parent_id");
+    $stmt->execute(['parent_id' => $parentId]);
+    $children = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $descendantSlugs = [];
+
+    foreach ($children as $child) {
+        // Recursively process grandchildren
+        $descendantSlugs = array_merge($descendantSlugs, collect_and_orphan($pdo, (int)$child['id']));
+
+        // Orphan this child
+        $update = $pdo->prepare("UPDATE content SET parent_id = NULL WHERE id = :id");
+        $update->execute(['id' => $child['id']]);
+
+        // Collect slug for cache invalidation
+        $descendantSlugs[] = $child['slug'];
+    }
+
+    return $descendantSlugs;
+}
+
+// Get all descendant slugs and set their parent_id to null
+$descendantSlugs = collect_and_orphan($pdo, $id);
+
+// ----------------------------
+// Delete the content
 // ----------------------------
 $stmt = $pdo->prepare("DELETE FROM content WHERE id = :id");
 $stmt->execute(['id' => $id]);
 
 // ----------------------------
-// Post-delete housekeeping
+// Invalidate cache for deleted page + descendants
 // ----------------------------
 invalidate_cache($content['slug'], $type);
+foreach ($descendantSlugs as $slug) {
+    invalidate_cache($slug, $type);
+}
+
+// ----------------------------
+// Update sitemap
+// ----------------------------
 save_sitemap();
 
 redirect_with_toast(
