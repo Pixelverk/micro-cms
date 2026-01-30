@@ -86,17 +86,21 @@ return [
         'contact' => [
             'label' => 'Contact',
             'fields' => [
-                'name'    => ['required' => true],
-                'email'   => ['required' => true, 'email' => true],
-                'message' => ['required' => true],
+                'name'    => ['type' => 'text', 'required' => true],
+                'email'   => ['type' => 'email', 'required' => true],
+                'message' => ['type' => 'textarea', 'required' => true],
             ],
             'notification_email_setting' => 'contact_email',
             'store_submission' => true,
         ],
         'newsletter' => [
             'label' => 'Newsletter',
+            'fields' => [
+                'email' => ['type' => 'email', 'required' => true],
+                'opt_in' => ['type' => 'checkbox', 'required' => false],
+            ],
             'store_submission' => true,
-        ],
+        ]
     ],
 
     /*

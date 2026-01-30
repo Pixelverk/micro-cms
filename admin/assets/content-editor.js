@@ -5,7 +5,7 @@
 const container = document.getElementById('components-container');
 const availableComponents = window.availableComponents || {};
 const initialComponents = window.initialComponents || [];
-const contentType = window.contentType || 'page'; // NEW: generic content type
+const contentType = window.contentType || 'page';
 
 // Templates
 const componentTemplate = document.getElementById('component-template');
@@ -17,6 +17,7 @@ const checkboxTemplate = document.getElementById('checkbox-template');
 const urlTemplate = document.getElementById('url-template');
 const emailTemplate = document.getElementById('email-template');
 const quillTemplate = document.getElementById('quill-editor-template');
+const selectTemplate = document.getElementById('select-template');
 
 // ----------------------------
 // Create a component from schema + data
@@ -59,6 +60,7 @@ function createComponent(type, data = {}) {
             case 'url': tpl = urlTemplate; break;
             case 'email': tpl = emailTemplate; break;
             case 'quill': tpl = quillTemplate; break;
+            case 'select': tpl = selectTemplate; break;
             default: tpl = fieldTemplate;
         }
 
@@ -66,7 +68,7 @@ function createComponent(type, data = {}) {
         fieldNode.querySelector('.field-label').textContent = field.label || name;
         const input = fieldNode.querySelector('.field-input');
 
-        // quill special
+        // quill logic 
         if (fieldType === 'quill') {
             const editorEl = fieldNode.querySelector('.quill-editor');
             const hiddenInput = fieldNode.querySelector('.quill-hidden');
@@ -86,6 +88,31 @@ function createComponent(type, data = {}) {
 
             fieldsContainer.appendChild(fieldNode);
             continue;
+        }
+
+        // select logic
+        if (fieldType === 'select') {
+            input.innerHTML = '';
+
+            if (field.required) {
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Select --';
+                input.appendChild(placeholder);
+            }
+
+            const options = field.options || {};
+
+            for (const [optValue, label] of Object.entries(options)) {
+                const opt = document.createElement('option');
+                opt.value = optValue;
+                opt.textContent = label;
+                input.appendChild(opt);
+            }
+
+            if (value !== undefined && value !== '') {
+                input.value = value;
+            }
         }
 
         // regular fields

@@ -94,3 +94,11 @@
         <div class="quill-editor">JS will put the editor here</div> <!-- the visual input for the user -->
     </div>
 </template>
+
+<!-- Select dropdown -->
+<template id="select-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <select class="field-input"></select>
+    </label>
+</template>
