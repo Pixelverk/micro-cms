@@ -12,6 +12,13 @@ return [
  * CMS-Editable Schema
  * -------------------------------------------- */
 'schema' => [
+    'form_type' => [
+        'type' => 'string',
+        'label' => 'Form Type',
+        'required' => true,
+        'default' => 'contact',
+        'ui' => 'hidden', // important: CMS users don’t touch this
+    ],
     'title' => [
         'type' => 'string',
         'label' => 'Form Title',
@@ -170,11 +177,17 @@ JS,
         <?php endif; ?>
 
         <form
-            action="<?= url('contact') ?>"
+            action="<?= url('form-submit') ?>"
             method="post"
             data-success="<?= e($success_message) ?>"
             data-error="<?= e($error_message) ?>"
         >
+
+            <input type="hidden" name="form_type" value="<?= e($form_type) ?>">
+
+            <?php if (!empty($props['_page_id'])): ?>
+                <input type="hidden" name="page_id" value="<?= (int)$props['_page_id'] ?>">
+            <?php endif; ?>
 
             <label class="special-field">
                 Company

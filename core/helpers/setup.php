@@ -82,6 +82,19 @@ CREATE TABLE menus (
 );
 ");
 
+$pdo->exec("
+CREATE TABLE form_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    form_type TEXT NOT NULL,
+    page_id INTEGER NULL,
+    data TEXT NOT NULL,
+    ip_address TEXT NULL,
+    user_agent TEXT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+");
+
 // what time is it?
 $now = time();
 
@@ -447,6 +460,7 @@ $contactData = [
         [
             'type' => 'contact-section',
             'props' => [
+                'form_type' => 'contact',
                 'title' => 'Contact Us',
                 'description' => 'Send us a message and we will get back to you.',
                 'success_message' => 'Thanks! Your message has been sent.',

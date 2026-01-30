@@ -5,6 +5,8 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $currentPath = preg_replace('#^admin/?#', '', $currentPath);
 
 $theme = theme_config();
+
+// content
 $contentTypes = $theme['content_types'] ?? [];
 
 function is_active(string $path, string $current): string
@@ -21,6 +23,21 @@ function is_content_type_active(string $type): string
     $currentType = $_GET['type'] ?? 'page';
 
     return (in_array($page, $contentPages, true) && $currentType === $type) ? 'active' : '';
+}
+
+// forms
+$formTypes = $theme['form_types'] ?? [];
+
+function is_form_type_active(string $type): string
+{
+    $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+    $page = preg_replace('#^admin/?#', '', $path);
+
+    if ($page !== 'form-submissions') {
+        return '';
+    }
+
+    return ($_GET['form'] ?? null) === $type ? 'active' : '';
 }
 
 ?>
@@ -66,7 +83,24 @@ function is_content_type_active(string $type): string
             Tags
         </a>
 
-    </div>  
+    </div>
+
+    <?php if (!empty($formTypes)): ?>
+    <div class="sidebar-section">
+        <div class="sidebar-title">Forms</div>
+
+        <?php foreach ($formTypes as $type => $config): ?>
+            <a href="<?= url('admin/form-submissions') . '?form=' . e($type) ?>"
+            class="sidebar-link <?= is_form_type_active($type) ?>"
+            data-label="<?= e($config['label'] ?? ucfirst($type)) ?>"
+            >
+                <span class="sidebar-icon"><?= icon('mail-in', 20) ?></span>
+                <?= e($config['label'] ?? ucfirst($type)) ?>
+            </a>
+        <?php endforeach; ?>
+
+    </div>
+    <?php endif; ?>
 
     <div class="sidebar-section">
         <div class="sidebar-title">More</div>

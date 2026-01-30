@@ -30,9 +30,9 @@ function route_request($path): array
         }
     }
 
-    // Contact POST
-    if ($path === 'contact' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        require CORE_PATH . '/contact.php';
+    // Form POST
+    if ($path === 'form-submit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        require CORE_PATH . '/form-submit.php';
         exit;
     }
 

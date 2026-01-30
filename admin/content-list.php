@@ -19,7 +19,7 @@ $typeLabel = $ctConfig['label'] ?? ucfirst($type);
 $prefix = $settings['content_prefixes'][$type] ?? $ctConfig['url_prefix'] ?? '';
 $prefix = rtrim($prefix, '/'); // <- remove trailing slash
 
-$homepageSlug = get_setting('homepage_slug');
+$homepageSlug = $settings['homepage_slug'];
 
 // ----------------------------
 // Load content items

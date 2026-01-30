@@ -79,6 +79,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Available Form Types
+    |--------------------------------------------------------------------------
+    */
+    'form_types' => [
+        'contact' => [
+            'label' => 'Contact',
+            'fields' => [
+                'name'    => ['required' => true],
+                'email'   => ['required' => true, 'email' => true],
+                'message' => ['required' => true],
+            ],
+            'notification_email_setting' => 'contact_email',
+            'store_submission' => true,
+        ],
+        'newsletter' => [
+            'label' => 'Newsletter',
+            'store_submission' => true,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Head meta
     |--------------------------------------------------------------------------
     */
