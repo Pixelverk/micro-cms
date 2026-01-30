@@ -180,5 +180,13 @@ if (!$sent) {
 // --------------------------------------------------
 // Success
 // --------------------------------------------------
-echo json_encode(['success' => true]);
+$redirect = $_POST['redirect_url'] ?? null;
+
+$response = ['success' => true];
+
+if ($redirect) {
+    $response['redirect'] = $redirect;
+}
+
+echo json_encode($response);
 exit;

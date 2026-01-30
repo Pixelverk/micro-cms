@@ -22,28 +22,35 @@ return [
         ],
     ],
     'title' => [
-        'type' => 'string',
+        'type' => 'text',
         'label' => 'Form Title',
         'required' => false,
         'default' => 'Contact Us'
     ],
     'description' => [
-        'type' => 'string',
+        'type' => 'text',
         'label' => 'Form Description',
         'required' => false,
         'default' => 'Send us a message and we will get back to you.'
     ],
     'success_message' => [
-        'type' => 'string',
+        'type' => 'text',
         'label' => 'Success Message',
         'required' => false,
         'default' => 'Thanks! Your message has been sent.'
     ],
     'error_message' => [
-        'type' => 'string',
+        'type' => 'text',
         'label' => 'Error Message',
         'required' => false,
         'default' => 'Something went wrong. Please try again later.'
+    ],
+    'redirect_url' => [
+        'type' => 'text',
+        'label' => 'Redirect URL (optional)',
+        'required' => false,
+        'default' => '',
+        'help' => 'Optional: redirect to a thank-you page after successful submission.'
     ],
 ],
 
@@ -64,7 +71,6 @@ return [
     background: #f7f7f7;
     border-radius: 6px;
 }
-
 .contact-form h2 { margin-bottom: 0.5rem; }
 .contact-form p { margin-bottom: 1.5rem; color: #555; }
 .contact-form label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
@@ -97,6 +103,10 @@ document.addEventListener('submit', function(e){
     })
     .then(res => res.json())
     .then(data => {
+        if (data.redirect) {
+            window.location.href = data.redirect;
+            return;
+        }
         messageBox.textContent = data.success
             ? form.dataset.success
             : form.dataset.error;
@@ -147,6 +157,10 @@ JS,
 
             <?php if (!empty($props['_page_id'])): ?>
                 <input type="hidden" name="page_id" value="<?= (int)$props['_page_id'] ?>">
+            <?php endif; ?>
+
+            <?php if (!empty($props['redirect_url'])): ?>
+                <input type="hidden" name="redirect_url" value="<?= e($props['redirect_url']) ?>">
             <?php endif; ?>
 
             <!-- Honeypot -->
