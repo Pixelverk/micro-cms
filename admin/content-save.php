@@ -1,10 +1,25 @@
 <?php
+// admin/content-save.php
 
 // ----------------------------
 // Get POST data
 // ----------------------------
+$id = $_POST['id'] ?? null; // editing existing content
+$contentType = $_POST['type'] ?? 'page'; // default type
+
+// ----------------------------
+// Load existing content or create new
+// ----------------------------
+$contentData = [];
+
+if ($id) {
+    $contentData = load_content_by_id((int)$id) ?: [];
+}
+
+// ----------------------------
+// Slug handling
+// ----------------------------
 $slug = $_POST['slug'] ?? '';
-$contentType = $_POST['type'] ?? 'page'; // default to 'page'
 
 if (!$slug) {
     redirect_with_toast('content-list', 'error', "Save - Missing slug for {$contentType}.");
@@ -15,31 +30,56 @@ if (!$slug) {
     redirect_with_toast('content-list', 'error', "Invalid slug for {$contentType}.");
 }
 
-// ----------------------------
-// Load existing content JSON or create new
-// ----------------------------
-$contentData = load_content($contentType, $slug) ?: [];
+$contentData['slug'] = $slug;
 
-// status
-$contentData['status'] = $_POST['status'] ?? 'published';
+// ----------------------------
+// Parent ID / Nested Pages
+// ----------------------------
+$parentId = $_POST['parent_id'] ?? null;
+$parentId = ($parentId === '' || $parentId === null) ? null : (int) $parentId;
 
-// current updated_at time
+if ($id && $parentId) {
+    // Prevent self or descendant as parent
+    function get_descendant_ids(int $id, array $allItems): array {
+        $descendants = [];
+        foreach ($allItems as $item) {
+            if (($item['parent_id'] ?? null) === $id) {
+                $descendants[] = $item['id'];
+                $descendants = array_merge($descendants, get_descendant_ids($item['id'], $allItems));
+            }
+        }
+        return $descendants;
+    }
+
+    $allItems = list_content($contentType);
+    $invalidParentIds = array_merge([$id], get_descendant_ids($id, $allItems));
+
+    if (in_array($parentId, $invalidParentIds, true)) {
+        $parentId = null; // reset to top level
+    }
+}
+
+$contentData['parent_id'] = $parentId;
+
+// ----------------------------
+// Status & timestamps
+// ----------------------------
+$status = $_POST['status'] ?? 'published';
+$contentData['status'] = $status;
+
 $currentTime = time();
 $contentData['updated_at'] = $currentTime;
-// if no created_at time, set it
 if (!isset($contentData['created_at'])) {
     $contentData['created_at'] = $currentTime;
 }
 
 // ----------------------------
-// Update basic fields
+// Basic fields
 // ----------------------------
 $contentData['type'] = $contentType;
 $contentData['title'] = trim($_POST['title'] ?? $contentData['title'] ?? "New {$contentType}");
 $contentData['meta'] ??= [];
-$contentData['meta']['description'] = trim(
-    $_POST['meta_description'] ?? $contentData['meta']['description'] ?? ''
-);
+$contentData['meta']['description'] = trim($_POST['meta_description'] ?? $contentData['meta']['description'] ?? '');
 
 // ----------------------------
 // Layout / header / footer
@@ -48,7 +88,6 @@ $layout = $_POST['layout'] ?? null;
 $header = $_POST['header'] ?? null;
 $footer = $_POST['footer'] ?? null;
 
-// Only save if explicitly set
 if ($layout !== null && $layout !== '') {
     $contentData['layout'] = $layout;
 } else {
@@ -73,7 +112,7 @@ if ($footer !== null && $footer !== '') {
 $postedComponents = $_POST['components'] ?? [];
 $postedComponents = array_filter(
     $postedComponents,
-    fn ($c) => !empty($c['type'])
+    fn($c) => !empty($c['type'])
 );
 
 function setNestedComponent(array &$tree, array $parts, array $comp): void {
@@ -120,19 +159,21 @@ $contentData['body'] = reindexRecursive($componentsTree);
 // ----------------------------
 // Save content
 // ----------------------------
-if (!save_content($contentType, $slug, $contentData)) {
+$id = save_content($contentType, $slug, $contentData, $id);
+
+if (!$id) {
     redirect_with_toast("content-list", 'error', "Failed to save {$contentType}.");
 }
 
 // ----------------------------
-// Success
+// Success redirect
 // ----------------------------
 redirect_with_toast(
     'content-edit',
     'success',
     ucfirst($contentType) . ' saved successfully!',
     [
-        'slug'  => $slug,
+        'id'    => $id,
         'type'  => $contentType,
         'saved' => 1,
     ]

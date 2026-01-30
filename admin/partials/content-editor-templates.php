@@ -1,29 +1,32 @@
 <!-- Component container -->
 <template id="component-template">
     <fieldset class="component">
-        <legend class="component-title text-small"></legend>
+        <details>
+            <summary class="component-title"></summary>
+            <!-- <legend class="component-title text-small"></legend> -->
 
-        <input type="hidden" class="component-type">
+            <input type="hidden" class="component-type">
 
-        <div class="component-fields"></div>
+            <div class="component-fields"></div>
 
-        <div class="children-container flex gap-lg"></div>
+            <div class="children-container flex gap-lg"></div>
 
-        <div class="component-actions">
-            <div class="actions-left">
-                <select class="allowed-children-select" name="allowed-children-select">
-                    <option value="">-- Child Component --</option>
-                </select>
-                <p class="no-children text-small">No child components allowed</p>
-                <button type="button" class="add-child-btn">Add</button>
+            <div class="component-actions">
+                <div class="actions-left">
+                    <select class="allowed-children-select" name="allowed-children-select">
+                        <option value="">-- Child Component --</option>
+                    </select>
+                    <p class="no-children text-small">No child components allowed</p>
+                    <button type="button" class="add-child-btn">Add</button>
+                </div>
+                <div class="actions-right">
+                    <button type="button" class="move-up">&#8593;</button>
+                    <button type="button" class="move-down">&#8595;</button>
+                    <button type="button" class="duplicate-btn">&#9868;</button>
+                    <button type="button" class="remove-btn">&#33;</button>
+                </div>
             </div>
-            <div class="actions-right">
-                <button type="button" class="move-up">&#8593;</button>
-                <button type="button" class="move-down">&#8595;</button>
-                <button type="button" class="duplicate-btn">&#9868;</button>
-                <button type="button" class="remove-btn">&#33;</button>
-            </div>
-        </div>
+        </details>
     </fieldset>
 </template>
 

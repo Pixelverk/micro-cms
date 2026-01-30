@@ -84,6 +84,7 @@ img {
 
 :root {
     /* 2.1 Color system */
+    --gray: #f4f6f8;
     --bg: #f4f6f8;
     --surface: #ffffff;
     --surface-muted: #f9fafb;
@@ -562,7 +563,7 @@ header {
 
 .header-icon:hover svg {
     transform: scale(1.2);
-    fill: var(--bg); 
+    fill: var(--gray); 
 }
 
 /*   6.6 Sidebar */

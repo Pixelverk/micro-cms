@@ -17,12 +17,18 @@ $ctConfig  = $contentTypes[$type];
 $typeLabel = $ctConfig['label'] ?? ucfirst($type);
 
 $prefix = $settings['content_prefixes'][$type] ?? $ctConfig['url_prefix'] ?? '';
+$prefix = rtrim($prefix, '/'); // <- remove trailing slash
+
 $homepageSlug = get_setting('homepage_slug');
 
 // ----------------------------
 // Load content items
 // ----------------------------
 $items = list_content($type);
+
+usort($items, function($a, $b) {
+    return ($a['parent_id'] ?? 0) <=> ($b['parent_id'] ?? 0);
+});
 
 // ----------------------------
 // Render
@@ -69,15 +75,16 @@ ob_start();
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($items as $item): 
-            $url = '/' . ($prefix ? $prefix . '/' : '') . $item['slug'];
+        <?php foreach ($items as $item):
+            $fullSlug = build_full_slug($item, $items);
+            $url = '/' . ($prefix ? $prefix . '/' : '') . $fullSlug;
             $isHomepage = $item['slug'] === $homepageSlug;
         ?>
             <tr>
                 <td>
                     <a href="<?= url($isHomepage ? '' : $url) ?>"
-                       target="_blank"
-                       style="text-decoration:none; color:inherit;">
+                    target="_blank"
+                    style="text-decoration:none; color:inherit;">
                         <?= e($item['title']) ?>
                         <?php if ($isHomepage): ?>
                             <span class="badge badge-home">home</span>
@@ -85,7 +92,7 @@ ob_start();
                     </a>
                 </td>
 
-                <td><code><?= e($item['slug']) ?></code></td>
+                <td><code><?= e($fullSlug) ?></code></td>
 
                 <td>
                     <span class="status status-<?= e($item['status']) ?>">
@@ -104,12 +111,12 @@ ob_start();
                 </td>
 
                 <td class="actions">
-                    <a href="<?= url('admin/content-edit') ?>?type=<?= urlencode($type) ?>&slug=<?= urlencode($item['slug']) ?>"
-                       class="btn-small">
+                    <a href="<?= url('admin/content-edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
+                        class="btn-small">
                         Edit
                     </a>
 
-                    <a href="<?= url('admin/content-remove') ?>?type=<?= urlencode($type) ?>&slug=<?= urlencode($item['slug']) ?>"
+                    <a href="<?= url('admin/content-remove') ?>?id=<?= (int)$item['id'] ?>"
                         class="js-confirm btn-delete btn-small"
                         data-confirm="Do you want to remove this item: <?= e($item['title'])?>"
                         data-confirm-title="Delete content">

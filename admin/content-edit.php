@@ -8,7 +8,6 @@ $username  = $_SESSION['user_id'] ?? 'User';
 // ----------------------------
 $type = $_GET['type'] ?? 'page';
 $slug = $_GET['slug'] ?? '';
-$isEdit = $slug !== '';
 
 // ----------------------------
 // Load theme & settings
@@ -29,8 +28,9 @@ $typeLabel = $ctConfig['label'] ?? ucfirst($type);
 // ----------------------------
 $contentData = null;
 
-if ($isEdit) {
-    $contentData = load_content($type, $slug);
+$id = $_GET['id'] ?? null;
+if ($id) {
+    $contentData = load_content_by_id((int)$id);
 
     if (!$contentData) {
         redirect_with_toast(
@@ -39,7 +39,12 @@ if ($isEdit) {
             "{$typeLabel} not found."
         );
     }
+
+    $slug = $contentData['slug']; // keep old $slug variable for form display
 }
+
+// if there is contentdata, we're editing existing page
+$isEdit = !empty($contentData);
 
 // ----------------------------
 // Content values
@@ -48,6 +53,33 @@ $title           = $contentData['title'] ?? '';
 $status          = $contentData['status'] ?? 'draft';
 $metaDescription = $contentData['meta']['description'] ?? '';
 $components      = $contentData['body'] ?? [];
+
+// parent stuff
+if ($isEdit) {
+    $allItems = list_content($type); // get all items of this type
+    $fullSlug = build_full_slug($contentData, $allItems);
+    $url = '/' . ($prefix ? $prefix . '/' : '') . $fullSlug;
+}
+
+function get_descendant_ids(int $id, array $allItems): array {
+    $descendants = [];
+    foreach ($allItems as $item) {
+        if (($item['parent_id'] ?? null) === $id) {
+            $descendants[] = $item['id'];
+            $descendants = array_merge($descendants, get_descendant_ids($item['id'], $allItems));
+        }
+    }
+    return $descendants;
+}
+
+// Parent options
+$allParents = list_content($type);
+$currentId = $contentData['id'] ?? null;
+$currentParentId = $contentData['parent_id'] ?? null;
+
+// exclude self and descendants from parent options
+$excludeIds = $currentId ? array_merge([$currentId], get_descendant_ids($currentId, $allParents)) : [];
+$parentOptions = array_filter($allParents, fn($p) => !in_array($p['id'], $excludeIds, true));
 
 // ----------------------------
 // Layout / header / footer defaults
@@ -132,7 +164,9 @@ ob_start();
 
     <div class="page-actions">
         <?php if ($isEdit): ?>
-            <a style="color:inherit; margin-right:2rem;" href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>" target="_blank">
+            <a style="color:inherit; margin-right:2rem;" 
+                href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>" 
+                target="_blank">
                 Visit <?= e($typeLabel) ?>
             </a>
         <?php endif; ?>
@@ -146,7 +180,7 @@ ob_start();
 <form class="flex flex-row gap-lg" id="save" method="post" action="<?= url('admin/content-save') ?>">
     <input type="hidden" name="type" value="<?= e($type) ?>">
     <?php if ($isEdit): ?>
-        <input type="hidden" name="original_slug" value="<?= e($slug) ?>">
+        <input type="hidden" name="id" value="<?= (int)$contentData['id'] ?>">
     <?php endif; ?>
 
     <!-- Components -->
@@ -175,6 +209,20 @@ ob_start();
             <label>
                 Meta Description:
                 <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
+            </label>
+            <label>
+                Parent:
+                <select name="parent_id">
+                    <option value="">— No parent (top level) —</option>
+                    <?php foreach ($parentOptions as $p): ?>
+                        <option
+                            value="<?= (int) $p['id'] ?>"
+                            <?= ($currentParentId === $p['id'] && $p['id'] !== null) ? 'selected' : '' ?>
+                        >
+                            <?= e($p['title']) ?> (<?= e($p['slug']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </label>
             <label>
                 Status:

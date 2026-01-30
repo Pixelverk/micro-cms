@@ -35,6 +35,7 @@ CREATE TABLE content (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
     slug TEXT NOT NULL,
+    parent_id INTEGER NULL,
     title TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
     layout TEXT,
@@ -45,7 +46,7 @@ CREATE TABLE content (
     published_at INTEGER,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    UNIQUE(type, slug)
+    UNIQUE(type, parent_id, slug)
 );
 ");
 
@@ -205,6 +206,7 @@ $stmt->execute([
 $homepage = [
     "type" => "page",
     "slug" => "home",
+    "parent_id" => null,
     "title" => "Home",
     "meta" => [
         "description" => "Helping your business shrink with strategic consulting."
@@ -313,6 +315,7 @@ $stmt->execute([
 $servicesData = [
     'type'    => 'page',
     'slug'    => 'services',
+    "parent_id" => null,
     'title'   => 'Services',
     'meta'    => [
         'description' => 'Our services and how we help your business grow.',
@@ -384,13 +387,14 @@ $servicesData = [
 ];
 
 $stmt = $pdo->prepare("
-INSERT INTO content (type, slug, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
-VALUES (:type, :slug, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
+INSERT INTO content (type, slug, parent_id, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
+VALUES (:type, :slug, :parent_id, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
 ");
 
 $stmt->execute([
     'type' => $servicesData['type'],
     'slug' => $servicesData['slug'],
+    'parent_id' => $servicesData['parent_id'],
     'title' => $servicesData['title'],
     'status' => $servicesData['status'],
     'layout' => $servicesData['layout'],
@@ -412,6 +416,7 @@ $stmt->execute([
 $contactData = [
     'type' => 'page',
     'slug' => 'contact',
+    "parent_id" => null,
     'title' => 'Contact',
     'meta' => [
         'description' => 'Contact us to discuss your project or ask a question.'
@@ -457,13 +462,14 @@ $contactData = [
 ];
 
 $stmt = $pdo->prepare("
-INSERT INTO content (type, slug, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
-VALUES (:type, :slug, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
+INSERT INTO content (type, slug, parent_id, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
+VALUES (:type, :slug, :parent_id, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
 ");
 
 $stmt->execute([
     'type' => $contactData['type'],
     'slug' => $contactData['slug'],
+    'parent_id' => $contactData['parent_id'],
     'title' => $contactData['title'],
     'status' => $contactData['status'],
     'layout' => $contactData['layout'],
@@ -485,6 +491,7 @@ $stmt->execute([
 $notFoundData = [
     'type' => 'page',
     'slug' => '404',
+    "parent_id" => null,
     'title' => '404',
     'meta' => [
         'description' => 'The page you are looking for could not be found.'
@@ -520,13 +527,14 @@ $notFoundData = [
 ];
 
 $stmt = $pdo->prepare("
-INSERT INTO content (type, slug, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
-VALUES (:type, :slug, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
+INSERT INTO content (type, slug, parent_id, title, status, layout, header, footer, meta, body, created_at, updated_at, published_at)
+VALUES (:type, :slug, :parent_id, :title, :status, :layout, :header, :footer, :meta, :body, :created_at, :updated_at, :published_at)
 ");
 
 $stmt->execute([
     'type' => $notFoundData['type'],
     'slug' => $notFoundData['slug'],
+    'parent_id' => $notFoundData['parent_id'],
     'title' => $notFoundData['title'],
     'status' => $notFoundData['status'],
     'layout' => $notFoundData['layout'],

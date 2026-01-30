@@ -12,7 +12,7 @@ function list_content(string $type): array
     $pdo = db();
 
     $stmt = $pdo->prepare("
-        SELECT slug, title, status, published_at, created_at, updated_at
+        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at
         FROM content
         WHERE type = :type
         ORDER BY title COLLATE NOCASE ASC
@@ -29,27 +29,37 @@ function list_content(string $type): array
  * @param string $slug
  * @return array|null
  */
-function load_content(string $type, string $slug): ?array
+function load_content(string $type, string $slug, ?int $parentId = null): ?array
 {
     $pdo = db();
 
-    $stmt = $pdo->prepare("
+    $sql = "
         SELECT *
         FROM content
-        WHERE type = :type AND slug = :slug
+        WHERE type = :type
+          AND slug = :slug
+          AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
         LIMIT 1
-    ");
+    ";
 
-    $stmt->execute([
+    $stmt = $pdo->prepare($sql);
+
+    $params = [
         'type' => $type,
         'slug' => $slug,
-    ]);
+    ];
 
+    if ($parentId !== null) {
+        $params['parent_id'] = $parentId;
+    }
+
+    $stmt->execute($params);
     $row = $stmt->fetch();
     if (!$row) return null;
 
     return [
         'id'           => (int) $row['id'],
+        'parent_id'    => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
         'type'         => $row['type'],
         'slug'         => $row['slug'],
         'title'        => $row['title'],
@@ -66,14 +76,47 @@ function load_content(string $type, string $slug): ?array
 }
 
 /**
+ * Load a content item by ID
+ */
+function load_content_by_id(int $id): ?array
+{
+    $pdo = db();
+
+    $stmt = $pdo->prepare("SELECT * FROM content WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $id]);
+    $row = $stmt->fetch();
+
+    if (!$row) return null;
+
+    return [
+        'id'         => (int) $row['id'],
+        'parent_id'  => $row['parent_id'] !== null ? (int)$row['parent_id'] : null,
+        'type'       => $row['type'],
+        'slug'       => $row['slug'],
+        'title'      => $row['title'],
+        'status'     => $row['status'],
+        'layout'     => $row['layout'],
+        'header'     => $row['header'],
+        'footer'     => $row['footer'],
+        'meta'       => $row['meta'] ? json_decode($row['meta'], true) : [],
+        'body'       => json_decode($row['body'], true),
+        'published_at' => $row['published_at'],
+        'created_at'   => $row['created_at'],
+        'updated_at'   => $row['updated_at'],
+    ];
+}
+
+
+/**
  * Save or update a content item to the database
  *
  * @param string $type
  * @param string $slug
  * @param array  $data
- * @return bool
+ * @param int|null $id Optional ID for existing content
+ * @return int|null The ID of the saved content
  */
-function save_content(string $type, string $slug, array $data): bool
+function save_content(string $type, string $slug, array $data, ?int $id = null): ?int
 {
     $pdo = db();
     $now = time();
@@ -87,23 +130,51 @@ function save_content(string $type, string $slug, array $data): bool
         ? ($data['published_at'] ?? $now)
         : null;
 
-    // Does content already exist?
-    $stmt = $pdo->prepare("
-        SELECT id FROM content
-        WHERE type = :type AND slug = :slug
-        LIMIT 1
-    ");
-    $stmt->execute([
-        'type' => $type,
-        'slug' => $slug,
-    ]);
+    // Parent handling (NULL = top-level)
+    $parentId = $data['parent_id'] ?? null;
+    if ($parentId === '') {
+        $parentId = null;
+    }
 
-    $existingId = $stmt->fetchColumn();
+    // ----------------------------
+    // Determine whether to update or insert
+    // ----------------------------
+    if ($id) {
+        // Force update by ID
+        $existingId = $id;
+    } else {
+        // Identity = (type, parent_id, slug)
+        $sql = "
+            SELECT id
+            FROM content
+            WHERE type = :type
+              AND slug = :slug
+              AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
+            LIMIT 1
+        ";
+
+        $stmt = $pdo->prepare($sql);
+
+        $params = [
+            'type' => $type,
+            'slug' => $slug,
+        ];
+
+        if ($parentId !== null) {
+            $params['parent_id'] = $parentId;
+        }
+
+        $stmt->execute($params);
+        $existingId = $stmt->fetchColumn();
+    }
 
     if ($existingId) {
+        // ----------------------------
         // UPDATE
+        // ----------------------------
         $stmt = $pdo->prepare("
             UPDATE content SET
+                parent_id    = :parent_id,
                 title        = :title,
                 status       = :status,
                 layout       = :layout,
@@ -118,6 +189,7 @@ function save_content(string $type, string $slug, array $data): bool
 
         $result = $stmt->execute([
             'id'           => $existingId,
+            'parent_id'    => $parentId,
             'title'        => $data['title'],
             'status'       => $status,
             'layout'       => $data['layout'] ?? null,
@@ -128,11 +200,17 @@ function save_content(string $type, string $slug, array $data): bool
             'published_at' => $publishedAt,
             'updated_at'   => $now,
         ]);
+
+        $idToReturn = (int)$existingId;
+
     } else {
+        // ----------------------------
         // INSERT
+        // ----------------------------
         $stmt = $pdo->prepare("
             INSERT INTO content (
                 type,
+                parent_id,
                 slug,
                 title,
                 status,
@@ -146,6 +224,7 @@ function save_content(string $type, string $slug, array $data): bool
                 updated_at
             ) VALUES (
                 :type,
+                :parent_id,
                 :slug,
                 :title,
                 :status,
@@ -162,6 +241,7 @@ function save_content(string $type, string $slug, array $data): bool
 
         $result = $stmt->execute([
             'type'         => $type,
+            'parent_id'    => $parentId,
             'slug'         => $slug,
             'title'        => $data['title'],
             'status'       => $status,
@@ -174,10 +254,37 @@ function save_content(string $type, string $slug, array $data): bool
             'created_at'   => $now,
             'updated_at'   => $now,
         ]);
+
+        $idToReturn = (int)$pdo->lastInsertId();
     }
 
+    // ----------------------------
+    // Housekeeping
+    // ----------------------------
     invalidate_cache($slug, $type);
     save_sitemap();
 
-    return (bool)$result;
+    return $idToReturn;
+}
+
+
+/**
+ * Build full slug path recursively for a single page
+ */
+function build_full_slug(array $item, array $allItems): string {
+    $path = [$item['slug']];
+    $parentId = $item['parent_id'] ?? null;
+    while ($parentId) {
+        $found = false;
+        foreach ($allItems as $p) {
+            if ($p['id'] === $parentId) {
+                array_unshift($path, $p['slug']);
+                $parentId = $p['parent_id'];
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) break; // just in case
+    }
+    return implode('/', $path);
 }
