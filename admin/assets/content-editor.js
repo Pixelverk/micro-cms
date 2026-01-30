@@ -348,20 +348,24 @@ const titleInput = document.getElementById('title');
 const slugInput  = document.getElementById('slug');
 
 if (titleInput && slugInput) {
-    let slugTouched = false;
+    // Flag to prevent overwriting manually entered slug
+    let slugTouched = slugInput.value.trim() !== '';
 
-    slugInput.addEventListener('change', () => {
+    // User manually edits slug
+    slugInput.addEventListener('input', () => {
         slugTouched = true;
         slugInput.value = slugify(slugInput.value);
     });
 
-    if (titleInput.value !== slugInput.value && slugInput.value !== '') {
-        slugTouched = true;
-    }
-
+    // Auto-update slug from title if not manually touched
     titleInput.addEventListener('input', () => {
         if (!slugTouched) {
             slugInput.value = slugify(titleInput.value);
         }
     });
+
+    // Optional: if slug is empty on page load, populate from title
+    if (!slugInput.value && titleInput.value) {
+        slugInput.value = slugify(titleInput.value);
+    }
 }

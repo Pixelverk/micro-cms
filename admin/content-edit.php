@@ -198,12 +198,12 @@ ob_start();
 
             <label>
                 Title:
-                <input type="text" name="title" value="<?= e($title) ?>" required>
+                <input type="text" id="title" name="title" value="<?= e($title) ?>" required>
             </label>
 
             <label>
                 Slug:
-                <input type="text" name="slug" value="<?= e($slug) ?>">
+                <input type="text" id="slug" name="slug" value="<?= e($slug) ?>">
             </label>
 
             <label>

@@ -107,7 +107,7 @@ document.getElementById('add-url-item').addEventListener('click', async () => {
     const itemData = {
         type: 'url',
         label: labelInput.value,
-        url: urlInput.value,
+        slug: urlInput.value,
         target: targetSelect.value || '_self',
         children: []
     };
