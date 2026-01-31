@@ -116,6 +116,10 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
             throw new RuntimeException("Invalid meta JSON for {$ct}/{$relativeSlug}");
         }
 
+        // taxonomies
+        $tax = load_taxonomies_for_content($row['type'], (int)$row['id']);
+
+        // header/footer from content type settings
         $ctConfig = $theme['content_types'][$ct] ?? [];
 
         return [
@@ -133,6 +137,8 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
             'created_at'   => (int) $row['created_at'],
             'updated_at'   => (int) $row['updated_at'],
             'published_at' => $row['published_at'] ? (int) $row['published_at'] : null,
+            'categories'   => $tax['category'],
+            'tags'         => $tax['tag'],
         ];
     }
 

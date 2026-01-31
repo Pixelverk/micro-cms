@@ -14,5 +14,5 @@ declare(strict_types=1);
 */
 
 echo('<main>');
-render_components($page['components'], $collectedJs, $collectedCss);
+render_components($page['components'], $page, $collectedJs, $collectedCss);
 echo('</main>');

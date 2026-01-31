@@ -16,14 +16,14 @@ declare(strict_types=1);
 */
 
 // Render header
-component($headerComponent, [], $collectedJs, $collectedCss);
+component($headerComponent, [], $page, $collectedJs, $collectedCss);
 
 // Render page components
 if (!empty($page['components'])) {
     echo('<main>');
-    render_components($page['components'], $collectedJs, $collectedCss);
+    render_components($page['components'], $page, $collectedJs, $collectedCss);
     echo('</main>');
 }
 
 // Render footer
-component($footerComponent, [], $collectedJs, $collectedCss);
+component($footerComponent, [], $page, $collectedJs, $collectedCss);

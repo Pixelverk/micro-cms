@@ -39,7 +39,7 @@ CSS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'features-' . uniqid();
 
     extract($props, EXTR_SKIP);
@@ -47,7 +47,7 @@ CSS,
     ?>
     <section id="<?= $id ?>" class="features">
         <div class="inner grid">
-            <?php if (!empty($children)) { render_components($children, $collectedJs, $collectedCss); } ?>
+            <?php if (!empty($children)) { render_components($children, $page, $collectedJs, $collectedCss); } ?>
         </div>
     </section>
     <?php

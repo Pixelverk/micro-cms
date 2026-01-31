@@ -82,7 +82,7 @@ CSS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'feature-' . uniqid();
 
     extract($props, EXTR_SKIP);

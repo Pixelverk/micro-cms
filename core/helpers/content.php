@@ -108,19 +108,35 @@ function load_content_by_id(int $id): ?array
 
     $stmt = $pdo->prepare("SELECT * FROM content WHERE id = :id LIMIT 1");
     $stmt->execute(['id' => $id]);
-    $row = $stmt->fetch();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) return null;
 
+    // ----------------------------
     // Frontend visibility check
+    // ----------------------------
     if (!is_logged_in()) {
         if ($row['status'] !== 'published' || (int)$row['published_at'] > $now) {
-            return null; // hide drafts or scheduled content from visitors
+            return null;
         }
     }
 
+    // ----------------------------
+    // Decode JSON first
+    // ----------------------------
+    $meta = $row['meta'] ? json_decode($row['meta'], true) : [];
+    $body = $row['body'] ? json_decode($row['body'], true) : [];
+
+    // ----------------------------
+    // Load taxonomies
+    // ----------------------------
+    $tax = load_taxonomies_for_content($row['type'], (int)$row['id']);
+
+    // ----------------------------
+    // Return normalized object
+    // ----------------------------
     return [
-        'id'           => (int) $row['id'],
+        'id'           => (int)$row['id'],
         'parent_id'    => $row['parent_id'] !== null ? (int)$row['parent_id'] : null,
         'type'         => $row['type'],
         'slug'         => $row['slug'],
@@ -129,12 +145,14 @@ function load_content_by_id(int $id): ?array
         'layout'       => $row['layout'],
         'header'       => $row['header'],
         'footer'       => $row['footer'],
-        'meta'         => $row['meta'] ? json_decode($row['meta'], true) : [],
-        'body'         => $row['body'] ? json_decode($row['body'], true) : [],
+        'meta'         => $meta,
+        'body'         => $body,
         'published_at' => $row['published_at'],
         'scheduled_at' => $row['scheduled_at'],
         'created_at'   => $row['created_at'],
         'updated_at'   => $row['updated_at'],
+        'categories'   => $tax['category'],
+        'tags'         => $tax['tag'],
     ];
 }
 
@@ -338,4 +356,34 @@ function build_full_slug(array $item, array $allItems): string {
         if (!$found) break; // just in case
     }
     return implode('/', $path);
+}
+
+// taxonomies
+function load_taxonomies_for_content(string $type, int $id): array
+{
+    $pdo = db();
+
+    $stmt = $pdo->prepare("
+        SELECT t.*
+        FROM taxonomy t
+        JOIN taxonomy_term_relationships r
+            ON r.taxonomy_id = t.id
+        WHERE r.content_type = ?
+        AND r.content_id = ?
+        ORDER BY t.name
+    ");
+
+    $stmt->execute([$type, $id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $out = [
+        'category' => [],
+        'tag'      => [],
+    ];
+
+    foreach ($rows as $row) {
+        $out[$row['taxonomy_type']][] = $row;
+    }
+
+    return $out;
 }

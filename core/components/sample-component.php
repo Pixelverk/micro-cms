@@ -47,13 +47,13 @@ JS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'component-' . uniqid();
     extract($props, EXTR_SKIP);
     ?>
     <div id="<?= $id ?>" class="component-name">
         <!-- Render dynamic content or children -->
-        <?php if (!empty($children)) { render_components($children, $collectedJs, $collectedCss); } ?>
+        <?php if (!empty($children)) { render_components($children, $page, $collectedJs, $collectedCss); } ?>
     </div>
     <?php
 },

@@ -76,7 +76,7 @@ CSS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'hero-' . uniqid();
 
     extract($props, EXTR_SKIP);
@@ -87,6 +87,27 @@ CSS,
             <div class="hero-text">
                 <h1><?= e($title)?></h1>
                 <p><?= e($subtitle)?></p>
+
+                <div class="meta"> <!-- just testing -->
+
+                    <?php if ($page['categories'] ?? false): ?>
+                        <div class="cats">
+                            <?php foreach ($page['categories'] as $cat): ?>
+                                <a href="/category/<?= e($cat['slug']) ?>"><?= e($cat['name']) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($page['tags'] ?? false): ?>
+                        <div class="tags">
+                            <?php foreach ($page['tags'] as $tag): ?>
+                                <a href="/tag/<?= e($tag['slug']) ?>">#<?= e($tag['name']) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+
             </div>
             <div class="hero-img">
                 <img src="<?= img($image) ?>" alt="<?= e($title) ?>">

@@ -73,7 +73,7 @@ CSS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props) {
+'render' => function (array $props, $page) {
     $id = 'footer-' . uniqid();
     $year = date('Y');
     extract($props, EXTR_SKIP);

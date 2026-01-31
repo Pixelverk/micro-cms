@@ -122,7 +122,7 @@ function render_layout(string $layout, array $page, array &$collectedJs = [], ar
 | Render a List of Components
 |--------------------------------------------------------------------------
 */
-function render_components(array $components, array &$collectedJs = [], array &$collectedCss = []): void
+function render_components(array $components, array $page, array &$collectedJs = [], array &$collectedCss = []): void
 {
     foreach ($components as $comp) {
         $name = $comp['component'] ?? $comp['type'] ?? null;
@@ -135,7 +135,7 @@ function render_components(array $components, array &$collectedJs = [], array &$
             $props['children'] = $comp['children'];
         }
 
-        component($name, $props, $collectedJs, $collectedCss);
+        component($name, $props, $page, $collectedJs, $collectedCss);
     }
 }
 
@@ -145,7 +145,7 @@ function render_components(array $components, array &$collectedJs = [], array &$
 |--------------------------------------------------------------------------
 */
 
-function component(string $name, array $props = [], array &$collectedJs = [], array &$collectedCss = []): void {
+function component(string $name, array $props = [], array $page, array &$collectedJs = [], array &$collectedCss = []): void {
     
  
     // get component path in theme or core
@@ -194,5 +194,5 @@ function component(string $name, array $props = [], array &$collectedJs = [], ar
     }
 
     // render component html
-    $component['render']($props, $collectedJs, $collectedCss);
+    $component['render']($props, $page, $collectedJs, $collectedCss);
 }

@@ -81,7 +81,7 @@ CSS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'cta-' . uniqid();
 
     extract($props, EXTR_SKIP);
@@ -94,7 +94,7 @@ CSS,
             <a href="<?= url($url) ?>" class="cta-button">
                 <?= e($linktext) ?>
             </a>
-            <?php if (!empty($children)) {render_components($children, $collectedJs, $collectedCss);} ?>
+            <?php if (!empty($children)) {render_components($children, $page, $collectedJs, $collectedCss);} ?>
         </div>
     </section>
     <?php

@@ -125,7 +125,7 @@ JS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function(array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function(array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
 
     extract($props, EXTR_SKIP);
     $id = 'contact-section-' . uniqid();

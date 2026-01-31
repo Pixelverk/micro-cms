@@ -68,7 +68,7 @@ JS,
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props) {
+'render' => function (array $props, $page) {
     $id = 'header-' . uniqid();
     $menu = get_menu('header1');
     extract($props, EXTR_SKIP);
