@@ -108,6 +108,7 @@ CREATE TABLE media (
     height INTEGER,
     title TEXT,
     alt_text TEXT,
+    description TEXT,
     caption TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL

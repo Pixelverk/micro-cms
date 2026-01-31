@@ -4,50 +4,59 @@
 $pageTitle = 'Media Manager';
 $username  = $_SESSION['user_id'] ?? 'User';
 
-// ----------------------------
-// Load media files from DB
-// ----------------------------
 $pdo = db();
 
-$stmt = $pdo->query("
-    SELECT *
-    FROM media
-    ORDER BY created_at DESC
-");
+// ----------------------------
+// Search
+// ----------------------------
+$search = trim($_GET['q'] ?? '');
 
+$sql = "SELECT * FROM media";
+$params = [];
+
+if ($search !== '') {
+    $sql .= " WHERE filename LIKE :q OR original_name LIKE :q OR alt_text LIKE :q OR description LIKE :q";
+    $params['q'] = "%{$search}%";
+}
+
+$sql .= " ORDER BY created_at DESC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $mediaFiles = [];
 
 foreach ($rows as $row) {
-    $relativePath = $row['path'];
-
     $mediaFiles[] = [
         'id'   => $row['id'],
-        'path' => $relativePath,
-        'url'  => url('media/' . $relativePath),
+        'path' => $row['path'],
+        'url'  => url('media/' . $row['path']),
         'name' => $row['filename'],
         'size' => round($row['size'] / 1024, 1) . ' KB',
-        'time' => date('Y-m-d', (int)$row['created_at']),
-        'type' => $row['mime_type'],
+        'mime' => $row['mime_type'],
+        'alt'  => $row['alt_text'] ?? '',
+        'description' => $row['description'] ?? '',
+        'time' => date('Y-m-d H:i', (int)$row['created_at']),
     ];
 }
 
-// Sort newest first
-usort($mediaFiles, fn ($a, $b) => strcmp($b['time'], $a['time']));
-
-// ----------------------------
-// Render page
-// ----------------------------
 ob_start();
 ?>
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p>Manage uploaded media files.</p>
+        <h2>Media Manager</h2>
+        <p>Hello, <?= e($username) ?> 👋</p>
     </div>
-    <div class="page-actions">
+
+    <div class="page-actions" style="display:flex; gap:1rem; align-items:center;">
+        <!-- Search -->
+        <form method="get">
+            <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search files…">
+        </form>
+
+        <!-- Upload -->
         <form action="<?= url('admin/media-save') ?>" method="post" enctype="multipart/form-data">
             <input type="file" name="file" required>
             <button type="submit">Upload</button>
@@ -58,133 +67,113 @@ ob_start();
 <?php if (!$mediaFiles): ?>
     <p>No media uploaded yet.</p>
 <?php else: ?>
-    <div class="media-grid">
+
+<div class="media-layout">
+
+    <!-- Grid -->
+    <div class="media-grid" id="media-grid">
+
         <?php foreach ($mediaFiles as $file): ?>
-            <div class="media-item">
-                <?php if (str_starts_with($file['type'], 'image/')): ?>
-                    <img src="<?= e($file['url']) ?>" alt="<?= e($file['name']) ?>">
+            <div
+                class="media-item"
+                data-id="<?= (int)$file['id'] ?>"
+                data-url="<?= e($file['url']) ?>"
+                data-name="<?= e($file['name']) ?>"
+                data-alt="<?= e($file['alt']) ?>"
+                data-description="<?= e($file['description']) ?>"
+                data-mime="<?= e($file['mime']) ?>"
+                data-size="<?= e($file['size']) ?>"
+                data-time="<?= e($file['time']) ?>"
+            >
+                <?php if (str_starts_with($file['mime'], 'image/')): ?>
+                    <img src="<?= e($file['url']) ?>" loading="lazy">
                 <?php else: ?>
-                    <div class="media-file">
-                        <?= e($file['name']) ?>
-                    </div>
+                    <div class="media-file"><?= e($file['name']) ?></div>
                 <?php endif; ?>
-
-                <div class="media-meta">
-                    <strong><?= e($file['name']) ?></strong>
-                    <small><?= e($file['size']) ?> · <?= e($file['time']) ?></small>
-                </div>
-
-                <div class="media-actions">
-                    <!-- Copy URL button -->
-                    <button type="button" class="copy-url-btn" data-url="<?= e($file['url']) ?>">
-                        Copy URL
-                    </button>
-
-                    <!-- Delete form -->                   
-                    <form action="<?= url('admin/media-remove') ?>" method="post" class="js-confirm-form" data-confirm-title="Delete media" data-confirm="Do you want to remove <?= e($file['name']) ?>">
-                        <input type="hidden" name="id" value="<?= (int)$file['id'] ?>">
-                        <button type="submit" class="btn-delete">Delete</button>
-                    </form>
-
-                </div>
             </div>
         <?php endforeach; ?>
+
     </div>
+
+    <!-- Inspector panel -->
+    <div class="media-inspector" id="inspector">
+        <p>Select a file…</p>
+    </div>
+
+</div>
+
 <?php endif; ?>
 
+
 <style>
-.media-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.5rem;
-}
-
-.media-item {
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 0.75rem;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.media-item img {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.media-file {
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f3f3f3;
-    font-size: 0.9rem;
-}
-
-.media-meta {
-    font-size: 0.8rem;
-}
-
-.media-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-.media-actions button {
-    font-size: 0.8rem;
-    cursor: pointer;
-}
+.media-layout { display:flex; gap:2rem; }
+.media-grid { flex:1; display:grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:1rem; }
+.media-item { cursor:pointer; border:2px solid transparent; }
+.media-item.selected { border-color:#4f46e5; }
+.media-item img,
+.media-file { width:100%; height:120px; object-fit:cover; border-radius:6px; background:#f2f2f2; display:flex; align-items:center; justify-content:center; }
+.media-inspector { width:320px; border-left:1px solid #ddd; padding-left:1rem; }
+.media-inspector img { width:100%; margin-bottom:1rem; }
+.media-inspector label { display:block; margin-bottom:.75rem; }
+.media-inspector input,
+.media-inspector textarea { width:100%; padding:.25rem; margin-top:.25rem; }
 </style>
 
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const buttons = document.querySelectorAll('.copy-url-btn');
+const inspector = document.getElementById('inspector');
+const items = document.querySelectorAll('.media-item');
 
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const url = btn.dataset.url;
+items.forEach(item => {
+    item.addEventListener('click', () => {
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                // Modern async API
-                navigator.clipboard.writeText(url)
-                    .then(() => {
-                        btn.textContent = 'Copied!';
-                        setTimeout(() => btn.textContent = 'Copy URL', 1500);
-                    })
-                    .catch(err => {
-                        fallbackCopy(url, btn);
-                    });
-            } else {
-                // Fallback for older browsers or non-secure context
-                fallbackCopy(url, btn);
-            }
-        });
+        // Highlight selected
+        items.forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+
+        const data = item.dataset;
+
+        inspector.innerHTML = `
+            ${data.mime.startsWith('image/')
+                ? `<img src="${data.url}">`
+                : `<div>${data.name}</div>`}
+
+            <strong>${data.name}</strong>
+            <small>${data.size} · ${data.time}</small>
+
+            <form method="post" action="<?= url('admin/media-save') ?>">
+                <input type="hidden" name="replace_id" value="${data.id}">
+                <label>
+                    Alt text:
+                    <input type="text" name="alt_text" value="${data.alt}">
+                </label>
+                <label>
+                    Description:
+                    <textarea name="description">${data.description}</textarea>
+                </label>
+                <button type="submit">Save Metadata</button>
+            </form>
+
+            <button id="copyBtn">Copy URL</button>
+
+            <form method="post" action="<?= url('admin/media-remove') ?>" style="margin-top:.5rem;">
+                <input type="hidden" name="id" value="${data.id}">
+                <button class="btn-delete">Delete</button>
+            </form>
+
+            <form method="post" enctype="multipart/form-data" action="<?= url('admin/media-save') ?>" style="margin-top:.5rem;">
+                <input type="hidden" name="replace_id" value="${data.id}">
+                <input type="file" name="file" required>
+                <button>Replace File</button>
+            </form>
+        `;
+
+        document.getElementById('copyBtn').onclick = () => {
+            navigator.clipboard.writeText(data.url)
+                .then(() => alert('URL copied!'))
+                .catch(() => alert('Failed to copy.'));
+        };
     });
-
-    function fallbackCopy(text, btn) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            const success = document.execCommand('copy');
-            if (success) {
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy URL', 1500);
-            } else {
-                alert('Failed to copy to clipboard.');
-            }
-        } catch (err) {
-            alert('Failed to copy to clipboard: ' + err);
-        } finally {
-            document.body.removeChild(textarea);
-        }
-    }
 });
 </script>
 
