@@ -121,6 +121,36 @@ if ($isEdit && !empty($contentData['id'])) {
     $selectedCategoryId = $stmt->fetchColumn() ?: null;
 }
 
+// tags
+
+// ----------------------------
+// Load tags
+// ----------------------------
+$stmt = $pdo->prepare("
+    SELECT *
+    FROM taxonomy
+    WHERE taxonomy_type = 'tag'
+    AND content_type = ?
+    ORDER BY name
+");
+$stmt->execute([$type]);
+$tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// selected tags
+$selectedTagIds = [];
+
+if ($isEdit && !empty($contentData['id'])) {
+    $stmt = $pdo->prepare("
+        SELECT taxonomy_id
+        FROM taxonomy_term_relationships
+        WHERE content_type = ?
+        AND content_id = ?
+    ");
+    $stmt->execute([$type, $contentData['id']]);
+
+    $selectedTagIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
 // ----------------------------
 // Layout / header / footer defaults
 // ----------------------------
@@ -264,6 +294,20 @@ ob_start();
                         </option>
                     <?php endforeach; ?>
                 </select>
+            </label>
+
+            <label>
+                Tags
+                <select name="tag_ids[]" multiple size="6">
+                    <?php foreach ($tags as $tag): ?>
+                        <option
+                            value="<?= (int)$tag['id'] ?>"
+                            <?= in_array($tag['id'], $selectedTagIds) ? 'selected' : '' ?>>
+                            <?= e($tag['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small>Hold Ctrl/Cmd to select multiple</small>
             </label>
 
             <label>

@@ -193,6 +193,38 @@ if ($categoryId) {
     ")->execute([$contentType, $id, $categoryId]);
 }
 
+// tag stuff
+
+$tagIds = $_POST['tag_ids'] ?? [];
+$tagIds = array_map('intval', (array)$tagIds);
+$tagIds = array_filter($tagIds);
+
+// ----------------------------
+// TAG RELATIONSHIPS
+// ----------------------------
+
+// remove existing tag links
+$pdo->prepare("
+    DELETE FROM taxonomy_term_relationships
+    WHERE content_type = ?
+    AND content_id = ?
+    AND taxonomy_id IN (
+        SELECT id FROM taxonomy WHERE taxonomy_type = 'tag'
+    )
+")->execute([$contentType, $id]);
+
+// insert selected tags
+$stmt = $pdo->prepare("
+    INSERT OR IGNORE INTO taxonomy_term_relationships
+    (content_type, content_id, taxonomy_id)
+    VALUES (?, ?, ?)
+");
+
+foreach ($tagIds as $tagId) {
+    $stmt->execute([$contentType, $id, $tagId]);
+}
+
+
 // ----------------------------
 // Success redirect
 // ----------------------------
