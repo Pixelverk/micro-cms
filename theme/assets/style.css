@@ -24,3 +24,140 @@ main {
     align-items: center;
     justify-content: space-between;
 }
+
+.flex-col {
+    flex-direction: column;
+}
+
+.flex-row {
+    flex-direction: row;
+}
+
+/* TAXONOMY ARCHIVE PAGES */
+
+.taxonomy-archive-page {
+    padding: 0 1rem;
+    font-family: sans-serif;
+}
+
+.taxonomy-archive-page .inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Header */
+.taxonomy-archive-page header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.taxonomy-archive-page header h1 {
+    font-size: 2rem;
+    margin: 0.5rem 0;
+}
+
+.taxonomy-archive-page header p {
+    color: #555;
+    font-size: 0.9rem;
+}
+
+/* Items list */
+.taxonomy-archive-page .taxonomy-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width:100%;
+}
+
+/* Individual item */
+.taxonomy-archive-page .taxonomy-item {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.taxonomy-archive-page .taxonomy-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Title link */
+.taxonomy-archive-page .taxonomy-item a {
+    font-weight: bold;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: #222;
+    text-decoration: none;
+}
+
+.taxonomy-archive-page .taxonomy-item a:hover {
+    text-decoration: underline;
+}
+
+/* Categories & Tags */
+.taxonomy-archive-page .taxonomy-item .taxonomy-categories,
+.taxonomy-archive-page .taxonomy-item .taxonomy-tags {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 0.25rem;
+}
+
+/* Responsive tweak */
+@media (max-width: 600px) {
+    .taxonomy-archive-page .taxonomy-items {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Thumbnail */
+.taxonomy-archive-page .taxonomy-item-thumb {
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Title */
+.taxonomy-archive-page .taxonomy-item h2 {
+    margin: 0.25rem 0;
+    font-size: 1.5rem;
+}
+
+.taxonomy-archive-page .taxonomy-item h2 a {
+    color: #222;
+    text-decoration: none;
+}
+
+.taxonomy-archive-page .taxonomy-item h2 a:hover {
+    text-decoration: underline;
+}
+
+/* Published date */
+.taxonomy-archive-page .taxonomy-item-date {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+}
+
+/* Excerpt */
+.taxonomy-archive-page .taxonomy-item-excerpt {
+    font-size: 1rem;
+    color: #444;
+    margin-bottom: 0.5rem;
+}
+
+/* Categories & Tags remain as before */
+.taxonomy-archive-page .taxonomy-item .taxonomy-categories,
+.taxonomy-archive-page .taxonomy-item .taxonomy-tags {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 0.25rem;
+    display: inline-block;
+}

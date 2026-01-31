@@ -180,3 +180,91 @@ function get_contents(string $type, array $filters = []): array
 
     return $results;
 }
+
+// load taxonomy archive data
+function load_taxonomy_archive(string $taxonomyType, string $slug): array
+{
+    $pdo = db();
+
+    // ----------------------------
+    // Load the taxonomy term
+    // ----------------------------
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM taxonomy
+        WHERE taxonomy_type = :type
+          AND slug = :slug
+        LIMIT 1
+    ");
+    $stmt->execute([
+        'type' => $taxonomyType,
+        'slug' => $slug,
+    ]);
+
+    $taxonomy = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$taxonomy) {
+        return load_fallback_404();
+    }
+
+    $contentType = $taxonomy['content_type'];
+
+    // ----------------------------
+    // Load all content items linked to this taxonomy
+    // ----------------------------
+    $stmt = $pdo->prepare("
+        SELECT c.*
+        FROM content c
+        INNER JOIN taxonomy_term_relationships ttr
+            ON ttr.content_id = c.id
+           AND ttr.content_type = c.type
+        WHERE ttr.taxonomy_id = :taxId
+        ORDER BY c.created_at DESC
+    ");
+    $stmt->execute(['taxId' => $taxonomy['id']]);
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // decode JSON fields and attach taxonomies to each item
+    foreach ($items as &$item) {
+        $item['meta'] = $item['meta'] ? json_decode($item['meta'], true) : [];
+        $item['body'] = $item['body'] ? json_decode($item['body'], true) : [];
+        $item['categories'] = [];
+        $item['tags']       = [];
+
+        $taxes = load_taxonomies_for_content($item['type'], $item['id']);
+        $item['categories'] = $taxes['category'];
+        $item['tags']       = $taxes['tag'];
+    }
+    unset($item);
+
+    // ----------------------------
+    // Determine layout
+    // ----------------------------
+    $theme = theme_config();
+    $contentTypes = $theme['content_types'] ?? [];
+    $ctConfig = $contentTypes[$contentType] ?? [];
+
+    $layout = $ctConfig['taxonomy_layout'] ?? 'taxonomy';
+
+    // ----------------------------
+    // Build page array
+    // ----------------------------
+    $page = [
+        'id'         => null,
+        'type'       => $contentType,
+        'slug'       => $slug,
+        'status'     => 'published',
+        'title'      => $taxonomy['name'],
+        'layout'     => $layout,
+        'taxonomy'   => $taxonomy,
+        'items'      => $items,
+        'components' => [], // not used for archive layouts
+        'updated_at' => time(),
+    ];
+
+    // Optional: header/footer defaults
+    $settings = load_settings();
+    $page['header'] = $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'] ?? 'site-header';
+    $page['footer'] = $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'] ?? 'site-footer';
+
+    return $page;
+}

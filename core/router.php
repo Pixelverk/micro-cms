@@ -55,6 +55,19 @@ function route_request($path): array
         return load_fallback_404();
     }
 
+    // ----------------------------
+    // Taxonomy archives
+    // ----------------------------
+    if (str_starts_with($path, 'category/') || str_starts_with($path, 'tag/')) {
+        [$taxonomyType, $slug] = explode('/', $path, 2);
+
+        if (!in_array($taxonomyType, ['category', 'tag'], true)) {
+            return load_fallback_404();
+        }
+
+        return load_taxonomy_archive($taxonomyType, $slug);
+    }
+
     // Normal page: load by slug
     $item = load_content_by_slug($path);
     if ($item) {

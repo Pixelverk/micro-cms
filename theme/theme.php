@@ -47,13 +47,13 @@ return [
                 'contact-section',
                 'quill-editor',
             ],
-            'url_prefix' => '',
+            'url_prefix' => ''
         ],
         'blog_post' => [
             'label' => 'Blog Post',
             'default_layout' => 'blog',
-            'default_header' => 'blog-header',
-            'default_footer' => 'blog-footer',
+            'default_header' => 'site-header',
+            'default_footer' => 'site-footer',
             'available_components' => [
                 'hero-section',
                 'features-section',
@@ -61,19 +61,20 @@ return [
                 'cta-section',
             ],
             'url_prefix' => 'blog',
+            'taxonomy_layout' => 'blog-archive',
         ],
         'portfolio_item' => [
             'label' => 'Portfolio Item',
             'default_layout' => 'portfolio',
-            'default_header' => 'portfolio-header',
-            'default_footer' => 'portfolio-footer',
+            'default_header' => 'site-header',
+            'default_footer' => 'site-footer',
             'available_components' => [
                 'hero-section',
                 'features-section',
                 'feature-card',
                 'cta-section',
             ],
-            'url_prefix' => 'portfolio',
+            'url_prefix' => 'portfolio'
         ],
     ],
 

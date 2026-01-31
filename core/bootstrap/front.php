@@ -71,13 +71,15 @@ function serveFresh($request){
     foreach ($response['headers'] ?? [] as $header) header($header);
     echo $response['body'];
 
-    // Cache successful GET responses, but skip drafts and admin visits
+    // Cache successful GET responses, but skip drafts, admin visits and archive pages
     $isAdminVisit = !empty($_SESSION['user_id']);
+    $isArchivePage = isset($page['taxonomy']);
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && ($response['status'] ?? 200) === 200
         && ($page['status'] ?? '') !== 'draft'
         && !$isAdminVisit
+        && !$isArchivePage
     ) {
         $key = trim($request, '/') ?: 'home';
         $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
