@@ -91,6 +91,36 @@ $currentParentId = $contentData['parent_id'] ?? null;
 $excludeIds = $currentId ? array_merge([$currentId], get_descendant_ids($currentId, $allParents)) : [];
 $parentOptions = array_filter($allParents, fn($p) => !in_array($p['id'], $excludeIds, true));
 
+// categories
+
+$pdo = db();
+
+$stmt = $pdo->prepare("
+    SELECT *
+    FROM taxonomy
+    WHERE taxonomy_type = 'category'
+    AND content_type = ?
+    ORDER BY name
+");
+
+$stmt->execute([$type]);
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$selectedCategoryId = null;
+
+if ($isEdit && !empty($contentData['id'])) {
+    $stmt = $pdo->prepare("
+        SELECT taxonomy_id
+        FROM taxonomy_term_relationships
+        WHERE content_type = ?
+        AND content_id = ?
+        LIMIT 1
+    ");
+
+    $stmt->execute([$type, $contentData['id']]);
+    $selectedCategoryId = $stmt->fetchColumn() ?: null;
+}
+
 // ----------------------------
 // Layout / header / footer defaults
 // ----------------------------
@@ -219,6 +249,21 @@ ob_start();
             <label>
                 Meta Description:
                 <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
+            </label>
+
+            <label>
+                Category
+                <select name="category_id">
+                    <option value="">— None —</option>
+
+                    <?php foreach ($categories as $cat): ?>
+                        <option
+                            value="<?= (int)$cat['id'] ?>"
+                            <?= $selectedCategoryId == $cat['id'] ? 'selected' : '' ?>>
+                            <?= e($cat['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </label>
 
             <label>

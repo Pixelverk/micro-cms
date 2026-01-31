@@ -115,6 +115,30 @@ CREATE TABLE media (
 );
 ");
 
+$pdo->exec("
+CREATE TABLE taxonomy (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    taxonomy_type TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    description TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(taxonomy_type, slug)
+);
+");
+
+$pdo->exec("
+CREATE TABLE taxonomy_term_relationships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content_type TEXT NOT NULL,
+    content_id INTEGER NOT NULL,
+    taxonomy_id INTEGER NOT NULL,
+    UNIQUE(content_type, content_id, taxonomy_id)
+);
+");
+
 // what time is it?
 $now = time();
 

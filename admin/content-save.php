@@ -173,6 +173,26 @@ if (!$id) {
     redirect_with_toast("content-list", 'error', "Failed to save {$contentType}.");
 }
 
+// category stuff
+$categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null;
+$pdo = db();
+
+/* remove existing */
+$pdo->prepare("
+    DELETE FROM taxonomy_term_relationships
+    WHERE content_type = ?
+    AND content_id = ?
+")->execute([$contentType, $id]);
+
+/* insert new */
+if ($categoryId) {
+    $pdo->prepare("
+        INSERT INTO taxonomy_term_relationships
+        (content_type, content_id, taxonomy_id)
+        VALUES (?, ?, ?)
+    ")->execute([$contentType, $id, $categoryId]);
+}
+
 // ----------------------------
 // Success redirect
 // ----------------------------

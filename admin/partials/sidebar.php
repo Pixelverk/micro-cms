@@ -73,12 +73,12 @@ function is_form_type_active(string $type): string
     <div class="sidebar-section">
         <div class="sidebar-title">Collections</div>
 
-        <a href="<?= url('admin/categories-list') ?>" class="sidebar-link <?= is_active('categories', $currentPath) ?>" data-label="Categories">
+        <a href="<?= url('admin/category-list') ?>" class="sidebar-link <?= is_active('category', $currentPath) ?>" data-label="Categories">
             <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
             Categories
         </a>
 
-        <a href="<?= url('admin/tags-list') ?>" class="sidebar-link <?= is_active('tags', $currentPath) ?>" data-label="Tags">
+        <a href="<?= url('admin/tag-list') ?>" class="sidebar-link <?= is_active('tag', $currentPath) ?>" data-label="Tags">
             <span class="sidebar-icon"><?= icon('label', 20) ?></span>
             Tags
         </a>
