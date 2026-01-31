@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 // Only allow POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -6,45 +7,50 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Method not allowed');
 }
 
-// Get file path from POST
-$path = $_POST['path'] ?? '';
+$id = (int)($_POST['id'] ?? 0);
 
-if ($path === '') {
-    http_response_code(400);
-    redirect_with_toast('media', 'error', 'Missing file path.');
+if (!$id) {
+    redirect_with_toast('media', 'error', 'Invalid media item.');
 }
 
-// Normalize and sanitize
-$path = ltrim($path, '/');
-$path = str_replace(['../', '..\\'], '', $path);
+$pdo = db();
+
+// ----------------------------
+// Find media record
+// ----------------------------
+$stmt = $pdo->prepare("SELECT path FROM media WHERE id = ?");
+$stmt->execute([$id]);
+
+$media = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$media) {
+    redirect_with_toast('media', 'error', 'Media not found.');
+}
 
 $mediaRoot = realpath(STORAGE_PATH . '/media');
-$filePath  = realpath($mediaRoot . '/' . $path);
+$filePath  = $mediaRoot . '/' . $media['path'];
 
-// Security: ensure file is inside media folder
-if (!$filePath || !str_starts_with($filePath, $mediaRoot)) {
-    http_response_code(403);
-    redirect_with_toast('media', 'error', 'Invalid file path.');
+// ----------------------------
+// Delete file (if exists)
+// ----------------------------
+if (is_file($filePath)) {
+    unlink($filePath);
+
+    // cleanup empty folders (same logic you had)
+    $dir = dirname($filePath);
+    while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
+        rmdir($dir);
+        $dir = dirname($dir);
+    }
 }
 
-// Ensure file exists
-if (!is_file($filePath)) {
-    http_response_code(404);
-    redirect_with_toast('media', 'error', 'File not found.');
-}
+// ----------------------------
+// Delete DB record
+// ----------------------------
+$stmt = $pdo->prepare("DELETE FROM media WHERE id = ?");
+$stmt->execute([$id]);
 
-// Delete
-if (!unlink($filePath)) {
-    http_response_code(500);
-    redirect_with_toast('media', 'error', 'Failed to delete file.');
-}
-
-// Optional: delete empty parent folders
-$dir = dirname($filePath);
-while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
-    rmdir($dir);
-    $dir = dirname($dir);
-}
-
-// Success
+// ----------------------------
+// Done
+// ----------------------------
 redirect_with_toast('media', 'success', 'File deleted.');

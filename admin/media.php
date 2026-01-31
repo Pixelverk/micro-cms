@@ -5,30 +5,32 @@ $pageTitle = 'Media Manager';
 $username  = $_SESSION['user_id'] ?? 'User';
 
 // ----------------------------
-// Load media files
+// Load media files from DB
 // ----------------------------
-$mediaRoot = STORAGE_PATH . '/media';
+$pdo = db();
+
+$stmt = $pdo->query("
+    SELECT *
+    FROM media
+    ORDER BY created_at DESC
+");
+
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $mediaFiles = [];
 
-if (is_dir($mediaRoot)) {
-    $rii = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($mediaRoot, RecursiveDirectoryIterator::SKIP_DOTS)
-    );
+foreach ($rows as $row) {
+    $relativePath = $row['path'];
 
-    foreach ($rii as $file) {
-        if (!$file->isFile()) continue;
-
-        $relativePath = str_replace($mediaRoot . '/', '', $file->getPathname());
-
-        $mediaFiles[] = [
-            'path' => $relativePath,
-            'url'  => url('media/' . $relativePath),
-            'name' => $file->getFilename(),
-            'size' => round($file->getSize() / 1024, 1) . ' KB',
-            'time' => date('Y-m-d', $file->getMTime()),
-            'type' => mime_content_type($file->getPathname()),
-        ];
-    }
+    $mediaFiles[] = [
+        'id'   => $row['id'],
+        'path' => $relativePath,
+        'url'  => url('media/' . $relativePath),
+        'name' => $row['filename'],
+        'size' => round($row['size'] / 1024, 1) . ' KB',
+        'time' => date('Y-m-d', (int)$row['created_at']),
+        'type' => $row['mime_type'],
+    ];
 }
 
 // Sort newest first
@@ -80,7 +82,7 @@ ob_start();
 
                     <!-- Delete form -->                   
                     <form action="<?= url('admin/media-remove') ?>" method="post" class="js-confirm-form" data-confirm-title="Delete media" data-confirm="Do you want to remove <?= e($file['name']) ?>">
-                        <input type="hidden" name="path" value="<?= e($file['path']) ?>">
+                        <input type="hidden" name="id" value="<?= (int)$file['id'] ?>">
                         <button type="submit" class="btn-delete">Delete</button>
                     </form>
 
