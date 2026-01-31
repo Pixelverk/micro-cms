@@ -419,13 +419,22 @@ document.addEventListener('DOMContentLoaded', () => {
     statusSelect.addEventListener('change', updateScheduledVisibility);
 });
 
-if (container) {
-    new Sortable(container, {
+function bindSortable(el) {
+    new Sortable(el, {
         handle: '.component-title',
         animation: 150,
         ghostClass: 'sortable-ghost',
-        onEnd: (evt) => {
+        onEnd: () => {
             renumberComponents();
         },
     });
+
+    // Bind Sortable to any child containers recursively
+    el.querySelectorAll(':scope > .component .children-container').forEach(childContainer => {
+        bindSortable(childContainer);
+    });
+}
+
+if (container) {
+    bindSortable(container);
 }
