@@ -157,6 +157,16 @@ function createComponent(type, data = {}) {
     }
 
     const childrenContainer = node.querySelector('.children-container');
+    
+    // if child components are allowed, they should be sortable
+    if (allowedChildren.length > 0 || childrenSetting == 'any') {       
+        // Bind Sortable for this component's children container
+        if (childrenContainer) {
+            bindSortable(childrenContainer);
+        }
+    }
+
+    // recurse to create existing child components
     if (Array.isArray(data.children)) {
         data.children.forEach(childData => {
             const childNode = createComponent(childData.type, childData);
@@ -181,32 +191,6 @@ if (Array.isArray(initialComponents)) {
 }
 
 renumberComponents();
-
-// ----------------------------
-// Add top-level component
-// ----------------------------
-const addBtn = document.getElementById('add-component');
-const select = document.getElementById('new-component-select');
-addBtn.disabled = true;
-
-if (addBtn && select) {
-    select.addEventListener('change', () => { addBtn.disabled = !select.value; });
-    addBtn.addEventListener('click', async () => {
-        const type = select.value;
-
-        if (!type || !availableComponents[type]) {
-            await window.confirmModal({
-                title: 'Invalid component',
-                message: 'Please select a valid component.',
-                simple: true,
-            });
-            return;
-        }
-
-        container.appendChild(createComponent(type));
-        renumberComponents();
-    });
-}
 
 // ----------------------------
 // Event delegation (remove, add-child, move, duplicate)
@@ -419,7 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
     statusSelect.addEventListener('change', updateScheduledVisibility);
 });
 
-function bindSortable(el) {
+// sorting of components 
+function bindSortable(el, children = true) {
     new Sortable(el, {
         handle: '.component-title',
         animation: 150,
@@ -430,11 +415,39 @@ function bindSortable(el) {
     });
 
     // Bind Sortable to any child containers recursively
-    el.querySelectorAll(':scope > .component .children-container').forEach(childContainer => {
-        bindSortable(childContainer);
-    });
+    if (children) {
+        el.querySelectorAll(':scope > .component .children-container').forEach(childContainer => {
+            bindSortable(childContainer);
+        });
+    }
+
+    console.log('bindSortable ran')
 }
 
+// bind sortable on initial page load
 if (container) {
-    bindSortable(container);
+    bindSortable(container, false);
 }
+
+// drag and drop adding of components
+const paletteItems = document.querySelectorAll('.draggable-component');
+
+paletteItems.forEach(item => {
+    item.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('component-type', item.dataset.type);
+        e.dataTransfer.effectAllowed = 'copy';
+    });
+});
+
+container.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+container.addEventListener('drop', e => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('component-type');
+    if (!type) return;
+    container.appendChild(createComponent(type));
+    renumberComponents();
+});

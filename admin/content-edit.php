@@ -387,17 +387,14 @@ ob_start();
 
         <!-- Component list -->
         <fieldset class="card">
-            <legend>Component Lists</legend>
-            <label>
-                All components:
-                <select id="new-component-select">
-                    <option value="">-- Select Component--</option>
-                    <?php foreach (array_keys($availableComponents) as $name): ?>
-                        <option value="<?= e($name) ?>"><?= e($availableComponents[$name]['label']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <button type="button" id="add-component">Add</button>
+          <legend>Component List</legend>
+            <div id="component-palette">
+                <?php foreach (array_keys($availableComponents) as $name): ?>
+                    <div class="draggable-component" draggable="true" data-type="<?= e($name) ?>">
+                        <?= e($availableComponents[$name]['label']) ?>
+                    </div>
+            <?php endforeach; ?>
+            </div>
         </fieldset>
 
     </div>

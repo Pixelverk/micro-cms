@@ -688,8 +688,21 @@ header {
     opacity: 0.5;
     border: 2px dashed #aaa;
 }
-.components-container .component-title {
+
+#components-container .component-title {
     cursor: grab;
+}
+
+#components-container {
+    height:100%;
+}
+
+.draggable-component {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ccc;
+    cursor: grab;
+    background: #fff;
 }
 
 
