@@ -37,23 +37,25 @@ function sanitizeFilename(string $name): string {
 }
 
 // ----------------------------
+// Friendly PHP upload errors
+// ----------------------------
+$uploadErrors = [
+    UPLOAD_ERR_OK         => null,
+    UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the server limit.',
+    UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the form limit.',
+    UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded.',
+    UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+    UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+    UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+];
+
+// ----------------------------
 // Handle file upload if provided
 // ----------------------------
-if ($file && $file['error'] !== UPLOAD_ERR_NO_FILE) {
+$relativePath = $filename = $originalName = $mimeType = $size = null;
 
-    // ----------------------------
-    // Friendly PHP upload errors
-    // ----------------------------
-    $uploadErrors = [
-        UPLOAD_ERR_OK         => null,
-        UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the server limit.',
-        UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the form limit.',
-        UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded.',
-        UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
-        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-        UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
-    ];
+if ($file && $file['error'] !== UPLOAD_ERR_NO_FILE) {
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
         $msg = $uploadErrors[$file['error']] ?? 'Unknown upload error.';
@@ -112,8 +114,9 @@ if ($file && $file['error'] !== UPLOAD_ERR_NO_FILE) {
 // Save or update DB record
 // ----------------------------
 if ($replaceId) {
-
+    // ----------------------------
     // Fetch existing record
+    // ----------------------------
     $stmt = $pdo->prepare("SELECT * FROM media WHERE id = ?");
     $stmt->execute([$replaceId]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -122,13 +125,15 @@ if ($replaceId) {
         redirect_with_toast('media', 'error', 'Media item not found.');
     }
 
-    // If new file uploaded, delete old file
-    if (!empty($relativePath) && !empty($existing['path'])) {
+    // Delete old file if replacing
+    if ($relativePath && !empty($existing['path'])) {
         $oldPath = realpath(STORAGE_PATH . '/media/' . $existing['path']);
         if ($oldPath && is_file($oldPath)) unlink($oldPath);
     }
 
+    // ----------------------------
     // Update record
+    // ----------------------------
     $stmt = $pdo->prepare("
         UPDATE media SET
             filename      = COALESCE(?, filename),
@@ -157,9 +162,10 @@ if ($replaceId) {
     $msg = 'Media updated successfully.';
 
 } else {
-
-    // New insert
-    if (empty($relativePath)) {
+    // ----------------------------
+    // Insert new record
+    // ----------------------------
+    if (!$relativePath) {
         redirect_with_toast('media', 'error', 'No file uploaded.');
     }
 

@@ -139,33 +139,39 @@ items.forEach(item => {
                 : `<div>${data.name}</div>`}
 
             <strong>${data.name}</strong>
-            <small>${data.size} · ${data.time}</small>
+            <small>${data.size} · ${data.time}</small>           
 
-            <form method="post" action="<?= url('admin/media-save') ?>">
+            <form method="post" enctype="multipart/form-data" action="<?= url('admin/media-save') ?>">
                 <input type="hidden" name="replace_id" value="${data.id}">
+
                 <label>
                     Alt text:
                     <input type="text" name="alt_text" value="${data.alt}">
                 </label>
+
                 <label>
                     Description:
                     <textarea name="description">${data.description}</textarea>
                 </label>
-                <button type="submit">Save Metadata</button>
+
+                <label>
+                    Replace file:
+                    <input type="file" name="file">
+                </label>
+
+                <button type="submit">Save Changes</button>
             </form>
 
-            <button id="copyBtn">Copy URL</button>
+            <button id="copyBtn" data-url="${data.url}">Copy URL</button>
 
-            <form method="post" action="<?= url('admin/media-remove') ?>" style="margin-top:.5rem;">
+            <form method="post" action="<?= url('admin/media-remove') ?>" class="js-confirm-form"
+                data-confirm-title="Delete media"
+                data-confirm="Do you really want to delete <?= e($data['name']) ?>?"
+                style="margin-top:.5rem;">
                 <input type="hidden" name="id" value="${data.id}">
-                <button class="btn-delete">Delete</button>
+                <button class="btn btn-delete">Delete</button>
             </form>
 
-            <form method="post" enctype="multipart/form-data" action="<?= url('admin/media-save') ?>" style="margin-top:.5rem;">
-                <input type="hidden" name="replace_id" value="${data.id}">
-                <input type="file" name="file" required>
-                <button>Replace File</button>
-            </form>
         `;
 
         document.getElementById('copyBtn').onclick = () => {
@@ -174,6 +180,30 @@ items.forEach(item => {
                 .catch(() => alert('Failed to copy.'));
         };
     });
+});
+
+// Delegated copy URL handler
+inspector.addEventListener('click', (e) => {
+    if (e.target.id === 'copyBtn') {
+        const url = e.target.dataset.url;
+        if (!url) return;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => e.target.textContent = 'Copied!')
+                .finally(() => setTimeout(() => e.target.textContent = 'Copy URL', 1500));
+        } else {
+            // fallback
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try { document.execCommand('copy'); e.target.textContent = 'Copied!'; }
+            catch { alert('Failed to copy'); }
+            document.body.removeChild(textarea);
+            setTimeout(() => e.target.textContent = 'Copy URL', 1500);
+        }
+    }
 });
 </script>
 
