@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // sorting of components 
-function bindSortable(el, children = true) {
+function bindSortable(el) {
     new Sortable(el, {
         handle: '.component-title',
         animation: 150,
@@ -413,21 +413,10 @@ function bindSortable(el, children = true) {
             renumberComponents();
         },
     });
-
-    // Bind Sortable to any child containers recursively
-    if (children) {
-        el.querySelectorAll(':scope > .component .children-container').forEach(childContainer => {
-            bindSortable(childContainer);
-        });
-    }
-
-    console.log('bindSortable ran')
 }
 
 // bind sortable on initial page load
-if (container) {
-    bindSortable(container, false);
-}
+bindSortable(container);
 
 // drag and drop adding of components
 const paletteItems = document.querySelectorAll('.draggable-component');
