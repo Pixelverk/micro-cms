@@ -684,6 +684,15 @@ header {
     align-items:center;
 }
 
+.sortable-ghost {
+    opacity: 0.5;
+    border: 2px dashed #aaa;
+}
+.components-container .component-title {
+    cursor: grab;
+}
+
+
 /* 8. State-Dependent Styles */
    
 /* 8.1 Sidebar collapsed */

@@ -418,3 +418,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update whenever the status changes
     statusSelect.addEventListener('change', updateScheduledVisibility);
 });
+
+if (container) {
+    new Sortable(container, {
+        handle: '.component-title',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+            renumberComponents();
+        },
+    });
+}
