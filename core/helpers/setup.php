@@ -214,17 +214,22 @@ $settings = [
     'default_layout'  => 'default',
     'default_header'  => 'site-header',
     'default_footer'  => 'site-footer',
-    'content_prefixes'=> json_encode([
+    'content_prefixes'=> [
         'page'           => '',
         'blog_post'      => 'blawg',
         'portfolio_item' => 'portfolio'
-    ], JSON_THROW_ON_ERROR),
+    ],
     'contact_email'   => 'test-admin@domain.com',
+    'media_sizes' => [400, 800, 1200, 2000],
+    'generate_webp' => true,
+    'quality_webp' => 80,
+    'strip_metadata' => true,
 ];
 
 $stmt = $pdo->prepare("
     INSERT INTO settings (`key`, `value`, updated_at)
     VALUES (:key, :value, :updated_at)
+    ON CONFLICT(`key`) DO NOTHING
 ");
 
 foreach ($settings as $key => $value) {

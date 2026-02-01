@@ -72,6 +72,35 @@ $settingFields = [
         'help'    => 'Messages from contact forms are sent here.',
         'default' => '',
     ],
+
+    // ----------------------------
+    // Media upload settings
+    'generate_webp' => [
+        'type'    => 'checkbox',
+        'label'   => 'Generate WebP',
+        'help'    => 'Create WebP versions of uploaded images.',
+        'default' => true,
+    ],
+    'quality_webp' => [
+        'type'    => 'number',
+        'label'   => 'WebP Quality',
+        'help'    => 'Compression quality for WebP images (1-100).',
+        'default' => 80,
+        'min'     => 1,
+        'max'     => 100,
+    ],
+    'strip_metadata' => [
+        'type'    => 'checkbox',
+        'label'   => 'Strip Metadata',
+        'help'    => 'Remove EXIF/metadata from uploaded images.',
+        'default' => true,
+    ],
+    'media_sizes' => [
+        'type'    => 'text',
+        'label'   => 'Image Sizes',
+        'help'    => 'Comma-separated list of widths for generated images (e.g. 320,640,1280).',
+        'default' => '320,640,1280',
+    ],
 ];
 
 // ----------------------------
@@ -103,7 +132,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($settingFields as $key => $meta) {
             $value = $_POST[$key] ?? null;
 
-            if ($meta['type'] === 'text' && trim($value) === '') {
+            // Checkbox handling
+            if ($meta['type'] === 'checkbox') {
+                $value = !empty($value);
+            }
+
+            // Number validation
+            if ($meta['type'] === 'number') {
+                $value = (int)$value;
+            }
+
+            // Comma-separated sizes
+            if ($key === 'media_sizes') {
+                $value = array_filter(array_map('intval', explode(',', $value)));
+            }
+
+            if (is_string($value) && $meta['type'] === 'text' && trim($value) === '') {
                 if (!str_starts_with($key, 'prefix_')) {
                     throw new RuntimeException("{$meta['label']} cannot be empty.");
                 }
@@ -120,9 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($key === 'homepage_id') {
-                // Save as integer ID
-                $value = (int)$value;
-                set_setting($key, $value);
+                set_setting($key, (int)$value);
             } elseif (str_starts_with($key, 'prefix_')) {
                 $type = substr($key, 7);
                 $newPrefixes[$type] = trim($value);
@@ -174,9 +216,15 @@ ob_start();
         <fieldset>
             <legend><?= e($meta['label']) ?></legend>
 
-            <?php if ($meta['type'] === 'text'): ?>
+            <?php if ($meta['type'] === 'text' || $meta['type'] === 'number'): ?>
                 <label>
-                    <input type="text" name="<?= e($key) ?>" value="<?= e($value) ?>">
+                    <input
+                        type="<?= $meta['type'] === 'number' ? 'number' : 'text' ?>"
+                        name="<?= e($key) ?>"
+                        value="<?= is_array($value) ? e(implode(',', $value)) : e($value) ?>"
+                        <?= $meta['min'] ?? '' ? "min=\"{$meta['min']}\"" : '' ?>
+                        <?= $meta['max'] ?? '' ? "max=\"{$meta['max']}\"" : '' ?>
+                    >
                     <?php if (!empty($meta['help'])): ?>
                         <small><?= e($meta['help']) ?></small>
                     <?php endif; ?>
@@ -195,7 +243,16 @@ ob_start();
                         <small><?= e($meta['help']) ?></small>
                     <?php endif; ?>
                 </label>
+
+            <?php elseif ($meta['type'] === 'checkbox'): ?>
+                <label>
+                    <input type="checkbox" name="<?= e($key) ?>" value="1" <?= $value ? 'checked' : '' ?>>
+                    <?php if (!empty($meta['help'])): ?>
+                        <small><?= e($meta['help']) ?></small>
+                    <?php endif; ?>
+                </label>
             <?php endif; ?>
+
         </fieldset>
     <?php endforeach; ?>
 </form>

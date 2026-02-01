@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $pdo = db();
 $now = time();
+$settings = load_settings();
 
 // ----------------------------
 // Get POST data
@@ -22,11 +23,24 @@ $file        = $_FILES['file'] ?? null;
 $hasNewUpload = $file && $file['error'] === UPLOAD_ERR_OK;
 
 // ----------------------------
-// Config
+// Config from settings
 // ----------------------------
 $maxSize = 10 * 1024 * 1024; // 10MB
 $allowedExtensions = ['jpg','jpeg','png','gif','webp','svg','pdf','mp4','webm'];
-$imageWidths = [400, 800, 1200, 2000]; // widths to generate
+
+$imageQuality = (int)($settings['image_quality'] ?? 80);
+$stripMeta    = (bool)($settings['strip_metadata'] ?? true);
+$generateWebp = (bool)($settings['generate_webp'] ?? true);
+
+$defaultWidths = [320, 640, 1280];
+$sizesSetting = $settings['media_sizes'] ?? null;
+if (is_string($sizesSetting) && trim($sizesSetting) !== '') {
+     $imageWidths = array_map('intval', array_filter(array_map('trim', explode(',', $sizesSetting))));
+} elseif (is_array($sizesSetting) && !empty($sizesSetting)) {
+    $imageWidths = array_map('intval', $sizesSetting);
+} else {
+    $imageWidths = $defaultWidths;
+}
 
 // ----------------------------
 // Helpers
@@ -35,25 +49,28 @@ function sanitizeFilename(string $name): string {
     return preg_replace('/[^a-zA-Z0-9_\-]/', '-', strtolower($name));
 }
 
-function save_resized_image(string $sourcePath, string $destPath, int $targetWidth, string $format): array {
+function save_resized_image(string $sourcePath, string $destPath, int $targetWidth, string $format, int $quality = 80, bool $stripMeta = true): array {
     $img = new Imagick();
-
     try {
         $img->readImage($sourcePath);
-        $img->stripImage();
+        if ($stripMeta) $img->stripImage();
         if (method_exists($img, 'autoOrient')) $img->autoOrient();
 
         $origWidth = $img->getImageWidth();
         $origHeight = $img->getImageHeight();
-
         $width = min($targetWidth, $origWidth);
-        $img->thumbnailImage($width, 0); // keep aspect ratio
+        $img->thumbnailImage($width, 0);
 
-        // Format-specific settings
+        // Format-specific quality
         switch ($format) {
-            case 'webp': $img->setImageCompressionQuality(80); break;
-            case 'png':  $img->setImageCompressionQuality(9); break;
-            default:     $img->setImageCompressionQuality(80); break;
+            case 'webp':
+            case 'jpeg':
+            case 'jpg':
+                $img->setImageCompressionQuality($quality);
+                break;
+            case 'png':
+                $img->setImageCompressionQuality(9);
+                break;
         }
 
         $img->setImageFormat($format);
@@ -63,23 +80,16 @@ function save_resized_image(string $sourcePath, string $destPath, int $targetWid
 
         $img->writeImage($destPath);
 
-        $result = [
-            'path' => $destPath,
-            'width'=> $img->getImageWidth(),
-            'height'=> $img->getImageHeight(),
-            'size'=> filesize($destPath)
+        return [
+            'path'   => $destPath,
+            'width'  => $img->getImageWidth(),
+            'height' => $img->getImageHeight(),
+            'size'   => filesize($destPath)
         ];
-
-        //error_log("RESIZE SUCCESS: {$sourcePath} -> {$destPath} | {$result['width']}x{$result['height']}");
-
-    } catch (ImagickException $e) {
-        error_log("RESIZE FAILED: {$sourcePath} | width {$targetWidth} | format {$format} | " . $e->getMessage());
-        throw $e;
+    } finally {
+        $img->clear();
+        $img->destroy();
     }
-
-    $img->clear();
-    $img->destroy();
-    return $result;
 }
 
 function generate_lqip(string $sourcePath, int $width = 20): string {
@@ -100,7 +110,7 @@ function generate_lqip(string $sourcePath, int $width = 20): string {
 }
 
 // ----------------------------
-// Handle file upload
+// Initialize variables
 // ----------------------------
 $relativeBasePath = $originalName = $mimeType = null;
 $originalSize = $width = $height = null;
@@ -108,6 +118,9 @@ $formats = [];
 $sizes = [];
 $lqip = null;
 
+// ----------------------------
+// Handle file upload
+// ----------------------------
 if ($hasNewUpload) {
     if ($file['error'] !== UPLOAD_ERR_OK) redirect_with_toast('media', 'error', 'Upload error.');
     if ($file['size'] > $maxSize) redirect_with_toast('media', 'error', 'File too large.');
@@ -135,62 +148,48 @@ if ($hasNewUpload) {
 
     $mimeType = mime_content_type($targetOriginal);
     $originalSize = filesize($targetOriginal);
-    //error_log("UPLOAD SUCCESS: {$targetOriginal} | MIME {$mimeType} | size {$originalSize}");
 
     // ----------------------------
-    // Preprocess large images to a manageable size
+    // Process images if applicable
     // ----------------------------
     if (str_starts_with($mimeType, 'image/')) {
         $img = new Imagick($targetOriginal);
+        if (method_exists($img, 'autoOrient')) $img->autoOrient();
 
-        if (method_exists($img, 'autoOrient')) {
-            $img->autoOrient();
-            //error_log("AUTO-ORIENT applied to {$originalName}");
-        }
-
-        // CMYK -> RGB
         if ($img->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
             $img->transformImageColorspace(Imagick::COLORSPACE_RGB);
-            //error_log("Converted {$originalName} from CMYK to RGB");
         }
 
-        // Resize original if too large
         $origWidth = $img->getImageWidth();
         $origHeight = $img->getImageHeight();
-        $maxOrigWidth = 2000; // maximum manageable width
+        $maxOrigWidth = max($imageWidths);
         if ($origWidth > $maxOrigWidth) {
             $img->thumbnailImage($maxOrigWidth, 0);
             $processedOriginal = "{$targetOriginal}.proc.jpg";
             $img->setImageFormat('jpeg');
             $img->writeImage($processedOriginal);
-            //error_log("RESIZED ORIGINAL for processing: {$origWidth}x{$origHeight} → " . $img->getImageWidth() . "x" . $img->getImageHeight());
         } else {
             $processedOriginal = $targetOriginal;
         }
 
         $width = $img->getImageWidth();
         $height = $img->getImageHeight();
-
         $img->clear();
         $img->destroy();
 
-        $formats = ['webp'=>[], $extension=>[]];
+        $formats = [];
         $sizes = [];
+        $formatsToGenerate = $generateWebp ? ['webp', $extension] : [$extension];
 
         foreach ($imageWidths as $w) {
-            foreach (['webp',$extension] as $fmt) {
-                if ($w > $width) continue; // skip larger than processed original
-
+            foreach ($formatsToGenerate as $fmt) {
+                if ($w > $width) continue;
                 $dest = "{$targetDir}/{$w}.{$fmt}";
                 try {
-                    $resized = save_resized_image($processedOriginal, $dest, $w, $fmt);
+                    $resized = save_resized_image($processedOriginal, $dest, $w, $fmt, $imageQuality, $stripMeta);
                     $formats[$fmt][] = "{$relativeBasePath}/{$w}.{$fmt}";
-
                     if (!isset($sizes[$w])) {
-                        $sizes[$w] = [
-                            'width' => $resized['width'],
-                            'height'=> $resized['height']
-                        ];
+                        $sizes[$w] = ['width' => $resized['width'], 'height' => $resized['height']];
                     }
                 } catch (Exception $e) {
                     error_log("RESIZE FAILED: {$processedOriginal} | width {$w} | format {$fmt} | " . $e->getMessage());
@@ -206,19 +205,13 @@ if ($hasNewUpload) {
 // Insert / Update DB
 // ----------------------------
 if ($replaceId) {
-
     $stmt = $pdo->prepare("SELECT * FROM media WHERE id = ?");
     $stmt->execute([$replaceId]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existing) redirect_with_toast('media', 'error', 'Media item not found.');
 
-    if (!$existing) {
-        redirect_with_toast('media', 'error', 'Media item not found.');
-    }
-
-    // ----------------------------
-    // If NO new upload → keep old file data
-    // ----------------------------
     if (!$hasNewUpload) {
+        // Keep old file data
         $originalName = $existing['original_name'];
         $relativeBasePath = $existing['base_path'];
         $mimeType = $existing['mime_type'];
@@ -227,26 +220,15 @@ if ($replaceId) {
         $height = $existing['height'];
         $formats = json_decode($existing['formats_json'], true) ?? [];
         $lqip = $existing['lqip_base64'];
-    }
-    // ----------------------------
-    // If replacing file → delete old folder
-    // ----------------------------
-    else {
+    } else {
+        // Delete old folder
         $oldFolder = realpath(STORAGE_PATH . '/media/' . $existing['base_path']);
         if ($oldFolder && is_dir($oldFolder)) {
             $it = new RecursiveDirectoryIterator($oldFolder, RecursiveDirectoryIterator::SKIP_DOTS);
             $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-
             foreach ($files as $fileObj) {
-                $path = $fileObj->getPathname();
-
-                if ($fileObj->isDir()) {
-                    rmdir($path);
-                } else {
-                    unlink($path);
-                }
+                $fileObj->isDir() ? rmdir($fileObj->getPathname()) : unlink($fileObj->getPathname());
             }
-
             rmdir($oldFolder);
         }
     }
