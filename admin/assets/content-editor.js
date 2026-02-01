@@ -122,6 +122,7 @@ function createComponent(type, data = {}) {
             const preview = fieldNode.querySelector('.image-preview');
             const btn = fieldNode.querySelector('.select-image-btn');
 
+            input.name = `components[][props][${name}]`;
             input.value = value || '';
 
             // find preview url from id
@@ -484,14 +485,7 @@ const imageGrid = document.getElementById('image-grid');
 const imageSearch = document.getElementById('image-search');
 let currentImageField = null;
 
-/* Open modal for a given input
-function openImagePicker(fieldInput) {
-    currentImageField = fieldInput;
-    renderImageGrid(Object.values(window.mediaImages || {}));
-    imagePickerModal.classList.remove('hidden');
-    imageSearch.value = '';
-} */
-
+// Open modal for a given input
 function openImagePicker(fieldInput) {
     currentImageField = {
         hiddenInput: fieldInput,

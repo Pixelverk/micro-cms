@@ -190,3 +190,112 @@ function format_local_datetime(?int $timestamp, string $format = 'Y-m-d H:i'): s
 
     return $dt->format($format);
 }
+
+/**
+ * Return a picture element containing data for an uploaded image with the given id.
+ */
+function picture(int $id, array $attrs = []): string
+{
+    if ($id <= 0) return '';
+
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM media WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) return '';
+
+    $formats = json_decode($row['formats_json'] ?? '{}', true) ?? [];
+    $filePath = $row['file_path'] ?? '';
+    if (!$formats && !$filePath) return '';
+
+    $width  = (int)($row['width'] ?? 0);
+    $height = (int)($row['height'] ?? 0);
+    $lqip   = $row['lqip_base64'] ?? '';
+
+    // -------------------------
+    // build srcset helper
+    // -------------------------
+    $buildSrcset = function(array $paths) use ($filePath, $width) {
+        $items = [];
+
+        if (empty($paths) && $filePath) {
+            // no variants → use original file
+            $items[$width ?: 0] = url('media/' . $filePath);
+        } else {
+            foreach ($paths as $path) {
+                if (preg_match('/\/(\d+)\./', $path, $m)) {
+                    $items[(int)$m[1]] = url('media/' . $path);
+                } else {
+                    // fallback if width not in filename
+                    $items[$width ?: 0] = url('media/' . $path);
+                }
+            }
+        }
+
+        ksort($items);
+        return $items;
+    };
+
+    // fallback format (first non-webp)
+    $fallbackFormat = null;
+    foreach ($formats as $fmt => $paths) {
+        if ($fmt !== 'webp') {
+            $fallbackFormat = $fmt;
+            break;
+        }
+    }
+    if (!$fallbackFormat && $filePath) {
+        $fallbackFormat = pathinfo($filePath, PATHINFO_EXTENSION);
+    }
+    if (!$fallbackFormat) return '';
+
+    $fallbackSet = $buildSrcset($formats[$fallbackFormat] ?? []);
+    if (!$fallbackSet && $filePath) {
+        $fallbackSet = [$width ?: 0 => url('media/' . $filePath)];
+    }
+    $fallbackSrc = reset($fallbackSet);
+    $fallbackSrcset = implode(', ', array_map(fn($url, $w) => "{$url} {$w}w", $fallbackSet, array_keys($fallbackSet)));
+
+    $webpSet = !empty($formats['webp']) ? $buildSrcset($formats['webp']) : [];
+    $webpSrcset = implode(', ', array_map(fn($url, $w) => "{$url} {$w}w", $webpSet, array_keys($webpSet)));
+
+    // -------------------------
+    // default attributes
+    // -------------------------
+    $attrs['loading'] ??= 'lazy';
+    $attrs['alt'] ??= $row['alt_text'] ?? '';
+    if ($width && $height) {
+        $attrs['width'] ??= $width;
+        $attrs['height'] ??= $height;
+    }
+
+    $attrString = '';
+    foreach ($attrs as $k => $v) {
+        $attrString .= ' ' . e($k) . '="' . e((string)$v) . '"';
+    }
+
+    // -------------------------
+    // set initial sizes to smallest width
+    $smallestWidth = (int)array_key_first($fallbackSet);
+    $initialSizes = $smallestWidth ? $smallestWidth . 'px' : '100vw';
+
+    // -------------------------
+    // build html
+    // -------------------------
+    $html = '<div class="image-wrapper"';
+    if ($lqip) {
+        $html .= ' style="background-image:url(' . e($lqip) . ');">';
+    }
+
+    $html .= '<picture>';
+
+    if ($webpSet) {
+        $html .= '<source type="image/webp" srcset="' . e($webpSrcset) . '" sizes="' . e($initialSizes) . '">';
+    }
+
+    $html .= '<img src="' . e($fallbackSrc) . '" srcset="' . e($fallbackSrcset) . '" sizes="' . e($initialSizes) . '"' . $attrString . '>';
+    $html .= '</picture>';
+    $html .= '</div>';
+
+    return $html;
+}

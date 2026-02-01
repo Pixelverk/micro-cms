@@ -102,6 +102,7 @@ Access the editor at `/admin/` to manage content and users.
 * Scheduled publishing of content
 * Image optimization and webp conversion with jpg/png fallback
 * Image placeholders, LQIP stored as base64 in db
+* Component input - pick from media manager 
 
 ### Planned
 
@@ -109,9 +110,7 @@ Access the editor at `/admin/` to manage content and users.
 * Fancier admin area
 * CMS user documentation (in-app)
 * Theme dev documentation (wiki)
-* Component input - pick from media manager 
 * Drafts or edit history with restore functionality
-* Lazy loading components and images
 * Built-in analytics
 * Bulk-edit actions
 

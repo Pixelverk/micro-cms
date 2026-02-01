@@ -161,3 +161,31 @@ main {
     margin-top: 0.25rem;
     display: inline-block;
 }
+
+
+/* Images LQIP */
+
+.image-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    filter: blur(10px);
+    transition: filter 0.3s ease-out, background-image 0.3s ease-out;
+}
+
+.image-wrapper img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    transition: opacity 0.3s ease-out;
+    opacity: 0;
+}
+
+.image-wrapper img.loaded {
+    opacity: 1;
+}

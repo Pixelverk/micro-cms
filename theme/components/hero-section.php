@@ -30,7 +30,7 @@ return [
         'required' => false,
         'default' => 'placeholder.png'
     ],
-    'real-image' => [
+    'realImage' => [
         'type' => 'image',
         'label' => 'Real Image',
         'required' => false,
@@ -113,6 +113,9 @@ CSS,
                     <?php endif; ?>
 
                 </div>
+
+                <!-- just testing -->
+                <?= picture((int)$realImage) ?>
 
             </div>
             <div class="hero-img">
