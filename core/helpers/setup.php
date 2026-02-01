@@ -96,27 +96,6 @@ CREATE TABLE form_submissions (
 );
 ");
 
-/*
-$pdo->exec("
-CREATE TABLE media (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filename TEXT NOT NULL,
-    original_name TEXT NOT NULL,
-    path TEXT NOT NULL,
-    mime_type TEXT NOT NULL,
-    size INTEGER NOT NULL,
-    width INTEGER,
-    height INTEGER,
-    title TEXT,
-    alt_text TEXT,
-    description TEXT,
-    caption TEXT,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-);
-");
-*/
-
 $pdo->exec("
 CREATE TABLE media (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,7 +115,6 @@ CREATE TABLE media (
     title TEXT,
     alt_text TEXT,
     description TEXT,
-    caption TEXT,
 
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL

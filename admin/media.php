@@ -31,7 +31,7 @@ foreach ($rows as $row) {
     $formats = json_decode($row['formats_json'], true) ?? [];
     $sizes   = json_decode($row['sizes_json'] ?? '{}', true) ?? [];
 
-    // Choose preview for grid
+    // Determine preview URL for grid
     $previewUrl = null;
     if (!empty($formats['webp'])) {
         $previewUrl = '/media/' . $formats['webp'][0];
@@ -52,6 +52,7 @@ foreach ($rows as $row) {
         'created_at'    => date('Y-m-d H:i', (int)$row['created_at']),
         'formats'       => $formats,
         'sizes'         => $sizes,
+        'is_image'      => str_starts_with($row['mime_type'], 'image/'),
     ];
 }
 
@@ -101,8 +102,9 @@ ob_start();
                 data-time="<?= e($file['created_at']) ?>"
                 data-formats='<?= json_encode($file['formats'], JSON_HEX_APOS | JSON_HEX_QUOT) ?>'
                 data-sizes='<?= json_encode($file['sizes'], JSON_HEX_APOS | JSON_HEX_QUOT) ?>'
+                data-is-image='<?= $file['is_image'] ? '1' : '0' ?>'
             >
-                <?php if ($file['preview_url'] && str_starts_with($file['mime'], 'image/')): ?>
+                <?php if ($file['is_image'] && $file['preview_url']): ?>
                     <picture>
                         <?php if (!empty($file['formats']['webp'])): ?>
                             <source type="image/webp" srcset="<?= e(url('media/' . $file['formats']['webp'][0])) ?>">
@@ -155,23 +157,35 @@ items.forEach(item => {
         const data = item.dataset;
         const formats = JSON.parse(data.formats);
         const sizes   = JSON.parse(data.sizes || '{}');
+        const isImage = data.isImage === '1';
 
         // Build size dropdown
         let optionsHtml = '';
+        let firstUrl = '';
+
         for (const fmt in formats) {
             formats[fmt].forEach(path => {
-                let width = '?';
-                const match = path.match(/\/(\d+)\./);
-                if (match) width = match[1];
-                optionsHtml += `<option value="/media/${path}">${fmt.toUpperCase()} ${width}px</option>`;
+                let width = '';
+                if (isImage) {
+                    const match = path.match(/\/(\d+)\./);
+                    if (match) width = match[1] + 'px';
+                }
+                if (!firstUrl) firstUrl = '/media/' + path;
+                optionsHtml += `<option value="/media/${path}">${fmt.toUpperCase()}${width ? ' ' + width : ''}</option>`;
             });
         }
 
+        // Fallback for non-images without formats
+        if (!firstUrl && !isImage) {
+            firstUrl = data.previewUrl || '/media/' + data.name;
+            optionsHtml = `<option value="${firstUrl}">${data.name}</option>`;
+        }
+
         inspector.innerHTML = `
-            ${data.mime.startsWith('image/')
+            ${isImage
                 ? `<picture>
                         ${formats.webp ? `<source type="image/webp" srcset="/media/${formats.webp[0]}">` : ''}
-                        <img src="/media/${formats.jpg[0]}" alt="${data.alt}">
+                        <img src="/media/${formats.jpg ? formats.jpg[0] : firstUrl}" alt="${data.alt}">
                    </picture>`
                 : `<div>${data.name}</div>`}
 
@@ -204,7 +218,7 @@ items.forEach(item => {
                 Choose size/format:
                 <div class="flex items-center gap-sm">
                     <select id="sizeSelect">${optionsHtml}</select>
-                    <button id="copyBtn" class="btn btn-primary nowrap" data-url="${data.previewUrl}">Copy URL</button>
+                    <button id="copyBtn" class="btn btn-primary nowrap" data-url="${firstUrl}">Copy URL</button>
                 </div>
             </label>
 
@@ -253,8 +267,6 @@ items.forEach(item => {
                 resolve();
             });
         }
-
-
 
     });
 });

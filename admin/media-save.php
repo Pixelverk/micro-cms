@@ -16,10 +16,10 @@ $settings = load_settings();
 // ----------------------------
 // Get POST data
 // ----------------------------
-$replaceId   = !empty($_POST['replace_id']) ? (int)$_POST['replace_id'] : null;
-$altText     = trim($_POST['alt_text'] ?? '');
-$description = trim($_POST['description'] ?? '');
-$file        = $_FILES['file'] ?? null;
+$replaceId    = !empty($_POST['replace_id']) ? (int)$_POST['replace_id'] : null;
+$altText      = trim($_POST['alt_text'] ?? '');
+$description  = trim($_POST['description'] ?? '');
+$file         = $_FILES['file'] ?? null;
 $hasNewUpload = $file && $file['error'] === UPLOAD_ERR_OK;
 
 // ----------------------------
@@ -61,7 +61,6 @@ function save_resized_image(string $sourcePath, string $destPath, int $targetWid
         $width = min($targetWidth, $origWidth);
         $img->thumbnailImage($width, 0);
 
-        // Format-specific quality
         switch ($format) {
             case 'webp':
             case 'jpeg':
@@ -92,7 +91,7 @@ function save_resized_image(string $sourcePath, string $destPath, int $targetWid
     }
 }
 
-function generate_lqip(string $sourcePath, int $width = 20): string {
+function generate_lqip(string $sourcePath, int $width = 20): ?string {
     try {
         $img = new Imagick($sourcePath);
         $img->stripImage();
@@ -105,7 +104,7 @@ function generate_lqip(string $sourcePath, int $width = 20): string {
         return 'data:image/jpeg;base64,' . base64_encode($data);
     } catch (Exception $e) {
         error_log("LQIP FAILED: {$sourcePath} | error: " . $e->getMessage());
-        return '';
+        return null;
     }
 }
 
@@ -129,9 +128,7 @@ if ($hasNewUpload) {
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
     if (!in_array($extension, $allowedExtensions, true)) redirect_with_toast('media', 'error', 'Invalid file type.');
 
-    // ----------------------------
     // Build YYYY/MM/unique folder
-    // ----------------------------
     $year  = date('Y');
     $month = date('m');
     $uniqueFolder = bin2hex(random_bytes(6));
@@ -139,9 +136,7 @@ if ($hasNewUpload) {
     if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
     $relativeBasePath = "{$year}/{$month}/{$uniqueFolder}";
 
-    // ----------------------------
     // Move original file
-    // ----------------------------
     $baseName = sanitizeFilename(pathinfo($originalName, PATHINFO_FILENAME));
     $targetOriginal = "{$targetDir}/original.{$extension}";
     if (!move_uploaded_file($file['tmp_name'], $targetOriginal)) redirect_with_toast('media', 'error', 'Failed to move uploaded file.');
@@ -149,13 +144,14 @@ if ($hasNewUpload) {
     $mimeType = mime_content_type($targetOriginal);
     $originalSize = filesize($targetOriginal);
 
-    // ----------------------------
-    // Process images if applicable
-    // ----------------------------
-    if (str_starts_with($mimeType, 'image/')) {
+    // Determine if image
+    $isImage = str_starts_with($mimeType, 'image/');
+
+    if ($isImage) {
         $img = new Imagick($targetOriginal);
         if (method_exists($img, 'autoOrient')) $img->autoOrient();
 
+        // CMYK → RGB
         if ($img->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
             $img->transformImageColorspace(Imagick::COLORSPACE_RGB);
         }
@@ -198,6 +194,13 @@ if ($hasNewUpload) {
         }
 
         $lqip = generate_lqip($processedOriginal);
+    } else {
+        // Non-images: just store original
+        $formats = [$extension => ["{$relativeBasePath}/original.{$extension}"]];
+        $sizes = [];
+        $lqip = null;
+        $width = 0;
+        $height = 0;
     }
 }
 
@@ -221,7 +224,7 @@ if ($replaceId) {
         $formats = json_decode($existing['formats_json'], true) ?? [];
         $lqip = $existing['lqip_base64'];
     } else {
-        // Delete old folder
+        // Delete old folder safely
         $oldFolder = realpath(STORAGE_PATH . '/media/' . $existing['base_path']);
         if ($oldFolder && is_dir($oldFolder)) {
             $it = new RecursiveDirectoryIterator($oldFolder, RecursiveDirectoryIterator::SKIP_DOTS);
