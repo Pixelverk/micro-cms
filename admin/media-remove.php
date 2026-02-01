@@ -16,11 +16,10 @@ if (!$id) {
 $pdo = db();
 
 // ----------------------------
-// Find media record
+// Fetch record
 // ----------------------------
-$stmt = $pdo->prepare("SELECT path FROM media WHERE id = ?");
+$stmt = $pdo->prepare("SELECT base_path FROM media WHERE id = ?");
 $stmt->execute([$id]);
-
 $media = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$media) {
@@ -28,20 +27,45 @@ if (!$media) {
 }
 
 $mediaRoot = realpath(STORAGE_PATH . '/media');
-$filePath  = $mediaRoot . '/' . $media['path'];
+$folder    = realpath($mediaRoot . '/' . $media['base_path']);
+
+if (!$folder || !str_starts_with($folder, $mediaRoot)) {
+    redirect_with_toast('media', 'error', 'Invalid media path.');
+}
 
 // ----------------------------
-// Delete file (if exists)
+// Recursive delete helper
 // ----------------------------
-if (is_file($filePath)) {
-    unlink($filePath);
+function deleteDirRecursive(string $dir): void {
+    if (!is_dir($dir)) return;
 
-    // cleanup empty folders (same logic you had)
-    $dir = dirname($filePath);
-    while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
-        rmdir($dir);
-        $dir = dirname($dir);
+    foreach (scandir($dir) as $file) {
+        if ($file === '.' || $file === '..') continue;
+
+        $path = $dir . '/' . $file;
+
+        if (is_dir($path)) {
+            deleteDirRecursive($path);
+        } else {
+            @unlink($path);
+        }
     }
+
+    @rmdir($dir);
+}
+
+// ----------------------------
+// Delete media folder
+// ----------------------------
+deleteDirRecursive($folder);
+
+// ----------------------------
+// Cleanup empty parent folders (YYYY/MM)
+// ----------------------------
+$dir = dirname($folder);
+while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
+    @rmdir($dir);
+    $dir = dirname($dir);
 }
 
 // ----------------------------
@@ -53,4 +77,4 @@ $stmt->execute([$id]);
 // ----------------------------
 // Done
 // ----------------------------
-redirect_with_toast('media', 'success', 'File deleted.');
+redirect_with_toast('media', 'success', 'Media deleted.');

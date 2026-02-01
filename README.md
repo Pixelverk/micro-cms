@@ -52,7 +52,8 @@ The componentName.php basically decides:
 ## Requirements
 
 * PHP 8.0 or higher
-* PDO extension (for using SQLite)
+* PDO module (for using SQLite)
+* Imagick module (for image conversions)
 * File write permissions for `storage/`
 * Apache for `.htaccess` rules and rewriting requests to `index.php`.
 
@@ -99,6 +100,8 @@ Access the editor at `/admin/` to manage content and users.
 * Utility page with 1-button tools
 * Page nesting
 * Scheduled publishing of content
+* Image optimization and webp conversion with jpg/png fallback
+* Image placeholders, LQIP stored as base64 in db
 
 ### Planned
 
@@ -108,9 +111,7 @@ Access the editor at `/admin/` to manage content and users.
 * Theme dev documentation (wiki)
 * Component input - pick from media manager 
 * Drafts or edit history with restore functionality
-* Image optimization and webp conversion with png fallback
 * Lazy loading components and images
-* Image placeholders, LQIP or CSS blurry blob
 * Built-in analytics
 * Bulk-edit actions
 
