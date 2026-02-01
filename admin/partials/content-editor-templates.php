@@ -102,3 +102,21 @@
         <select class="field-input"></select>
     </label>
 </template>
+
+<!-- Image picker field -->
+<template id="image-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <div class="image-picker-wrapper">
+            <!-- Hidden input stores the DB ID of the selected media -->
+            <input type="hidden" class="field-input" data-image-picker>
+
+            <!-- Preview image -->
+            <img class="image-preview" src="" alt="No image selected"
+                 style="width:auto; max-height:140px; object-fit:cover; display:block; margin-bottom:.5rem; cursor:pointer;">
+
+            <!-- Button to open modal -->
+            <button type="button" class="select-image-btn">Select Image</button>
+        </div>
+    </label>
+</template>

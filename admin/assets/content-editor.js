@@ -18,6 +18,7 @@ const urlTemplate = document.getElementById('url-template');
 const emailTemplate = document.getElementById('email-template');
 const quillTemplate = document.getElementById('quill-editor-template');
 const selectTemplate = document.getElementById('select-template');
+const imageTemplate = document.getElementById('image-template');
 
 // ----------------------------
 // Create a component from schema + data
@@ -61,6 +62,7 @@ function createComponent(type, data = {}) {
             case 'email': tpl = emailTemplate; break;
             case 'quill': tpl = quillTemplate; break;
             case 'select': tpl = selectTemplate; break;
+            case 'image': tpl = imageTemplate; break;
             default: tpl = fieldTemplate;
         }
 
@@ -113,6 +115,39 @@ function createComponent(type, data = {}) {
             if (value !== undefined && value !== '') {
                 input.value = value;
             }
+        }
+
+        // image picker
+        if (fieldType === 'image') {
+            const preview = fieldNode.querySelector('.image-preview');
+            const btn = fieldNode.querySelector('.select-image-btn');
+
+            input.value = value || '';
+
+            // find preview url from id
+            if (value) {
+                const media = (window.mediaImages || []).find(m => String(m.id) === String(value));
+
+                if (media) {
+                    let url = '';
+
+                    if (media.formats?.webp?.length) url = '/media/' + media.formats.webp[0];
+                    else {
+                        const first = Object.values(media.formats || {})[0];
+                        if (first?.length) url = '/media/' + first[0];
+                    }
+
+                    preview.src = url;
+                    preview.alt = media.original_name;
+                }
+            }
+
+            btn.addEventListener('click', () => {
+                openImagePicker(input);
+            });
+
+            fieldsContainer.appendChild(fieldNode);
+            continue;
         }
 
         // regular fields
@@ -440,3 +475,120 @@ container.addEventListener('drop', e => {
     container.appendChild(createComponent(type));
     renumberComponents();
 });
+
+// ----------------------------
+// Image Picker Modal Logic
+// ----------------------------
+const imagePickerModal = document.getElementById('image-picker-modal');
+const imageGrid = document.getElementById('image-grid');
+const imageSearch = document.getElementById('image-search');
+let currentImageField = null;
+
+/* Open modal for a given input
+function openImagePicker(fieldInput) {
+    currentImageField = fieldInput;
+    renderImageGrid(Object.values(window.mediaImages || {}));
+    imagePickerModal.classList.remove('hidden');
+    imageSearch.value = '';
+} */
+
+function openImagePicker(fieldInput) {
+    currentImageField = {
+        hiddenInput: fieldInput,
+        preview: fieldInput.closest('.image-picker-wrapper')?.querySelector('.image-preview')
+    };
+    renderImageGrid(window.mediaImages || []);
+    imagePickerModal.classList.remove('hidden');
+    imageSearch.value = '';
+}
+
+// Close modal
+function closeImagePicker() {
+    imagePickerModal.classList.add('hidden');
+    currentImageField = null;
+}
+
+// Render images in modal
+function renderImageGrid(images) {
+    imageGrid.innerHTML = '';
+
+    images.forEach(img => {
+        // choose preview url: webp first, else any format
+        let url = '';
+        if (img.formats?.webp?.length) url = '/media/' + img.formats.webp[0];
+        else if (img.formats) {
+            const firstFmt = Object.values(img.formats)[0];
+            if (firstFmt?.length) url = '/media/' + firstFmt[0];
+        }
+
+        const el = document.createElement('img');
+        el.src = url;
+        el.alt = img.original_name;
+        el.title = img.original_name;
+        el.dataset.id = img.id;
+
+        el.addEventListener('click', () => {
+            if (!currentImageField) return;
+
+            currentImageField.hiddenInput.value = img.id; // save DB id
+            currentImageField.preview.src = url;         // show preview
+            currentImageField.preview.alt = img.original_name;
+
+            closeImagePicker();
+        });       
+
+        imageGrid.appendChild(el);
+    });
+}
+
+// Search filter
+imageSearch.addEventListener('input', () => {
+    const query = imageSearch.value.toLowerCase();
+    const filtered = Object.values(window.mediaImages || {}).filter(img =>
+        img.original_name.toLowerCase().includes(query)
+    );
+    renderImageGrid(filtered);
+});
+
+// Close modal
+imagePickerModal.querySelector('.close-modal').addEventListener('click', closeImagePicker);
+
+// ----------------------------
+// Attach picker to 'image' fields
+// ----------------------------
+function attachImagePicker() {
+    document.querySelectorAll('.field-input[type="text"][data-image-picker]').forEach(input => {
+        // add a button next to input
+        if (input.nextSibling?.classList?.contains('image-picker-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = 'Pick Image';
+        btn.className = 'image-picker-btn';
+        btn.style.marginLeft = '0.5rem';
+        input.insertAdjacentElement('afterend', btn);
+
+        btn.addEventListener('click', () => openImagePicker(input));
+
+        // initialize preview if value exists
+        const mediaId = input.value;
+        if (mediaId && window.mediaImages[mediaId]) {
+            const preview = input.closest('.image-picker-wrapper')?.querySelector('.image-preview');
+            if (preview) preview.src = getPreviewUrl(window.mediaImages[mediaId]);
+        }
+    });
+}
+
+// helper to get preview URL
+function getPreviewUrl(img) {
+    if (!img) return '';
+    if (img.formats?.webp?.length) return '/media/' + img.formats.webp[0];
+    if (img.formats) {
+        const firstFmt = Object.values(img.formats)[0];
+        if (firstFmt?.length) return '/media/' + firstFmt[0];
+    }
+    return '';
+}
+
+// initial attach
+attachImagePicker();

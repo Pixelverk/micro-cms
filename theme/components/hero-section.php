@@ -29,6 +29,12 @@ return [
         'label' => 'Hero Image',
         'required' => false,
         'default' => 'placeholder.png'
+    ],
+    'real-image' => [
+        'type' => 'image',
+        'label' => 'Real Image',
+        'required' => false,
+        'default' => 'placeholder.png'
     ]
 ],
 

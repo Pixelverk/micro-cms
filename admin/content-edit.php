@@ -151,6 +151,29 @@ if ($isEdit && !empty($contentData['id'])) {
     $selectedTagIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
+// image files
+$stmt = $pdo->prepare("
+    SELECT id, original_name, base_path, mime_type, original_size, formats_json, sizes_json
+    FROM media
+    WHERE mime_type LIKE 'image/%'
+    ORDER BY created_at DESC
+");
+$stmt->execute();
+$mediaImages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Prepare JS-friendly array
+$mediaImagesJs = array_map(function($row) {
+    return [
+        'id'            => (int)$row['id'],
+        'original_name' => $row['original_name'],
+        'base_path'     => $row['base_path'],
+        'mime'          => $row['mime_type'],
+        'size'          => (int)$row['original_size'],
+        'formats'       => json_decode($row['formats_json'] ?? '{}', true) ?: [],
+        'sizes'         => json_decode($row['sizes_json'] ?? '{}', true) ?: [],
+    ];
+}, $mediaImages);
+
 // ----------------------------
 // Layout / header / footer defaults
 // ----------------------------
@@ -405,11 +428,14 @@ ob_start();
 window.availableComponents = <?= json_encode($availableComponents) ?>;
 window.initialComponents   = <?= json_encode($components) ?>;
 window.contentType         = '<?= e($type) ?>';
+window.mediaImages = <?= json_encode($mediaImagesJs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>;
 </script>
 
+<?php include __DIR__ . '/partials/image-picker.php'; ?>
 <?php include __DIR__ . '/partials/content-editor-templates.php'; ?>
 <script type="module" src="<?= url('admin/assets/content-editor.js') ?>"></script>
 
 <?php
 $content = ob_get_clean();
 include __DIR__ . '/partials/layout.php';
+

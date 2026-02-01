@@ -177,18 +177,27 @@ if ($hasNewUpload) {
         $sizes = [];
         $formatsToGenerate = $generateWebp ? ['webp', $extension] : [$extension];
 
-        foreach ($imageWidths as $w) {
-            foreach ($formatsToGenerate as $fmt) {
-                if ($w > $width) continue;
-                $dest = "{$targetDir}/{$w}.{$fmt}";
+        foreach ($formatsToGenerate as $fmt) {
+            // Always create at least one file for this format
+            $dest = "{$targetDir}/original.{$fmt}";
+            try {
+                $resized = save_resized_image($targetOriginal, $dest, $width, $fmt, $imageQuality, $stripMeta);
+                $formats[$fmt][] = "{$relativeBasePath}/original.{$fmt}";
+                $sizes[$width] = ['width' => $resized['width'], 'height' => $resized['height']];
+            } catch (Exception $e) {
+                error_log("FORMAT FAILED: {$targetOriginal} | format {$fmt} | " . $e->getMessage());
+            }
+
+            // Then also generate additional widths if larger than 1px
+            foreach ($imageWidths as $w) {
+                if ($w >= $width) continue; // skip sizes larger than original (optional)
+                $destW = "{$targetDir}/{$w}.{$fmt}";
                 try {
-                    $resized = save_resized_image($processedOriginal, $dest, $w, $fmt, $imageQuality, $stripMeta);
+                    $resized = save_resized_image($targetOriginal, $destW, $w, $fmt, $imageQuality, $stripMeta);
                     $formats[$fmt][] = "{$relativeBasePath}/{$w}.{$fmt}";
-                    if (!isset($sizes[$w])) {
-                        $sizes[$w] = ['width' => $resized['width'], 'height' => $resized['height']];
-                    }
+                    $sizes[$w] = ['width' => $resized['width'], 'height' => $resized['height']];
                 } catch (Exception $e) {
-                    error_log("RESIZE FAILED: {$processedOriginal} | width {$w} | format {$fmt} | " . $e->getMessage());
+                    error_log("RESIZE FAILED: {$targetOriginal} | width {$w} | format {$fmt} | " . $e->getMessage());
                 }
             }
         }
