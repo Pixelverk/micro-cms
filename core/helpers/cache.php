@@ -1,0 +1,49 @@
+<?php
+declare(strict_types=1);
+
+/*
+|--------------------------------------------------------------------------
+| Cache Invalidation Helpers
+|--------------------------------------------------------------------------
+|
+| Usage:
+| - invalidate_cache();          // Clear all cached pages
+| - invalidate_cache('/about'); // Clear one page by path
+|
+*/
+
+function invalidate_cache(string $path = '', string $type = ''): void
+{
+    // If path is empty, delete all cache files
+    if ($path === '/' || $path === '') {
+        $files = glob(STORAGE_PATH . '/cache/*.html');
+        if ($files) {
+            foreach ($files as $file) {
+                @unlink($file);
+            }
+        }
+        return;
+    }
+
+    // check for prefix
+    $settings = load_settings();
+    $prefixes = $settings['content_prefixes'] ?? [];
+    $prefix = $prefixes[$type] ?? '';
+    $cachePath = $prefix ? "{$prefix}/{$path}" : $path;
+
+    // Sanitize path into cache filename
+    $key = trim($cachePath, '/') ?: 'home';
+    $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
+
+    if (file_exists($cacheFile)) {
+        @unlink($cacheFile);
+    }
+}
+
+function minify_html(string $html): string {
+    // Remove newlines, tabs, multiple spaces
+    $html = preg_replace('/\s+/', ' ', $html);
+    // Remove spaces between tags
+    $html = preg_replace('/>\s+</', '><', $html);
+    return trim($html);
+}

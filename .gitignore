@@ -1,0 +1,22 @@
+# Ignore the very safe json storage
+/storage/**
+
+# Ignore local notes and reference files
+notes*
+reference*
+
+# Build outputs or temp files
+*.log
+*.tmp
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+*.swp
+
+copilot_plan.md
+to-do.txt

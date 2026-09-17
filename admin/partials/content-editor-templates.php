@@ -1,0 +1,122 @@
+<!-- Component container -->
+<template id="component-template">
+    <fieldset class="component">
+        <details>
+            <summary class="component-title"></summary>
+            <!-- <legend class="component-title text-small"></legend> -->
+
+            <input type="hidden" class="component-type">
+
+            <div class="component-fields"></div>
+
+            <div class="children-container flex gap-lg"></div>
+
+            <div class="component-actions">
+                <div class="actions-left">
+                    <select class="allowed-children-select" name="allowed-children-select">
+                        <option value=""><?= e(admin_trans('child_component')) ?></option>
+                    </select>
+                    <p class="no-children text-small"><?= e(admin_trans('no_child_components')) ?></p>
+                    <button type="button" class="add-child-btn"><?= e(admin_trans('add')) ?></button>
+                </div>
+                <div class="actions-right">
+                    <button type="button" class="move-up">&#8593;</button>
+                    <button type="button" class="move-down">&#8595;</button>
+                    <button type="button" class="duplicate-btn">&#9868;</button>
+                    <button type="button" class="remove-btn">&#33;</button>
+                </div>
+            </div>
+        </details>
+    </fieldset>
+</template>
+
+<!-- Text input field (default) -->
+<template id="field-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <input class="field-input" type="text">
+    </label>
+</template>
+
+<!-- Textarea input field -->
+<template id="textarea-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <textarea class="field-input"></textarea>
+    </label>
+</template>
+
+<!-- Number field -->
+<template id="number-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <input class="field-input" type="number">
+    </label>
+</template>
+
+<!-- Color picker -->
+<template id="color-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <input class="field-input" type="color">
+    </label>
+</template>
+
+<!-- Checkbox -->
+<template id="checkbox-template">
+    <label class="field">
+        <input class="field-input" type="checkbox">
+        <span class="field-label"></span>
+    </label>
+</template>
+
+<!-- URL -->
+<template id="url-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <input class="field-input" type="url">
+    </label>
+</template>
+
+<!-- Email -->
+<template id="email-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <input class="field-input" type="email">
+    </label>
+</template>
+
+<!-- Quill Editor -->
+<template id="quill-editor-template">
+    <div class="field">
+        <span class="field-label"></span>
+        <input type="hidden" class="field-input quill-hidden">  <!-- the actual thing submitted with form -->
+        <div class="quill-editor">JS will put the editor here</div> <!-- the visual input for the user -->
+    </div>
+</template>
+
+<!-- Select dropdown -->
+<template id="select-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <select class="field-input"></select>
+    </label>
+</template>
+
+<!-- Image picker field -->
+<template id="image-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <div class="image-picker-wrapper">
+            <!-- Hidden input stores the DB ID of the selected media -->
+            <input type="hidden" class="field-input" data-image-picker>
+
+            <!-- Preview image -->
+            <img class="image-preview" src="" alt="No image selected"
+                 style="width:auto; max-height:140px; object-fit:cover; display:block; margin-bottom:.5rem; cursor:pointer;">
+
+            <!-- Button to open modal -->
+            <button type="button" class="select-image-btn">Select Image</button>
+        </div>
+    </label>
+</template>
