@@ -66,6 +66,14 @@ function route_request($path): array
         exit;
     }
 
+    // robots.txt (virtual, so there is no file to deploy or keep writable)
+    if ($path === 'robots.txt') {
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        echo robots_txt();
+        exit;
+    }
+
     // Search results (query-driven, never cached or indexed)
     if ($path === 'search') {
         return route_search_request();

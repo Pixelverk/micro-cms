@@ -178,6 +178,8 @@ return [
     'Raw code inserted before </head> on every public page, for analytics snippets. Not sanitised — administrators only.' => 'Rå kod som infogas före </head> på varje publik sida, till exempel analysskript. Saneras inte — endast administratörer.',
     'Footer scripts' => 'Skript i sidfot',
     'Raw code inserted before </body> on every public page, for analytics snippets. Not sanitised — administrators only.' => 'Rå kod som infogas före </body> på varje publik sida, till exempel analysskript. Saneras inte — endast administratörer.',
+    'robots.txt extra lines' => 'Extra rader i robots.txt',
+    'Appended to the generated robots.txt, one rule per line. Leave blank to allow everything. The User-agent, Allow and Sitemap lines are always written for you.' => 'Läggs till i den genererade robots.txt, en regel per rad. Lämna tomt för att tillåta allt. Raderna User-agent, Allow och Sitemap skrivs alltid åt dig.',
     'edit_navigation_menu' => 'Redigera navigeringsmenyn',
     'save_menu' => 'Spara meny',
     'menu_location' => 'Menyposition',

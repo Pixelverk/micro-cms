@@ -69,6 +69,12 @@ $settingFields = [
         'help'    => 'Default site handle for Twitter cards, e.g. @example.',
         'default' => '',
     ],
+    'robots_extra' => [
+        'type'    => 'textarea',
+        'label'   => 'robots.txt extra lines',
+        'help'    => 'Appended to the generated robots.txt, one rule per line. Leave blank to allow everything. The User-agent, Allow and Sitemap lines are always written for you.',
+        'default' => '',
+    ],
     'admin_default_language' => [
         'type'    => 'select',
         'label'   => 'Default admin language',

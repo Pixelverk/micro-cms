@@ -7,22 +7,14 @@ problem that exists today, and can it be done with what is already here
 and Squarespace, but their weight does not.
 
 Completed work (header/footer scripts, cache warm-up + static export, built-in
-analytics, multi-language admin) has been removed. The multi-language front
-end stays as a deferred design.
+analytics, multi-language admin, redirects, trash, site health, virtual
+robots.txt) has been removed. The multi-language front end stays as a deferred
+design.
 
 ## Next up
 
-### 1. robots.txt
-
-**Why:** there is no route for it, so crawlers never discover the sitemap.
-WordPress serves a virtual robots.txt.
-
-**Sketch:** `/robots.txt` with sensible defaults (`Allow: /` and the absolute
-`Sitemap:` line) plus a Settings textarea for extra lines, administrators only.
-
-**Effort:** S.
-
-**Verify:** `text/plain`, absolute sitemap URL, custom lines rendered.
+Nothing is queued here. The Later list below is the backlog, roughly in value
+order; the publish webhook (12) is the one most likely to matter next.
 
 ## Later
 

@@ -225,6 +225,36 @@ t('a redirect answers with 301 and its target', function () use ($base) {
     redirect_delete($id);
 });
 
+t('robots.txt is generated with an absolute sitemap line and custom rules', function () use ($base) {
+    save_settings(['robots_extra' => "Disallow: /private/\r\nDisallow: /drafts/"]);
+
+    [$status, $body, $headers] = http('GET', $base . '/robots.txt', false);
+
+    assert_eq(200, $status);
+    assert_contains('Content-Type: text/plain', $headers, 'served as plain text');
+    assert_contains('User-agent: *', $body);
+    assert_contains('Allow: /', $body);
+    assert_contains('Sitemap: ' . $base . '/sitemap.xml', $body, 'the sitemap line is absolute');
+    assert_contains("Disallow: /private/\nDisallow: /drafts/", $body, 'extra lines are appended, CRLF normalised');
+    assert_not_contains('<html', $body, 'no page shell leaks in');
+    assert_false(is_file(cache_file_for('/robots.txt')), 'robots.txt is never written to the HTML cache');
+
+    // Clearing the setting takes the extra lines away again.
+    save_settings(['robots_extra' => '']);
+
+    [, $plain] = http('GET', $base . '/robots.txt', false);
+    assert_not_contains('Disallow', $plain, 'the default body is unchanged');
+});
+
+t('a redirect cannot capture the robots.txt route', function () use ($base) {
+    // The admin refuses reserved paths, and the route answers regardless.
+    assert_true(redirect_is_reserved('robots.txt'), 'robots.txt is reserved');
+
+    [$status, $body] = http('GET', $base . '/robots.txt', false);
+    assert_eq(200, $status);
+    assert_contains('User-agent: *', $body);
+});
+
 t('the analytics refresh ingests buffered views', function () use ($base) {
     db()->exec("DELETE FROM page_views");
     @unlink(analytics_buffer_path());

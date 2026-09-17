@@ -180,6 +180,7 @@ function docs_content(): array
                         'activity.retention_days' => 'How long audit entries are kept.',
                         'versions.keep' => 'How many versions of each item to keep.',
                         'trash.retention_days' => 'How long a trashed item is kept before it is purged.',
+                        'robots_extra' => 'Extra lines appended to the generated robots.txt.',
                     ]],
                 ],
                 'Analytics' => [
@@ -189,6 +190,9 @@ function docs_content(): array
                 ],
                 'Redirects' => [
                     ['p' => 'Redirects keep old URLs working. Add one when a page moves, or use the recent-404s list to catch links that are already broken. Saving a redirect clears its cached page, so it applies immediately.'],
+                ],
+                'robots.txt' => [
+                    ['p' => '/robots.txt is generated rather than stored, so it cannot go stale: it allows every crawler and points at the sitemap on the address set in Site URL. Add your own rules under Settings and they are appended exactly as written, which is where Disallow lines belong.'],
                 ],
                 'Site health' => [
                     ['p' => 'The health page checks PHP and its extensions, that storage is writable, that the schema is current and that production settings are safe. It only reads; fix what it flags before it turns into a blank page or a silently uncached site.'],

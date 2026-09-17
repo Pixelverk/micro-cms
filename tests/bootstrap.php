@@ -57,6 +57,7 @@ require CORE_PATH . '/helpers/settings.php';
 require CORE_PATH . '/helpers/content.php';
 require CORE_PATH . '/helpers/menus.php';
 require CORE_PATH . '/helpers/sitemap.php';
+require CORE_PATH . '/helpers/robots.php';
 require CORE_PATH . '/helpers/publishing.php';
 require CORE_PATH . '/helpers/versions.php';
 require CORE_PATH . '/helpers/search.php';

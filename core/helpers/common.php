@@ -112,6 +112,7 @@ function bootstrap_core(bool $withContent = true): void
     require_once CORE_PATH . '/helpers/admin.php';
     require_once CORE_PATH . '/helpers/icons.php';
     require_once CORE_PATH . '/helpers/sitemap.php';
+    require_once CORE_PATH . '/helpers/robots.php';
     require_once CORE_PATH . '/helpers/csrf.php';
     require_once CORE_PATH . '/helpers/validate.php';
     require_once CORE_PATH . '/helpers/throttle.php';

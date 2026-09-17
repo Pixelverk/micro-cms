@@ -50,7 +50,7 @@ function redirect_normalize_path(string $path): string
  */
 function redirect_reserved_paths(): array
 {
-    return ['admin', 'media', 'search', 'form-submit', 'form-token', 'sitemap.xml'];
+    return ['admin', 'media', 'search', 'form-submit', 'form-token', 'sitemap.xml', 'robots.txt'];
 }
 
 function redirect_is_reserved(string $path): bool

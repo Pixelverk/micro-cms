@@ -34,6 +34,7 @@ t('paths are normalised and reserved routes are refused', function () {
     assert_true(redirect_is_reserved('/admin/settings'));
     assert_true(redirect_is_reserved('media/logo.png'));
     assert_true(redirect_is_reserved('search'));
+    assert_true(redirect_is_reserved('robots.txt'));
     assert_false(redirect_is_reserved('old/page'));
 });
 
