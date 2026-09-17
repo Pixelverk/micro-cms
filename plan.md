@@ -61,9 +61,10 @@ Follow-up: the table has no pruning yet.
 
 ### 4. Multi-language front end
 
-The plan says to **document the intended path and defer the code**. The design:
-a translations table keyed by `(content_id, locale)` plus `settings['locales']`,
-with the router resolving a locale prefix.
+**Status: documented, code deferred.** The intended path is in
+[`multilanguage-plan.md`](multilanguage-plan.md): a `content_translations`
+table keyed by `(content_id, locale)`, a `settings['locales']` list, and a
+router that resolves a locale prefix while default-locale URLs stay unchanged.
 
 ### 5. Multi-language admin
 

@@ -128,7 +128,7 @@ Demo account:
 
 The backlog lives in [`plan.md`](plan.md). Current entries:
 
-* Multi-language front end (intended path documented, code deferred)
+* Multi-language front end — intended path documented in [`multilanguage-plan.md`](multilanguage-plan.md)
 
 ### Maybe
 
