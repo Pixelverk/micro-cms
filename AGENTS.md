@@ -1,0 +1,160 @@
+# AGENTS.md
+
+Project-specific guidance for this repo. The general instructions still apply;
+this file only records what is true *here*.
+
+## What this is
+
+A procedural PHP CMS. No classes, no composer, no framework, no build step, no
+bundler, no CDN, no ORM. Apache routes everything through `index.php`; the
+front end renders database content through theme components and layouts, and
+`admin/` is a separate server-rendered admin area.
+
+Editors manage content. Design and structure live in `theme/`.
+
+## Plan of record
+
+Current ideas for tasks and phases are listed in `plan.md`. Other variations containing the word 'plan' may also appear in the root folder.
+
+## Commands
+
+```bash
+# Whole suite (each test file runs in its own PHP process)
+php tests/run.php
+
+# One or more suites (matches test filenames)
+php tests/run.php content
+php tests/run.php csrf
+
+# Local site, using the built-in server (php -S ignores .htaccess)
+CMS_CONFIG_FILE="$PWD/tests/config.server.php" \
+  php -S 127.0.0.1:8080 tests/router.php
+```
+
+There is no linter, formatter, or asset build. Do not introduce one.
+
+Target runtime is PHP 8.0+ on Apache shared hosting. Local dev currently runs
+PHP 8.5 with `pdo_sqlite` and `imagick`; `zip` is **not** installed.
+`pdo_sqlite` and `imagick` are real requirements — image variants and LQIP
+generation depend on Imagick.
+
+First run: `config.php` with `setup_completed => false` seeds the schema and
+demo content into `storage/` on the next request. Demo login is `demo` / `demo`.
+
+## Where things are
+
+| Path | Role |
+| --- | --- |
+| `index.php` | Single front controller: installer check, then media / admin / front |
+| `core/helpers/*.php` | All shared functions, loaded once by `bootstrap_core()` |
+| `core/render.php` | Layout + component rendering, `<head>` assembly, minify in production |
+| `core/router.php` | Front-end routing, admin dispatch, redirect helpers |
+| `core/bootstrap/{front,admin,media}.php` | Per-entry-point bootstraps |
+| `core/components/` | Fallback components; `sample-component.php` documents the contract |
+| `admin/` | One file per page, or `<dir>/index.php`; wrapped by `admin/partials/layout.php` |
+| `theme/theme.php` | Manifest: layouts, headers/footers, content types, form types, styles, scripts |
+| `theme/components/`, `theme/layouts/` | The active theme |
+| `tests/` | Dependency-free harness; `tests/README.md` explains isolation |
+| `storage/` | SQLite DB, cache, logs, sessions, media, sitemap (gitignored) |
+
+## Request flow
+
+1. `index.php` defines `CMS_PATH`, `CORE_PATH`, `STORAGE_PATH` and loads config
+   (`CMS_CONFIG_FILE` env var can point elsewhere).
+2. First-run installer runs when `setup_completed` is false or the DB is
+   unusable.
+3. `/media`, `/admin`, and front-end requests take their own bootstrap.
+4. The front path boots the session, runs `migrate_before_read()`, checks the
+   HTML cache, then renders fresh.
+
+Cache rules (`core/bootstrap/front.php`): only anonymous, non-preview GETs of
+published 200 pages are written to `storage/cache/`; cached HTML is never served
+to a signed-in user, and search/taxonomy views are never cached.
+
+Every admin POST is CSRF-checked centrally in `core/bootstrap/admin.php`. The
+login form is the only exception.
+
+## Conventions the test suite enforces
+
+These are checked by `tests/design.test.php`; a change that breaks one fails the suite:
+
+* Every `admin_trans()` key exists in **both** `admin/lang/en.php` and
+  `admin/lang/sv.php`.
+* No inline `<style>` blocks in the admin UI.
+* Every CSS class used in admin markup exists in `admin/assets/style.css`.
+* Every admin page that includes `admin/partials/layout.php` sets `$pageHelp`.
+
+Beyond what tests check:
+
+* Escape all output with `e()`. Raw HTML is only ever deliberate (component and
+  layout render bodies).
+* All functions are global; there is no namespace or autoloader. Give new
+  helpers a distinct, prefixed name.
+* Match the surrounding file's style. Most files start with
+  `declare(strict_types=1);`.
+
+## Common changes
+
+### Add a theme component
+
+`theme/components/<name>.php` returns an array with `label`, `schema`,
+`children` (`'any'` | `'none'` | `'some'`), `allowed_children`, `css`, `js`,
+and `render`. Add the name to `theme.php` under the relevant
+`content_types[...]['available_components']`. Schema input types are listed in
+`admin/partials/content-editor-templates.php`. `core/components/` is the
+fallback when the theme has no file of that name.
+
+Component CSS/JS is collected per request, de-duplicated by component name, and
+injected after the theme stylesheets. If you edit a theme stylesheet or script,
+bump its `?v=` counter in `theme.php` (admin assets are stamped automatically
+with `admin_asset()`).
+
+### Add a schema migration
+
+Add a keyed closure to `migrate_registry()` in `core/helpers/migrate.php`,
+**and** make the same change in `core/helpers/setup.php`. Fresh installs never
+run migrations, so setup.php is the schema source of truth. Migrations must be
+idempotent; a marker file (`storage/.migrations`) skips the registry when it is
+current.
+
+### Add an admin page
+
+Create `admin/<page>.php` (or `admin/<page>/index.php`) — paths must be
+lowercase `[a-z0-9/-]`. If the page needs more than "signed in", add its
+capability to `admin_page_capabilities()` in `core/helpers/admin.php` and gate
+actions with `require_capability()`. Add navigation in
+`admin/partials/sidebar.php`, strings to both language files, and a `$pageHelp`
+block before including the layout.
+
+## Gotchas
+
+* **Cache invalidation.** Any write path that changes public output must call
+  `invalidate_cache()`. `save_content()`, `save_setting()`, menu saves and the
+  utilities page already do.
+* **`url()` reads the global `$config`**, not `config()`. `index.php` sets it;
+  a new entry point that skips that line will silently ignore `config['url']`
+  (subfolder deployments). Prefer `config()` for new config reads.
+* **Preview is token-based.** Merely being signed in must not change what a URL
+  returns — only `?preview=<token>` with the matching `cms_preview` cookie
+  relaxes visibility and disables caching.
+* **`.htaccess` is the routing contract**: `core/` and `storage/` are blocked,
+  direct files under `admin/`/`theme/` are blocked except `*/assets/`,
+  everything else goes through `index.php`. `php -S` needs `tests/router.php`.
+* **HTML minification** only runs when `config('env') === 'production'`;
+  component JS is collected and wrapped in a `DOMContentLoaded` handler.
+* `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session
+  timeout, security policy, `cache_lifetime`, the `blocks` feature flag, and
+  activity-log retention.
+
+## Verification bar
+
+Run `php tests/run.php` before calling anything done — it must pass (198
+assertions when this file was written). Add or extend a `tests/<name>.test.php`
+suite for new behavior; `tests/README.md` shows the three-line pattern and
+`tests/helpers.php` has the assertions.
+
+Tests never touch `storage/`: `tests/bootstrap.php` refuses to run if the test
+storage resolves inside it, and every artefact lands in `tests/.tmp/`.
+
+Anything the suite cannot check — theme CSS/JS, admin layout, rendered markup —
+verify through the local server above rather than assuming it works.

@@ -1,15 +1,3 @@
-# Potential to-do
-
-Work that is in scope but not built. Nothing here is a commitment — it is a
-parking lot so nothing gets lost.
-
-All mandatory phases (1–13) are complete, with the full suite passing. Phase 14
-is optional by design and is entirely unbuilt.
-
----
-
-## Phase 14 — optional extensions (not started)
-
 ### 1. Header/footer scripts in settings
 
 Your `README.md` lists this under "Planned" as *"Header/footer JS input in
@@ -61,9 +49,7 @@ with the router resolving a locale prefix.
 
 ### 5. Multi-language admin
 
-Effectively done. `en` and `sv` ship for every admin string added in Phases
-1–13, and `tests/design.test.php` plus the bulk/docs additions keep new strings
-from going missing. Nothing to do beyond keeping it up.
+Effectively done. `en` and `sv` ship for every admin string added, and `tests/design.test.php` plus the bulk/docs additions keep new strings from going missing. Nothing to do beyond keeping it up.
 
 ### 6. Live preview in the content editor
 
