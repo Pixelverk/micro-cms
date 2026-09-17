@@ -125,6 +125,7 @@ function bootstrap_core(bool $withContent = true): void
         require_once CORE_PATH . '/helpers/publishing.php';
         require_once CORE_PATH . '/helpers/versions.php';
         require_once CORE_PATH . '/helpers/search.php';
+        require_once CORE_PATH . '/helpers/export.php';
     }
 
     require_once CORE_PATH . '/db.php';

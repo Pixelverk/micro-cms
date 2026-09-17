@@ -117,10 +117,6 @@ function serveFresh($request)
         && !$isArchivePage
         && !$isQueryView
     ) {
-        $cacheFile = cache_file_for($request);
-        $temp = $cacheFile . '.tmp';
-
-        file_put_contents($temp, $response['body']);
-        rename($temp, $cacheFile);
+        cache_write($request, $response['body']);
     }
 }

@@ -180,6 +180,8 @@ function docs_content(): array
                 'Maintenance' => [
                     ['ul' => [
                         'Utilities → Clear Cache: removes all cached pages.',
+                        'Utilities → Warm Cache: renders every published page into the cache.',
+                        'Utilities → Export Static Site: downloads the cached pages, theme assets and media as a zip (needs the PHP zip extension).',
                         'Utilities → Regenerate Sitemap: rebuilds sitemap.xml.',
                         'Utilities → Publish Due Content: publishes anything past its scheduled time.',
                         'Utilities → Run Migrations: applies schema updates after upgrading the code.',

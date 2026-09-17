@@ -66,6 +66,7 @@ The componentName.php basically decides:
 * PHP 8.0 or higher
 * PDO module (for using SQLite)
 * Imagick module (for image conversions)
+* Zip extension (`ZipArchive`) to export a static site
 * File write permissions for `storage/`
 * Apache for `.htaccess` rules and rewriting requests to `index.php`.
 
@@ -117,7 +118,8 @@ Demo account:
 * HTML page cache, minified in production
 * Contact and newsletter forms with email sendout, rate limiting and a submissions inbox
 * Bulk actions on the content list
-* Utilities page: clear cache, regenerate sitemap, publish due content, run migrations
+* Utilities page: clear or warm the cache, regenerate sitemap, publish due content, run migrations
+* Static-site export: download the cached pages, theme assets and media as a zip
 * In-app documentation for editors and theme developers
 * Admin interface in English and Swedish
 
@@ -125,7 +127,6 @@ Demo account:
 
 The backlog lives in [`plan.md`](plan.md). Current entries:
 
-* Cache warm-up and static-site export
 * Built-in analytics — `admin/analytics.php` is a placeholder today
 * Multi-language front end (intended path documented, code deferred)
 

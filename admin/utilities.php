@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -25,6 +25,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 log_activity('utility.cache_cleared', 'utility', null, 'Cleared all cached pages', []);
                 $message = "✅ Cache cleared successfully!";
                 break;
+
+            case 'warm_cache':
+                $result = warm_cache();
+                log_activity('utility.cache_warmed', 'utility', null, $result['rendered'] . ' page(s)', $result);
+                $message = '✅ Warmed ' . $result['rendered'] . ' page(s).';
+
+                if ($result['failed']) {
+                    $toastType = 'error';
+                    $message  .= ' ⚠️ Could not render: ' . implode(', ', $result['failed']) . '.';
+                }
+                break;
+
+            case 'export_static':
+                try {
+                    $archive = export_static_site();
+                } catch (Throwable $exception) {
+                    redirect_with_toast('utilities', 'error', $exception->getMessage());
+                }
+
+                log_activity('utility.static_export', 'utility', null, basename($archive), ['bytes' => filesize($archive)]);
+
+                // Stream the archive and discard it; a POST body is the one
+                // response the browser can save without a download endpoint.
+                header('Content-Type: application/zip');
+                header('Content-Disposition: attachment; filename="static-site.zip"');
+                header('Content-Length: ' . filesize($archive));
+                readfile($archive);
+                @unlink($archive);
+                exit;
 
             case 'regenerate_sitemap':
                 save_sitemap();
@@ -85,6 +114,29 @@ ob_start();
     </div>
 
     <div class="utility-action">
+        <h3>Warm Cache</h3>
+        <p>Render and cache every published page now, so the first visitor does not pay the render cost after a bulk edit.</p>
+        <button type="button" data-action="warm_cache" class="btn btn-secondary">
+            Warm Cache
+        </button>
+    </div>
+
+    <div class="utility-action">
+        <h3>Export Static Site</h3>
+        <p>Download a zip of the cached pages, the theme assets and the media library, with asset and media URLs rewritten relative so the pages need no PHP.</p>
+        <?php if (class_exists('ZipArchive')): ?>
+            <button type="button" data-action="export_static" class="btn btn-info">
+                Export Static Site
+            </button>
+        <?php else: ?>
+            <p class="text-muted text-small">Requires the PHP zip extension (ZipArchive).</p>
+            <button type="button" class="btn btn-muted" disabled>
+                Export Static Site
+            </button>
+        <?php endif; ?>
+    </div>
+
+    <div class="utility-action">
         <h3>Regenerate Sitemap</h3>
         <p>Rebuild the sitemap.xml file to ensure search engines have the latest URLs from your site.</p>
         <button type="button" data-action="regenerate_sitemap" class="btn btn-info">
@@ -118,6 +170,8 @@ const actionInput = document.getElementById('utility-action-input');
 
 const confirmations = {
     clear_cache: 'Are you sure you want to clear the cache?',
+    warm_cache: 'Render and cache every published page?',
+    export_static: 'Warm the cache and download a static copy of the site?',
     regenerate_sitemap: 'Are you sure you want to regenerate the sitemap.xml?',
     publish_due: 'Publish every scheduled item that is due?',
     run_migrations: 'Apply any pending database migrations?'

@@ -53,6 +53,31 @@ function invalidate_cache(string $path = '', string $type = ''): void
     }
 }
 
+/**
+ * Write rendered HTML to the page cache for a request path.
+ *
+ * Written to a temporary file and renamed, so a visitor never reads a
+ * half-written page. Shared by the front-end cache write and cache warm-up.
+ *
+ * @return bool false when the cache directory is not writable.
+ */
+function cache_write(string $request, string $html): bool
+{
+    $file = cache_file_for($request);
+    $temp = $file . '.tmp';
+
+    if (file_put_contents($temp, $html) === false) {
+        return false;
+    }
+
+    if (!rename($temp, $file)) {
+        @unlink($temp);
+        return false;
+    }
+
+    return true;
+}
+
 function minify_html(string $html): string {
     // Collapse whitespace everywhere except inside elements where it is
     // significant, so inline scripts and preformatted text survive intact.

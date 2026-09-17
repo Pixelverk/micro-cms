@@ -21,6 +21,11 @@ settings, for google analytics script"*.
 
 ### 2. Cache warm-up and static export
 
+**Status: implemented.** Utilities gains "Warm Cache" and "Export Static Site".
+The export writes pages as `<path>/index.html` and rewrites theme/media URLs
+relative to each page, and refuses with a clear message when `ZipArchive` is
+missing (it is not installed in local dev).
+
 Two Utilities buttons.
 
 * **Warm cache for all published pages** — iterate published content, render each
