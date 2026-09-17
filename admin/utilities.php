@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'reset_analytics', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -24,6 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 invalidate_cache();
                 log_activity('utility.cache_cleared', 'utility', null, 'Cleared all cached pages', []);
                 $message = "✅ Cache cleared successfully!";
+                break;
+
+            case 'reset_analytics':
+                $removed = analytics_clear();
+                log_activity('utility.analytics_reset', 'utility', null, $removed . ' page view(s)', []);
+                $message = '✅ Analytics reset — ' . $removed . ' page view(s) removed.';
                 break;
 
             case 'warm_cache':
@@ -114,6 +120,14 @@ ob_start();
     </div>
 
     <div class="utility-action">
+        <h3>Reset Analytics</h3>
+        <p>Delete every recorded page view. Use this when you want the reports to start counting from now.</p>
+        <button type="button" data-action="reset_analytics" class="btn btn-danger">
+            Reset Analytics
+        </button>
+    </div>
+
+    <div class="utility-action">
         <h3>Warm Cache</h3>
         <p>Render and cache every published page now, so the first visitor does not pay the render cost after a bulk edit.</p>
         <button type="button" data-action="warm_cache" class="btn btn-secondary">
@@ -170,6 +184,7 @@ const actionInput = document.getElementById('utility-action-input');
 
 const confirmations = {
     clear_cache: 'Are you sure you want to clear the cache?',
+    reset_analytics: 'Delete all recorded page views? This cannot be undone.',
     warm_cache: 'Render and cache every published page?',
     export_static: 'Warm the cache and download a static copy of the site?',
     regenerate_sitemap: 'Are you sure you want to regenerate the sitemap.xml?',

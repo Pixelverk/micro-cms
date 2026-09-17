@@ -543,6 +543,40 @@ button:disabled {
     font-weight: 500;
 }
 
+/* Analytics: metric tiles and the inline SVG sparkline. */
+.stat-card h2 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.stat-card p {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.sparkline {
+    display: block;
+    width: 100%;
+    max-width: 16rem;
+    height: auto;
+    margin-top: 0.75rem;
+}
+
+.sparkline polyline {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+}
+
+/* Period-over-period comparison under a metric. */
+.stat-card .stat-change {
+    margin-top: 0.35rem;
+}
+
+.stat-card .delta-up { color: #15803d; }
+.stat-card .delta-down { color: var(--danger); }
+
 /* A plain panel for forms and tools. */
 .form-card,
 .utility-action {

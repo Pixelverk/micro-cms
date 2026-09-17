@@ -177,9 +177,15 @@ function docs_content(): array
                         'versions.keep' => 'How many versions of each item to keep.',
                     ]],
                 ],
+                'Analytics' => [
+                    ['p' => 'Reports → Analytics shows page views from the public site: views, unique visitors and the share served from the HTML cache, each compared with the period before it.'],
+                    ['p' => 'Switch the range between 30 days, 6 months and 1 year. The chart, top pages and top referrers all follow it.'],
+                    ['p' => 'Bot traffic is not counted. No IP addresses are stored; visitors are only counted through a hash that changes every day.'],
+                ],
                 'Maintenance' => [
                     ['ul' => [
                         'Utilities → Clear Cache: removes all cached pages.',
+                        'Utilities → Reset Analytics: deletes all recorded page views.',
                         'Utilities → Warm Cache: renders every published page into the cache.',
                         'Utilities → Export Static Site: downloads the cached pages, theme assets and media as a zip (needs the PHP zip extension).',
                         'Utilities → Regenerate Sitemap: rebuilds sitemap.xml.',

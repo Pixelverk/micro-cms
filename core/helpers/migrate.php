@@ -150,6 +150,32 @@ function migrate_registry(): array
             $pdo->exec("UPDATE content SET search_text = title WHERE search_text IS NULL OR search_text = ''");
         },
 
+        // Traffic counting (see core/helpers/analytics.php).
+        '2026_09_17_000010_page_views' => function (PDO $pdo): void {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS page_views (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    path TEXT NOT NULL,
+                    content_id INTEGER NULL,
+                    referrer_host TEXT NULL,
+                    ua_hash TEXT NULL,
+                    visitor_hash TEXT NOT NULL,
+                    is_bot INTEGER NOT NULL DEFAULT 0,
+                    viewed_at INTEGER NOT NULL
+                )
+            ");
+
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_time ON page_views (viewed_at)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views (path, viewed_at)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_visitor ON page_views (visitor_hash, viewed_at)");
+        },
+
+        // How each view was served, so the cache-hit ratio comes from the
+        // views themselves instead of the optional perf.log.
+        '2026_09_17_000011_page_views_cache_hit' => function (PDO $pdo): void {
+            migrate_add_column($pdo, 'page_views', 'cache_hit', 'INTEGER NOT NULL DEFAULT 0');
+        },
+
     ];
 }
 

@@ -112,13 +112,14 @@ Demo account:
 * Token-based preview of unpublished content
 * Content version history with restore
 * Activity log (audit trail) with configurable retention
+* Built-in analytics: page views, unique visitors, top pages and referrers, cache-hit ratio (no IPs stored)
 * Front-end search over titles and body text
 * SEO metadata: description, canonical, Open Graph, Twitter, JSON-LD
 * XML sitemap generator
 * HTML page cache, minified in production
 * Contact and newsletter forms with email sendout, rate limiting and a submissions inbox
 * Bulk actions on the content list
-* Utilities page: clear or warm the cache, regenerate sitemap, publish due content, run migrations
+* Utilities page: clear or warm the cache, reset analytics, regenerate sitemap, publish due content, run migrations
 * Static-site export: download the cached pages, theme assets and media as a zip
 * In-app documentation for editors and theme developers
 * Admin interface in English and Swedish
@@ -127,7 +128,6 @@ Demo account:
 
 The backlog lives in [`plan.md`](plan.md). Current entries:
 
-* Built-in analytics — `admin/analytics.php` is a placeholder today
 * Multi-language front end (intended path documented, code deferred)
 
 ### Maybe

@@ -100,6 +100,26 @@ CREATE TABLE activity_log (
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log (created_at DESC)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_object ON activity_log (object_type, object_id)");
 
+// Traffic counting. No IP addresses are stored; the only visitor-level value
+// is a per-day hash (see core/helpers/analytics.php).
+$pdo->exec("
+CREATE TABLE page_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    path TEXT NOT NULL,
+    content_id INTEGER NULL,
+    referrer_host TEXT NULL,
+    ua_hash TEXT NULL,
+    visitor_hash TEXT NOT NULL,
+    is_bot INTEGER NOT NULL DEFAULT 0,
+    cache_hit INTEGER NOT NULL DEFAULT 0,
+    viewed_at INTEGER NOT NULL
+);
+");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_time ON page_views (viewed_at)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views (path, viewed_at)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_visitor ON page_views (visitor_hash, viewed_at)");
+
 $pdo->exec("
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -69,6 +69,10 @@ function serveCached($file, $config)
     header('Cache-Control: public, max-age=' . $config['cache_lifetime']);
     header('X-Cache: HIT');
     echo file_get_contents($file);
+
+    // Cache hits are the common case, so they count as views too. checkCache()
+    // has already ruled out signed-in and preview requests.
+    analytics_record_view(null, true);
 }
 
 function serveFresh($request)
@@ -118,5 +122,15 @@ function serveFresh($request)
         && !$isQueryView
     ) {
         cache_write($request, $response['body']);
+    }
+
+    // Traffic counting is deferred to a shutdown write. Signed-in users and
+    // token previews are not visitor traffic.
+    if ($_SERVER['REQUEST_METHOD'] === 'GET'
+        && ($response['status'] ?? 200) === 200
+        && !is_logged_in()
+        && !can_preview_content()
+    ) {
+        analytics_record_view(isset($page['id']) ? (int) $page['id'] : null);
     }
 }

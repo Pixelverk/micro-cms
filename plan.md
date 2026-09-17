@@ -39,6 +39,15 @@ Two Utilities buttons.
 
 ### 3. Built-in analytics (foundation only)
 
+**Status: implemented.** `page_views` migration plus front-end counting in
+`serveFresh()`/`serveCached()` (single shutdown flush, bots flagged, no IPs),
+and `admin/analytics.php` is a real dashboard with inline SVG sparklines.
+Referrers are stored as host only, and the cache-hit ratio is recorded per
+view (`cache_hit`) rather than parsed from `perf.log`, which may be disabled.
+The dashboard has a 30-day / 6-month / 1-year range selector and compares each
+metric with the previous period of the same length.
+Follow-up: the table has no pruning yet.
+
 `admin/analytics.php` is currently a 21-line stub ("Nothing to see here yet!").
 
 * `page_views` migration: path, content id, viewed_at, referrer hash, UA hash,
