@@ -44,10 +44,6 @@ return [
 
     'cache_lifetime' => 3600, // seconds
 
-    'features' => [
-        'blocks' => true,
-    ],
-
     // How long to keep audit-log entries (see core/helpers/activity.php).
     'activity' => [
         'retention_days' => 180,

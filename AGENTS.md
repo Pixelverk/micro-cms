@@ -143,8 +143,7 @@ block before including the layout.
 * **HTML minification** only runs when `config('env') === 'production'`;
   component JS is collected and wrapped in a `DOMContentLoaded` handler.
 * `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session
-  timeout, security policy, `cache_lifetime`, the `blocks` feature flag, and
-  activity-log retention.
+  timeout, security policy, `cache_lifetime`, and activity-log retention.
 
 ## Verification bar
 

@@ -1336,17 +1336,6 @@ button.sidebar-link {
 .notice-success { border-left-color: #2e7d32; }
 .notice-info { border-left-color: var(--link); }
 
-/*   7.5 Block library */
-
-.block-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.block-toolbar select { flex: 1 1 12rem; }
-
 /*   7.6 Documentation */
 
 .docs-tabs {

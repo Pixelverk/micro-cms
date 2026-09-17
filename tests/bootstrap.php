@@ -60,7 +60,6 @@ require CORE_PATH . '/helpers/sitemap.php';
 require CORE_PATH . '/helpers/publishing.php';
 require CORE_PATH . '/helpers/versions.php';
 require CORE_PATH . '/helpers/search.php';
-require CORE_PATH . '/helpers/blocks.php';
 require CORE_PATH . '/helpers/migrate.php';
 require CORE_PATH . '/helpers/activity.php';
 require CORE_PATH . '/helpers/seo.php';

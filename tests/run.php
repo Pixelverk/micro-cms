@@ -29,7 +29,6 @@ if (!$files) {
 }
 
 $passed = 0;
-$failed = 0;
 $failures = [];
 
 foreach ($files as $file) {
@@ -39,26 +38,29 @@ foreach ($files as $file) {
     $exitCode = 0;
     exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($file) . ' 2>&1', $output, $exitCode);
 
+    $reported = false;
+
     foreach ($output as $line) {
         if (str_starts_with($line, 'PASS ')) {
             $passed++;
         } elseif (str_starts_with($line, 'FAIL ')) {
-            $failed++;
             $failures[] = $name . ' :: ' . substr($line, 5);
+            $reported = true;
         } elseif (str_starts_with($line, 'FATAL ')) {
-            $failed++;
             $failures[] = $name . ' :: ' . substr($line, 6);
+            $reported = true;
         }
     }
 
-    if ($exitCode !== 0) {
+    // A suite that dies mid-run (fatal, timeout) never prints a FAIL line, so
+    // the non-zero exit code is the only evidence. Record one failure per
+    // broken suite; the list below, not a separate counter, decides the verdict.
+    if ($exitCode !== 0 && !$reported) {
         $failures[] = $name . ' :: process exited with code ' . $exitCode;
-
-        if (empty($output)) {
-            $failed++;
-        }
     }
 }
+
+$failed = count($failures);
 
 echo "\n";
 foreach ($failures as $failure) {

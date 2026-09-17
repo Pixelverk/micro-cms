@@ -59,20 +59,6 @@ $pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_parent ON content (parent_id)
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_search ON content (search_text)");
 
 $pdo->exec("
-CREATE TABLE blocks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT NOT NULL UNIQUE,
-    label TEXT NOT NULL,
-    description TEXT NULL,
-    tree JSON NOT NULL,
-    created_by INTEGER NULL,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-);
-");
-
-
-$pdo->exec("
 CREATE TABLE content_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content_id INTEGER NOT NULL,

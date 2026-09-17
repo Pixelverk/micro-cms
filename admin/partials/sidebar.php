@@ -86,13 +86,6 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('collections')) ?></div>
 
-        <?php if (blocks_enabled()): ?>
-            <a href="<?= url('admin/block') ?>" class="sidebar-link <?= is_active('block', $currentPath) ?>" data-label="<?= e(admin_trans('block_library')) ?>">
-                <span class="sidebar-icon"><?= icon('view-grid', 20) ?></span>
-                <?= e(admin_trans('block_library')) ?>
-            </a>
-        <?php endif; ?>
-
         <a href="<?= url('admin/category') ?>" class="sidebar-link <?= is_active('category', $currentPath) ?>" data-label="Categories">
             <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
             <?= e(admin_trans('categories')) ?>

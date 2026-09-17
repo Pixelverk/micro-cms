@@ -26,15 +26,15 @@ function docs_content(): array
             'intro' => 'Everything you need to publish content, without touching code.',
             'sections' => [
                 'Getting around' => [
-                    ['p' => 'The sidebar groups the admin area: Content, Collections (categories and tags), Forms, then Menus, Media, Blocks and Reports. Anything your role cannot use is hidden.'],
+                    ['p' => 'The sidebar groups the admin area: Content, Collections (categories and tags), Forms, then Menus, Media and Reports. Anything your role cannot use is hidden.'],
                     ['p' => 'The top bar has a link to the live site, a search field, dark-mode and full-screen toggles, and your profile. The buttons at the top left collapse the sidebar or open it on a phone.'],
                 ],
                 'Creating and editing content' => [
                     ['p' => 'Open Content, choose the type (Page, Blog Post, Portfolio Item), then Add. The editor has three parts: components in the middle, details on the right, and the component palette below.'],
                     ['ul' => [
                         'Title and Slug: the slug is the URL. It is generated from the title but you can adjust it.',
-                        'Components: add from the palette, drag to reorder, duplicate or remove with the toolbar on each block.',
-                        'Nested components: some blocks accept children. Drop them into the inner area of the parent.',
+                        'Components: add from the palette, drag to reorder, duplicate or remove with the toolbar on each component.',
+                        'Nested components: some components accept children. Drop them into the inner area of the parent.',
                         'Categories and Tags: attach as many tags as you like; one category per item.',
                         'Parent: nest a page under another to build a URL like /services/consulting/.',
                     ]],
@@ -58,10 +58,6 @@ function docs_content(): array
                 'Media' => [
                     ['p' => 'Upload images, PDFs or video in Media. Give each image alt text so it is accessible and searchable.'],
                     ['p' => 'Uploads are automatically resized into several widths and converted to WebP where possible, with a JPEG or PNG fallback. Never delete a file another page still uses.'],
-                ],
-                'Reusable blocks' => [
-                    ['p' => 'A block is a saved set of components you can drop into any page. Build the section once on a page, choose Save as block, and it appears in the Saved blocks panel from then on.'],
-                    ['p' => 'Blocks are copies. Editing the block later does not change pages that already use it.'],
                 ],
                 'Search and listings' => [
                     ['p' => 'The site search covers titles and body text. Use the admin search field on the content list to find an item by title or text.'],
@@ -122,7 +118,6 @@ function docs_content(): array
                         'picture($mediaId, $attrs)' => 'Responsive <picture> element',
                         'media_url($id, $width)' => 'URL for any uploaded file',
                         'settings' => 'load_settings() / get_setting(key)',
-                        'render_block($slug, $page)' => 'Render a saved block',
                         'component($name, $props, $page)' => 'Render one component',
                     ]],
                 ],
@@ -178,7 +173,6 @@ function docs_content(): array
                         'cache_lifetime' => 'Seconds a rendered page stays cached.',
                         'security.form_secret' => 'Signs the tokens used by public forms.',
                         'security.login_max_attempts' => 'Failed logins before a lockout.',
-                        'features.blocks' => 'Enable or hide the block library.',
                         'activity.retention_days' => 'How long audit entries are kept.',
                         'versions.keep' => 'How many versions of each item to keep.',
                     ]],

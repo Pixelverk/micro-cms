@@ -150,21 +150,6 @@ function migrate_registry(): array
             $pdo->exec("UPDATE content SET search_text = title WHERE search_text IS NULL OR search_text = ''");
         },
 
-        // Reusable component blocks (Phase 11).
-        '2026_09_17_000010_blocks' => function (PDO $pdo): void {
-            $pdo->exec("
-                CREATE TABLE IF NOT EXISTS blocks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    slug TEXT NOT NULL UNIQUE,
-                    label TEXT NOT NULL,
-                    description TEXT NULL,
-                    tree JSON NOT NULL,
-                    created_by INTEGER NULL,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                )
-            ");
-        },
     ];
 }
 

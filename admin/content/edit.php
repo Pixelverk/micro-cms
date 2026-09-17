@@ -476,24 +476,6 @@ ob_start();
 
         <!-- Component list -->
         <fieldset class="card">
-          <legend><?= e(admin_trans('saved_blocks')) ?></legend>
-
-          <div class="block-toolbar">
-              <select id="block-picker" class="field-input">
-                  <option value=""><?= e(admin_trans('insert_block')) ?>…</option>
-                  <?php foreach (blocks_enabled() ? blocks_for_type($type) : [] as $blockOption): ?>
-                      <option value="<?= (int) $blockOption['id'] ?>">
-                          <?= e($blockOption['label']) ?> (<?= (int) $blockOption['component_count'] ?>)
-                      </option>
-                  <?php endforeach; ?>
-              </select>
-
-              <button type="button" id="block-insert" class="btn-small"><?= e(admin_trans('insert_block')) ?></button>
-              <button type="button" id="block-save" class="btn-small btn-muted"><?= e(admin_trans('save_as_block')) ?></button>
-          </div>
-        </fieldset>
-
-        <fieldset class="card">
           <legend>Component List</legend>
             <div id="component-palette">
                 <?php foreach (array_keys($availableComponents) as $name): ?>
@@ -511,17 +493,7 @@ ob_start();
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
 window.initialComponents   = <?= json_encode($components) ?>;
-window.contentType         = '<?= e($type) ?>';
 window.mediaImages = <?= json_encode($mediaImagesJs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>;
-window.savedBlocks = <?= json_encode(blocks_enabled() ? array_map(static function (array $block): array {
-    return [
-        'id'    => (int) $block['id'],
-        'slug'  => $block['slug'],
-        'label' => $block['label'],
-        'tree'  => is_array($block['tree'] ?? null) ? $block['tree'] : [],
-    ];
-}, blocks_for_type($type)) : [], JSON_UNESCAPED_SLASHES) ?>;
-window.blockEndpoint = <?= json_encode(url('admin/block/json')) ?>;
 window.csrfToken = <?= json_encode(csrf_token()) ?>;
 </script>
 
