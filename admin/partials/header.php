@@ -10,9 +10,32 @@ $trail = (string) preg_replace('#^admin/?#', '', $trail);
 $trail = array_values(array_filter(explode('/', $trail), 'strlen'));
 $trail = $trail === [] ? ['dashboard'] : $trail;
 
+// The breadcrumb is built from the URL, so each segment maps to its own key.
+$crumbKeys = [
+    'dashboard' => 'nav_dashboard',
+    'content'   => 'nav_content',
+    'edit'      => 'common_edit',
+    'add'       => 'common_add',
+    'versions'  => 'versions_title',
+    'media'     => 'nav_media',
+    'category'  => 'nav_categories',
+    'tag'       => 'nav_tags',
+    'user'      => 'nav_users',
+    'menu'      => 'nav_menus',
+    'messages'  => 'forms_title',
+    'analytics' => 'nav_analytics',
+    'activity'  => 'nav_activity',
+    'settings'  => 'nav_settings',
+    'utilities' => 'nav_utilities',
+    'health'    => 'nav_health',
+    'redirects' => 'nav_redirects',
+    'docs'      => 'nav_docs',
+    'profile'   => 'nav_profile',
+];
+
 $crumbs = [];
 foreach ($trail as $index => $segment) {
-    $label = admin_trans($segment);
+    $label = isset($crumbKeys[$segment]) ? admin_trans($crumbKeys[$segment]) : $segment;
 
     // Fall back to a readable form when no translation key exists.
     if ($label === $segment) {
@@ -46,7 +69,7 @@ foreach ($trail as $index => $segment) {
     <div class="header-right">
         <a href="<?= e(url('')) ?>" target="_blank" rel="noopener" id="visit-site" class="header-icon hide-text-on-mobile">
             <span><?= icon('open-in-browser', 26) ?></span>
-            <?= e(admin_trans('view_website')) ?>
+            <?= e(admin_trans('nav_view_site')) ?>
         </a>
 
         <?php include __DIR__ . '/help.php'; ?>
@@ -56,7 +79,7 @@ foreach ($trail as $index => $segment) {
         <button type="button" id="full-screen-expand" class="header-icon hide-on-mobile" aria-label="Full screen"><?= icon('expand', 26) ?></button>
         <button type="button" id="full-screen-collapse" class="header-icon hide-on-mobile" aria-label="Exit full screen"><?= icon('collapse', 26) ?></button>
 
-        <a class="hide-on-mobile" href="<?= url('admin/profile') ?>" aria-label="<?= e(admin_trans('profile')) ?>">
+        <a class="hide-on-mobile" href="<?= url('admin/profile') ?>" aria-label="<?= e(admin_trans('nav_profile')) ?>">
             <span id="user-blob" class="header-icon"><?= icon('profile-circle', 26) ?></span>
         </a>
     </div>

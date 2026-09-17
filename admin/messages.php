@@ -118,9 +118,9 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('messages')) ?></h3>
-<p><?= e(admin_trans('messages_help')) ?></p>
-<p><?= e(admin_trans('messages_email_help')) ?></p>
+<h3><?= e(admin_trans('forms_title')) ?></h3>
+<p><?= e(admin_trans('forms_help')) ?></p>
+<p><?= e(admin_trans('forms_help_email')) ?></p>
 <?php
 $pageHelp = ob_get_clean();
 $docsLink = ['tab' => 'reference', 'section' => 'form-submissions'];

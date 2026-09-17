@@ -34,7 +34,7 @@ if ($id) {
     }
 
     $category = $row;
-    $pageTitle = admin_trans('edit_category') . ': ' . $category['name'];
+    $pageTitle = admin_trans('category_edit') . ': ' . $category['name'];
 }
 
 // ----------------------------
@@ -45,7 +45,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e($id ? admin_trans('edit_category') : admin_trans('add_category_title')) ?></h2>
+        <h2><?= e($id ? admin_trans('category_edit') : admin_trans('category_add_title')) ?></h2>
     </div>
 </div>
 
@@ -57,7 +57,7 @@ ob_start();
     <?php endif; ?>
 
     <label>
-        <strong><?= e(admin_trans('name')) ?></strong>
+        <strong><?= e(admin_trans('common_name')) ?></strong>
         <input
             type="text"
             name="name"
@@ -69,7 +69,7 @@ ob_start();
     </label>
 
     <label>
-        <strong><?= e(admin_trans('slug')) ?></strong>
+        <strong><?= e(admin_trans('common_slug')) ?></strong>
         <input
             type="text"
             name="slug"
@@ -77,7 +77,7 @@ ob_start();
             value="<?= e($category['slug']) ?>"
             placeholder="news"
         >
-        <small><?= e(admin_trans('used_in_urls')) ?></small>
+        <small><?= e(admin_trans('common_used_in_urls')) ?></small>
     </label>
 
     <label>
@@ -93,21 +93,21 @@ ob_start();
     </label>
 
     <label>
-        <strong><?= e(admin_trans('description')) ?></strong>
+        <strong><?= e(admin_trans('common_description')) ?></strong>
         <textarea
             name="description"
             rows="4"
-            placeholder="<?= e(admin_trans('optional_description')) ?>"
+            placeholder="<?= e(admin_trans('common_optional_description')) ?>"
         ><?= e($category['description']) ?></textarea>
     </label>
 
     <div class="form-actions">
         <button class="btn-primary">
-            <?= e($id ? admin_trans('save_changes') : admin_trans('create_category')) ?>
+            <?= e($id ? admin_trans('common_save') : admin_trans('category_create')) ?>
         </button>
 
         <a href="<?= url('admin/category') ?>" class="btn-secondary">
-            <?= e(admin_trans('cancel')) ?>
+            <?= e(admin_trans('common_cancel')) ?>
         </a>
     </div>
 

@@ -278,14 +278,14 @@ ob_start();
                 href="<?= e(preview_url(url($slug === $settings['homepage_slug'] ? '' : $url))) ?>"
                 target="_blank"
                 title="Renders live from the database, including unpublished changes">
-                <?= e(admin_trans('preview')) ?>
+                <?= e(admin_trans('common_preview')) ?>
             </a>
 
             <?php $historyCount = count_content_versions((int) $contentData['id']); ?>
             <a class="btn-small mr-md"
                 href="<?= url('admin/content/versions') ?>?type=<?= urlencode($type) ?>&id=<?= (int) $contentData['id'] ?>"
-                title="<?= e(admin_trans('version_history_help')) ?>">
-                <?= e(admin_trans('history')) ?> (<?= (int) $historyCount ?>)
+                title="<?= e(admin_trans('versions_help')) ?>">
+                <?= e(admin_trans('versions_history')) ?> (<?= (int) $historyCount ?>)
             </a>
         <?php endif; ?>
 
@@ -383,12 +383,12 @@ ob_start();
                         }
                         ?>
                         <option value="<?= e($statusOption) ?>" <?= $status === $statusOption ? 'selected' : '' ?>>
-                            <?= e(admin_trans($statusOption)) ?>
+                            <?= e(admin_trans('status_' . $statusOption)) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
                 <?php if (!admin_can('content.publish')): ?>
-                    <small><?= e(admin_trans('author_cannot_publish')) ?></small>
+                    <small><?= e(admin_trans('editor_author_cannot_publish')) ?></small>
                 <?php endif; ?>
             </label>
 
@@ -444,10 +444,10 @@ ob_start();
 
         <!-- SEO & social -->
         <fieldset class="card">
-            <legend><?= e(admin_trans('seo_social')) ?></legend>
+            <legend><?= e(admin_trans('editor_seo')) ?></legend>
 
             <details <?= $seoHasValues ? 'open' : '' ?>>
-                <summary><?= e(admin_trans('seo_social_help')) ?></summary>
+                <summary><?= e(admin_trans('editor_seo_help')) ?></summary>
 
                 <div class="seo-fields">
                     <?php foreach (seo_editable_fields() as $key => $field): ?>
@@ -510,12 +510,12 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('content_editor')) ?></h3>
+<h3><?= e(admin_trans('editor_title')) ?></h3>
 <p><?= e(admin_trans('editor_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('editor_components_help')) ?></li>
-    <li><?= e(admin_trans('editor_status_help')) ?></li>
-    <li><?= e(admin_trans('editor_preview_help')) ?></li>
+    <li><?= e(admin_trans('editor_help_components')) ?></li>
+    <li><?= e(admin_trans('editor_help_status')) ?></li>
+    <li><?= e(admin_trans('editor_help_preview')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

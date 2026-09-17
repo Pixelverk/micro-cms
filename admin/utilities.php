@@ -275,11 +275,11 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('utilities')) ?></h3>
+<h3><?= e(admin_trans('nav_utilities')) ?></h3>
 <p><?= e(admin_trans('utilities_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('utilities_cache_help')) ?></li>
-    <li><?= e(admin_trans('utilities_migrations_help')) ?></li>
+    <li><?= e(admin_trans('utilities_help_cache')) ?></li>
+    <li><?= e(admin_trans('utilities_help_migrations')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

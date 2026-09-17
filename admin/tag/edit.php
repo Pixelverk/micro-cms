@@ -39,7 +39,7 @@ if ($id) {
     }
 
     $tag = $row;
-    $pageTitle = admin_trans('edit_tag') . ': ' . $tag['name'];
+    $pageTitle = admin_trans('tag_edit') . ': ' . $tag['name'];
 }
 
 // ----------------------------
@@ -50,7 +50,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e($id ? admin_trans('edit_tag') : admin_trans('add_tag_title')) ?></h2>
+        <h2><?= e($id ? admin_trans('tag_edit') : admin_trans('tag_add_title')) ?></h2>
     </div>
 </div>
 
@@ -63,7 +63,7 @@ ob_start();
 
     <!-- Name -->
     <label>
-        <strong><?= e(admin_trans('name')) ?></strong>
+        <strong><?= e(admin_trans('common_name')) ?></strong>
         <input
             type="text"
             name="name"
@@ -76,7 +76,7 @@ ob_start();
 
     <!-- Slug -->
     <label>
-        <strong><?= e(admin_trans('slug')) ?></strong>
+        <strong><?= e(admin_trans('common_slug')) ?></strong>
         <input
             type="text"
             name="slug"
@@ -84,7 +84,7 @@ ob_start();
             value="<?= e($tag['slug']) ?>"
             placeholder="featured"
         >
-        <small><?= e(admin_trans('used_in_urls')) ?></small>
+        <small><?= e(admin_trans('common_used_in_urls')) ?></small>
     </label>
 
     <!-- Content type -->
@@ -99,27 +99,27 @@ ob_start();
                 </option>
             <?php endforeach; ?>
         </select>
-        <small><?= e(admin_trans('tags_content_type_help')) ?></small>
+        <small><?= e(admin_trans('tag_content_type_help')) ?></small>
     </label>
 
     <!-- Description -->
     <label>
-        <strong><?= e(admin_trans('description')) ?></strong>
+        <strong><?= e(admin_trans('common_description')) ?></strong>
         <textarea
             name="description"
             rows="4"
-            placeholder="<?= e(admin_trans('optional_description')) ?>"
+            placeholder="<?= e(admin_trans('common_optional_description')) ?>"
         ><?= e($tag['description']) ?></textarea>
     </label>
 
     <!-- Actions -->
     <div class="form-actions">
         <button class="btn-primary">
-            <?= e($id ? admin_trans('save_changes') : admin_trans('create_tag')) ?>
+            <?= e($id ? admin_trans('common_save') : admin_trans('tag_create')) ?>
         </button>
 
         <a href="<?= url('admin/tag') ?>" class="btn-secondary">
-            <?= e(admin_trans('cancel')) ?>
+            <?= e(admin_trans('common_cancel')) ?>
         </a>
     </div>
 

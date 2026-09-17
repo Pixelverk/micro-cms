@@ -157,7 +157,7 @@ let onConfirm = null;
 
 const adminText = (key, fallback) => window.adminTranslations?.[key] || fallback;
 
-function confirmModal({ title = adminText('confirm', 'Confirm'), message = adminText('are_you_sure', 'Are you sure?'), simple = false } = {}) {
+function confirmModal({ title = adminText('common_confirm', 'Confirm'), message = adminText('common_are_you_sure', 'Are you sure?'), simple = false } = {}) {
     titleEl.textContent = title;
     messageEl.textContent = message;
 
@@ -165,7 +165,7 @@ function confirmModal({ title = adminText('confirm', 'Confirm'), message = admin
 
     if(simple){
         cancelBtn.style.display = 'none';
-        okBtn.textContent = adminText('ok', 'OK');
+        okBtn.textContent = adminText('common_ok', 'OK');
     }
 
     return new Promise(resolve => {

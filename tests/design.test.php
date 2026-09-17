@@ -157,12 +157,21 @@ t('every admin_trans() key is defined in the language file', function () {
     foreach ($files as $file) {
         $contents = (string) file_get_contents($file);
 
-        if (preg_match_all('/admin_trans\(\s*[\x27"]([a-z0-9_]+)[\x27"]/i', $contents, $matches)) {
+        // Only literal keys: `admin_trans($var)` and `admin_trans('status_' . $x)`
+        // are checked where they are built, below.
+        if (preg_match_all('/admin_trans\(\s*[\x27"]([a-z0-9_]+)[\x27"]\s*[,)]/i', $contents, $matches)) {
             foreach ($matches[1] as $key) {
                 if (!isset($english[$key])) {
                     $missing[$key] = basename($file);
                 }
             }
+        }
+    }
+
+    // The status dropdown builds its key from content_statuses().
+    foreach (content_statuses() as $status) {
+        if (!isset($english['status_' . $status])) {
+            $missing['status_' . $status] = 'content_statuses()';
         }
     }
 

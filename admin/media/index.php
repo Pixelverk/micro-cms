@@ -61,27 +61,27 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('media_manager')) ?></h2>
-        <p><?= e(admin_trans('welcome')) ?>, <?= e($username) ?> 👋</p>
+        <h2><?= e(admin_trans('media_title')) ?></h2>
+        <p><?= e(admin_trans('nav_welcome')) ?>, <?= e($username) ?> 👋</p>
     </div>
 
     <div class="page-actions page-actions-inline">
         <!-- Search -->
         <form method="get">
-            <input type="text" name="q" value="<?= e($search) ?>" placeholder="<?= e(admin_trans('search_files')) ?>">
+            <input type="text" name="q" value="<?= e($search) ?>" placeholder="<?= e(admin_trans('media_search_files')) ?>">
         </form>
 
         <!-- Upload -->
         <form action="<?= url('admin/media/save') ?>" method="post" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="file" name="file" required>
-            <button type="submit"><?= e(admin_trans('upload')) ?></button>
+            <button type="submit"><?= e(admin_trans('media_upload')) ?></button>
         </form>
     </div>
 </div>
 
 <?php if (!$mediaFiles): ?>
-    <p><?= e(admin_trans('no_media')) ?></p>
+    <p><?= e(admin_trans('media_empty')) ?></p>
 <?php else: ?>
 
 <div class="media-layout">
@@ -122,7 +122,7 @@ ob_start();
 
     <!-- Inspector panel -->
     <div class="media-inspector" id="inspector">
-        <p><?= e(admin_trans('select_file')) ?></p>
+        <p><?= e(admin_trans('media_select_file')) ?></p>
     </div>
 
 </div>
@@ -265,11 +265,11 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('media_manager')) ?></h3>
+<h3><?= e(admin_trans('media_title')) ?></h3>
 <p><?= e(admin_trans('media_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('media_alt_help')) ?></li>
-    <li><?= e(admin_trans('media_delete_help')) ?></li>
+    <li><?= e(admin_trans('media_help_alt')) ?></li>
+    <li><?= e(admin_trans('media_help_delete')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

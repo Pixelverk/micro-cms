@@ -9,7 +9,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-$pageTitle = admin_trans('activity_log');
+$pageTitle = admin_trans('nav_activity');
 
 // ----------------------------
 // Filters
@@ -52,12 +52,12 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('activity_log')) ?></h2>
-        <p><?= (int) $total ?> <?= e(admin_trans('entries')) ?></p>
+        <h2><?= e(admin_trans('nav_activity')) ?></h2>
+        <p><?= (int) $total ?> <?= e(admin_trans('activity_entries')) ?></p>
     </div>
     <div class="page-actions">
         <a class="btn-small btn-muted" href="<?= e($filterUrl(['action' => '', 'object' => '', 'user' => '', 'q' => '', 'range' => ''])) ?>">
-            <?= e(admin_trans('clear_filters')) ?>
+            <?= e(admin_trans('activity_clear_filters')) ?>
         </a>
     </div>
 </div>
@@ -65,9 +65,9 @@ ob_start();
 <form method="get" class="content-filters activity-filters">
     <div class="filter-row">
         <label>
-            <span><?= e(admin_trans('type')) ?></span>
+            <span><?= e(admin_trans('common_type')) ?></span>
             <select name="action">
-                <option value=""><?= e(admin_trans('all_activity')) ?></option>
+                <option value=""><?= e(admin_trans('activity_all')) ?></option>
                 <?php foreach (activity_groups() as $group): ?>
                     <option value="<?= e($group) ?>" <?= $filters['action'] === $group ? 'selected' : '' ?>>
                         <?= e(ucfirst($group)) ?>
@@ -77,9 +77,9 @@ ob_start();
         </label>
 
         <label>
-            <span><?= e(admin_trans('object')) ?></span>
+            <span><?= e(admin_trans('activity_object')) ?></span>
             <select name="object">
-                <option value=""><?= e(admin_trans('any')) ?></option>
+                <option value=""><?= e(admin_trans('activity_any')) ?></option>
                 <?php foreach (['content', 'media', 'user', 'taxonomy', 'menu', 'settings', 'utility'] as $object): ?>
                     <option value="<?= e($object) ?>" <?= $filters['object_type'] === $object ? 'selected' : '' ?>>
                         <?= e(ucfirst($object)) ?>
@@ -89,9 +89,9 @@ ob_start();
         </label>
 
         <label>
-            <span><?= e(admin_trans('author')) ?></span>
+            <span><?= e(admin_trans('common_author')) ?></span>
             <select name="user">
-                <option value=""><?= e(admin_trans('anyone')) ?></option>
+                <option value=""><?= e(admin_trans('activity_anyone')) ?></option>
                 <?php foreach (activity_actors() as $actor): ?>
                     <option value="<?= (int) $actor['user_id'] ?>" <?= $filters['user_id'] === (int) $actor['user_id'] ? 'selected' : '' ?>>
                         <?= e((string) $actor['username']) ?>
@@ -101,9 +101,9 @@ ob_start();
         </label>
 
         <label>
-            <span><?= e(admin_trans('period')) ?></span>
+            <span><?= e(admin_trans('activity_period')) ?></span>
             <select name="range">
-                <option value=""><?= e(admin_trans('all_time')) ?></option>
+                <option value=""><?= e(admin_trans('activity_all_time')) ?></option>
                 <?php foreach ([1 => 'Today', 7 => 'Last 7 days', 30 => 'Last 30 days', 90 => 'Last 90 days'] as $value => $label): ?>
                     <option value="<?= (int) $value ?>" <?= $range === (string) $value ? 'selected' : '' ?>>
                         <?= e($label) ?>
@@ -113,25 +113,25 @@ ob_start();
         </label>
 
         <label class="grow">
-            <span><?= e(admin_trans('search')) ?></span>
-            <input type="search" name="q" value="<?= e($filters['search']) ?>" placeholder="<?= e(admin_trans('search_activity')) ?>">
+            <span><?= e(admin_trans('common_search')) ?></span>
+            <input type="search" name="q" value="<?= e($filters['search']) ?>" placeholder="<?= e(admin_trans('activity_search')) ?>">
         </label>
 
-        <button type="submit" class="btn-small"><?= e(admin_trans('filter')) ?></button>
+        <button type="submit" class="btn-small"><?= e(admin_trans('activity_filter')) ?></button>
     </div>
 </form>
 
 <?php if (empty($items)): ?>
-    <p class="empty-state"><?= e(admin_trans('no_activity')) ?></p>
+    <p class="empty-state"><?= e(admin_trans('activity_empty')) ?></p>
 <?php else: ?>
     <table class="content-table">
         <thead>
             <tr>
-                <th style="width:170px;"><?= e(admin_trans('when')) ?></th>
-                <th style="width:170px;"><?= e(admin_trans('author')) ?></th>
-                <th><?= e(admin_trans('action')) ?></th>
-                <th><?= e(admin_trans('subject')) ?></th>
-                <th><?= e(admin_trans('details')) ?></th>
+                <th style="width:170px;"><?= e(admin_trans('activity_when')) ?></th>
+                <th style="width:170px;"><?= e(admin_trans('common_author')) ?></th>
+                <th><?= e(admin_trans('activity_action')) ?></th>
+                <th><?= e(admin_trans('activity_subject')) ?></th>
+                <th><?= e(admin_trans('activity_details')) ?></th>
             </tr>
         </thead>
         <tbody>
@@ -145,7 +145,7 @@ ob_start();
                     <?php if (!empty($entry['username'])): ?>
                         <?= e((string) $entry['username']) ?>
                     <?php else: ?>
-                        <span class="text-muted"><?= e(admin_trans('system')) ?></span>
+                        <span class="text-muted"><?= e(admin_trans('activity_system')) ?></span>
                     <?php endif; ?>
                 </td>
                 <td>
@@ -181,17 +181,17 @@ ob_start();
     </table>
 
     <?php if ($pages > 1): ?>
-        <nav class="pagination" aria-label="<?= e(admin_trans('pagination')) ?>">
+        <nav class="pagination" aria-label="<?= e(admin_trans('common_pagination')) ?>">
             <?php if ($page > 1): ?>
-                <a class="btn-small" href="<?= e($filterUrl(['page' => $page - 1])) ?>">&larr; <?= e(admin_trans('previous')) ?></a>
+                <a class="btn-small" href="<?= e($filterUrl(['page' => $page - 1])) ?>">&larr; <?= e(admin_trans('common_previous')) ?></a>
             <?php endif; ?>
 
             <span class="pagination-status">
-                <?= e(admin_trans('page_of', ['page' => $page, 'pages' => $pages])) ?>
+                <?= e(admin_trans('common_page_of', ['page' => $page, 'pages' => $pages])) ?>
             </span>
 
             <?php if ($page < $pages): ?>
-                <a class="btn-small" href="<?= e($filterUrl(['page' => $page + 1])) ?>"><?= e(admin_trans('next')) ?> &rarr;</a>
+                <a class="btn-small" href="<?= e($filterUrl(['page' => $page + 1])) ?>"><?= e(admin_trans('common_next')) ?> &rarr;</a>
             <?php endif; ?>
         </nav>
     <?php endif; ?>
@@ -202,7 +202,7 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('activity_log')) ?></h3>
+<h3><?= e(admin_trans('nav_activity')) ?></h3>
 <p><?= e(admin_trans('activity_help')) ?></p>
 <ul>
     <li><?= e(admin_trans('activity_retention_help', ['days' => (int) config('activity.retention_days', 180)])) ?></li>

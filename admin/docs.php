@@ -71,15 +71,15 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('docs')) ?></h2>
+        <h2><?= e(admin_trans('nav_docs')) ?></h2>
         <p><?= e((string) $page['intro']) ?></p>
     </div>
     <div class="page-actions">
-        <a class="btn-small btn-muted" href="<?= e(url('admin/dashboard')) ?>"><?= e(admin_trans('dashboard')) ?></a>
+        <a class="btn-small btn-muted" href="<?= e(url('admin/dashboard')) ?>"><?= e(admin_trans('nav_dashboard')) ?></a>
     </div>
 </div>
 
-<nav class="docs-tabs" aria-label="<?= e(admin_trans('docs')) ?>">
+<nav class="docs-tabs" aria-label="<?= e(admin_trans('nav_docs')) ?>">
     <?php foreach ($docs as $tab => $tabPage): ?>
         <a href="<?= e($tabUrl($tab)) ?>" class="status-tab <?= $tab === $activeTab ? 'active' : '' ?>">
             <?= e((string) $tabPage['label']) ?>
@@ -89,8 +89,8 @@ ob_start();
 
 <div class="docs-layout">
 
-    <nav class="docs-toc" aria-label="<?= e(admin_trans('on_this_page')) ?>">
-        <h3><?= e(admin_trans('on_this_page')) ?></h3>
+    <nav class="docs-toc" aria-label="<?= e(admin_trans('docs_on_this_page')) ?>">
+        <h3><?= e(admin_trans('docs_on_this_page')) ?></h3>
         <ul>
             <?php foreach (array_keys($page['sections']) as $sectionTitle): ?>
                 <?php $anchor = sanitize_slug($sectionTitle); ?>
@@ -106,8 +106,8 @@ ob_start();
     <div class="docs-body">
         <form class="docs-filter" method="get" action="<?= e(url('admin/docs')) ?>">
             <input type="hidden" name="tab" value="<?= e($activeTab) ?>">
-            <input type="search" id="docs-filter" placeholder="<?= e(admin_trans('filter_docs')) ?>"
-                   aria-label="<?= e(admin_trans('filter_docs')) ?>">
+            <input type="search" id="docs-filter" placeholder="<?= e(admin_trans('docs_filter')) ?>"
+                   aria-label="<?= e(admin_trans('docs_filter')) ?>">
         </form>
 
         <?php foreach ($page['sections'] as $sectionTitle => $blocks): ?>
@@ -118,7 +118,7 @@ ob_start();
             </section>
         <?php endforeach; ?>
 
-        <p class="docs-empty" id="docs-empty" hidden><?= e(admin_trans('no_docs_match')) ?></p>
+        <p class="docs-empty" id="docs-empty" hidden><?= e(admin_trans('docs_no_match')) ?></p>
     </div>
 
 </div>
@@ -158,11 +158,11 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('docs')) ?></h3>
+<h3><?= e(admin_trans('nav_docs')) ?></h3>
 <p><?= e(admin_trans('docs_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('docs_editor_help')) ?></li>
-    <li><?= e(admin_trans('docs_developer_help')) ?></li>
+    <li><?= e(admin_trans('docs_help_editor')) ?></li>
+    <li><?= e(admin_trans('docs_help_developer')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

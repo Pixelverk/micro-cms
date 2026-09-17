@@ -283,15 +283,15 @@ function render_admin_forbidden(string $capability): void
         ?>
         <div class="page-header">
             <div class="page-title">
-                <h2><?= e(admin_trans('not_allowed')) ?></h2>
-                <p><?= e(admin_trans('not_allowed_help')) ?></p>
+                <h2><?= e(admin_trans('error_not_allowed')) ?></h2>
+                <p><?= e(admin_trans('error_not_allowed_help')) ?></p>
             </div>
             <div class="page-actions">
-                <a class="btn-small" href="<?= e(url('admin/dashboard')) ?>"><?= e(admin_trans('dashboard')) ?></a>
+                <a class="btn-small" href="<?= e(url('admin/dashboard')) ?>"><?= e(admin_trans('nav_dashboard')) ?></a>
             </div>
         </div>
         <p class="text-muted text-small">
-            <?= e(admin_trans('required_permission')) ?>: <code><?= e($capability) ?></code>
+            <?= e(admin_trans('error_required_permission')) ?>: <code><?= e($capability) ?></code>
         </p>
         <?php
         $content = ob_get_clean();

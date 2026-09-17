@@ -93,14 +93,14 @@ ob_start();
     <div class="page-title">
         <h2><?= e($content['title']) ?></h2>
         <p>
-            <?= e(admin_trans('version_history')) ?>
+            <?= e(admin_trans('versions_title')) ?>
             &middot; <?= (int) count_content_versions($id) ?> <?= e(admin_trans('versions_stored')) ?>
-            &middot; <?= e(admin_trans('keeping_newest', ['count' => content_version_keep()])) ?>
+            &middot; <?= e(admin_trans('versions_keeping', ['count' => content_version_keep()])) ?>
         </p>
     </div>
     <div class="page-actions">
-        <a class="btn-small" href="<?= e($editUrl) ?>"><?= e(admin_trans('back_to_editor')) ?></a>
-        <a class="btn-small" href="<?= e(preview_url(url(''))) ?>" target="_blank"><?= e(admin_trans('preview')) ?></a>
+        <a class="btn-small" href="<?= e($editUrl) ?>"><?= e(admin_trans('versions_back')) ?></a>
+        <a class="btn-small" href="<?= e(preview_url(url(''))) ?>" target="_blank"><?= e(admin_trans('common_preview')) ?></a>
     </div>
 </div>
 
@@ -111,18 +111,18 @@ ob_start();
     <div class="card version-view">
         <div class="version-view-header">
             <h3>
-                <?= e(admin_trans('version_number', ['number' => (int) $viewing['version']])) ?>
+                <?= e(admin_trans('versions_number', ['number' => (int) $viewing['version']])) ?>
                 <span class="status status-<?= e($viewing['status']) ?>"><?= e(content_status_label($viewing['status'])) ?></span>
             </h3>
             <div class="version-view-actions">
                 <form method="post" class="inline-form js-confirm-form"
-                      data-confirm-title="<?= e(admin_trans('restore_version')) ?>"
-                      data-confirm="<?= e(admin_trans('restore_confirm', ['number' => (int) $viewing['version']])) ?>">
+                      data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
+                      data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $viewing['version']])) ?>">
                     <?= csrf_field() ?>
                     <input type="hidden" name="version_id" value="<?= (int) $viewing['id'] ?>">
-                    <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('restore_this_version')) ?></button>
+                    <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('versions_restore_this')) ?></button>
                 </form>
-                <a class="btn-small btn-muted" href="<?= e($historyUrl) ?>"><?= e(admin_trans('close')) ?></a>
+                <a class="btn-small btn-muted" href="<?= e($historyUrl) ?>"><?= e(admin_trans('common_close')) ?></a>
             </div>
         </div>
 
@@ -136,13 +136,13 @@ ob_start();
 
         <?php if ($viewChanges): ?>
             <p class="version-changes">
-                <?= e(admin_trans('differs_from_current')) ?>:
+                <?= e(admin_trans('versions_differs')) ?>:
                 <?php foreach ($viewChanges as $change): ?>
                     <span class="badge"><?= e($change) ?></span>
                 <?php endforeach; ?>
             </p>
         <?php else: ?>
-            <p class="version-changes"><?= e(admin_trans('identical_to_current')) ?></p>
+            <p class="version-changes"><?= e(admin_trans('versions_identical')) ?></p>
         <?php endif; ?>
 
         <h4><?= e($viewing['title']) ?></h4>
@@ -154,7 +154,7 @@ ob_start();
 
         <?php if (is_array($viewMeta) && $viewMeta): ?>
             <details>
-                <summary><?= e(admin_trans('metadata')) ?></summary>
+                <summary><?= e(admin_trans('versions_metadata')) ?></summary>
                 <ul class="version-meta-list">
                     <?php foreach ($viewMeta as $key => $value): ?>
                         <li>
@@ -168,7 +168,7 @@ ob_start();
 
         <?php if (is_array($viewBody) && $viewBody): ?>
             <details open>
-                <summary><?= e(admin_trans('components')) ?> (<?= count($viewBody) ?>)</summary>
+                <summary><?= e(admin_trans('common_components')) ?> (<?= count($viewBody) ?>)</summary>
                 <ol class="version-component-list">
                     <?php foreach ($viewBody as $component): ?>
                         <li>
@@ -185,17 +185,17 @@ ob_start();
 <?php endif; ?>
 
 <?php if (empty($versions)): ?>
-    <p class="empty-state"><?= e(admin_trans('no_versions_yet')) ?></p>
+    <p class="empty-state"><?= e(admin_trans('versions_empty')) ?></p>
 <?php else: ?>
     <table class="content-table">
         <thead>
             <tr>
-                <th><?= e(admin_trans('version')) ?></th>
+                <th><?= e(admin_trans('versions_version')) ?></th>
                 <th><?= e(admin_trans('content_title')) ?></th>
-                <th><?= e(admin_trans('status')) ?></th>
-                <th><?= e(admin_trans('changed')) ?></th>
-                <th><?= e(admin_trans('author')) ?></th>
-                <th style="width:220px;"><?= e(admin_trans('actions')) ?></th>
+                <th><?= e(admin_trans('common_status')) ?></th>
+                <th><?= e(admin_trans('versions_changed')) ?></th>
+                <th><?= e(admin_trans('common_author')) ?></th>
+                <th style="width:220px;"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
         <tbody>
@@ -209,7 +209,7 @@ ob_start();
                 <td>
                     <strong>#<?= (int) $version['version'] ?></strong>
                     <?php if ($isNewest): ?>
-                        <span class="badge"><?= e(admin_trans('latest')) ?></span>
+                        <span class="badge"><?= e(admin_trans('versions_latest')) ?></span>
                     <?php endif; ?>
                 </td>
                 <td><?= e($version['title']) ?></td>
@@ -231,15 +231,15 @@ ob_start();
                 <td class="actions">
                     <a class="btn-small"
                        href="<?= e($historyUrl . '&version=' . (int) $version['id']) ?>">
-                        <?= e(admin_trans('view')) ?>
+                        <?= e(admin_trans('common_view')) ?>
                     </a>
 
                     <form method="post" class="inline-form js-confirm-form"
-                          data-confirm-title="<?= e(admin_trans('restore_version')) ?>"
-                          data-confirm="<?= e(admin_trans('restore_confirm', ['number' => (int) $version['version']])) ?>">
+                          data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
+                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $version['version']])) ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="version_id" value="<?= (int) $version['id'] ?>">
-                        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('restore')) ?></button>
+                        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('common_restore')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -253,11 +253,11 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('version_history')) ?></h3>
-<p><?= e(admin_trans('version_history_help')) ?></p>
+<h3><?= e(admin_trans('versions_title')) ?></h3>
+<p><?= e(admin_trans('versions_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('version_restore_help')) ?></li>
-    <li><?= e(admin_trans('version_retention_help', ['count' => content_version_keep()])) ?></li>
+    <li><?= e(admin_trans('versions_restore_help')) ?></li>
+    <li><?= e(admin_trans('versions_retention_help', ['count' => content_version_keep()])) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

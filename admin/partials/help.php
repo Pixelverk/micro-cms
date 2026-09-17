@@ -13,7 +13,7 @@
     ?>
     <p class="help-docs-link">
         <a href="<?= e(url('admin/docs') . ($docsQuery !== '' ? '?' . $docsQuery : '')) ?>">
-            <?= e(admin_trans('read_full_docs')) ?> &rarr;
+            <?= e(admin_trans('help_read_docs')) ?> &rarr;
         </a>
     </p>
 </div>

@@ -55,7 +55,7 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2>Tags</h2>
-        <p><?= e(admin_trans('welcome')) ?>, <?= e($username) ?> 👋</p>
+        <p><?= e(admin_trans('nav_welcome')) ?>, <?= e($username) ?> 👋</p>
     </div>
 
     <div class="page-actions flex gap-md items-center">
@@ -63,7 +63,7 @@ ob_start();
         <!-- Content type filter -->
         <form method="get">
             <select name="type" onchange="this.form.submit()">
-                <option value=""><?= e(admin_trans('all_types')) ?></option>
+                <option value=""><?= e(admin_trans('content_type_all')) ?></option>
                 <?php foreach ($contentTypes as $key => $config): ?>
                     <option value="<?= e($key) ?>"
                         <?= $type === $key ? 'selected' : '' ?>>
@@ -82,29 +82,29 @@ ob_start();
                 type="text"
                 name="q"
                 value="<?= e($search) ?>"
-                placeholder="<?= e(admin_trans('search_tags')) ?>"
+                placeholder="<?= e(admin_trans('tag_search')) ?>"
             >
         </form>
 
         <!-- Add -->
         <a href="<?= url('admin/tag/edit') ?>" class="btn-primary">
-            <?= e(admin_trans('add_tag')) ?>
+            <?= e(admin_trans('tag_add')) ?>
         </a>
     </div>
 </div>
 
 <?php if (!$tags): ?>
-    <p><?= e(admin_trans('no_tags')) ?></p>
+    <p><?= e(admin_trans('tag_empty')) ?></p>
 <?php else: ?>
 
 <table class="content-table">
     <thead>
         <tr>
-            <th><?= e(admin_trans('name')) ?></th>
-            <th><?= e(admin_trans('slug')) ?></th>
+            <th><?= e(admin_trans('common_name')) ?></th>
+            <th><?= e(admin_trans('common_slug')) ?></th>
             <th><?= e(admin_trans('content_type')) ?></th>
-            <th><?= e(admin_trans('updated')) ?></th>
-            <th style="width:160px;"><?= e(admin_trans('actions')) ?></th>
+            <th><?= e(admin_trans('common_updated')) ?></th>
+            <th style="width:160px;"><?= e(admin_trans('common_actions')) ?></th>
         </tr>
     </thead>
 
@@ -130,20 +130,20 @@ ob_start();
 
                 <a href="<?= url('admin/tag/edit') ?>?id=<?= (int)$tag['id'] ?>"
                    class="btn-small">
-                    <?= e(admin_trans('edit')) ?>
+                    <?= e(admin_trans('common_edit')) ?>
                 </a>
 
                 <form
                     action="<?= url('admin/tag/remove') ?>"
                     method="post"
                     class="inline-form js-confirm-form"
-                    data-confirm-title="<?= e(admin_trans('delete_tag')) ?>"
-                    data-confirm="<?= e(admin_trans('delete_tag_confirm', ['name' => $tag['name']])) ?>"
+                    data-confirm-title="<?= e(admin_trans('tag_delete')) ?>"
+                    data-confirm="<?= e(admin_trans('tag_delete_confirm', ['name' => $tag['name']])) ?>"
                 >
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">
                     <button type="submit" class="btn-delete btn-small">
-                        <?= e(admin_trans('delete')) ?>
+                        <?= e(admin_trans('common_delete')) ?>
                     </button>
                 </form>
 
@@ -163,7 +163,7 @@ $content = ob_get_clean();
 // ----------------------------
 ob_start();
 ?>
-<h3><?= e(admin_trans('tags')) ?></h3>
+<h3><?= e(admin_trans('nav_tags')) ?></h3>
 <p><?= e(admin_trans('tag_list_help')) ?></p>
 <ul>
     <li><?= e(admin_trans('tag_help_many')) ?></li>

@@ -25,14 +25,14 @@ $availableFooters = $theme['footers'] ?? [];
 $settingFields = [
     'site_title' => [
         'type'    => 'text',
-        'label'   => 'Site title',
-        'help'    => 'This will appear in the browser tab and site header.',
+        'label'   => 'settings_site_title',
+        'help'    => 'settings_site_title_help',
         'default' => 'My Site',
     ],
     'homepage_id' => [
         'type'    => 'select',
-        'label'   => 'Homepage',
-        'help'    => 'Select which page is the homepage.',
+        'label'   => 'settings_homepage',
+        'help'    => 'settings_homepage_help',
         'options' => array_combine(
             array_column($pages, 'id'),
             array_column($pages, 'title')
@@ -41,8 +41,8 @@ $settingFields = [
     ],
     'site_language' => [
         'type'    => 'text',
-        'label'   => 'Site language',
-        'help'    => 'Two-letter language code (e.g. en, fr).',
+        'label'   => 'settings_site_language',
+        'help'    => 'settings_site_language_help',
         'default' => 'en',
     ],
     'site_url' => [
@@ -71,42 +71,42 @@ $settingFields = [
     ],
     'robots_extra' => [
         'type'    => 'textarea',
-        'label'   => 'robots.txt extra lines',
-        'help'    => 'Appended to the generated robots.txt, one rule per line. Leave blank to allow everything. The User-agent, Allow and Sitemap lines are always written for you.',
+        'label'   => 'settings_robots_extra',
+        'help'    => 'settings_robots_extra_help',
         'default' => '',
     ],
     'admin_default_language' => [
         'type'    => 'select',
-        'label'   => 'Default admin language',
-        'help'    => 'Language used by the admin UI when a user has no personal preference.',
+        'label'   => 'settings_admin_language',
+        'help'    => 'settings_admin_language_help',
         'options' => admin_languages(),
         'default' => 'en',
     ],
     'default_layout' => [
         'type'    => 'select',
-        'label'   => 'Default layout',
-        'help'    => 'Layout used when content has none set.',
+        'label'   => 'settings_default_layout',
+        'help'    => 'settings_default_layout_help',
         'options' => $availableLayouts,
         'default' => $settings['default_layout'] ?? $theme['defaults']['layout'],
     ],
     'default_header' => [
         'type'    => 'select',
-        'label'   => 'Default header',
-        'help'    => 'Header used when content has none set.',
+        'label'   => 'settings_default_header',
+        'help'    => 'settings_default_header_help',
         'options' => $availableHeaders,
         'default' => $settings['default_header'] ?? $theme['defaults']['header'],
     ],
     'default_footer' => [
         'type'    => 'select',
-        'label'   => 'Default footer',
-        'help'    => 'Footer used when content has none set.',
+        'label'   => 'settings_default_footer',
+        'help'    => 'settings_default_footer_help',
         'options' => $availableFooters,
         'default' => $settings['default_footer'] ?? $theme['defaults']['footer'],
     ],
     'contact_email' => [
         'type'    => 'text',
-        'label'   => 'Contact form email',
-        'help'    => 'Messages from contact forms are sent here.',
+        'label'   => 'settings_contact_email',
+        'help'    => 'settings_contact_email_help',
         'default' => '',
     ],
 
@@ -114,28 +114,28 @@ $settingFields = [
     // Media upload settings
     'generate_webp' => [
         'type'    => 'checkbox',
-        'label'   => 'Generate WebP',
-        'help'    => 'Create WebP versions of uploaded images.',
+        'label'   => 'settings_webp',
+        'help'    => 'settings_webp_help',
         'default' => true,
     ],
     'quality_webp' => [
         'type'    => 'number',
-        'label'   => 'WebP Quality',
-        'help'    => 'Compression quality for WebP images (1-100).',
+        'label'   => 'settings_webp_quality',
+        'help'    => 'settings_webp_quality_help',
         'default' => 80,
         'min'     => 1,
         'max'     => 100,
     ],
     'strip_metadata' => [
         'type'    => 'checkbox',
-        'label'   => 'Strip Metadata',
-        'help'    => 'Remove EXIF/metadata from uploaded images.',
+        'label'   => 'settings_strip_metadata',
+        'help'    => 'settings_strip_metadata_help',
         'default' => true,
     ],
     'media_sizes' => [
         'type'    => 'text',
-        'label'   => 'Image Sizes',
-        'help'    => 'Comma-separated list of widths for generated images (e.g. 320,640,1280).',
+        'label'   => 'settings_media_sizes',
+        'help'    => 'settings_media_sizes_help',
         'default' => '320,640,1280',
     ],
     'allow_svg' => [
@@ -151,14 +151,14 @@ $settingFields = [
     // (the page already requires settings.manage).
     'header_scripts' => [
         'type'    => 'textarea',
-        'label'   => 'Header scripts',
-        'help'    => 'Raw code inserted before </head> on every public page, for analytics snippets. Not sanitised — administrators only.',
+        'label'   => 'settings_header_scripts',
+        'help'    => 'settings_header_scripts_help',
         'default' => '',
     ],
     'footer_scripts' => [
         'type'    => 'textarea',
-        'label'   => 'Footer scripts',
-        'help'    => 'Raw code inserted before </body> on every public page, for analytics snippets. Not sanitised — administrators only.',
+        'label'   => 'settings_footer_scripts',
+        'help'    => 'settings_footer_scripts_help',
         'default' => '',
     ],
 ];
@@ -169,10 +169,11 @@ $settingFields = [
 foreach ($theme['content_types'] ?? [] as $type => $config) {
     $label = $config['label'] ?? ucfirst($type);
     $settingFields["prefix_$type"] = [
-        'type'    => 'text',
-        'label'   => "$label URL Prefix",
-        'help'    => "Optional URL prefix (e.g. /blog/slug). Leave blank for root.",
-        'default' => $settings['content_prefixes'][$type]
+        'type'          => 'text',
+        'label'         => 'settings_prefix_label',
+        'label_replace' => ['type' => $label],
+        'help'          => 'settings_prefix_help',
+        'default'       => $settings['content_prefixes'][$type]
             ?? $config['url_prefix']
             ?? '',
     ];
@@ -323,10 +324,10 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p><?= e(admin_trans('settings_card_intro')) ?></p>
+        <p><?= e(admin_trans('settings_intro')) ?></p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="settings"><?= e(admin_trans('save_changes')) ?></button>
+        <button type="submit" form="settings"><?= e(admin_trans('common_save')) ?></button>
     </div>
 </div>
 
@@ -344,7 +345,7 @@ ob_start();
         }
         ?>
         <fieldset>
-            <legend><?= e(admin_trans($meta['label'])) ?></legend>
+            <legend><?= e(admin_trans($meta['label'], $meta['label_replace'] ?? [])) ?></legend>
 
             <?php if ($meta['type'] === 'text' || $meta['type'] === 'number'): ?>
                 <label>
@@ -356,7 +357,7 @@ ob_start();
                         <?= $meta['max'] ?? '' ? "max=\"{$meta['max']}\"" : '' ?>
                     >
                     <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'])) ?></small>
+                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
                     <?php endif; ?>
                 </label>
 
@@ -370,7 +371,7 @@ ob_start();
                         <?php endforeach; ?>
                     </select>
                     <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'])) ?></small>
+                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
                     <?php endif; ?>
                 </label>
 
@@ -378,7 +379,7 @@ ob_start();
                 <label>
                     <input type="checkbox" name="<?= e($key) ?>" value="1" <?= $value ? 'checked' : '' ?>>
                     <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'])) ?></small>
+                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
                     <?php endif; ?>
                 </label>
 
@@ -386,7 +387,7 @@ ob_start();
                 <label>
                     <textarea name="<?= e($key) ?>" rows="6"><?= e((string) $value) ?></textarea>
                     <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'])) ?></small>
+                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
                     <?php endif; ?>
                 </label>
             <?php endif; ?>
@@ -400,13 +401,13 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('settings')) ?></h3>
+<h3><?= e(admin_trans('nav_settings')) ?></h3>
 <p><?= e(admin_trans('settings_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('settings_site_help')) ?></li>
-    <li><?= e(admin_trans('settings_media_help')) ?></li>
-    <li><?= e(admin_trans('settings_seo_help')) ?></li>
-    <li><?= e(admin_trans('settings_code_help')) ?></li>
+    <li><?= e(admin_trans('settings_help_site')) ?></li>
+    <li><?= e(admin_trans('settings_help_media')) ?></li>
+    <li><?= e(admin_trans('settings_help_seo')) ?></li>
+    <li><?= e(admin_trans('settings_help_code')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

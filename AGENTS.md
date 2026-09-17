@@ -79,7 +79,9 @@ login form is the only exception.
 These are checked by `tests/design.test.php`; a change that breaks one fails the suite:
 
 * Every `admin_trans()` key exists in **both** `admin/lang/en.php` and
-  `admin/lang/sv.php`.
+  `admin/lang/sv.php`. Keys are `area_element` (for example `nav_dashboard`,
+  `trash_move`, `settings_site_title_help`), never a sentence; the value holds
+  the text that is shown.
 * No inline `<style>` blocks in the admin UI.
 * Every CSS class used in admin markup exists in `admin/assets/style.css`.
 * Every admin page that includes `admin/partials/layout.php` sets `$pageHelp`.

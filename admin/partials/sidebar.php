@@ -62,16 +62,16 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     </div>
 
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('welcome')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_welcome')) ?></div>
         
         <a href="<?= url('admin/dashboard') ?>" class="sidebar-link <?= is_active('dashboard', $currentPath) ?>" data-label="Dashboard">
             <span class="sidebar-icon"><?= icon('view-grid', 20) ?></span>
-            <?= e(admin_trans('dashboard')) ?>
+            <?= e(admin_trans('nav_dashboard')) ?>
         </a>
     </div>
 
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('content')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_content')) ?></div>
         <?php foreach ($contentTypes as $type => $config): ?>
             <a href="<?= url('admin/content') . '?type=' . $type ?>"
                class="sidebar-link <?= is_content_type_active($type, $currentPath, $currentType) ?>"
@@ -84,23 +84,23 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     </div>
 
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('collections')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_collections')) ?></div>
 
         <a href="<?= url('admin/category') ?>" class="sidebar-link <?= is_active('category', $currentPath) ?>" data-label="Categories">
             <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
-            <?= e(admin_trans('categories')) ?>
+            <?= e(admin_trans('nav_categories')) ?>
         </a>
 
         <a href="<?= url('admin/tag') ?>" class="sidebar-link <?= is_active('tag', $currentPath) ?>" data-label="Tags">
             <span class="sidebar-icon"><?= icon('label', 20) ?></span>
-            <?= e(admin_trans('tags')) ?>
+            <?= e(admin_trans('nav_tags')) ?>
         </a>
 
     </div>
 
     <?php if (!empty($formTypes)): ?>
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('forms')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_forms')) ?></div>
 
         <?php foreach ($formTypes as $type => $config): ?>
             <a href="<?= url('admin/messages') . '?form=' . e($type) ?>"
@@ -116,77 +116,77 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     <?php endif; ?>
 
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('more')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_more')) ?></div>
 
         <a href="<?= url('admin/menu/edit') ?>" class="sidebar-link <?= is_active('menu', $currentPath) ?>" data-label="Menus">
             <span class="sidebar-icon"><?= icon('menu', 20) ?></span>
-            <?= e(admin_trans('menus')) ?>
+            <?= e(admin_trans('nav_menus')) ?>
         </a>
 
         <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>" data-label="Media">
             <span class="sidebar-icon"><?= icon('media-image', 20) ?></span>
-            <?= e(admin_trans('media')) ?>
+            <?= e(admin_trans('nav_media')) ?>
         </a>
 
-        <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= is_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('redirects')) ?>">
+        <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= is_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('nav_redirects')) ?>">
             <span class="sidebar-icon"><?= icon('open-in-browser', 20) ?></span>
-            <?= e(admin_trans('redirects')) ?>
+            <?= e(admin_trans('nav_redirects')) ?>
         </a>
 
-        <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= is_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('activity_log')) ?>">
+        <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= is_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('nav_activity')) ?>">
             <span class="sidebar-icon"><?= icon('clock', 20) ?></span>
-            <?= e(admin_trans('activity_log')) ?>
+            <?= e(admin_trans('nav_activity')) ?>
         </a>
 
-        <a href="<?= url('admin/docs') ?>" class="sidebar-link <?= is_active('docs', $currentPath) ?>" data-label="<?= e(admin_trans('docs')) ?>">
+        <a href="<?= url('admin/docs') ?>" class="sidebar-link <?= is_active('docs', $currentPath) ?>" data-label="<?= e(admin_trans('nav_docs')) ?>">
             <span class="sidebar-icon"><?= icon('book', 20) ?></span>
-            <?= e(admin_trans('docs')) ?>
+            <?= e(admin_trans('nav_docs')) ?>
         </a>
 
         <a href="<?= url('admin/analytics') ?>" class="sidebar-link <?= is_active('analytics', $currentPath) ?>" data-label="Analytics">
             <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
-            <?= e(admin_trans('analytics')) ?>
+            <?= e(admin_trans('nav_analytics')) ?>
         </a>
 
     </div>    
 
     <div class="sidebar-section">
-        <div class="sidebar-title"><?= e(admin_trans('system')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_system')) ?></div>
 
         <a href="<?= url('admin/user') ?>" class="sidebar-link <?= is_active('user', $currentPath) ?>" data-label="Users">
             <span class="sidebar-icon"><?= icon('group', 20) ?></span>
-            <?= e(admin_trans('users')) ?>
+            <?= e(admin_trans('nav_users')) ?>
         </a>
 
         <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>" data-label="Settings">
             <span class="sidebar-icon"><?= icon('settings', 20) ?></span>
-            <?= e(admin_trans('settings')) ?>
+            <?= e(admin_trans('nav_settings')) ?>
         </a>
 
         <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= is_active('utilities', $currentPath) ?>" data-label="Utilities">
             <span class="sidebar-icon"><?= icon('wrench', 20) ?></span>
-            <?= e(admin_trans('utilities')) ?>
+            <?= e(admin_trans('nav_utilities')) ?>
         </a>
 
-        <a href="<?= url('admin/health') ?>" class="sidebar-link <?= is_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('health')) ?>">
+        <a href="<?= url('admin/health') ?>" class="sidebar-link <?= is_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('nav_health')) ?>">
             <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
-            <?= e(admin_trans('health')) ?>
+            <?= e(admin_trans('nav_health')) ?>
         </a>
     </div>
 
     <div class="sidebar-section sidebar-footer">
-        <div class="sidebar-title"><?= e(admin_trans('account')) ?></div>
+        <div class="sidebar-title"><?= e(admin_trans('nav_account')) ?></div>
 
         <a href="<?= url('admin/profile') ?>" class="sidebar-link" data-label="Profile">
             <span class="sidebar-icon"><?= icon('profile-circle', 20) ?></span>
-            <?= e(admin_trans('profile')) ?>
+            <?= e(admin_trans('nav_profile')) ?>
         </a>
 
         <form method="post" action="<?= url('admin/auth/logout') ?>">
             <?= csrf_field() ?>
             <button type="submit" class="sidebar-link danger" data-label="Logout">
                 <span class="sidebar-icon"><?= icon('log-out', 20) ?></span>
-                <?= e(admin_trans('logout')) ?>
+                <?= e(admin_trans('nav_logout')) ?>
             </button>
         </form>
     </div>

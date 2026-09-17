@@ -114,7 +114,7 @@ ob_start();
 
     <div class="page-actions flex gap-md items-center">
         <label class="flex items-center gap-sm mb-0">
-            <span><?= e(admin_trans('type')) ?>:</span>
+            <span><?= e(admin_trans('common_type')) ?>:</span>
             <select id="content-type-select">
                 <?php foreach ($contentTypes as $key => $config): ?>
                     <option value="<?= e($key) ?>" <?= $key === $type ? 'selected' : '' ?>>
@@ -126,7 +126,7 @@ ob_start();
 
         <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>"
            class="btn-primary">
-            + <?= e(admin_trans('add')) ?> <?= e($typeLabel) ?>
+            + <?= e(admin_trans('common_add')) ?> <?= e($typeLabel) ?>
         </a>
     </div>
 </div>
@@ -142,7 +142,7 @@ foreach (content_statuses() as $status) {
     $tabs[$status] = ['label' => content_status_label($status), 'count' => $statusCounts[$status] ?? 0];
 }
 
-$tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItems)];
+$tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trashedItems)];
 ?>
 <div class="content-filters">
     <div class="status-tabs">
@@ -161,9 +161,9 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
             <input type="hidden" name="status" value="<?= e($statusFilter) ?>">
         <?php endif; ?>
         <input type="search" name="q" value="<?= e($searchFilter) ?>"
-               placeholder="<?= e(admin_trans('search_content')) ?>" aria-label="<?= e(admin_trans('search_content')) ?>">
+               placeholder="<?= e(admin_trans('content_search')) ?>" aria-label="<?= e(admin_trans('content_search')) ?>">
         <?php if ($searchFilter !== ''): ?>
-            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('clear')) ?></a>
+            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('common_clear')) ?></a>
         <?php endif; ?>
     </form>
 </div>
@@ -174,38 +174,38 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
         <?= csrf_field() ?>
         <input type="hidden" name="type" value="<?= e($type) ?>">
 
-        <span class="bulk-count"><strong id="bulk-count">0</strong> <?= e(admin_trans('selected')) ?></span>
+        <span class="bulk-count"><strong id="bulk-count">0</strong> <?= e(admin_trans('bulk_selected')) ?></span>
 
         <label>
             <span class="visually-hidden"><?= e(admin_trans('bulk_action')) ?></span>
             <select name="bulk_action" id="bulk-action" class="field-input">
                 <option value=""><?= e(admin_trans('bulk_action')) ?>…</option>
                 <?php if (admin_can('content.publish')): ?>
-                    <option value="publish"><?= e(admin_trans('publish')) ?></option>
+                    <option value="publish"><?= e(admin_trans('bulk_publish')) ?></option>
                 <?php endif; ?>
-                <option value="draft"><?= e(admin_trans('draft')) ?></option>
-                <option value="archive"><?= e(admin_trans('archived')) ?></option>
+                <option value="draft"><?= e(admin_trans('status_draft')) ?></option>
+                <option value="archive"><?= e(admin_trans('status_archived')) ?></option>
                 <?php if (admin_can('content.delete')): ?>
-                    <option value="delete"><?= e(admin_trans('move_to_trash')) ?></option>
+                    <option value="delete"><?= e(admin_trans('trash_move')) ?></option>
                 <?php endif; ?>
-                <option value="clear_cache"><?= e(admin_trans('clear_cache')) ?></option>
-                <option value="add_tag"><?= e(admin_trans('add_tag')) ?></option>
-                <option value="remove_tag"><?= e(admin_trans('remove_tag')) ?></option>
+                <option value="clear_cache"><?= e(admin_trans('bulk_clear_cache')) ?></option>
+                <option value="add_tag"><?= e(admin_trans('bulk_add_tag')) ?></option>
+                <option value="remove_tag"><?= e(admin_trans('bulk_remove_tag')) ?></option>
             </select>
         </label>
 
         <label id="bulk-tag-wrap" hidden>
-            <span class="visually-hidden"><?= e(admin_trans('tag')) ?></span>
+            <span class="visually-hidden"><?= e(admin_trans('bulk_tag')) ?></span>
             <select name="tag_id" id="bulk-tag" class="field-input">
-                <option value=""><?= e(admin_trans('choose_tag')) ?>…</option>
+                <option value=""><?= e(admin_trans('bulk_choose_tag')) ?>…</option>
                 <?php foreach ($availableTags as $tagOption): ?>
                     <option value="<?= (int) $tagOption['id'] ?>"><?= e($tagOption['name']) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
 
-        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('apply')) ?></button>
-        <button type="button" class="btn-small btn-muted" id="bulk-clear"><?= e(admin_trans('clear_selection')) ?></button>
+        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('bulk_apply')) ?></button>
+        <button type="button" class="btn-small btn-muted" id="bulk-clear"><?= e(admin_trans('bulk_clear_selection')) ?></button>
     </form>
 <?php endif; ?>
 
@@ -216,7 +216,7 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
         <?php else: ?>
             <?= $statusFilter !== '' || $searchFilter !== ''
                 ? 'No ' . e($typeLabel) . 's match these filters.'
-                : e(admin_trans('no_content', ['type' => $typeLabel])) ?>
+                : e(admin_trans('content_empty', ['type' => $typeLabel])) ?>
         <?php endif; ?>
     </p>
 <?php else: ?>
@@ -225,16 +225,16 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
             <tr>
                 <?php if (admin_can('content.bulk')): ?>
                     <th style="width:32px;">
-                        <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('select_all')) ?>">
+                        <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
                     </th>
                 <?php endif; ?>
                 <th><?= e(admin_trans('content_title')) ?></th>
-                <th><?= e(admin_trans('slug')) ?></th>
-                <th><?= e(admin_trans('status')) ?></th>
-                <th><?= e(admin_trans('published')) ?></th>
-                <th><?= e(admin_trans('scheduled')) ?></th>
-                <th><?= e(admin_trans('updated')) ?></th>
-                <th style="width:220px;"><?= e(admin_trans('actions')) ?></th>
+                <th><?= e(admin_trans('common_slug')) ?></th>
+                <th><?= e(admin_trans('common_status')) ?></th>
+                <th><?= e(admin_trans('status_published')) ?></th>
+                <th><?= e(admin_trans('status_scheduled')) ?></th>
+                <th><?= e(admin_trans('common_updated')) ?></th>
+                <th style="width:220px;"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
         <tbody>
@@ -258,7 +258,7 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
                     class="no-underline">
                         <?= e($item['title']) ?>
                         <?php if ($isHomepage): ?>
-                            <span class="badge badge-home"><?= e(admin_trans('home')) ?></span>
+                            <span class="badge badge-home"><?= e(admin_trans('content_home_badge')) ?></span>
                         <?php endif; ?>
                     </a>
                 </td>
@@ -290,22 +290,22 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
                             <button type="submit" class="btn-small btn-secondary">
-                                <?= e(admin_trans('restore')) ?>
+                                <?= e(admin_trans('common_restore')) ?>
                             </button>
                         </form>
 
                         <?php if (admin_can('content.delete')): ?>
                         <form method="post"
                             action="<?= url('admin/content/remove') ?>"
-                            data-confirm="<?= e(admin_trans('purge_confirm', ['name' => $item['title']])) ?>"
-                            data-confirm-title="<?= e(admin_trans('delete_permanently')) ?>"
+                            data-confirm="<?= e(admin_trans('trash_purge_confirm', ['name' => $item['title']])) ?>"
+                            data-confirm-title="<?= e(admin_trans('trash_delete_permanently')) ?>"
                             class="inline-form js-confirm-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
                             <input type="hidden" name="purge" value="1">
                             <button type="submit" class="btn-delete btn-small">
-                                <?= e(admin_trans('delete_permanently')) ?>
+                                <?= e(admin_trans('trash_delete_permanently')) ?>
                             </button>
                         </form>
                         <?php endif; ?>
@@ -316,13 +316,13 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
                             target="_blank"
                             class="btn-small btn-preview"
                             title="Open a live, uncached preview">
-                            <?= e(admin_trans('preview')) ?>
+                            <?= e(admin_trans('common_preview')) ?>
                         </a>
 
                         <?php if ($canEditThis): ?>
                             <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
                                 class="btn-small">
-                                <?= e(admin_trans('edit')) ?>
+                                <?= e(admin_trans('common_edit')) ?>
                             </a>
                         <?php endif; ?>
 
@@ -330,13 +330,13 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
                         <form method="post"
                             action="<?= url('admin/content/remove') ?>"
                             data-confirm="<?= e(admin_trans('trash_confirm', ['name' => $item['title']])) ?>"
-                            data-confirm-title="<?= e(admin_trans('move_to_trash')) ?>"
+                            data-confirm-title="<?= e(admin_trans('trash_move')) ?>"
                             class="inline-form js-confirm-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
                             <button type="submit" class="btn-delete btn-small">
-                                <?= e(admin_trans('move_to_trash')) ?>
+                                <?= e(admin_trans('trash_move')) ?>
                             </button>
                         </form>
                         <?php endif; ?>
@@ -419,9 +419,11 @@ $tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItem
 
         event.preventDefault();
 
+        const labelKey = action === 'delete' ? 'common_delete' : 'bulk_archive';
+
         const ok = await confirmModal({
-            title: window.adminTranslations?.confirm_action || 'Confirm',
-            message: `${window.adminTranslations?.[action] || action}: ${total} item(s)?`
+            title: window.adminTranslations?.common_confirm_action || 'Confirm',
+            message: `${window.adminTranslations?.[labelKey] || action}: ${total} item(s)?`
         });
 
         if (ok) form.submit();
@@ -451,9 +453,9 @@ ob_start();
 <h3><?= e($typeLabel) ?> list</h3>
 <p><?= e(admin_trans('content_list_help', ['type' => $typeLabel])) ?></p>
 <ul>
-    <li><?= e(admin_trans('status_help')) ?></li>
-    <li><?= e(admin_trans('published_help')) ?></li>
-    <li><?= e(admin_trans('updated_help')) ?></li>
+    <li><?= e(admin_trans('content_status_help')) ?></li>
+    <li><?= e(admin_trans('content_published_help')) ?></li>
+    <li><?= e(admin_trans('content_updated_help')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

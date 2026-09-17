@@ -10,7 +10,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-$pageTitle = admin_trans('health');
+$pageTitle = admin_trans('nav_health');
 
 $checks  = health_checks();
 $summary = health_summary($checks);
@@ -32,7 +32,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('health')) ?></h2>
+        <h2><?= e(admin_trans('nav_health')) ?></h2>
         <p><?= e(admin_trans('health_intro')) ?></p>
     </div>
 </div>
@@ -75,7 +75,7 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('health')) ?></h3>
+<h3><?= e(admin_trans('nav_health')) ?></h3>
 <p><?= e(admin_trans('health_help')) ?></p>
 <?php
 $pageHelp = ob_get_clean();

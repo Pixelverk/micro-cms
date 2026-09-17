@@ -147,11 +147,11 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('menus')) ?></h3>
+<h3><?= e(admin_trans('nav_menus')) ?></h3>
 <p><?= e(admin_trans('menu_help')) ?></p>
 <ul>
-    <li><?= e(admin_trans('menu_locations_help')) ?></li>
-    <li><?= e(admin_trans('menu_nesting_help')) ?></li>
+    <li><?= e(admin_trans('menu_help_locations')) ?></li>
+    <li><?= e(admin_trans('menu_help_nesting')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

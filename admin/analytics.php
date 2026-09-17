@@ -10,7 +10,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-$pageTitle = admin_trans('analytics');
+$pageTitle = admin_trans('nav_analytics');
 
 // Views are buffered to a file and pulled into the database at most once a
 // minute. This button does that immediately, so the numbers below are current.
@@ -84,7 +84,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('analytics')) ?></h2>
+        <h2><?= e(admin_trans('nav_analytics')) ?></h2>
         <p><?= e(admin_trans('analytics_intro')) ?></p>
     </div>
     <div class="page-actions">
@@ -185,7 +185,7 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('analytics')) ?></h3>
+<h3><?= e(admin_trans('nav_analytics')) ?></h3>
 <p><?= e(admin_trans('analytics_help')) ?></p>
 <p><?= e(admin_trans('analytics_refresh_help')) ?></p>
 <?php

@@ -20,10 +20,10 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p><?= e(admin_trans('editing_user', ['name' => $editUsername])) ?></p>
+        <p><?= e(admin_trans('user_editing', ['name' => $editUsername])) ?></p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="edit-user"><?= e(admin_trans('save_changes')) ?></button>
+        <button type="submit" form="edit-user"><?= e(admin_trans('common_save')) ?></button>
     </div>
 </div>
 
@@ -36,29 +36,29 @@ ob_start();
         <legend><?= e(admin_trans('user_info')) ?></legend>
 
         <label>
-            <?= e(admin_trans('username')) ?>:
+            <?= e(admin_trans('user_username')) ?>:
             <input type="text" name="username" value="<?= e($user['username'] ?? '') ?>" readonly>
-            <small><?= e(admin_trans('username_cannot_change')) ?></small>
+            <small><?= e(admin_trans('user_username_fixed')) ?></small>
         </label>
 
         <label>
-            <?= e(admin_trans('first_name')) ?>:
+            <?= e(admin_trans('user_first_name')) ?>:
             <input type="text" name="first_name" value="<?= e($user['first_name'] ?? '') ?>">
         </label>
 
         <label>
-            <?= e(admin_trans('last_name')) ?>:
+            <?= e(admin_trans('user_last_name')) ?>:
             <input type="text" name="last_name" value="<?= e($user['last_name'] ?? '') ?>">
         </label>
 
         <label>
-            <?= e(admin_trans('email')) ?>:
+            <?= e(admin_trans('user_email')) ?>:
             <input type="email" name="email" value="<?= e($user['email'] ?? '') ?>">
         </label>
 
         <?php if (admin_can('users.manage')): ?>
             <label>
-                <?= e(admin_trans('role')) ?>:
+                <?= e(admin_trans('user_role')) ?>:
                 <select name="role">
                     <?php foreach (admin_roles() as $roleCode): ?>
                         <option value="<?= e($roleCode) ?>" <?= (($user['role'] ?? 'author') === $roleCode) ? 'selected' : '' ?>>
@@ -66,35 +66,35 @@ ob_start();
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <small><?= e(admin_trans('role_help')) ?></small>
+                <small><?= e(admin_trans('user_help_role')) ?></small>
             </label>
         <?php endif; ?>
 
         <label>
-            <?= e(admin_trans('ui_language')) ?>:
+            <?= e(admin_trans('user_language')) ?>:
             <select name="ui_language">
-                <option value=""><?= e(admin_trans('use_default_admin_language')) ?></option>
+                <option value=""><?= e(admin_trans('user_language_default')) ?></option>
                 <?php foreach ($adminLanguages as $languageCode => $languageLabel): ?>
                     <option value="<?= e($languageCode) ?>" <?= (($user['ui_language'] ?? '') === $languageCode) ? 'selected' : '' ?>>
                         <?= e($languageLabel) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
-            <small><?= e(admin_trans('personal_language_help')) ?></small>
+            <small><?= e(admin_trans('user_language_help')) ?></small>
         </label>
     </fieldset>
 
     <fieldset>
-        <legend><?= e(admin_trans('update_password')) ?></legend>
+        <legend><?= e(admin_trans('user_password_update')) ?></legend>
 
         <label>
-            <?= e(admin_trans('password')) ?>:
-            <input type="password" name="password" placeholder="<?= e(admin_trans('leave_blank_password')) ?>">
+            <?= e(admin_trans('user_password')) ?>:
+            <input type="password" name="password" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
         </label>
 
         <label>
-            <?= e(admin_trans('confirm_password')) ?>:
-            <input type="password" name="password_confirm" placeholder="<?= e(admin_trans('leave_blank_password')) ?>">
+            <?= e(admin_trans('user_confirm_password')) ?>:
+            <input type="password" name="password_confirm" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
         </label>
     </fieldset>
 </form>
@@ -104,9 +104,9 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('edit_user')) ?></h3>
-<p><?= e(admin_trans('user_form_help')) ?></p>
-<p><?= e(admin_trans('password_help')) ?></p>
+<h3><?= e(admin_trans('user_edit')) ?></h3>
+<p><?= e(admin_trans('user_help_form')) ?></p>
+<p><?= e(admin_trans('user_help_password')) ?></p>
 <?php
 $pageHelp = ob_get_clean();
 $docsLink = ['tab' => 'reference', 'section' => 'roles'];

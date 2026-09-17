@@ -13,10 +13,10 @@
             <div class="component-actions">
                 <div class="actions-left">
                     <select class="allowed-children-select" name="allowed-children-select">
-                        <option value=""><?= e(admin_trans('child_component')) ?></option>
+                        <option value=""><?= e(admin_trans('editor_child_component')) ?></option>
                     </select>
-                    <p class="no-children text-small"><?= e(admin_trans('no_child_components')) ?></p>
-                    <button type="button" class="add-child-btn"><?= e(admin_trans('add')) ?></button>
+                    <p class="no-children text-small"><?= e(admin_trans('editor_no_child_components')) ?></p>
+                    <button type="button" class="add-child-btn"><?= e(admin_trans('common_add')) ?></button>
                 </div>
                 <div class="actions-right">
                     <button type="button" class="move-up">&#8593;</button>
