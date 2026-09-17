@@ -14,6 +14,12 @@ declare(strict_types=1);
 | The second rule matters because a cache file is keyed by path alone: an
 | editor's preview of /about/ would otherwise be published to every visitor.
 |
+| Both functions assume the front entry point (index.php) has already run
+| bootstrap_core() and migrate_before_read(), and has started the session when
+| the request carries one. That order is owned there on purpose: the cache
+| decision needs the helper set and the session state, and the schema must be
+| current before anything reads content.
+|
 */
 
 /**
@@ -29,13 +35,12 @@ function checkCache($request, $config)
     }
 
     // Nothing cached may be served to anyone with an identity, and a preview
-    // request must always be rendered live. checkCache() runs before the
-    // helper set is loaded, so probe for the helper rather than assuming it.
+    // request must always be rendered live.
     if (!empty($_SESSION['user_id'])) {
         return false;
     }
 
-    if (function_exists('can_preview_content') && can_preview_content()) {
+    if (can_preview_content()) {
         return false;
     }
 
@@ -53,14 +58,6 @@ function checkCache($request, $config)
 
 function serveCached($file, $config)
 {
-    // helpers — the same set the fresh path uses, because the shutdown hook
-    // below calls publishing_check(), which needs the content helpers.
-    require_once CORE_PATH . '/helpers/common.php';
-    bootstrap_core();
-
-    // Start session
-    session_boot();
-
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
 
@@ -77,19 +74,9 @@ function serveCached($file, $config)
 
 function serveFresh($request)
 {
-    // helpers
-    require_once CORE_PATH . '/helpers/common.php';
-    bootstrap_core();
-
-    // Core Systems
+    // Rendering only happens on this path, so a cache hit never loads these.
     require CORE_PATH . '/render.php';
     require CORE_PATH . '/router.php';
-
-    // Start session
-    session_boot();
-
-    // Upgrade the schema before rendering (and explain failures clearly).
-    migrate_before_read();
 
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');

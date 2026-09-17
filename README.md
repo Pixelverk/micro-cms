@@ -126,9 +126,10 @@ Demo account:
 
 ### Planned
 
-The backlog lives in [`plan.md`](plan.md). Current entries:
-
-* Multi-language front end — intended path documented in [`multilanguage-plan.md`](multilanguage-plan.md)
+The backlog lives in [`plan.md`](plan.md). Near-term entries: site health check,
+redirects and 404 tracking, backup download, trash and robots.txt. The
+multi-language front end is designed in
+[`multilanguage-plan.md`](multilanguage-plan.md) and deferred.
 
 ### Maybe
 

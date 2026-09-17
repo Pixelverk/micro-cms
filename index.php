@@ -52,6 +52,71 @@ function database_is_ready(string $path): bool
     }
 }
 
+// 0. Begin request processing
+$request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+$path = rtrim($request, '/');
+$cacheLifetime = (int) ($config['cache_lifetime'] ?? 3600);
+
+// check for performance logging (before the firebreak, so a hit is timed)
+if ($logging) {
+    require CORE_PATH . '/helpers/perf.php';
+}
+
+/*
+|--------------------------------------------------------------------------
+| 1. Front-end cache firebreak
+|--------------------------------------------------------------------------
+| A cached page is a file on disk, so an anonymous GET is served here before
+| the installer check, the helper set, the session and the migrations.
+|
+| It only fires without a session cookie. Preview requires a signed-in user,
+| and a signed-in user always has a session, so a cookie-less request can be
+| neither. Anything with a session falls through to checkCache() below, which
+| decides with the real session state after the full boot.
+|--------------------------------------------------------------------------
+*/
+// Scheduled publishing is checked after a public request at most once a
+// minute. Let that one request take the full path instead of skipping the check
+// on a cache hit.
+$publishMarker   = STORAGE_PATH . '/.publish-check';
+$publishCheckDue = !is_file($publishMarker) || (time() - (int) filemtime($publishMarker)) >= 60;
+
+if (!str_starts_with($path, '/admin')
+    && !str_starts_with($path, '/media')
+    && $_SERVER['REQUEST_METHOD'] === 'GET'
+    && ($config['setup_completed'] ?? false) === true
+    && empty($_COOKIE[session_name()])
+    && !isset($_GET['preview'])
+    && !str_starts_with(ltrim($path, '/'), 'search')
+    && !$publishCheckDue
+) {
+    require_once CORE_PATH . '/helpers/cache.php';
+    $cacheFile = cache_file_for($request);
+
+    // The database only has to exist: a cache hit reads nothing from it, but a
+    // missing or empty one means the installer still has to run.
+    if (is_file($cacheFile)
+        && (time() - filemtime($cacheFile) < $cacheLifetime)
+        && is_file($dbPath) && filesize($dbPath) > 0
+    ) {
+        // Count the hit with the smallest boot that can do it. The insert runs
+        // in the shutdown flush, after the page has been sent.
+        require_once CORE_PATH . '/helpers/common.php';
+        require_once CORE_PATH . '/db.php';
+        require_once CORE_PATH . '/helpers/analytics.php';
+        analytics_record_view(null, true);
+
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: public, max-age=' . $cacheLifetime);
+        header('X-Cache: HIT');
+        readfile($cacheFile);
+
+        if ($logging) { stop_logging(true); }
+        exit;
+    }
+}
+
+// First-run installer and the database sanity check.
 $databaseNeedsSetup = !database_is_ready($dbPath);
 $doSetup = ($config['setup_completed'] ?? false) !== true || $databaseNeedsSetup;
 
@@ -61,21 +126,12 @@ if ($databaseNeedsSetup && is_file($dbPath)) {
     unlink($dbPath);
 }
 
-// check for performance logging
-if ($logging) {
-    require CORE_PATH . '/helpers/perf.php';
-}
-
 // check for first run setup
 if ($doSetup) {
     require CORE_PATH . '/helpers/setup.php';
 }
 
-// 0. Begin request processing 
-$request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-$path = rtrim($request, '/');
-
-// 1. Media
+// 2. Media
 if (str_starts_with($path, '/media')) {
     require CORE_PATH . '/bootstrap/media.php';
     serveMedia($request);
@@ -83,7 +139,7 @@ if (str_starts_with($path, '/media')) {
     exit;
 }
 
-// 2. Admin
+// 3. Admin
 if (str_starts_with($path, '/admin')) {
     require CORE_PATH . '/bootstrap/admin.php';
     serveAdmin($request);
@@ -91,15 +147,20 @@ if (str_starts_with($path, '/admin')) {
     exit;
 }
 
-// 3. Frontend
+// 4. Frontend
 require CORE_PATH . '/bootstrap/front.php';
 
-// The session must exist before the cache is consulted: a cached page is only
-// ever served to an anonymous visitor, and preview requests must be rendered
-// live. Both decisions depend on the session.
+// The front path's single boot point; serveCached()/serveFresh() assume it has
+// run. Only a request that already carries a session cookie can be signed in
+// or previewing, so only that request needs a session. Anonymous visitors stay
+// sessionless: no cookie, no session file, and the firebreak above stays fast
+// on every visit.
 require_once CORE_PATH . '/helpers/common.php';
 bootstrap_core();
-session_boot();
+
+if (isset($_COOKIE[session_name()])) {
+    session_boot();
+}
 
 // Schema migrations must run before ANY query reads content: a database created
 // by an older release lacks columns the current read paths select, and the
@@ -107,14 +168,14 @@ session_boot();
 // database that cannot be upgraded fails loudly instead of 500-ing.
 migrate_before_read();
 
-// 3.1 Cached HTML
+// 4.1 Cached HTML
 if ($file = checkCache($request, $config)) {
     serveCached($file, $config);
     if ($logging) { stop_logging(true); };
     exit;
 }
 
-// 3.2 Database render
+// 4.2 Database render
 serveFresh($request);
 if ($logging) { stop_logging(); };
 exit;

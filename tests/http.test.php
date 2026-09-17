@@ -196,6 +196,18 @@ t('a public page renders', function () use ($base) {
     assert_contains('<html', $body);
 });
 
+t('an anonymous cached page is served without starting a session', function () use ($base) {
+    test_clear_cache_files();
+
+    // Warm the cache as a visitor, then request it again.
+    http('GET', $base . '/about/', false);
+    [$status, , $headers] = http('GET', $base . '/about/', false);
+
+    assert_eq(200, $status);
+    assert_contains('X-Cache: HIT', $headers, 'the second request is served from the cache');
+    assert_not_contains('Set-Cookie', $headers, 'anonymous visitors stay sessionless');
+});
+
 t('unknown admin pages require login', function () use ($base) {
     [$status] = http('GET', $base . '/admin/dashboard', false);
     assert_eq(302, $status, 'anonymous admin access must redirect');

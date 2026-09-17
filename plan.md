@@ -1,86 +1,146 @@
-### 1. Header/footer scripts in settings
+# Micro CMS — plan
 
-**Status: implemented.** Reuses `settings.manage` (already administrators only)
-rather than adding a separate capability. Snippets are injected after
-`minify_html()`.
+A living backlog for a CMS that stays procedural PHP over SQLite with no build
+step and no packages. Each idea is judged on two questions: does it solve a
+problem that exists today, and can it be done with what is already here
+(PDO/SQLite, Imagick, plain PHP)? The inspiration comes from WordPress, Joomla
+and Squarespace, but their weight does not.
 
-Your `README.md` lists this under "Planned" as *"Header/footer JS input in
-settings, for google analytics script"*.
+Completed work (header/footer scripts, cache warm-up + static export, built-in
+analytics, multi-language admin) has been removed. The multi-language front
+end stays as a deferred design.
 
-* `settings['header_scripts']` and `settings['footer_scripts']` text areas on the
-  Settings page.
-* Rendered in `core/render.php` before `</head>` and `</body>`.
-* Raw output, so gated behind a capability and documented as trusted-admin-only.
-* Should be injected **after** `minify_html()`, not before, so the minifier never
-  rewrites injected JavaScript.
-* **Security decision needed first.** This adds a supported path for arbitrary
-  script injection into every public page. That is the point of the feature, but
-  it is a deliberate escalation past the per-item escaping the rest of the CMS
-  enforces. Suggested hardening: a dedicated `code.manage` capability rather than
-  reusing `settings.manage`, so it can be restricted to administrators only.
+## Next up
 
-### 2. Cache warm-up and static export
+### 1. Site health check
 
-**Status: implemented.** Utilities gains "Warm Cache" and "Export Static Site".
-The export writes pages as `<path>/index.html` and rewrites theme/media URLs
-relative to each page, and refuses with a clear message when `ZipArchive` is
-missing (it is not installed in local dev).
+**Why:** this failure mode has already bitten twice — `data.sqlite`,
+`storage/cache` and `storage/logs` were not writable by the web user, and every
+symptom was a blank 500 or a silently uncached page. WordPress Site Health and
+Joomla's System Information answer "is this install OK?" on one screen.
 
-Two Utilities buttons.
+**Sketch:** `admin/health.php` listing checks with pass/warn/fail and a one-line
+fix for each: PHP version; `pdo_sqlite`, `imagick`, `zip`; writable
+`storage/`, `cache/`, `media/`, `logs/`, `sitemap.xml`; migration marker
+current; `setup_completed`; `security.form_secret` set; `env`;
+`perf_logging` off in production; HTTPS; free disk. Reuse
+`database_is_writable()` and `admin_page_capabilities()` (`settings.manage`).
 
-* **Warm cache for all published pages** — iterate published content, render each
-  page through `serveFresh()`/`render_page()`, report counts and failures. Useful
-  after a bulk edit so the first visitor does not pay the render cost.
-* **Export static site as a zip** — warm the cache, then zip `storage/cache/`
-  together with `theme/assets/` and `storage/media/`, rewriting `/media/` and
-  asset URLs to relative paths so the result works with no PHP at all.
-* Needs a `ZipArchive` extension check and a new documented requirement in the
-  README.
+**Verify:** a test that makes a temp storage directory read-only and asserts the
+check reports it, plus a manual pass on the live vhost.
 
-### 3. Built-in analytics (foundation only)
+### 2. Redirects and 404 tracking
 
-**Status: implemented.** `page_views` migration plus front-end counting in
-`serveFresh()`/`serveCached()` (single shutdown flush, bots flagged, no IPs),
-and `admin/analytics.php` is a real dashboard with inline SVG sparklines.
-Referrers are stored as host only, and the cache-hit ratio is recorded per
-view (`cache_hit`) rather than parsed from `perf.log`, which may be disabled.
-The dashboard has a 30-day / 6-month / 1-year range selector and compares each
-metric with the previous period of the same length.
-Follow-up: the table has no pruning yet.
+**Why:** renaming a slug strands the old URL as a 404. WordPress' most-installed
+SEO plugin is a redirect manager and Joomla ships one; a tiny table buys a lot
+of SEO.
 
-`admin/analytics.php` is currently a 21-line stub ("Nothing to see here yet!").
+**Sketch:** `redirects` table (`from_path` unique, `to_path`, `status` 301/302,
+`hits`, `created_at`). The router consults it **before the HTML cache**, so a
+redirect always wins, and clearing the old cache file on save keeps it honest.
+Admin CRUD page, plus a "recent 404s" panel: extend `page_views` with a
+`status` column so misses are recorded (the dashboard keeps counting 200s) and
+feed them into new redirects. When an editor changes a slug, offer "create a
+redirect from the old URL".
 
-* `page_views` migration: path, content id, viewed_at, referrer hash, UA hash,
-  is_bot.
-* Counting hook in `serveFresh()` and `serveCached()`, batched into a single
-  shutdown write, bot-filtered. **Do not store IPs** — keep a daily hash only.
-* `admin/analytics.php` becomes a real dashboard: views over 7/30 days, top pages,
-  top referrers, cache-hit ratio parsed from `storage/logs/perf.log`.
-* Inline SVG sparklines only — the no-CDN / no-build rule rules out a chart
-  library.
+**Effort:** M.
 
-### 4. Multi-language front end
+**Verify:** tests for the response code, the hit counter, 404 recording and the
+slug-change suggestion.
 
-**Status: documented, code deferred.** The intended path is in
-[`multilanguage-plan.md`](multilanguage-plan.md): a `content_translations`
-table keyed by `(content_id, locale)`, a `settings['locales']` list, and a
-router that resolves a locale prefix while default-locale URLs stay unchanged.
+### 3. Backup download
 
-### 5. Multi-language admin
+**Why:** there is no way to take the content with you; the static export is
+pages, not data. Every WordPress and Joomla host offers a backup export, and it
+is the cheapest insurance against a bad host move.
 
-Effectively done. `en` and `sv` ship for every admin string added, and `tests/design.test.php` plus the bulk/docs additions keep new strings from going missing. Nothing to do beyond keeping it up.
+**Sketch:** a Utilities button that zips `data.sqlite` (via `VACUUM INTO` for a
+consistent copy), `media/`, `sitemap.xml` and the cache, streamed and discarded
+like the static export. Exclude `config.php`, which holds the form secret.
 
-### 6. Live preview in the content editor
+**Effort:** S.
 
-Superseded by the preview mode (`?preview=<token>`). The remaining idea is
-an editor iframe pointing at that URL with `postMessage` for save-then-refresh.
-Documented as a follow-up, not planned work.
+**Verify:** build a backup, open it and assert it contains the database and
+media; keep the existing `ZipArchive` guard test. Restore stays manual and
+documented — an admin-uploaded database can brick a live site.
 
----
+### 4. Trash (soft delete)
 
-## Known wart
+**Why:** deleting is permanent today and takes the version history with it.
+WordPress and Squarespace both keep a trash.
 
-* **Possible test-order coupling.** `tests/admin.test.php` mutates the seeded
-  `demo` user's role and adds users, restoring the role at the end. Every suite
-  otherwise shares `tests/.tmp/storage`. If a future suite depends on a pristine
-  user table, give it its own seeded database instead of relying on the shared one.
+**Sketch:** `deleted_at` on `content`; `content_visibility_sql()` and the
+listings exclude trashed rows; a Trash tab on the content list with restore and
+permanent delete; purge items older than N days from the existing shutdown hook
+(`publishing_check()`).
+
+**Effort:** M.
+
+**Verify:** trashed items leave the front end, cache and sitemap; restore brings
+them back; permanent delete removes the row and its versions.
+
+### 5. robots.txt
+
+**Why:** there is no route for it, so crawlers never discover the sitemap.
+WordPress serves a virtual robots.txt.
+
+**Sketch:** `/robots.txt` with sensible defaults (`Allow: /` and the absolute
+`Sitemap:` line) plus a Settings textarea for extra lines, administrators only.
+
+**Effort:** S.
+
+**Verify:** `text/plain`, absolute sitemap URL, custom lines rendered.
+
+## Later
+
+7. **Editor autosave** — a draft version every ~60s through the existing
+   `content_versions` store (reason `autosave`), offered back on reload. Reuses
+   what is there instead of new storage. (M)
+8. **Front-end pagination** — blog, portfolio and taxonomy archives render
+   everything today. Add `?page=N` and `rel=prev/next`, and treat paged views
+   like search so they are never written to the path-only cache key. (M)
+9. **Media usage before delete** — scan content bodies for a media id and show
+   where it is used, the way Joomla warns before removing a file. (M)
+10. **Version diff** — show what changed between two versions. Plain PHP, no
+    diff library. (M)
+11. **Maintenance mode** — a Settings toggle and message; visitors get 503 +
+    `Retry-After`, while signed-in admins and previews keep working. (S–M)
+12. **Publish webhook** — a Settings URL that receives a small JSON POST on
+    publish/unpublish, so a static rebuild (the export workflow) can be
+    triggered without polling. This is the distribution hook that matters most
+    today. (S)
+13. **RSS/Atom feed** — `/feed/` for the content types the theme marks as feed
+    sources, cached like a page, with a `<link rel="alternate">` in `<head>`.
+    Cheap and still consumed by newsletter tools, automation and aggregators,
+    but low urgency for a site without a news habit. (S)
+14. **Form submissions CSV export** — export the inbox for mailing lists. (S)
+15. **Theme asset auto-versioning** — `theme.php`'s `?v=` counters are manual
+    and easy to forget; stamp them by modification time like `admin_asset()`. (S)
+16. **Dashboard at a glance** — recent content, activity and analytics totals on
+    the landing page. (S)
+
+## Deferred
+
+* **Multi-language front end** — design agreed in
+  [`multilanguage-plan.md`](multilanguage-plan.md); code deferred until the
+  phases are scheduled.
+
+## Considered and not planned
+
+* **Comments** — moderation and spam need either a lot of code or an external
+  service; the CMS targets sites that do not need them.
+* **Front-end accounts and membership** — a second auth system, roles and
+  password flows for a benefit most small sites do not need.
+* **Visual page/theme builder** — developers own the theme; the component
+  editor already covers content structure.
+* **REST/JSON API and headless mode** — a whole public surface to secure and
+  version. Revisit only if a headless use case appears.
+* **E-commerce, external captcha, offsite/scheduled backups** — each needs a
+  payment, spam or storage dependency that breaks the no-dependency rule.
+
+## Notes
+
+* Every test suite must call `test_fresh_database()` (or seed its own database)
+  because `tests/admin.test.php` mutates the shared user table.
+* New files under `core/` must be readable by the web server user; the health
+  check (item 1) exists to make that class of failure visible.
