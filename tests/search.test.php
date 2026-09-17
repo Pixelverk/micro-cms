@@ -11,34 +11,20 @@ require __DIR__ . '/bootstrap.php';
 test_fresh_database();
 
 /**
- * Create a published page with body text and return its id.
+ * Create a published page with body text, index it, and return its id.
  */
 function search_seed(string $slug, string $title, string $text, string $body = '', array $overrides = []): int
 {
-    $now = time();
-
     $components = $body !== ''
         ? [['type' => 'quill-editor', 'props' => ['content' => $body], 'children' => []]]
         : [];
 
-    $row = array_merge([
-        'type'         => 'page',
-        'slug'         => $slug,
-        'title'        => $title,
-        'status'       => 'published',
-        'body'         => json_encode($components),
-        'meta'         => json_encode(['description' => $text]),
-        'published_at' => $now,
-        'created_at'   => $now,
-        'updated_at'   => $now,
-    ], $overrides);
-
-    db()->prepare("
-        INSERT INTO content (type, slug, title, status, body, meta, published_at, created_at, updated_at)
-        VALUES (:type, :slug, :title, :status, :body, :meta, :published_at, :created_at, :updated_at)
-    ")->execute($row);
-
-    $id = (int) db()->lastInsertId();
+    $id = seed_content(array_merge([
+        'slug'  => $slug,
+        'title' => $title,
+        'meta'  => ['description' => $text],
+        'body'  => $components,
+    ], $overrides));
 
     search_index_content($id);
 

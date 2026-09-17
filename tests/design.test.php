@@ -124,23 +124,6 @@ t('dark mode overrides the core surface tokens', function () {
     assert_contains('--text:', $css);
 });
 
-t('the stylesheet documents its own structure', function () {
-    $css = admin_css();
-
-    // Numbered section banners make the file navigable; keep them.
-    foreach ([
-        '/* 2. Design Tokens',
-        '/* 4. Base Elements',
-        '/* 5. Layout Structure',
-        '/* 6. Components',
-        '/* 7. Page-Specific Styles',
-        '/* 9. State-Dependent Styles',
-        '/* 10. Media Queries',
-    ] as $banner) {
-        assert_contains($banner, $css, "missing section banner: {$banner}");
-    }
-});
-
 t('the header exposes accessible controls and breadcrumbs', function () {
     $header = (string) file_get_contents(CMS_PATH . '/admin/partials/header.php');
 

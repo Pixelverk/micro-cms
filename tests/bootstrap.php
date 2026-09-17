@@ -82,10 +82,37 @@ session_boot();
 require __DIR__ . '/helpers.php';
 
 /**
- * Rebuild the database from scratch using the real installer.
- * Runs in a subprocess because setup.php both defines functions and exits.
+ * Restore the seeded demo database.
+ *
+ * The installer runs once per schema revision, into a template file; every
+ * later call is a file copy. That keeps each suite isolated (it still starts
+ * from a pristine database) without a PHP subprocess per suite.
  */
 function test_fresh_database(): void
+{
+    $dbPath       = STORAGE_PATH . '/data.sqlite';
+    $templatePath = STORAGE_PATH . '/seed-template.sqlite';
+
+    // Rebuild when the template is missing or predates the schema source.
+    if (!is_file($templatePath) || filemtime($templatePath) < filemtime(CORE_PATH . '/helpers/setup.php')) {
+        test_build_seed_template($templatePath);
+        return;
+    }
+
+    if (is_file($dbPath)) {
+        unlink($dbPath);
+    }
+
+    if (!copy($templatePath, $dbPath)) {
+        throw new RuntimeException('Could not restore the seeded test database.');
+    }
+}
+
+/**
+ * Run the real installer once and store the result as the seed template.
+ * Runs in a subprocess because setup.php both defines functions and exits.
+ */
+function test_build_seed_template(string $templatePath): void
 {
     $dbPath = STORAGE_PATH . '/data.sqlite';
 
@@ -112,10 +139,14 @@ PHP;
     }
 
     // The installer seeds content straight into the tables, which bypasses
-    // save_content() and therefore the search index. Build it once here so
-    // every suite starts from a searchable database.
+    // save_content() and therefore the search index. Build it here so every
+    // restored copy starts searchable.
     if (function_exists('search_reindex_all')) {
         search_reindex_all();
+    }
+
+    if (!copy($dbPath, $templatePath)) {
+        throw new RuntimeException('Could not store the seed template.');
     }
 }
 

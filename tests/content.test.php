@@ -10,39 +10,6 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 test_fresh_database();
 
-/**
- * Insert a content row directly, bypassing validation, for read tests.
- */
-function seed_content(array $overrides = []): int
-{
-    $now = time();
-
-    $row = array_merge([
-        'type'         => 'page',
-        'slug'         => 'sample-' . bin2hex(random_bytes(3)),
-        'parent_id'    => null,
-        'title'        => 'Sample',
-        'status'       => 'published',
-        'layout'       => null,
-        'header'       => null,
-        'footer'       => null,
-        'meta'         => '{}',
-        'body'         => '[]',
-        'published_at' => $now,
-        'scheduled_at' => null,
-        'created_at'   => $now,
-        'updated_at'   => $now,
-    ], $overrides);
-
-    $stmt = db()->prepare("
-        INSERT INTO content (type, slug, parent_id, title, status, layout, header, footer, meta, body, published_at, scheduled_at, created_at, updated_at)
-        VALUES (:type, :slug, :parent_id, :title, :status, :layout, :header, :footer, :meta, :body, :published_at, :scheduled_at, :created_at, :updated_at)
-    ");
-    $stmt->execute($row);
-
-    return (int) db()->lastInsertId();
-}
-
 // ---------------------------------------------------------------------------
 // Status resolution
 // ---------------------------------------------------------------------------

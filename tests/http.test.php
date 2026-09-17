@@ -39,9 +39,8 @@ $cookieJar = test_tmp_root() . '/cookies.txt';
 // Seed before the server opens the database.
 test_fresh_database();
 
-// The seeded account must be an administrator: preview and cache behaviour
-// depend on real capabilities, and other suites may have changed roles.
-db()->exec("UPDATE users SET role = 'admin' WHERE username = 'demo'");
+// The seeded 'demo' account is an administrator (users.role defaults to
+// 'admin'), and test_fresh_database() just restored the pristine seed.
 
 // Start from a cold cache: earlier suites may have left cached pages behind.
 test_clear_cache_files();
@@ -170,25 +169,16 @@ function http_content_status(int $id): string
 }
 
 /**
- * CI helper: create or update a content row directly.
+ * Create a content row with a given status, for HTTP routing tests.
  */
 function http_seed_content(string $slug, string $status, ?int $publishedAt = null): int
 {
-    $now = time();
-
-    $stmt = db()->prepare("
-        INSERT INTO content (type, slug, title, status, body, published_at, created_at, updated_at)
-        VALUES ('page', :slug, :title, :status, '[]', :published_at, :now, :now)
-    ");
-    $stmt->execute([
+    return seed_content([
         'slug'         => $slug,
         'title'        => ucfirst(str_replace('-', ' ', $slug)),
         'status'       => $status,
         'published_at' => $publishedAt,
-        'now'          => $now,
     ]);
-
-    return (int) db()->lastInsertId();
 }
 
 if (!http_ready($base)) {

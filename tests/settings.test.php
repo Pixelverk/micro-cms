@@ -52,45 +52,28 @@ t('load_settings() reads the whole table in one pass', function () {
     assert_eq(config('security.login_max_attempts', 5) > 0, true, 'config still readable');
 });
 
-t('repeated get_setting() calls do not scale with the number of settings', function () {
-    // Baseline: 200 reads of an existing key.
+t('get_setting() reads the memoised map, not the database', function () {
     load_settings(true);
+    $original = get_setting('site_title');
 
-    $start = microtime(true);
-    for ($i = 0; $i < 200; $i++) {
-        get_setting('site_title');
-    }
-    $baseline = microtime(true) - $start;
+    // Change the row behind the cache's back. A plain read must not notice it;
+    // a forced refresh must.
+    db()->prepare("UPDATE settings SET value = :value WHERE `key` = 'site_title'")
+        ->execute(['value' => 'Changed Behind The Cache']);
 
-    // Add many more settings, then repeat the same work. With per-key queries
-    // this grows; with a memoised map it stays flat.
-    $pdo = db();
-    $pdo->beginTransaction();
-    $insert = $pdo->prepare("INSERT OR REPLACE INTO settings (`key`, `value`, updated_at) VALUES (:key, :value, :now)");
+    assert_eq($original, get_setting('site_title'), 'a plain read must use the memoised map');
+    assert_eq('Changed Behind The Cache', load_settings(true)['site_title'], 'a refresh must re-read the row');
 
-    for ($i = 0; $i < 400; $i++) {
-        $insert->execute(['key' => "bulk_setting_{$i}", 'value' => str_repeat('v', 200), 'now' => time()]);
-    }
-    $pdo->commit();
-
+    db()->prepare("UPDATE settings SET value = :value WHERE `key` = 'site_title'")
+        ->execute(['value' => $original]);
     load_settings(true);
+});
 
-    $start = microtime(true);
-    for ($i = 0; $i < 200; $i++) {
-        get_setting('site_title');
-    }
-    $withMany = microtime(true) - $start;
+t('set_setting/get_setting round-trip arrays', function () {
+    set_setting('test_array', ['a' => 1, 'b' => [2, 3]]);
+    assert_eq(['a' => 1, 'b' => [2, 3]], get_setting('test_array'));
 
-    // Memoised reads are essentially free; allow generous headroom for noise
-    // while still failing loudly if the cache disappears (which would make
-    // this ratio far larger than 3x).
-    assert_true(
-        $withMany < max($baseline * 3, 0.01),
-        sprintf('reads got slower with more settings: %.6fs -> %.6fs', $baseline, $withMany)
-    );
-
-    // Clean up so later tests see the normal settings set.
-    $pdo->exec("DELETE FROM settings WHERE `key` LIKE 'bulk_setting_%'");
+    db()->exec("DELETE FROM settings WHERE `key` = 'test_array'");
     load_settings(true);
 });
 

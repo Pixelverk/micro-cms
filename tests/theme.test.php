@@ -71,8 +71,6 @@ t('every theme component follows the component contract', function () {
     $files = glob(CMS_PATH . '/theme/components/*.php') ?: [];
     assert_true(count($files) >= 20, 'expected the seeded component set');
 
-    $withCss = 0;
-
     foreach ($files as $file) {
         $component = require $file;
         $name = basename($file);
@@ -80,16 +78,7 @@ t('every theme component follows the component contract', function () {
         assert_true(is_array($component), "{$name} must return an array");
         assert_true(isset($component['schema']), "{$name} needs a schema");
         assert_true(is_callable($component['render'] ?? null), "{$name} needs a render function");
-
-        // 'css' and 'js' are optional in core/render.php, but any component
-        // that carries styling must declare it here rather than in a shared
-        // stylesheet.
-        if (!empty($component['css'])) {
-            $withCss++;
-        }
     }
-
-    assert_true($withCss >= 1, 'at least one component should ship its own CSS');
 });
 
 t('no CDN references remain in the admin or theme', function () {

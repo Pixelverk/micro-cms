@@ -114,9 +114,4 @@ t('logout empties the session', function () {
     assert_false(is_logged_in(), 'logout must clear identity');
 });
 
-t('set_setting/get_setting round-trip arrays', function () {
-    set_setting('test_array', ['a' => 1, 'b' => [2, 3]]);
-    assert_eq(['a' => 1, 'b' => [2, 3]], get_setting('test_array'));
-});
-
 exit(test_summary());

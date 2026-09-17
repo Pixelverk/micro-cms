@@ -11,18 +11,11 @@ require __DIR__ . '/bootstrap.php';
 test_fresh_database();
 
 /**
- * Insert a page and return its id.
+ * Insert a published page and return its id.
  */
 function version_seed_page(string $slug, string $title = 'Original'): int
 {
-    $now = time();
-
-    db()->prepare("
-        INSERT INTO content (type, slug, title, status, body, meta, published_at, created_at, updated_at)
-        VALUES ('page', :slug, :title, 'published', '[]', '{}', :now, :now, :now)
-    ")->execute(['slug' => $slug, 'title' => $title, 'now' => $now]);
-
-    return (int) db()->lastInsertId();
+    return seed_content(['slug' => $slug, 'title' => $title]);
 }
 
 t('the version table exists on a fresh install', function () {
