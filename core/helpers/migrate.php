@@ -334,7 +334,6 @@ function render_database_problem(string $title, array $lines): void
 {
     http_response_code(503);
 
-    $debug = (config('env') ?? 'production') === 'local';
 
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
     echo '<title>' . e($title) . '</title>';
@@ -343,7 +342,7 @@ function render_database_problem(string $title, array $lines): void
     echo '</head><body><h1>' . e($title) . '</h1><ul>';
 
     foreach ($lines as $line) {
-        echo '<li>' . ($debug ? e($line) : e($line)) . '</li>';
+        echo '<li>' . e($line) . '</li>';
     }
 
     echo '</ul></body></html>';

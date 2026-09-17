@@ -169,12 +169,17 @@ the media library keeps rendering from the stored formats.
 * `theme/assets/layout.css:6-14` and `theme/assets/style.css:8-17` both declare
   the body/main sticky-footer scaffolding — keep `layout.css` (the file the
   theme README says owns it) and delete the copy in `style.css`.
-* `admin/assets/style.css`: ~30 unused utility classes (`flex-col`,
+* `admin/assets/style.css`: unused structural utility classes (`flex-col`,
   `items-start/end`, `justify-between/center/end`, `text-xs`,
   `text-center/right`, `uppercase`, `font-normal/medium/semibold/bold`,
-  `mb-xs/sm/md/lg`, `mt-xs/sm/md/lg`, `clickable`, `off-screen`, `field-error`,
-  `notice-info/success`, `modal-content`). Verified zero uses in admin PHP/JS;
-  dynamic `status-*` classes are excluded.
+  `mb-xs/sm/md/lg`, `mt-xs/sm/md/lg`, `clickable`). Verified zero uses in admin
+  PHP/JS; dynamic `status-*` classes are excluded.
+* **Correction (after execution):** state and feedback rules were restored —
+  `.field-error`, the `.notice` / `.notice-error` / `.notice-success` /
+  `.notice-info` group, and the `.off-screen` accessibility helper. They only
+  appear in their matching state, so "zero current uses" does not make them
+  dead. See the AGENTS.md convention. `.modal-content` also stayed: the design
+  test requires it as shared page furniture.
 
 **Verify:** suite green; each deleted symbol greps to only its intended
 remainder; click through every sidebar page; front page, blog post and search

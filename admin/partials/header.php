@@ -3,11 +3,7 @@
 |--------------------------------------------------------------------------
 | Admin top bar
 |--------------------------------------------------------------------------
-| $pageTitle is set by each page and also drives the breadcrumb trail.
-|--------------------------------------------------------------------------
 */
-$pageTitle = $pageTitle ?? 'Dashboard';
-
 // "admin/content/edit" -> Content / Edit
 $trail = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
 $trail = (string) preg_replace('#^admin/?#', '', $trail);

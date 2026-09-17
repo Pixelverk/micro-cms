@@ -2,7 +2,6 @@
 // admin/content/index.php
 
 $pageTitle = 'Content';
-$username  = current_username();
 
 // ----------------------------
 // Determine content type

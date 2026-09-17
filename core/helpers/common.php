@@ -182,23 +182,6 @@ function e(string|int|null $value): string {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-/*
-|--------------------------------------------------------------------------
-| JSON Helpers
-|--------------------------------------------------------------------------
-*/
-
-function json_decode_safe(string $json): array
-{
-    return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-}
-
-function json_encode_safe(mixed $data): string
-{
-    return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-}
-
-
 /**
  * Generate a full URL for the site, respecting subfolder deployment.
  *
@@ -432,16 +415,6 @@ function media_url(int $id, ?int $width = null, ?string $format = null): string
     $best = $best ?? reset($chosen);
 
     return $best ? url('media/' . $best) : '';
-}
-
-/**
- * Alt text for a media row (empty string when unknown).
- */
-function media_alt(int $id): string
-{
-    $media = media_by_id($id);
-
-    return $media ? (string) ($media['alt_text'] ?? '') : '';
 }
 
 /**

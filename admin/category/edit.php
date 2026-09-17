@@ -2,7 +2,6 @@
 // admin/category/edit.php
 
 $pageTitle = 'Edit Category';
-$username  = current_username();
 
 $theme = theme_config();
 $contentTypes = $theme['content_types'] ?? [];

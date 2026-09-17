@@ -242,7 +242,7 @@ function render_layout(string $layout, array $page, array &$collectedJs = [], ar
 function render_components(array $components, array $page, array &$collectedJs = [], array &$collectedCss = []): void
 {
     foreach ($components as $comp) {
-        $name = $comp['component'] ?? $comp['type'] ?? null;
+        $name = $comp['type'] ?? null;
         if (!$name) continue;
 
         $props = $comp['props'] ?? [];

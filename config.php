@@ -37,11 +37,6 @@ return [
         'login_lockout_seconds' => 900,
     ],
 
-    'defaults' => [
-        'layout' => 'default',
-        'status' => 'published',
-    ],
-
     'cache_lifetime' => 3600, // seconds
 
     // How long to keep audit-log entries (see core/helpers/activity.php).

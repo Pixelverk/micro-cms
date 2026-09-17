@@ -148,14 +148,6 @@ function preview_url(string $url): string
 }
 
 /**
- * Should responses for this request be kept out of the HTML cache?
- */
-function response_is_uncacheable(): bool
-{
-    return is_preview_request() || can_preview_content();
-}
-
-/**
  * An extra WHERE fragment (starting with " AND ") that hides content the
  * current visitor is not allowed to see.
  *
@@ -433,27 +425,6 @@ function load_content_by_id(int $id): ?array
     ];
 }
 
-/**
- * Canonical JSON for the meta/body columns.
- *
- * `meta` is an object and `body` a list, so an empty value must be spelled
- * "{}" and "[]" respectively. Without this, an empty PHP array would land in
- * the column as "[]" for both, which made identical states hash differently
- * in version history.
- */
-function content_json_for_column(mixed $value, string $emptyAs): string
-{
-    if (function_exists('content_version_json')) {
-        return content_version_json($value, $emptyAs);
-    }
-
-    if ($value === null || (is_array($value) && $value === [])) {
-        return $emptyAs;
-    }
-
-    return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-}
-
 /*
 |--------------------------------------------------------------------------
 | Status model
@@ -649,8 +620,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
             'layout'       => $data['layout'] ?? null,
             'header'       => $data['header'] ?? null,
             'footer'       => $data['footer'] ?? null,
-            'meta'         => content_json_for_column($data['meta'], '{}'),
-            'body'         => content_json_for_column($data['body'], '[]'),
+            'meta'         => content_version_json($data['meta'], '{}'),
+            'body'         => content_version_json($data['body'], '[]'),
             'published_at' => $publishedAt,
             'scheduled_at' => $scheduledAt,
             'updated_by'   => $userId,
@@ -730,8 +701,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
             'layout'       => $data['layout'] ?? null,
             'header'       => $data['header'] ?? null,
             'footer'       => $data['footer'] ?? null,
-            'meta'         => content_json_for_column($data['meta'], '{}'),
-            'body'         => content_json_for_column($data['body'], '[]'),
+            'meta'         => content_version_json($data['meta'], '{}'),
+            'body'         => content_version_json($data['body'], '[]'),
             'published_at' => $publishedAt,
             'scheduled_at' => $scheduledAt,
             'created_by'   => $userId,

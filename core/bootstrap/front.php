@@ -124,7 +124,7 @@ function serveFresh($request)
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && ($response['status'] ?? 200) === 200
         && ($page['status'] ?? '') === 'published'
-        && !response_is_uncacheable()
+        && !can_preview_content()
         && !$isArchivePage
         && !$isQueryView
     ) {

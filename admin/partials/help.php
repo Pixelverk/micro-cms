@@ -1,6 +1,6 @@
 <?php if (empty($pageHelp)) return; ?>
 
-<span id="help-fab" class="header-icon" type="button"><?= icon('help-circle', 26) ?></span>
+<span id="help-fab" class="header-icon"><?= icon('help-circle', 26) ?></span>
 
 <div id="help-panel">
     <?= $pageHelp ?>

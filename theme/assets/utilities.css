@@ -63,7 +63,6 @@
 .py-4 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
 .py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
 .pt-0 { padding-top: 0 !important; }
-.p-sm-5 { padding: 3rem !important; }
 
 .bg-dark { background-color: var(--theme-dark) !important; }
 .bg-light { background-color: var(--theme-light) !important; }
@@ -245,3 +244,4 @@
     .px-5 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
     .p-5 { padding: 1.5rem !important; }
     .row-cols-md-2 > * { width: 100%; }
+}

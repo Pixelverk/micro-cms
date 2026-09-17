@@ -2,7 +2,6 @@
 // admin/category/index.php
 
 $pageTitle = 'Categories';
-$username  = current_username();
 
 $pdo = db();
 

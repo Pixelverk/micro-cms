@@ -21,7 +21,7 @@ declare(strict_types=1);
  * Abort when validation failed. JSON callers get a 422 payload; admin form
  * posts get a toast and a redirect back.
  */
-function validate_throw(array $errors, string $redirectPath = 'dashboard', string $type = 'error'): void
+function validate_throw(array $errors, string $redirectPath = 'dashboard'): void
 {
     if (!$errors) {
         return;
@@ -41,7 +41,7 @@ function validate_throw(array $errors, string $redirectPath = 'dashboard', strin
     }
 
     if (function_exists('redirect_with_toast')) {
-        redirect_with_toast($redirectPath, $type, $message);
+        redirect_with_toast($redirectPath, 'error', $message);
     }
 
     http_response_code(422);

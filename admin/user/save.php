@@ -108,7 +108,7 @@ if (!$errors) {
 }
 
 if ($errors) {
-    validate_throw($errors, $redirectPath, 'error');
+    validate_throw($errors, $redirectPath);
 }
 
 // --------------------------------------------

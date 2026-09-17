@@ -2,7 +2,6 @@
 // admin/tag-edit.php
 
 $pageTitle = 'Edit Tag';
-$username  = current_username();
 
 $pdo = db();
 

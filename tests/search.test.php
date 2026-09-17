@@ -250,7 +250,6 @@ t('search_item_url() honours URL prefixes and the homepage', function () {
 
 t('search results are never indexable', function () {
     assert_contains('noindex', search_robots());
-    assert_true(search_request_is_uncacheable(), 'search output must not be cached');
 });
 
 exit(test_summary());

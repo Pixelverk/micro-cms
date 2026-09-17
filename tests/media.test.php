@@ -180,11 +180,4 @@ t('picture() returns empty for non-images and missing variants', function () {
     assert_eq('', picture(999999), 'missing row');
 });
 
-t('media_alt() exposes the stored alt text', function () {
-    $id = seed_media(['alt_text' => 'Described image']);
-
-    assert_eq('Described image', media_alt($id));
-    assert_eq('', media_alt(999999));
-});
-
 exit(test_summary());

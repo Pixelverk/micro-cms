@@ -107,7 +107,6 @@ t('the page-to-capability map resolves the longest prefix', function () {
     $map = admin_page_capabilities();
 
     assert_eq('users.manage', $map['user']);
-    assert_eq('users.manage', $map['user/add']);
     assert_eq('settings.manage', $map['settings']);
     assert_eq('profile.own', $map['profile']);
     assert_eq('activity.view', $map['activity']);

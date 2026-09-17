@@ -65,8 +65,6 @@ function admin_page_capabilities(): array
     return [
         'settings'    => 'settings.manage',
         'user'        => 'users.manage',
-        'user/add'    => 'users.manage',
-        'user/edit'   => 'users.manage',
         'profile'     => 'profile.own',
         'activity'    => 'activity.view',
         'utilities'   => 'settings.manage',
@@ -156,14 +154,6 @@ function admin_can(string $capability, ?array $user = null): bool
     }
 
     return (bool) (admin_capabilities((string) ($user['role'] ?? ''))[$capability] ?? false);
-}
-
-/**
- * Convenience wrapper for the signed-in user.
- */
-function current_user_can(string $capability): bool
-{
-    return admin_can($capability);
 }
 
 /**

@@ -86,25 +86,6 @@ function assert_count(int $expected, array $actual, string $message = ''): void
 /**
  * Print the summary and return a process exit code.
  */
-/**
- * Run a PHP snippet in a fresh process with a hard timeout, so a hung child
- * cannot take the whole suite down.
- */
-function test_php_timed(array $lines, int $timeoutSeconds = 20): array
-{
-    $code = "require " . var_export(CMS_PATH . '/tests/bootstrap.php', true) . ";\n" . implode("\n", $lines);
-
-    $command = 'timeout ' . $timeoutSeconds . ' ' . escapeshellarg(PHP_BINARY)
-        . ' -d error_reporting=E_ALL'
-        . ' -r ' . escapeshellarg($code)
-        . ' 2>&1';
-
-    $output = [];
-    $exitCode = 0;
-    exec($command, $output, $exitCode);
-
-    return [$output, $exitCode];
-}
 
 function test_summary(): int
 {

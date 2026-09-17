@@ -349,11 +349,3 @@ function search_robots(): string
 {
     return 'noindex, follow';
 }
-
-/**
- * Is this a search request that should bypass the HTML cache?
- */
-function search_request_is_uncacheable(): bool
-{
-    return true;
-}

@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (restore_content_version($versionId, ['reason' => 'restore'])) {
-        log_activity_safe('content.restored', [
+        log_activity('content.restored', 'content', $id, 'Restored version ' . (int) $version['version'] . '.', [
             'id'      => $id,
             'version' => (int) $version['version'],
         ]);

@@ -159,6 +159,8 @@ html.dark {
     display: none !important;
 }
 
+/* Visually hidden but available to screen readers. Only needed by specific
+   markup (skip links, icon-only labels); keep it even while unused. */
 .off-screen {
     position: absolute;
     width: 1px;
@@ -178,8 +180,6 @@ html.dark {
 
 .grid { display: grid; }
 
-.clickable { cursor: pointer; }
-
 @media (max-width: 768px) {
     .hide-on-mobile {
         display: none !important;
@@ -192,15 +192,8 @@ html.dark {
 /* 3.2 Flex & grid helpers */
 
 .flex-row { flex-direction: row; }
-.flex-col { flex-direction: column; }
 
 .items-center { align-items: center; }
-.items-start { align-items: flex-start; }
-.items-end { align-items: flex-end; }
-
-.justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
-.justify-end { justify-content: flex-end; }
 
 .gap-sm { gap: 0.5rem; }
 .gap-md { gap: 1rem; }
@@ -211,32 +204,12 @@ html.dark {
 .text-muted { color: #6b7280; }
 
 .text-small { font-size: 0.875rem; }
-.text-xs { font-size: 0.75rem; }
-
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-
-.uppercase { text-transform: uppercase; }
 
 .nowrap { white-space: nowrap; }
-
-.font-normal { font-weight: 400; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
 
 /* 3.4 Spacing helpers (just margins) */
 
 .mb-0  { margin-bottom: 0;}
-.mb-xs { margin-bottom: 0.25rem; }
-.mb-sm { margin-bottom: 0.5rem; }
-.mb-md { margin-bottom: 1rem; }
-.mb-lg { margin-bottom: 1.5rem; }
-
-.mt-xs { margin-top: 0.25rem; }
-.mt-sm { margin-top: 0.5rem; }
-.mt-md { margin-top: 1rem; }
-.mt-lg { margin-top: 1.5rem; }
 
 /* 4. Base Elements */
 
@@ -661,6 +634,7 @@ button:disabled {
     font-size: 0.8rem;
 }
 
+/* Error text under a field; only rendered when validation fails. */
 .field-error {
     display: block;
     margin-top: 0.3rem;
@@ -1318,7 +1292,9 @@ button.sidebar-link {
     margin-right: 0.4rem;
 }
 
-/*   7.4 Notices */
+/*   7.4 Notices
+   Error / success / info callouts. Each variant only appears in its own state,
+   so a static grep looks like it is unused; keep them. */
 
 .notice {
     padding: 0.75rem 1rem;

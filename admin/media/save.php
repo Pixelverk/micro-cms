@@ -222,11 +222,9 @@ if ($hasNewUpload) {
 
         foreach ($formatsToGenerate as $fmt) {
             // Always create at least one file for this format
-            //$dest = "{$targetDir}/original.{$fmt}";
             $dest = "{$targetDir}/{$baseName}.{$fmt}";
             try {
                 $resized = save_resized_image($targetOriginal, $dest, $width, $fmt, $imageQuality, $stripMeta);
-                //$formats[$fmt][] = "{$relativeBasePath}/original.{$fmt}";
                 $formats[$fmt][] = "{$relativeBasePath}/{$baseName}.{$fmt}";
                 $sizes[$width] = ['width' => $resized['width'], 'height' => $resized['height']];
             } catch (Exception $e) {
@@ -236,11 +234,9 @@ if ($hasNewUpload) {
             // Then also generate additional widths if larger than 1px
             foreach ($imageWidths as $w) {
                 if ($w >= $width) continue; // skip sizes larger than original (optional)
-                //$destW = "{$targetDir}/{$w}.{$fmt}";
                 $destW = "{$targetDir}/{$baseName}-{$w}.{$fmt}";
                 try {
                     $resized = save_resized_image($targetOriginal, $destW, $w, $fmt, $imageQuality, $stripMeta);
-                    //$formats[$fmt][] = "{$relativeBasePath}/{$w}.{$fmt}";
                     $formats[$fmt][] = "{$relativeBasePath}/{$baseName}-{$w}.{$fmt}";
                     $sizes[$w] = ['width' => $resized['width'], 'height' => $resized['height']];
                 } catch (Exception $e) {
@@ -252,7 +248,6 @@ if ($hasNewUpload) {
         $lqip = generate_lqip($processedOriginal);
     } else {
         // Non-images: just store original
-        //$formats = [$extension => ["{$relativeBasePath}/original.{$extension}"]];
         $formats = [$extension => ["{$relativeBasePath}/{$baseName}.{$extension}"]];
         $sizes = [];
         $lqip = null;

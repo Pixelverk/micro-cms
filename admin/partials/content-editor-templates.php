@@ -3,7 +3,6 @@
     <fieldset class="component">
         <details>
             <summary class="component-title"></summary>
-            <!-- <legend class="component-title text-small"></legend> -->
 
             <input type="hidden" class="component-type">
 

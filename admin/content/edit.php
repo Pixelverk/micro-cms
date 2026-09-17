@@ -1,7 +1,6 @@
 <?php
 
 $pageTitle = 'Content Editor';
-$username  = current_username();
 
 // ----------------------------
 // Determine mode

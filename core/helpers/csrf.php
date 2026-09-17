@@ -67,7 +67,7 @@ function csrf_assert(): void
         return;
     }
 
-    log_activity_safe('security.csrf_failed', [
+    log_activity('security.csrf_failed', null, null, '', [
         'path' => $_SERVER['REQUEST_URI'] ?? '',
         'ip'   => $_SERVER['REMOTE_ADDR'] ?? '',
     ]);
@@ -164,32 +164,4 @@ function form_token_check(string $formType, ?string $token, int $ttl = 7200): bo
 function form_token_field(string $formType, int $ttl = 7200): string
 {
     return '<input type="hidden" name="_form_token" value="' . e(form_token($formType, $ttl)) . '">';
-}
-
-/*
-|--------------------------------------------------------------------------
-| Activity log bridge
-|--------------------------------------------------------------------------
-|
-| Phase 8 introduces core/helpers/activity.php. Until then (and when the
-| table is missing) this is a no-op, so CSRF failures are never fatal.
-|
-*/
-function log_activity_safe(string $action, array $meta = []): void
-{
-    if (!function_exists('log_activity')) {
-        $file = CORE_PATH . '/helpers/activity.php';
-
-        if (is_file($file) && function_exists('db')) {
-            require_once $file;
-        }
-    }
-
-    if (function_exists('log_activity')) {
-        try {
-            log_activity($action, null, null, '', $meta);
-        } catch (Throwable $exception) {
-            // Logging must never break a request.
-        }
-    }
 }

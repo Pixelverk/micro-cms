@@ -92,6 +92,11 @@ Beyond what tests check:
   helpers a distinct, prefixed name.
 * Match the surrounding file's style. Most files start with
   `declare(strict_types=1);`.
+* Keep conditional state and feedback CSS — error/success/info/warning colours,
+  `.status-*` labels, empty states, `.field-error`, the `.notice*` callouts and
+  the `.off-screen` accessibility helper. These only render in their matching
+  state, so a static grep finding no uses is not evidence that they are dead.
+  Only prune structural utilities that duplicate another rule.
 
 ## Common changes
 

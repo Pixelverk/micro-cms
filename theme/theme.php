@@ -62,7 +62,6 @@ return [
                 'cta-section',
                 'contact-section',
                 'contact-features-section',
-                'feature-card',
                 'pricing-section',
                 'pricing-plan',
                 'faq-section',
@@ -174,11 +173,5 @@ return [
             'src'   => 'main.js?v=4',
             'defer' => true,
         ],
-        /*
-        [
-            'src'   => 'vendor/instant-page.min.js',
-            'defer' => true,
-        ],
-        */
     ],
 ];
