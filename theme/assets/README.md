@@ -71,11 +71,14 @@ Images smaller than the configured target widths simply have fewer variants;
 
 ## Vendored third-party code
 
-Only the admin editor needs external libraries, and they are committed under
-`admin/assets/vendor/`:
+External libraries are committed, never loaded from a CDN:
 
-* `quill/` — Quill 2.0.3 (rich text), MIT
-* `sortable/` — Sortable 1.15.0 (drag and drop), MIT
+* `admin/assets/vendor/quill/` — Quill 2.0.3 (rich text), MIT. Shipped only
+  when a content type can render a rich-text field.
+* `admin/assets/vendor/sortable/` — Sortable 1.15.0 (drag and drop), MIT.
+  Shipped to every content editor.
+* `theme/assets/vendor/bootstrap-icons/` — the theme's icon font. Ships
+  `.woff2` only; a browser without woff2 support falls back to the system font.
 
 Each keeps its upstream `LICENSE`. To upgrade, replace the files and update
 the version note above; there is no package manager involved.

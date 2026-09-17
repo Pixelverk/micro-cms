@@ -40,7 +40,7 @@ $pageUrl = function (int $pageNumber) use ($action, $query, $filters): string {
 };
 ?>
 <main class="search-page">
-    <div class="inner flex-col search-inner">
+    <div class="inner flex-column search-inner">
 
         <header class="search-header">
             <h1><?= $query !== '' ? 'Search results' : 'Search' ?></h1>

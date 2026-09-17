@@ -25,7 +25,7 @@ component($headerComponent, [], $page, $collectedJs, $collectedCss);
 
 // Main content
 echo '<main class="taxonomy-archive-page">';
-echo '<div class="inner flex-col">';
+echo '<div class="inner flex-column">';
 
 $taxonomy = $page['taxonomy'] ?? null;
 $items    = $page['items'] ?? [];

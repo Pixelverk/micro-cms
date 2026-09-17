@@ -114,6 +114,20 @@ injected after the theme stylesheets. If you edit a theme stylesheet or script,
 bump its `?v=` counter in `theme.php` (admin assets are stamped automatically
 with `admin_asset()`).
 
+### Content model
+
+`theme/theme.php` decides which components each content type offers.
+`blog_post` and `portfolio_item` are *written* with the `quill-editor`
+rich-text component; `page` is *assembled* from components, so its palette is
+the section library. Rich text is still offered on pages (and `policy-section`
+allows `quill-editor` as its only child), so removing a component from a type's
+`available_components` can strand existing content — see the note below.
+
+An `available_components` change is a content-affecting change: the editor only
+hydrates components it knows, and an unknown type becomes an HTML comment that
+is dropped on the next save. Check seeded and existing content for the component
+before removing it.
+
 ### Add a schema migration
 
 Add a keyed closure to `migrate_registry()` in `core/helpers/migrate.php`,

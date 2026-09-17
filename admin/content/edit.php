@@ -234,11 +234,26 @@ ksort($availableComponents);
 // ----------------------------
 // Render
 // ----------------------------
-// Editor libraries are vendored locally (no CDN, no build step). They must
-// execute before the editor module at the bottom of the page.
-$pageStyles[]  = ['href' => 'admin/assets/vendor/quill/quill.snow.css'];
-$pageScripts[] = ['src' => 'admin/assets/vendor/quill/quill.js'];
+// Editor libraries are vendored locally (no CDN, no build step) and must
+// execute before the editor module at the bottom of the page. Sortable powers
+// drag-and-drop on every content type; Quill is only shipped when this type can
+// render a rich-text field.
 $pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
+
+$needsQuill = false;
+foreach ($availableComponents as $availableComponent) {
+    foreach ($availableComponent['schema'] as $field) {
+        if (($field['type'] ?? '') === 'quill') {
+            $needsQuill = true;
+            break 2;
+        }
+    }
+}
+
+if ($needsQuill) {
+    $pageStyles[]  = ['href' => 'admin/assets/vendor/quill/quill.snow.css'];
+    $pageScripts[] = ['src' => 'admin/assets/vendor/quill/quill.js'];
+}
 
 ob_start();
 ?>
