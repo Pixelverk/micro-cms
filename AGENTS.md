@@ -162,14 +162,14 @@ block before including the layout.
 * **HTML minification** only runs when `config('env') === 'production'`;
   component JS is collected and wrapped in a `DOMContentLoaded` handler.
 * `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session
-  timeout, security policy, `cache_lifetime`, and activity-log retention.
+  timeout, security policy, `cache_lifetime`, activity-log retention, and
+  version retention (`versions.keep`).
 
 ## Verification bar
 
-Run `php tests/run.php` before calling anything done — it must pass (198
-assertions when this file was written). Add or extend a `tests/<name>.test.php`
-suite for new behavior; `tests/README.md` shows the three-line pattern and
-`tests/helpers.php` has the assertions.
+Run `php tests/run.php` before calling anything done — it must pass. Add or
+extend a `tests/<name>.test.php` suite for new behavior; `tests/README.md`
+shows the three-line pattern and `tests/helpers.php` has the assertions.
 
 Tests never touch `storage/`: `tests/bootstrap.php` refuses to run if the test
 storage resolves inside it, and every artefact lands in `tests/.tmp/`.

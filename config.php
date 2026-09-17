@@ -13,6 +13,8 @@ return [
     // Base URL in subfolder
     //'url' => '/micro-cms',
 
+    // Debug switch: when true, request timings are appended to
+    // storage/logs/perf.log. Leave it off in production.
     'perf_logging' => false,
 
     'setup_completed' => true,
@@ -42,6 +44,11 @@ return [
     // How long to keep audit-log entries (see core/helpers/activity.php).
     'activity' => [
         'retention_days' => 180,
+    ],
+
+    // How many revisions to keep per content item (see core/helpers/versions.php).
+    'versions' => [
+        'keep' => 20,
     ],
 
 ];

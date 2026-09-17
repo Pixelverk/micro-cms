@@ -10,8 +10,8 @@ Sizes: core 7,744 PHP lines · admin 7,542 PHP + 2,953 JS/CSS · theme 2,886 PHP
 
 Line numbers are from the baseline commit and will drift as phases land.
 
-**Status: decisions resolved. Awaiting a go-ahead to execute, one phase at a
-time.**
+**Status: complete.** Phases 0–7 executed and verified, each as its own
+reviewable change. Deviations are noted in the phase they belong to.
 
 ---
 
@@ -311,6 +311,17 @@ Decision 10: seed once unless a suite explicitly needs a fresh database.
   e.g. `assert_contains('/* 10. Media Queries', $css)`. Keep the undefined-class
   check (`design.test.php:58`) and the translation-parity checks (`:161-202`);
   those catch real regressions.
+
+**Executed differently:** every suite still starts from a pristine database
+(most of them mutate content, users and settings), so `test_fresh_database()`
+builds the seed **once** into `tests/.tmp/storage/seed-template.sqlite` and each
+later call is a file copy — 16 installer runs became 1 cold / 0 warm, measured at
+4.93 s → 0.03 s of seeding cost. `run.php` is unchanged. The scenario helpers
+(`search_seed`, `version_seed_page`, `http_seed_content`) stay as thin wrappers
+over the shared `seed_content()`, so there is one INSERT. Only the section-banner
+and component-CSS-count assertions were dropped; the page-furniture, button-set
+and `main.js` source checks were kept — the furniture check caught a real
+over-deletion earlier in this plan.
 
 **Verify:** suite green with the same or better pass count; runtime not worse
 than baseline; deliberately break one covered behavior per touched suite to

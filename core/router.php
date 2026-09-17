@@ -158,7 +158,7 @@ function route_admin_request(): void
         return;
     }
 
-    // Page-level capability check (all capabilities are granted in Phase 1).
+    // Page-level capability check.
     admin_guard($page);
 
     $file = CMS_PATH . '/admin/' . $page . '.php';

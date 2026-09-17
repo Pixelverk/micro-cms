@@ -6,7 +6,7 @@ declare(strict_types=1);
 | Config and settings caching
 |--------------------------------------------------------------------------
 |
-| Phase 2 memoises config.php and the settings table for the request. These
+| config.php and the settings table are memoised for the request. These
 | tests pin that behaviour, because a regression here quietly multiplies
 | database queries on every page.
 |

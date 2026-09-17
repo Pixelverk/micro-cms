@@ -37,7 +37,7 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'content', 'updated_by', 'INTEGER NULL');
         },
 
-        // Search needs a plain-text copy of the body (Phase 10 fills it).
+        // Search needs a plain-text copy of the body.
         '2026_09_17_000002_content_search_text' => function (PDO $pdo): void {
             migrate_add_column($pdo, 'content', 'search_text', 'TEXT NULL');
         },
@@ -84,7 +84,7 @@ function migrate_registry(): array
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_parent ON content (parent_id)");
         },
 
-        // Snapshot history for content (Phase 7).
+        // Snapshot history for content.
         '2026_09_17_000006_content_versions' => function (PDO $pdo): void {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS content_versions (
@@ -111,7 +111,7 @@ function migrate_registry(): array
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_versions_item ON content_versions (content_id, version DESC)");
         },
 
-        // Audit trail (Phase 8).
+        // Audit trail.
         '2026_09_17_000007_activity_log' => function (PDO $pdo): void {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS activity_log (
@@ -132,15 +132,15 @@ function migrate_registry(): array
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_object ON activity_log (object_type, object_id)");
         },
 
-        // Roles and permissions (Phase 9). Existing users become admins so
-        // nobody is locked out by the upgrade.
+        // Roles and permissions. Existing users become admins so nobody is
+        // locked out by the upgrade.
         '2026_09_17_000008_user_roles' => function (PDO $pdo): void {
             migrate_add_column($pdo, 'users', 'role', "TEXT NOT NULL DEFAULT 'admin'");
 
             $pdo->exec("UPDATE users SET role = 'admin' WHERE role IS NULL OR role = ''");
         },
 
-        // Backfill the search index for installs that predate it (Phase 10).
+        // Backfill the search index for installs that predate it.
         '2026_09_17_000009_search_text_backfill' => function (PDO $pdo): void {
             migrate_add_column($pdo, 'content', 'search_text', 'TEXT NULL');
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_search ON content (search_text)");

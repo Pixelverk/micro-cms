@@ -138,9 +138,9 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
             <?= e(admin_trans('docs')) ?>
         </a>
 
-        <a href="<?= url('admin/metrics') ?>" class="sidebar-link <?= is_active('metrics', $currentPath) ?>" data-label="Metrics">
+        <a href="<?= url('admin/analytics') ?>" class="sidebar-link <?= is_active('analytics', $currentPath) ?>" data-label="Analytics">
             <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
-            <?= e(admin_trans('metrics')) ?>
+            <?= e(admin_trans('analytics')) ?>
         </a>
 
     </div>    

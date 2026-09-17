@@ -23,8 +23,7 @@ declare(strict_types=1);
 /**
  * May the current visitor see drafts / scheduled / archived content?
  *
- * Requires an authenticated user with the preview capability (all roles have
- * it today; Phase 12 narrows the matrix).
+ * Requires an authenticated user with the preview capability.
  */
 function can_preview_content(): bool
 {

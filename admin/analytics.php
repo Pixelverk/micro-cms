@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Metrics';
+$pageTitle = 'Analytics';
 $username = current_username();
 
 ob_start();
@@ -21,8 +21,8 @@ $content = ob_get_clean();
 
 ob_start();
 ?>
-<h3><?= e(admin_trans('metrics')) ?></h3>
-<p><?= e(admin_trans('metrics_help')) ?></p>
+<h3><?= e(admin_trans('analytics')) ?></h3>
+<p><?= e(admin_trans('analytics_help')) ?></p>
 <?php
 $pageHelp = ob_get_clean();
 $docsLink = ['tab' => 'reference', 'section' => 'maintenance'];

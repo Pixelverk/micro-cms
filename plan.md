@@ -30,13 +30,13 @@ Two Utilities buttons.
 
 ### 3. Built-in analytics (foundation only)
 
-`admin/metrics.php` is currently a 21-line stub ("Nothing to see here yet!").
+`admin/analytics.php` is currently a 21-line stub ("Nothing to see here yet!").
 
 * `page_views` migration: path, content id, viewed_at, referrer hash, UA hash,
   is_bot.
 * Counting hook in `serveFresh()` and `serveCached()`, batched into a single
   shutdown write, bot-filtered. **Do not store IPs** — keep a daily hash only.
-* `admin/metrics.php` becomes a real dashboard: views over 7/30 days, top pages,
+* `admin/analytics.php` becomes a real dashboard: views over 7/30 days, top pages,
   top referrers, cache-hit ratio parsed from `storage/logs/perf.log`.
 * Inline SVG sparklines only — the no-CDN / no-build rule rules out a chart
   library.
@@ -53,7 +53,7 @@ Effectively done. `en` and `sv` ship for every admin string added, and `tests/de
 
 ### 6. Live preview in the content editor
 
-Superseded by Phase 3's preview mode (`?preview=<token>`). The remaining idea is
+Superseded by the preview mode (`?preview=<token>`). The remaining idea is
 an editor iframe pointing at that URL with `postMessage` for save-then-refresh.
 Documented as a follow-up, not planned work.
 

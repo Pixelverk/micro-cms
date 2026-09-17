@@ -6,8 +6,8 @@ declare(strict_types=1);
 | Theme asset ownership
 |--------------------------------------------------------------------------
 |
-| Phase 4 split the theme's CSS into layers and moved component-specific
-| rules into the components. These checks are source-level on purpose: they
+| The theme's CSS is split into layers, with component-specific rules kept
+| in the components. These checks are source-level on purpose: they
 | catch a rule drifting back into the shared layer, which is otherwise easy
 | to miss because it still renders correctly.
 |

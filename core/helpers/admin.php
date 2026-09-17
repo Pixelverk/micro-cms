@@ -3,18 +3,6 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Admin capabilities
-|--------------------------------------------------------------------------
-|
-| Phase 1 only establishes the hook points: every capability is granted and
-| every user is treated as an administrator, so behaviour is unchanged.
-| Phase 12 (roles & permissions) replaces admin_role() and
-| admin_capabilities() with real data — nothing else needs to move.
-|
-*/
-
-/*
-|--------------------------------------------------------------------------
 | Roles & permissions
 |--------------------------------------------------------------------------
 | Three flat roles. Capabilities are plain strings checked through

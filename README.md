@@ -96,49 +96,45 @@ Demo account:
 
 ### Implemented
 
-* Content CRUD
-* User CRUD
-* Menu CRUD
-* Basic login / authentication
-* Content editor, add/remove/copy components, nesting, clone
-* Multiple content types, e.g. blog, services and other stuff
-* Component system with theme components and core components
-* Site settings (select which page to use as homepage, etc.)
-* Sitemap generator (XML)
-* .html cache and minification
-* Contact forms with email sendout
-* Image uploads / media manager
-* Performance measurements
-* Proper drag and drop of components
-* Content categories and tags
-* Utility page with 1-button tools
-* Page nesting
-* Scheduled publishing of content
-* Image optimization and webp conversion with jpg/png fallback
-* Image placeholders, LQIP stored as base64 in db
-* Component input - pick from media manager
+* Content CRUD for pages, blog posts and portfolio items
+* Categories and tags, with archive layouts
+* Nested pages
+* Component editor: drag to reorder, nest, duplicate, clone
+* Section components for assembled pages, rich text for written content
+* User CRUD with three roles (administrator, editor, author) and capability checks
+* Login/logout, login throttling, CSRF protection on every admin POST
+* Menu CRUD with drag-and-drop items
+* Media manager: resized variants, WebP with JPEG/PNG fallback, LQIP placeholders, alt text
+* Site settings (homepage, per-type URL prefixes, image quality, admin language)
+* Draft, scheduled, published and archived statuses
+* Token-based preview of unpublished content
+* Content version history with restore
+* Activity log (audit trail) with configurable retention
+* Front-end search over titles and body text
+* SEO metadata: description, canonical, Open Graph, Twitter, JSON-LD
+* XML sitemap generator
+* HTML page cache, minified in production
+* Contact and newsletter forms with email sendout, rate limiting and a submissions inbox
+* Bulk actions on the content list
+* Utilities page: clear cache, regenerate sitemap, publish due content, run migrations
+* In-app documentation for editors and theme developers
+* Admin interface in English and Swedish
 
 ### Planned
 
-* Fancier default site (something similar to "StartBootstrap modern business", but not Bootstrap, no tailwind either)
-* Fancier admin area
-* CMS user documentation (in-app)
-* Theme dev documentation (wiki)
-* Drafts or edit history with restore functionality
-* Built-in analytics
-* Bulk-edit actions
-* Header/footer JS input in settings, for google anlytics script
+The backlog lives in [`plan.md`](plan.md). Current entries:
+
+* Header/footer scripts in settings (needs a security decision first)
+* Cache warm-up and static-site export
+* Built-in analytics — `admin/analytics.php` is a placeholder today
+* Multi-language front end (intended path documented, code deferred)
 
 ### Maybe
 
-* Live preview in content editor
-* SEO metadata (Meta, OpenGraph, etc.)
-* Activity history, not just 'last login date'
-* Multi-language front-end support
-* Multi-language admin area
-* Front-end search
-* Utility button to create cache for all pages
-* Utility button to export all cached pages as zip (for static deployment without the cms or any php at all?) 
+* Live preview inside the content editor (an iframe over the existing preview URL)
+* A richer default demo site and admin theme
+* A theme developer guide published outside the app
+* More admin languages
 
 ---
 

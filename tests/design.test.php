@@ -6,8 +6,8 @@ declare(strict_types=1);
 | Admin design system
 |--------------------------------------------------------------------------
 | The admin stylesheet is the single source of styling for the admin UI.
-| Phase 5 consolidated scattered inline <style> blocks into it and defined
-| the component classes the markup already used. These checks keep it that
+| Inline <style> blocks were consolidated into it, and it defines the
+| component classes the markup already used. These checks keep it that
 | way: they are source-level because a missing class still renders, just
 | unstyled — which is easy to miss in a browser.
 |
