@@ -125,33 +125,6 @@ ob_start();
 
 </form>
 
-
-<script>
-// ----------------------------
-// Auto slug from name
-// ----------------------------
-const nameInput = document.getElementById('name');
-const slugInput = document.getElementById('slug');
-
-function slugify(str) {
-    return str
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-}
-
-let slugTouched = false;
-
-slugInput.addEventListener('input', () => slugTouched = true);
-
-nameInput.addEventListener('input', () => {
-    if (!slugTouched) {
-        slugInput.value = slugify(nameInput.value);
-    }
-});
-</script>
-
 <?php
 $content = ob_get_clean();
 

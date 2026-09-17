@@ -216,3 +216,24 @@ document.addEventListener('submit', async e => {
         form.submit();
     }
 });
+
+/* Auto-fill a slug field from a name field until the slug is edited by hand.
+   The category and tag editors share this; the content editor has its own. */
+const nameField = document.getElementById('name');
+const slugField = document.getElementById('slug');
+
+if (nameField && slugField) {
+    let slugTouched = false;
+
+    slugField.addEventListener('input', () => { slugTouched = true; });
+
+    nameField.addEventListener('input', () => {
+        if (!slugTouched) {
+            slugField.value = nameField.value
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+    });
+}

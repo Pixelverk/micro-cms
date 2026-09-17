@@ -222,14 +222,6 @@ function form_rate_limit_ok(string $formType, int $maxPerHour = 12): bool
 {
     try {
         $pdo = db();
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS form_rate_limits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                form_type TEXT NOT NULL,
-                ip TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            )
-        ");
 
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
         $cutoff = time() - 3600;

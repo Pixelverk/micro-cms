@@ -276,15 +276,10 @@ if ($replaceId) {
         $formats = json_decode($existing['formats_json'], true) ?? [];
         $lqip = $existing['lqip_base64'];
     } else {
-        // Delete old folder safely
+        // Delete the old folder safely
         $oldFolder = realpath(STORAGE_PATH . '/media/' . $existing['base_path']);
         if ($oldFolder && is_dir($oldFolder)) {
-            $it = new RecursiveDirectoryIterator($oldFolder, RecursiveDirectoryIterator::SKIP_DOTS);
-            $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $fileObj) {
-                $fileObj->isDir() ? rmdir($fileObj->getPathname()) : unlink($fileObj->getPathname());
-            }
-            rmdir($oldFolder);
+            delete_media_directory($oldFolder);
         }
     }
 

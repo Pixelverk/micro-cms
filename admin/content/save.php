@@ -38,19 +38,8 @@ $parentId = ($parentId === '' || $parentId === null) ? null : (int)$parentId;
 
 if ($id && $parentId) {
     // Prevent self or descendant as parent
-    function get_descendant_ids(int $id, array $allItems): array {
-        $descendants = [];
-        foreach ($allItems as $item) {
-            if (($item['parent_id'] ?? null) === $id) {
-                $descendants[] = $item['id'];
-                $descendants = array_merge($descendants, get_descendant_ids($item['id'], $allItems));
-            }
-        }
-        return $descendants;
-    }
-
     $allItems = list_content($contentType);
-    $invalidParentIds = array_merge([$id], get_descendant_ids($id, $allItems));
+    $invalidParentIds = array_merge([$id], content_descendant_ids($id, $allItems));
     if (in_array($parentId, $invalidParentIds, true)) {
         $parentId = null; // reset to top level
     }
@@ -60,7 +49,9 @@ $contentData['parent_id'] = $parentId;
 // ----------------------------
 // Permissions
 // ----------------------------
-$existingForPermission = $id ? load_content_by_id((int) $id) : null;
+// $contentData already holds the stored row; slug and parent_id are not part
+// of the ownership check, so there is no need to load it a second time.
+$existingForPermission = $id ? $contentData : null;
 
 if ($id === null) {
     require_capability('content.create');

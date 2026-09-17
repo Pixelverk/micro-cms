@@ -3,14 +3,29 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Cache Invalidation Helpers
+| Cache Helpers
 |--------------------------------------------------------------------------
 |
 | Usage:
+| - cache_file_for('/about');    // Cache-file path for a request path
 | - invalidate_cache();          // Clear all cached pages
 | - invalidate_cache('/about'); // Clear one page by path
 |
 */
+
+/**
+ * Path of the cache file for a request path.
+ *
+ * The single source of the cache-key rule. The reader (core/bootstrap/front.php)
+ * and the invalidator below must agree on it, or an edit leaves a stale page
+ * behind.
+ */
+function cache_file_for(string $request): string
+{
+    $key = trim($request, '/') ?: 'home';
+
+    return STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
+}
 
 function invalidate_cache(string $path = '', string $type = ''): void
 {
@@ -31,9 +46,7 @@ function invalidate_cache(string $path = '', string $type = ''): void
     $prefix = $prefixes[$type] ?? '';
     $cachePath = $prefix ? "{$prefix}/{$path}" : $path;
 
-    // Sanitize path into cache filename
-    $key = trim($cachePath, '/') ?: 'home';
-    $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
+    $cacheFile = cache_file_for($cachePath);
 
     if (file_exists($cacheFile)) {
         @unlink($cacheFile);

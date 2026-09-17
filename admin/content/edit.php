@@ -68,30 +68,20 @@ if (!empty($contentData['scheduled_at'])) {
 }
 
 // parent stuff
+$allItems = list_content($type);
+
 if ($isEdit) {
-    $allItems = list_content($type); // get all items of this type
     $fullSlug = build_full_slug($contentData, $allItems);
     $url = '/' . ($prefix ? $prefix . '/' : '') . $fullSlug;
 }
 
-function get_descendant_ids(int $id, array $allItems): array {
-    $descendants = [];
-    foreach ($allItems as $item) {
-        if (($item['parent_id'] ?? null) === $id) {
-            $descendants[] = $item['id'];
-            $descendants = array_merge($descendants, get_descendant_ids($item['id'], $allItems));
-        }
-    }
-    return $descendants;
-}
-
 // Parent options
-$allParents = list_content($type);
+$allParents = $allItems;
 $currentId = $contentData['id'] ?? null;
 $currentParentId = $contentData['parent_id'] ?? null;
 
 // exclude self and descendants from parent options
-$excludeIds = $currentId ? array_merge([$currentId], get_descendant_ids($currentId, $allParents)) : [];
+$excludeIds = $currentId ? array_merge([$currentId], content_descendant_ids($currentId, $allParents)) : [];
 $parentOptions = array_filter($allParents, fn($p) => !in_array($p['id'], $excludeIds, true));
 
 // categories

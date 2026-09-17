@@ -182,6 +182,25 @@ function e(string|int|null $value): string {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+/*
+|--------------------------------------------------------------------------
+| Request Helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Is this request from fetch()/XHR and expecting a JSON error payload?
+ *
+ * Shared by the CSRF and validation abort paths so both agree on what counts
+ * as a JSON caller.
+ */
+function request_wants_json(): bool
+{
+    return !empty($_POST['_json'])
+        || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest')
+        || (($_SERVER['HTTP_ACCEPT'] ?? '') !== '' && str_contains((string) $_SERVER['HTTP_ACCEPT'], 'application/json'));
+}
+
 /**
  * Generate a full URL for the site, respecting subfolder deployment.
  *
@@ -301,6 +320,35 @@ function format_local_datetime(?int $timestamp, string $format = 'Y-m-d H:i'): s
 | derived from those two, so no column is read speculatively.
 |--------------------------------------------------------------------------
 */
+
+/**
+ * Recursively delete a media folder and everything inside it.
+ *
+ * Used when media is removed and when a replacement upload supersedes an
+ * existing file's folder. Callers validate the path first.
+ */
+function delete_media_directory(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    foreach (scandir($dir) ?: [] as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+
+        $path = $dir . '/' . $entry;
+
+        if (is_dir($path)) {
+            delete_media_directory($path);
+        } else {
+            @unlink($path);
+        }
+    }
+
+    @rmdir($dir);
+}
 
 /**
  * Load a media row once per request.

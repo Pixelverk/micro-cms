@@ -29,11 +29,7 @@ function validate_throw(array $errors, string $redirectPath = 'dashboard'): void
 
     $message = implode(' ', array_values($errors));
 
-    $wantsJson = !empty($_POST['_json'])
-        || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest')
-        || (($_SERVER['HTTP_ACCEPT'] ?? '') !== '' && str_contains((string) $_SERVER['HTTP_ACCEPT'], 'application/json'));
-
-    if ($wantsJson) {
+    if (request_wants_json()) {
         http_response_code(422);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Validation failed', 'fields' => $errors]);

@@ -72,18 +72,6 @@ function db(): PDO
                 }
             }
         }
-
-        // Login throttling (see core/helpers/throttle.php).
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS login_attempts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                key_hash TEXT NOT NULL UNIQUE,
-                ip TEXT NULL,
-                attempts INTEGER NOT NULL DEFAULT 0,
-                last_attempt INTEGER NOT NULL,
-                locked_until INTEGER NULL
-            )
-        ");
     } catch (Throwable $exception) {
         debug_log('db() self-heal skipped: ' . $exception->getMessage());
     }

@@ -72,11 +72,7 @@ function csrf_assert(): void
         'ip'   => $_SERVER['REMOTE_ADDR'] ?? '',
     ]);
 
-    $wantsJson = !empty($_POST['_json'])
-        || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest')
-        || (($_SERVER['HTTP_ACCEPT'] ?? '') !== '' && str_contains((string) $_SERVER['HTTP_ACCEPT'], 'application/json'));
-
-    if ($wantsJson) {
+    if (request_wants_json()) {
         http_response_code(419);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'Invalid or expired security token. Reload the page and try again.']);

@@ -3,15 +3,15 @@
 $username = current_username();
 $editUsername = $_GET['username'] ?? '';
 
-if (!$editUsername || !user_exists($editUsername)) {
+// Load user data; the lookup doubles as the existence check.
+$users = load_users();
+$user = $users[$editUsername] ?? [];
+
+if (!$editUsername || !$user) {
     redirect_with_toast('user', 'error', 'User not found');
 }
 
 $pageTitle = 'Edit User: ' . $editUsername;
-
-// Load user data
-$users = load_users();
-$user = $users[$editUsername] ?? [];
 $adminLanguages = admin_languages();
 
 ob_start();

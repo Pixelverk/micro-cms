@@ -34,30 +34,9 @@ if (!$folder || !str_starts_with($folder, $mediaRoot)) {
 }
 
 // ----------------------------
-// Recursive delete helper
-// ----------------------------
-function deleteDirRecursive(string $dir): void {
-    if (!is_dir($dir)) return;
-
-    foreach (scandir($dir) as $file) {
-        if ($file === '.' || $file === '..') continue;
-
-        $path = $dir . '/' . $file;
-
-        if (is_dir($path)) {
-            deleteDirRecursive($path);
-        } else {
-            @unlink($path);
-        }
-    }
-
-    @rmdir($dir);
-}
-
-// ----------------------------
 // Delete media folder
 // ----------------------------
-deleteDirRecursive($folder);
+delete_media_directory($folder);
 
 // ----------------------------
 // Cleanup empty parent folders (YYYY/MM)

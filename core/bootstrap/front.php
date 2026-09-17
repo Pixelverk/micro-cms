@@ -17,14 +17,8 @@ declare(strict_types=1);
 */
 
 /**
- * Path of the cache file for a request path.
+ * Path of the cache file for a request path (see core/helpers/cache.php).
  */
-function cache_file_for(string $request): string
-{
-    $key = trim($request, '/') ?: 'home';
-
-    return STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
-}
 
 function checkCache($request, $config)
 {
@@ -70,16 +64,11 @@ function serveCached($file, $config)
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
 
-    // Serve cached page if valid
-    if ($_SERVER['REQUEST_METHOD'] === 'GET'
-        && file_exists($file)
-        && (time() - filemtime($file) < $config['cache_lifetime'])
-    ) {
-        header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: public, max-age=' . $config['cache_lifetime']);
-        header('X-Cache: HIT');
-        echo file_get_contents($file);
-    }
+    // checkCache() already validated the method, the file and its age.
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: public, max-age=' . $config['cache_lifetime']);
+    header('X-Cache: HIT');
+    echo file_get_contents($file);
 }
 
 function serveFresh($request)

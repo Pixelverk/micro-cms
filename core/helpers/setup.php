@@ -196,6 +196,29 @@ CREATE TABLE taxonomy_term_relationships (
 );
 ");
 
+// Rate limiting: login lockouts and public-form throttling.
+$pdo->exec("
+CREATE TABLE login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key_hash TEXT NOT NULL UNIQUE,
+    ip TEXT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_attempt INTEGER NOT NULL,
+    locked_until INTEGER NULL
+);
+");
+
+$pdo->exec("
+CREATE TABLE form_rate_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    form_type TEXT NOT NULL,
+    ip TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_form_rate_limits_lookup ON form_rate_limits (form_type, ip, created_at)");
+
 // what time is it?
 $now = time();
 

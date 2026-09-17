@@ -198,14 +198,6 @@ function create_user(string $username, string $password, ?string $firstName = nu
     ]);
 }
 
-function user_exists(string $username): bool
-{
-    $pdo = db();
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :username");
-    $stmt->execute(['username' => $username]);
-    return (bool)$stmt->fetchColumn();
-}
-
 function current_user(): ?array
 {
     if (empty($_SESSION['user_id'])) {

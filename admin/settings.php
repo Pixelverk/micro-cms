@@ -274,31 +274,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         validate_throw($errors, 'settings');
     }
 
+    $changedKeys = implode(', ', array_keys($newValues));
+
+    if ($newPrefixes) {
+        $newValues['content_prefixes'] = $newPrefixes;
+    }
+
     try {
-        $pdo = db();
-        $pdo->beginTransaction();
+        save_settings($newValues);
 
-        foreach ($newValues as $key => $value) {
-            set_setting($key, $value);
-        }
-
-        if ($newPrefixes) {
-            set_setting('content_prefixes', $newPrefixes);
-        }
-
-        $pdo->commit();
-
-        // Once, after all writes, rather than inside every set_setting().
-        invalidate_cache();
-
-        log_activity('settings.updated', 'settings', null, implode(', ', array_keys($newValues)), []);
+        log_activity('settings.updated', 'settings', null, $changedKeys, []);
 
         redirect_with_toast('settings', 'success', 'Settings saved successfully.');
     } catch (Throwable $e) {
-        if (db()->inTransaction()) {
-            db()->rollBack();
-        }
-
         redirect_with_toast('settings', 'error', $e->getMessage());
     }
 }

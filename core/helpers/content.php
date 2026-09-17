@@ -748,6 +748,29 @@ function build_full_slug(array $item, array $allItems): string {
     return implode('/', $path);
 }
 
+/**
+ * Ids of every descendant of $id within $allItems, recursively.
+ *
+ * Keeps a page from being nested under itself or one of its own children.
+ * Shared by the content editor and the save handler.
+ *
+ * @param array<int, array<string, mixed>> $allItems
+ * @return list<int>
+ */
+function content_descendant_ids(int $id, array $allItems): array
+{
+    $descendants = [];
+
+    foreach ($allItems as $item) {
+        if (($item['parent_id'] ?? null) === $id) {
+            $descendants[] = $item['id'];
+            $descendants = array_merge($descendants, content_descendant_ids($item['id'], $allItems));
+        }
+    }
+
+    return $descendants;
+}
+
 // taxonomies
 function load_taxonomies_for_content(string $type, int $id): array
 {
@@ -776,4 +799,125 @@ function load_taxonomies_for_content(string $type, int $id): array
     }
 
     return $out;
+}
+
+/**
+ * Create or update a taxonomy term from posted fields.
+ *
+ * Categories and tags share one flow; only the taxonomy_type and the
+ * user-facing wording differ. Tags additionally require a content type.
+ *
+ * @param string $kind 'category' or 'tag'
+ * @param array<string, mixed> $post
+ */
+function save_taxonomy(string $kind, array $post): void
+{
+    $pdo = db();
+    $now = time();
+
+    $id          = !empty($post['id']) ? (int) $post['id'] : null;
+    $name        = trim((string) ($post['name'] ?? ''));
+    $slug        = trim((string) ($post['slug'] ?? ''));
+    $description = trim((string) ($post['description'] ?? ''));
+    $contentType = trim((string) ($post['content_type'] ?? ''));
+
+    if ($name === '') {
+        redirect_with_toast($kind, 'error', 'Name is required.');
+    }
+
+    if ($kind === 'tag' && $contentType === '') {
+        redirect_with_toast($kind, 'error', 'Content type is required.');
+    }
+
+    $slug = slugify($slug !== '' ? $slug : $name);
+
+    // Keep the slug unique within this taxonomy type.
+    $baseSlug = $slug;
+    $counter  = 1;
+
+    while (true) {
+        $sql  = "SELECT id FROM taxonomy WHERE taxonomy_type = ? AND slug = ?";
+        $args = [$kind, $slug];
+
+        if ($id) {
+            $sql   .= " AND id != ?";
+            $args[] = $id;
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($args);
+
+        if (!$stmt->fetch()) {
+            break;
+        }
+
+        $slug = $baseSlug . '-' . $counter++;
+    }
+
+    if ($id) {
+        $stmt = $pdo->prepare("
+            UPDATE taxonomy SET
+                name         = ?,
+                slug         = ?,
+                description  = ?,
+                content_type = ?,
+                updated_at   = ?
+            WHERE id = ?
+            AND taxonomy_type = ?
+        ");
+
+        $stmt->execute([$name, $slug, $description, $contentType, $now, $id, $kind]);
+
+        $message = ucfirst($kind) . ' updated.';
+    } else {
+        $stmt = $pdo->prepare("
+            INSERT INTO taxonomy (
+                taxonomy_type,
+                name,
+                slug,
+                content_type,
+                description,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->execute([$kind, $name, $slug, $contentType, $description, $now, $now]);
+
+        $message = ucfirst($kind) . ' created.';
+    }
+
+    log_activity($id ? 'taxonomy.updated' : 'taxonomy.created', 'taxonomy', $id ?: null, $name, []);
+
+    redirect_with_toast($kind, 'success', $message);
+}
+
+/**
+ * Delete a taxonomy term and its content relationships.
+ *
+ * @param string $kind 'category' or 'tag'
+ */
+function remove_taxonomy(string $kind, int $id): void
+{
+    if ($id <= 0) {
+        redirect_with_toast($kind, 'error', 'Invalid ' . $kind . '.');
+    }
+
+    $pdo = db();
+
+    $stmt = $pdo->prepare("SELECT id, name FROM taxonomy WHERE id = ? AND taxonomy_type = ?");
+    $stmt->execute([$id, $kind]);
+    $term = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$term) {
+        redirect_with_toast($kind, 'error', ucfirst($kind) . ' not found.');
+    }
+
+    // Relationships first, so no orphans survive the term.
+    $pdo->prepare("DELETE FROM taxonomy_term_relationships WHERE taxonomy_id = ?")->execute([$id]);
+    $pdo->prepare("DELETE FROM taxonomy WHERE id = ? AND taxonomy_type = ?")->execute([$id, $kind]);
+
+    log_activity('taxonomy.deleted', 'taxonomy', $id, (string) $term['name'], ['kind' => $kind]);
+
+    redirect_with_toast($kind, 'success', ucfirst($kind) . ' "' . $term['name'] . '" deleted.');
 }
