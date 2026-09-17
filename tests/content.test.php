@@ -101,7 +101,8 @@ t('the visibility fragment is relaxed for preview requests only', function () {
     assert_contains("status = 'published'", content_visibility_sql()['sql'], 'a signed-in visit is still filtered');
 
     test_preview_request();
-    assert_eq('', content_visibility_sql()['sql'], 'previewers get no filter');
+    assert_not_contains("status = 'published'", content_visibility_sql()['sql'], 'previewers lose the status filter');
+    assert_contains('deleted_at IS NULL', content_visibility_sql()['sql'], 'trash stays hidden even in preview');
 
     test_request('GET', '/');
 });

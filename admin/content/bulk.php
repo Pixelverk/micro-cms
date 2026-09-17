@@ -92,7 +92,7 @@ if ($errors) {
 $pdo = db();
 
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
-$load = $pdo->prepare("SELECT * FROM content WHERE type = ? AND id IN ({$placeholders})");
+$load = $pdo->prepare("SELECT * FROM content WHERE type = ? AND deleted_at IS NULL AND id IN ({$placeholders})");
 $load->execute(array_merge([$type], $ids));
 $rows = $load->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
@@ -179,8 +179,8 @@ try {
                 break;
 
             case 'delete':
-                delete_content_versions($id);
-                $pdo->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+                // Bulk delete trashes, exactly like the single-item action.
+                trash_content($id);
                 break;
 
             case 'clear_cache':

@@ -195,6 +195,11 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'page_views', 'status', 'INTEGER NOT NULL DEFAULT 200');
         },
 
+        // Trash: a deleted item is hidden, not gone, until it is purged.
+        '2026_09_17_000014_content_deleted_at' => function (PDO $pdo): void {
+            migrate_add_column($pdo, 'content', 'deleted_at', 'INTEGER NULL');
+        },
+
     ];
 }
 

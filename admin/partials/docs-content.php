@@ -55,6 +55,10 @@ function docs_content(): array
                     ['p' => 'Every meaningful save stores the previous version. Open History from the editor to see what changed, view any earlier version, and restore it.'],
                     ['p' => 'Restoring is safe: the state you replace is itself saved to history first, so a restore can be undone.'],
                 ],
+                'Deleting and restoring' => [
+                    ['p' => 'Deleting moves an item to the trash instead of removing it. It leaves the site and the Content list, keeps its version history, and can be brought back from the Trash tab.'],
+                    ['p' => 'Trashed items are purged automatically after a while — 30 days by default, see trash.retention_days in config.php. "Delete permanently" in the Trash tab removes one item immediately, and Utilities → Clear Trash empties the whole trash at once. Trashing a page also trashes the pages nested under it.'],
+                ],
                 'Media' => [
                     ['p' => 'Upload images, PDFs or video in Media. Give each image alt text so it is accessible and searchable.'],
                     ['p' => 'Uploads are automatically resized into several widths and converted to WebP where possible, with a JPEG or PNG fallback. Never delete a file another page still uses.'],
@@ -149,7 +153,7 @@ function docs_content(): array
             'sections' => [
                 'Content statuses' => [
                     ['table' => [
-                        'draft' => 'Visible to signed-in users only. Never indexed.',
+                        'draft' => 'Hidden from visitors. Visible in the admin, or through a preview link. Never indexed.',
                         'scheduled' => 'Hidden until published_at passes; then published automatically.',
                         'published' => 'Public, indexed, listed in the sitemap.',
                         'archived' => 'Hidden from visitors, kept in the admin.',
@@ -175,6 +179,7 @@ function docs_content(): array
                         'security.login_max_attempts' => 'Failed logins before a lockout.',
                         'activity.retention_days' => 'How long audit entries are kept.',
                         'versions.keep' => 'How many versions of each item to keep.',
+                        'trash.retention_days' => 'How long a trashed item is kept before it is purged.',
                     ]],
                 ],
                 'Analytics' => [
@@ -192,6 +197,7 @@ function docs_content(): array
                     ['ul' => [
                         'Utilities → Clear Cache: removes all cached pages.',
                         'Utilities → Reset Analytics: deletes all recorded page views.',
+                        'Utilities → Clear Trash: permanently deletes everything in the trash at once.',
                         'Utilities → Warm Cache: renders every published page into the cache.',
                         'Utilities → Export Static Site: downloads the cached pages, theme assets and media as a zip.',
                         'Utilities → Download Backup: downloads the database, media and sitemap as a zip.',

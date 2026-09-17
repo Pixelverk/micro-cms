@@ -40,6 +40,7 @@ function published_content_paths(): array
               AND status = 'published'
               AND published_at IS NOT NULL
               AND published_at <= :now
+              AND deleted_at IS NULL
         ");
         $stmt->execute(['type' => $type, 'now' => $now]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];

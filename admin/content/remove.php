@@ -1,7 +1,14 @@
 <?php
 declare(strict_types=1);
 
-$pdo = db();
+/*
+|--------------------------------------------------------------------------
+| Remove content
+|--------------------------------------------------------------------------
+| Deleting is a move to the trash; posting purge=1 deletes for good. Trashing
+| keeps the version history, so an accidental delete is recoverable.
+|--------------------------------------------------------------------------
+*/
 
 // ----------------------------
 // POST only (destructive action)
@@ -11,103 +18,47 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Method not allowed');
 }
 
-// ----------------------------
-// Get ID and type
-// ----------------------------
-$id = $_POST['id'] ?? null;
-$type = $_POST['type'] ?? 'page';
+$theme        = theme_config();
+$contentTypes = $theme['content_types'] ?? [];
 
-if (!$id) {
+$id   = (int) ($_POST['id'] ?? 0);
+$type = (string) ($_POST['type'] ?? 'page');
+$purge = !empty($_POST['purge']);
+
+if ($id < 1) {
     redirect_with_toast('content', 'error', 'Missing content ID.');
 }
-
-$id = (int)$id;
-
-// ----------------------------
-// Validate content type via theme config
-// ----------------------------
-$theme = theme_config();
-$contentTypes = $theme['content_types'] ?? [];
 
 if (!isset($contentTypes[$type])) {
     redirect_with_toast('content', 'error', 'Invalid content type.');
 }
 
-// ----------------------------
-// Permissions
-// ----------------------------
 require_capability('content.delete');
 
-// ----------------------------
-// Check if content exists
-// ----------------------------
-$stmt = $pdo->prepare("SELECT slug FROM content WHERE id = :id AND type = :type LIMIT 1");
-$stmt->execute(['id' => $id, 'type' => $type]);
-$content = $stmt->fetch(PDO::FETCH_ASSOC);
+// Any visibility: trashing needs a live row, purging a trashed one.
+$existing = load_content_by_id_any($id);
 
-if (!$content) {
-    redirect_with_toast(
-        'content',
-        'error',
-        ucfirst($type) . ' not found.',
-        ['type' => $type]
-    );
+if (!$existing || (string) $existing['type'] !== $type) {
+    redirect_with_toast('content', 'error', ucfirst($type) . ' not found.', ['type' => $type]);
 }
 
-// ----------------------------
-// Recursive function to orphan and collect descendants
-// ----------------------------
-function collect_and_orphan(PDO $pdo, int $parentId): array {
-    $stmt = $pdo->prepare("SELECT id, slug FROM content WHERE parent_id = :parent_id");
-    $stmt->execute(['parent_id' => $parentId]);
-    $children = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $descendantSlugs = [];
-
-    foreach ($children as $child) {
-        // Recursively process grandchildren
-        $descendantSlugs = array_merge($descendantSlugs, collect_and_orphan($pdo, (int)$child['id']));
-
-        // Orphan this child
-        $update = $pdo->prepare("UPDATE content SET parent_id = NULL WHERE id = :id");
-        $update->execute(['id' => $child['id']]);
-
-        // Collect slug for cache invalidation
-        $descendantSlugs[] = $child['slug'];
-    }
-
-    return $descendantSlugs;
+if ($purge) {
+    $done    = purge_content($id);
+    $action  = 'content.purged';
+    $message = $done ? ucfirst($type) . ' deleted permanently.' : ucfirst($type) . ' could not be deleted.';
+} else {
+    $done    = trash_content($id);
+    $action  = 'content.trashed';
+    $message = $done ? ucfirst($type) . ' moved to the trash.' : ucfirst($type) . ' is already in the trash.';
 }
 
-// Get all descendant slugs and set their parent_id to null
-$descendantSlugs = collect_and_orphan($pdo, $id);
-
-// ----------------------------
-// Delete the content (and its version history)
-// ----------------------------
-delete_content_versions($id);
-
-$stmt = $pdo->prepare("DELETE FROM content WHERE id = :id");
-$stmt->execute(['id' => $id]);
-
-// ----------------------------
-// Invalidate cache for deleted page + descendants
-// ----------------------------
-invalidate_cache($content['slug'], $type);
-foreach ($descendantSlugs as $slug) {
-    invalidate_cache($slug, $type);
+if ($done) {
+    log_activity($action, 'content', $id, (string) $existing['slug'], ['type' => $type]);
 }
-
-// ----------------------------
-// Update sitemap
-// ----------------------------
-save_sitemap();
-
-log_activity('content.deleted', 'content', $id, (string) $content['slug'], ['type' => $type]);
 
 redirect_with_toast(
     'content',
-    'success',
-    ucfirst($type) . ' removed successfully.',
-    ['type' => $type]
+    $done ? 'success' : 'error',
+    $message,
+    $purge ? ['type' => $type, 'status' => 'trash'] : ['type' => $type]
 );

@@ -111,6 +111,7 @@ Demo account:
 * Draft, scheduled, published and archived statuses
 * Token-based preview of unpublished content
 * Content version history with restore
+* Trash: deleting keeps content recoverable, with restore and permanent delete
 * Activity log (audit trail) with configurable retention
 * Built-in analytics: page views, unique visitors, top pages and referrers, cache-hit ratio (no IPs stored)
 * Front-end search over titles and body text
@@ -127,8 +128,8 @@ Demo account:
 
 ### Planned
 
-The backlog lives in [`plan.md`](plan.md). Near-term entries: trash and
-robots.txt. The multi-language front end is designed in
+The backlog lives in [`plan.md`](plan.md). Near-term entry: robots.txt. The
+multi-language front end is designed in
 [`multilanguage-plan.md`](multilanguage-plan.md) and deferred.
 
 ### Maybe

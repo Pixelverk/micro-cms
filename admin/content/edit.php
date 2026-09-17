@@ -29,7 +29,7 @@ $contentData = null;
 
 $id = $_GET['id'] ?? null;
 if ($id) {
-    $contentData = load_content_by_id((int)$id);
+    $contentData = load_content_by_id_admin((int)$id);
 
     if (!$contentData) {
         redirect_with_toast(
@@ -68,7 +68,7 @@ if (!empty($contentData['scheduled_at'])) {
 }
 
 // parent stuff
-$allItems = list_content($type);
+$allItems = list_content_admin($type);
 
 if ($isEdit) {
     $fullSlug = build_full_slug($contentData, $allItems);

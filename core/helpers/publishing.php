@@ -29,6 +29,7 @@ function publish_due_content(): array
         WHERE status = 'scheduled'
           AND scheduled_at IS NOT NULL
           AND scheduled_at <= :now
+          AND deleted_at IS NULL
     ");
     $stmt->execute(['now' => $now]);
     $due = $stmt->fetchAll(PDO::FETCH_ASSOC);

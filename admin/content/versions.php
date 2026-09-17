@@ -22,7 +22,7 @@ if (!isset($contentTypes[$type])) {
     redirect_with_toast('content', 'error', 'Invalid content type.');
 }
 
-$content = load_content_by_id($id);
+$content = load_content_by_id_admin($id);
 
 if (!$content) {
     redirect_with_toast('content', 'error', 'Content not found.', ['type' => $type]);

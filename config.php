@@ -51,4 +51,10 @@ return [
         'keep' => 20,
     ],
 
+    // How long trashed content is kept before it is purged automatically
+    // (see core/helpers/content.php).
+    'trash' => [
+        'retention_days' => 30,
+    ],
+
 ];

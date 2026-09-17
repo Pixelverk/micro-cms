@@ -154,14 +154,31 @@ function preview_url(string $url): string
  */
 function content_visibility_sql(): array
 {
+    // Trashed content stays hidden, even from a previewer.
     if (is_preview_request()) {
-        return ['sql' => '', 'params' => []];
+        return ['sql' => ' AND deleted_at IS NULL', 'params' => []];
     }
 
     return [
-        'sql'    => " AND status = 'published' AND published_at IS NOT NULL AND published_at <= :visibility_now",
+        'sql'    => " AND status = 'published' AND published_at IS NOT NULL AND published_at <= :visibility_now AND deleted_at IS NULL",
         'params' => ['visibility_now' => time()],
     ];
+}
+
+/**
+ * Visibility fragment for the admin: everything except trashed content.
+ *
+ * The admin must see drafts, scheduled and archived items — the front-end
+ * filter above is deliberately not used there. Pass $trashed to ask for the
+ * trash view instead.
+ *
+ * @return array{sql: string, params: array<string, mixed>}
+ */
+function content_admin_visibility_sql(bool $trashed = false): array
+{
+    return $trashed
+        ? ['sql' => ' AND deleted_at IS NOT NULL', 'params' => []]
+        : ['sql' => ' AND deleted_at IS NULL', 'params' => []];
 }
 
 
@@ -302,17 +319,42 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
  */
 function list_content(string $type, array $filters = []): array
 {
+    return content_list_rows($type, $filters, content_visibility_sql(), false);
+}
+
+/**
+ * Admin listing: drafts and archived items are included, trashed are not
+ * unless the caller asked for them.
+ *
+ * @param array{status?: string, q?: string, order?: string, trashed?: bool} $filters
+ */
+function list_content_admin(string $type, array $filters = []): array
+{
+    $trashed = !empty($filters['trashed']);
+
+    return content_list_rows($type, $filters, content_admin_visibility_sql($trashed), true);
+}
+
+/**
+ * Shared content listing query.
+ *
+ * @param array<string, mixed> $filters
+ * @param array{sql: string, params: array<string, mixed>} $visible
+ * @return list<array<string, mixed>>
+ */
+function content_list_rows(string $type, array $filters, array $visible, bool $withDeletedAt): array
+{
     $pdo = db();
 
-    $sql = "
-        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at, scheduled_at, created_by
-        FROM content
-        WHERE type = :type
-    ";
+    $columns = 'id, slug, title, parent_id, status, published_at, created_at, updated_at, scheduled_at, created_by';
 
+    if ($withDeletedAt) {
+        $columns .= ', deleted_at';
+    }
+
+    $sql    = "SELECT {$columns} FROM content WHERE type = :type";
     $params = ['type' => $type];
 
-    $visible = content_visibility_sql();
     $sql .= $visible['sql'];
     $params = array_merge($params, $visible['params']);
 
@@ -353,6 +395,7 @@ function list_recent_content(string $type, int $limit = 3): array
           AND status = 'published'
           AND published_at IS NOT NULL
           AND published_at <= :now
+          AND deleted_at IS NULL
         ORDER BY published_at DESC, id DESC
         LIMIT {$limit}
     ");
@@ -373,12 +416,37 @@ function list_recent_content(string $type, int $limit = 3): array
 }
 
 /**
- * Load a content item by ID, honouring visibility.
+ * Load a content item by ID, honouring front-end visibility.
  */
 function load_content_by_id(int $id): ?array
 {
+    return content_load_by_id_with_visibility($id, content_visibility_sql());
+}
+
+/**
+ * Load a content item for the admin: unpublished is fine, trashed is not.
+ */
+function load_content_by_id_admin(int $id): ?array
+{
+    return content_load_by_id_with_visibility($id, content_admin_visibility_sql());
+}
+
+/**
+ * Load a content item whatever its state, trashed included.
+ *
+ * Used by the trash endpoints: purging has to find the row that trashing hid.
+ */
+function load_content_by_id_any(int $id): ?array
+{
+    return content_load_by_id_with_visibility($id, ['sql' => '', 'params' => []]);
+}
+
+/**
+ * @param array{sql: string, params: array<string, mixed>} $visible
+ */
+function content_load_by_id_with_visibility(int $id, array $visible): ?array
+{
     $pdo = db();
-    $visible = content_visibility_sql();
 
     $stmt = $pdo->prepare("
         SELECT *
@@ -391,10 +459,14 @@ function load_content_by_id(int $id): ?array
 
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$row) {
-        return null;
-    }
+    return $row ? content_from_row($row) : null;
+}
 
+/**
+ * Shape a stored row for the rest of the app.
+ */
+function content_from_row(array $row): array
+{
     $meta = $row['meta'] ? json_decode($row['meta'], true) : [];
     $body = $row['body'] ? json_decode($row['body'], true) : [];
 
@@ -419,6 +491,7 @@ function load_content_by_id(int $id): ?array
         'scheduled_at' => $row['scheduled_at'] ? (int) $row['scheduled_at'] : null,
         'created_at'   => (int) $row['created_at'],
         'updated_at'   => (int) $row['updated_at'],
+        'deleted_at'   => !empty($row['deleted_at']) ? (int) $row['deleted_at'] : null,
         'categories'   => $tax['category'],
         'tags'         => $tax['tag'],
     ];
@@ -565,6 +638,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
             WHERE type = :type
               AND slug = :slug
               AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
+              AND deleted_at IS NULL
             LIMIT 1
         ";
         $stmt = $pdo->prepare($sql);
@@ -670,6 +744,26 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
         }
 
     } else {
+        // A trashed item keeps its URL. SQLite's UNIQUE(type, parent_id, slug)
+        // treats a NULL parent as distinct, so guard top-level slugs by hand.
+        $conflict = $pdo->prepare("
+            SELECT id FROM content
+            WHERE type = :type
+              AND slug = :slug
+              AND parent_id " . ($parentId === null ? 'IS NULL' : '= :parent_id') . "
+              AND deleted_at IS NOT NULL
+            LIMIT 1
+        ");
+        $conflictParams = ['type' => $type, 'slug' => $slug];
+        if ($parentId !== null) {
+            $conflictParams['parent_id'] = $parentId;
+        }
+        $conflict->execute($conflictParams);
+
+        if ($conflict->fetchColumn()) {
+            throw new RuntimeException('That slug belongs to an item in the trash. Restore it or delete it permanently first.');
+        }
+
         // ----------------------------
         // INSERT
         // ----------------------------
@@ -787,6 +881,237 @@ function content_descendant_ids(int $id, array $allItems): array
     }
 
     return $descendants;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Trash
+|--------------------------------------------------------------------------
+|
+| Deleting moves content to the trash: it leaves the front end and the admin
+| list but keeps its version history until it is restored or purged. Trashing
+| a parent cascades to its descendants, so a subtree never ends up with
+| half-visible children.
+|
+*/
+
+/**
+ * Every row of a type as id/slug/parent_id, ignoring visibility.
+ *
+ * @return list<array{id: int, slug: string, parent_id: ?int}>
+ */
+function content_tree_rows(string $type): array
+{
+    $stmt = db()->prepare("SELECT id, slug, parent_id FROM content WHERE type = :type");
+    $stmt->execute(['type' => $type]);
+
+    $rows = [];
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $rows[] = [
+            'id'        => (int) $row['id'],
+            'slug'      => (string) $row['slug'],
+            'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
+        ];
+    }
+
+    return $rows;
+}
+
+/**
+ * The item and every descendant below it.
+ *
+ * @param list<array{id: int, slug: string, parent_id: ?int}> $rows
+ * @return list<int>
+ */
+function content_subtree_ids(int $id, array $rows): array
+{
+    return array_merge([$id], content_descendant_ids($id, $rows));
+}
+
+/**
+ * Move an item and its descendants to the trash.
+ */
+function trash_content(int $id): bool
+{
+    $pdo  = db();
+    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $id]);
+    $type = (string) $stmt->fetchColumn();
+
+    if ($type === '') {
+        return false;
+    }
+
+    $ids = content_subtree_ids($id, content_tree_rows($type));
+    $now = time();
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    $update = $pdo->prepare("
+        UPDATE content
+        SET deleted_at = ?, updated_at = ?
+        WHERE id IN ({$placeholders}) AND deleted_at IS NULL
+    ");
+    $update->execute(array_merge([$now, $now], $ids));
+
+    if ($update->rowCount() < 1) {
+        return false;
+    }
+
+    invalidate_cache();
+    save_sitemap();
+
+    return true;
+}
+
+/**
+ * Bring an item and its descendants back out of the trash.
+ */
+function restore_content(int $id): bool
+{
+    $pdo  = db();
+    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $id]);
+    $type = (string) $stmt->fetchColumn();
+
+    if ($type === '') {
+        return false;
+    }
+
+    $ids = content_subtree_ids($id, content_tree_rows($type));
+    $now = time();
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    $update = $pdo->prepare("
+        UPDATE content
+        SET deleted_at = NULL, updated_at = ?
+        WHERE id IN ({$placeholders}) AND deleted_at IS NOT NULL
+    ");
+    $update->execute(array_merge([$now], $ids));
+
+    if ($update->rowCount() < 1) {
+        return false;
+    }
+
+    invalidate_cache();
+    save_sitemap();
+
+    return true;
+}
+
+/**
+ * Delete an item and its descendants for good, with their version history.
+ */
+function purge_content(int $id): bool
+{
+    $pdo  = db();
+    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $id]);
+    $type = (string) $stmt->fetchColumn();
+
+    if ($type === '') {
+        return false;
+    }
+
+    $ids = content_subtree_ids($id, content_tree_rows($type));
+
+    foreach ($ids as $contentId) {
+        if (function_exists('delete_content_versions')) {
+            delete_content_versions((int) $contentId);
+        }
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    // Taxonomy links go with the rows (content ids are unique across types).
+    $pdo->prepare("DELETE FROM taxonomy_term_relationships WHERE content_id IN ({$placeholders})")->execute($ids);
+
+    $deleted = $pdo->prepare("DELETE FROM content WHERE id IN ({$placeholders})");
+    $deleted->execute($ids);
+
+    if ($deleted->rowCount() < 1) {
+        return false;
+    }
+
+    invalidate_cache();
+    save_sitemap();
+
+    return true;
+}
+
+/**
+ * Purge everything that has been in the trash longer than the retention.
+ *
+ * @return int items purged
+ */
+function content_purge_trashed(int $days = 30): int
+{
+    $cutoff = time() - (max(1, $days) * 86400);
+
+    return content_purge_ids('deleted_at IS NOT NULL AND deleted_at < :cutoff', ['cutoff' => $cutoff]);
+}
+
+/**
+ * How many items are currently in the trash.
+ */
+function content_trash_count(): int
+{
+    return (int) db()->query('SELECT COUNT(*) FROM content WHERE deleted_at IS NOT NULL')->fetchColumn();
+}
+
+/**
+ * Purge everything in the trash, whatever its age.
+ *
+ * @return int items purged
+ */
+function content_empty_trash(): int
+{
+    return content_purge_ids('deleted_at IS NOT NULL', []);
+}
+
+/**
+ * Purge the content rows matching a WHERE clause, with their history.
+ *
+ * @param array<string, mixed> $params
+ * @return int items purged
+ */
+function content_purge_ids(string $where, array $params): int
+{
+    $stmt = db()->prepare("SELECT id FROM content WHERE {$where}");
+    $stmt->execute($params);
+    $ids = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+    $purged = 0;
+
+    foreach ($ids as $id) {
+        if (purge_content((int) $id)) {
+            $purged++;
+        }
+    }
+
+    return $purged;
+}
+
+/**
+ * Opportunistic purge, at most once a day, from the front-end shutdown hook.
+ */
+function content_maybe_purge_trash(): void
+{
+    $marker = STORAGE_PATH . '/.trash-purge';
+
+    if (is_file($marker) && (time() - (int) filemtime($marker)) < 86400) {
+        return;
+    }
+
+    @touch($marker);
+
+    try {
+        content_purge_trashed((int) config('trash.retention_days', 30));
+    } catch (Throwable $exception) {
+        debug_log('trash purge failed: ' . $exception->getMessage());
+    }
 }
 
 // taxonomies

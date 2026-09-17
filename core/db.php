@@ -117,6 +117,7 @@ function load_taxonomy_archive(string $taxonomyType, string $slug): array
             ON ttr.content_id = c.id
            AND ttr.content_type = c.type
         WHERE ttr.taxonomy_id = :taxId
+          AND c.deleted_at IS NULL
         ORDER BY c.created_at DESC
     ");
     $stmt->execute(['taxId' => $taxonomy['id']]);

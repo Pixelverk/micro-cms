@@ -14,7 +14,7 @@ $contentType = $_POST['type'] ?? 'page'; // default type
 // ----------------------------
 $contentData = [];
 if ($id) {
-    $contentData = load_content_by_id((int)$id) ?: [];
+    $contentData = load_content_by_id_admin((int)$id) ?: [];
 }
 
 // ----------------------------
@@ -38,7 +38,7 @@ $parentId = ($parentId === '' || $parentId === null) ? null : (int)$parentId;
 
 if ($id && $parentId) {
     // Prevent self or descendant as parent
-    $allItems = list_content($contentType);
+    $allItems = list_content_admin($contentType);
     $invalidParentIds = array_merge([$id], content_descendant_ids($id, $allItems));
     if (in_array($parentId, $invalidParentIds, true)) {
         $parentId = null; // reset to top level
@@ -119,7 +119,7 @@ if ($footer !== '' && !array_key_exists($footer, $theme['footers'] ?? [])) {
 
 // A parent must exist and belong to the same content type.
 if ($parentId !== null) {
-    $parentStmt = db()->prepare("SELECT id FROM content WHERE id = :id AND type = :type LIMIT 1");
+    $parentStmt = db()->prepare("SELECT id FROM content WHERE id = :id AND type = :type AND deleted_at IS NULL LIMIT 1");
     $parentStmt->execute(['id' => $parentId, 'type' => $contentType]);
 
     if (!$parentStmt->fetchColumn()) {
@@ -285,6 +285,9 @@ try {
     }
 
     throw $exception;
+} catch (RuntimeException $exception) {
+    // e.g. the slug belongs to an item in the trash (see save_content()).
+    redirect_with_toast('content', 'error', $exception->getMessage());
 }
 
 if (!$id) {

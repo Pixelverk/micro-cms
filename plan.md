@@ -12,22 +12,7 @@ end stays as a deferred design.
 
 ## Next up
 
-### 1. Trash (soft delete)
-
-**Why:** deleting is permanent today and takes the version history with it.
-WordPress and Squarespace both keep a trash.
-
-**Sketch:** `deleted_at` on `content`; `content_visibility_sql()` and the
-listings exclude trashed rows; a Trash tab on the content list with restore and
-permanent delete; purge items older than N days from the existing shutdown hook
-(`publishing_check()`).
-
-**Effort:** M.
-
-**Verify:** trashed items leave the front end, cache and sitemap; restore brings
-them back; permanent delete removes the row and its versions.
-
-### 2. robots.txt
+### 1. robots.txt
 
 **Why:** there is no route for it, so crawlers never discover the sitemap.
 WordPress serves a virtual robots.txt.

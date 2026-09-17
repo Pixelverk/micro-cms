@@ -60,6 +60,7 @@ function serveCached($file, $config)
 {
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
+    register_shutdown_function('content_maybe_purge_trash');
 
     // checkCache() already validated the method, the file and its age.
     header('Content-Type: text/html; charset=utf-8');
@@ -80,6 +81,7 @@ function serveFresh($request)
 
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
+    register_shutdown_function('content_maybe_purge_trash');
 
     // A redirect wins before routing, so an old URL never falls through to a
     // 404. Saving a redirect clears that path's cache file, so it also beats the

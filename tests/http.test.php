@@ -292,10 +292,10 @@ t('destructive endpoints reject a tokenless POST', function () use ($base) {
     assert_eq(302, $status, 'must redirect without deleting');
 });
 
-t('destructive endpoints accept a valid POST', function () use ($base, $cookieJar) {
+t('destructive endpoints trash, restore and purge', function () use ($base, $cookieJar) {
     http_login($base);
 
-    // Create throwaway content to delete.
+    // Create throwaway content to remove.
     $pdo = db();
     $now = time();
     $pdo->prepare("
@@ -310,17 +310,55 @@ t('destructive endpoints accept a valid POST', function () use ($base, $cookieJa
         throw new RuntimeException('no CSRF token found on the content list');
     }
 
+    $token = $matches[1];
+
+    // Delete is a move to the trash, not a purge.
     [$status] = http('POST', $base . '/admin/content/remove', true, [
         'id'     => $id,
         'type'   => 'page',
-        '_token' => $matches[1],
+        '_token' => $token,
     ]);
 
     assert_eq(302, $status);
 
+    $state = db()->prepare("SELECT deleted_at FROM content WHERE id = :id");
+    $state->execute(['id' => $id]);
+    assert_true($state->fetchColumn() !== null, 'the item is trashed, not deleted');
+    // Release the read lock: the server writes to the same database next.
+    $state->closeCursor();
+
+    // Restore brings it back.
+    [$status] = http('POST', $base . '/admin/content/restore', true, [
+        'id'     => $id,
+        'type'   => 'page',
+        '_token' => $token,
+    ]);
+
+    assert_eq(302, $status);
+
+    $state->execute(['id' => $id]);
+    assert_eq(null, $state->fetchColumn() ?: null, 'restore clears deleted_at');
+    $state->closeCursor();
+
+    // Trash it again and purge it from the trash — the realistic flow, and the
+    // one where remove.php has to load a row the admin list no longer shows.
+    http('POST', $base . '/admin/content/remove', true, [
+        'id'     => $id,
+        'type'   => 'page',
+        '_token' => $token,
+    ]);
+
+    // Purge removes the row for good.
+    http('POST', $base . '/admin/content/remove', true, [
+        'id'      => $id,
+        'type'    => 'page',
+        'purge'   => 1,
+        '_token'  => $token,
+    ]);
+
     $exists = db()->prepare("SELECT COUNT(*) FROM content WHERE id = :id");
     $exists->execute(['id' => $id]);
-    assert_eq(0, (int) $exists->fetchColumn(), 'the item must be deleted');
+    assert_eq(0, (int) $exists->fetchColumn(), 'purge removes the row');
 });
 
 t('public forms require a signed token', function () use ($base) {

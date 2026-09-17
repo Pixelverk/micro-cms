@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -30,6 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $removed = analytics_clear();
                 log_activity('utility.analytics_reset', 'utility', null, $removed . ' page view(s)', []);
                 $message = '✅ Analytics reset — ' . $removed . ' page view(s) removed.';
+                break;
+
+            case 'clear_trash':
+                $purged = content_empty_trash();
+                log_activity('utility.trash_cleared', 'utility', null, $purged . ' item(s)', []);
+                $message = $purged
+                    ? '✅ Trash emptied — ' . $purged . ' item(s) deleted permanently.'
+                    : '✅ The trash was already empty.';
                 break;
 
             case 'warm_cache':
@@ -111,6 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$trashCount = content_trash_count();
+
 ob_start();
 ?>
 
@@ -141,6 +151,21 @@ ob_start();
         <button type="button" data-action="reset_analytics" class="btn btn-danger">
             Reset Analytics
         </button>
+    </div>
+
+    <div class="utility-action">
+        <h3>Clear Trash</h3>
+        <?php if ($trashCount): ?>
+            <p>Permanently delete the <?= $trashCount ?> <?= $trashCount === 1 ? 'item' : 'items' ?> in the trash, including version history. This cannot be undone.</p>
+            <button type="button" data-action="clear_trash" class="btn btn-danger">
+                Clear Trash
+            </button>
+        <?php else: ?>
+            <p>The trash is empty. Deleted content waits here until you restore it or it is purged, so it can still be recovered.</p>
+            <button type="button" class="btn btn-muted" disabled>
+                Clear Trash
+            </button>
+        <?php endif; ?>
     </div>
 
     <div class="utility-action">
@@ -216,6 +241,7 @@ const actionInput = document.getElementById('utility-action-input');
 const confirmations = {
     clear_cache: 'Are you sure you want to clear the cache?',
     reset_analytics: 'Delete all recorded page views? This cannot be undone.',
+    clear_trash: 'Permanently delete everything in the trash? This cannot be undone.',
     warm_cache: 'Render and cache every published page?',
     export_static: 'Warm the cache and download a static copy of the site?',
     export_backup: 'Download a backup of the database and media?',

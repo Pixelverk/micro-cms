@@ -50,6 +50,7 @@ CREATE TABLE content (
     search_text TEXT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
+    deleted_at INTEGER NULL,
     UNIQUE(type, parent_id, slug)
 );
 ");

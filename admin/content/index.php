@@ -34,37 +34,45 @@ $tagStmt = db()->prepare("
 $tagStmt->execute([$type]);
 $tags = $tagStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-$allItems = list_content($type);
-
 // Authors work on their own drafts; other roles see everything.
-if (!admin_can('content.edit.any')) {
+$visibleToUser = function (array $list): array {
+    if (admin_can('content.edit.any')) {
+        return $list;
+    }
+
     $mine = function_exists('current_user_id') ? current_user_id() : null;
 
-    $allItems = array_values(array_filter($allItems, function ($item) use ($mine) {
+    return array_values(array_filter($list, function ($item) use ($mine) {
         $owner = $item['created_by'] ?? null;
 
         // Unattributed content stays visible so it is not stranded.
         return $owner === null || (int) $owner === (int) $mine;
     }));
-}
+};
 
 $statusFilter = (string) ($_GET['status'] ?? '');
-if ($statusFilter !== '' && !in_array($statusFilter, content_statuses(), true)) {
+if ($statusFilter !== '' && $statusFilter !== 'trash' && !in_array($statusFilter, content_statuses(), true)) {
     $statusFilter = '';
 }
 
+$isTrashView  = $statusFilter === 'trash';
 $searchFilter = trim((string) ($_GET['q'] ?? ''));
+
+// The Trash tab is a different query: trashed rows instead of live ones.
+$liveItems    = $visibleToUser(list_content_admin($type));
+$trashedItems = $visibleToUser(list_content_admin($type, ['trashed' => true]));
+$allItems     = $isTrashView ? $trashedItems : $liveItems;
 
 // Counts are computed before filtering so every tab shows its own total.
 $statusCounts = array_fill_keys(content_statuses(), 0);
-foreach ($allItems as $item) {
+foreach ($liveItems as $item) {
     $itemStatus = (string) ($item['status'] ?? 'draft');
     $statusCounts[$itemStatus] = ($statusCounts[$itemStatus] ?? 0) + 1;
 }
 
 $items = $allItems;
 
-if ($statusFilter !== '') {
+if ($statusFilter !== '' && !$isTrashView) {
     $items = array_values(array_filter($items, fn($item) => ($item['status'] ?? '') === $statusFilter));
 }
 
@@ -127,12 +135,14 @@ ob_start();
 // ----------------------------
 // Filter bar: status tabs + search
 // ----------------------------
-$total = count($allItems);
+$total = count($liveItems);
 $tabs = ['' => ['label' => 'All', 'count' => $total]];
 
 foreach (content_statuses() as $status) {
     $tabs[$status] = ['label' => content_status_label($status), 'count' => $statusCounts[$status] ?? 0];
 }
+
+$tabs['trash'] = ['label' => admin_trans('trash'), 'count' => count($trashedItems)];
 ?>
 <div class="content-filters">
     <div class="status-tabs">
@@ -158,7 +168,7 @@ foreach (content_statuses() as $status) {
     </form>
 </div>
 
-<?php if (admin_can('content.bulk') && !empty($items)): ?>
+<?php if (admin_can('content.bulk') && !empty($items) && !$isTrashView): ?>
     <?php $availableTags = $tags; ?>
     <form id="bulk-form" method="post" action="<?= e(url('admin/content/bulk')) ?>" class="bulk-toolbar" hidden>
         <?= csrf_field() ?>
@@ -176,7 +186,7 @@ foreach (content_statuses() as $status) {
                 <option value="draft"><?= e(admin_trans('draft')) ?></option>
                 <option value="archive"><?= e(admin_trans('archived')) ?></option>
                 <?php if (admin_can('content.delete')): ?>
-                    <option value="delete"><?= e(admin_trans('delete')) ?></option>
+                    <option value="delete"><?= e(admin_trans('move_to_trash')) ?></option>
                 <?php endif; ?>
                 <option value="clear_cache"><?= e(admin_trans('clear_cache')) ?></option>
                 <option value="add_tag"><?= e(admin_trans('add_tag')) ?></option>
@@ -201,9 +211,13 @@ foreach (content_statuses() as $status) {
 
 <?php if (empty($items)): ?>
     <p class="empty-state">
-        <?= $statusFilter !== '' || $searchFilter !== ''
-            ? 'No ' . e($typeLabel) . 's match these filters.'
-            : e(admin_trans('no_content', ['type' => $typeLabel])) ?>
+        <?php if ($isTrashView): ?>
+            <?= e(admin_trans('trash_empty')) ?>
+        <?php else: ?>
+            <?= $statusFilter !== '' || $searchFilter !== ''
+                ? 'No ' . e($typeLabel) . 's match these filters.'
+                : e(admin_trans('no_content', ['type' => $typeLabel])) ?>
+        <?php endif; ?>
     </p>
 <?php else: ?>
     <table class="content-table">
@@ -270,35 +284,62 @@ foreach (content_statuses() as $status) {
                 </td>
 
                 <td class="actions">
-                    <?php $canEditThis = can_edit_content($item); ?>
+                    <?php if ($isTrashView): ?>
+                        <form method="post" action="<?= url('admin/content/restore') ?>" class="inline-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                            <input type="hidden" name="type" value="<?= e($type) ?>">
+                            <button type="submit" class="btn-small btn-secondary">
+                                <?= e(admin_trans('restore')) ?>
+                            </button>
+                        </form>
 
-                    <a href="<?= e(preview_url($publicUrl)) ?>"
-                        target="_blank"
-                        class="btn-small btn-preview"
-                        title="Open a live, uncached preview">
-                        <?= e(admin_trans('preview')) ?>
-                    </a>
+                        <?php if (admin_can('content.delete')): ?>
+                        <form method="post"
+                            action="<?= url('admin/content/remove') ?>"
+                            data-confirm="<?= e(admin_trans('purge_confirm', ['name' => $item['title']])) ?>"
+                            data-confirm-title="<?= e(admin_trans('delete_permanently')) ?>"
+                            class="inline-form js-confirm-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                            <input type="hidden" name="type" value="<?= e($type) ?>">
+                            <input type="hidden" name="purge" value="1">
+                            <button type="submit" class="btn-delete btn-small">
+                                <?= e(admin_trans('delete_permanently')) ?>
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <?php $canEditThis = can_edit_content($item); ?>
 
-                    <?php if ($canEditThis): ?>
-                        <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
-                            class="btn-small">
-                            <?= e(admin_trans('edit')) ?>
+                        <a href="<?= e(preview_url($publicUrl)) ?>"
+                            target="_blank"
+                            class="btn-small btn-preview"
+                            title="Open a live, uncached preview">
+                            <?= e(admin_trans('preview')) ?>
                         </a>
-                    <?php endif; ?>
 
-                    <?php if (admin_can('content.delete') && $canEditThis): ?>
-                    <form method="post"
-                        action="<?= url('admin/content/remove') ?>"
-                        data-confirm="<?= e(admin_trans('delete_content_confirm', ['name' => $item['title']])) ?>"
-                        data-confirm-title="<?= e(admin_trans('delete_content')) ?>"
-                        class="inline-form js-confirm-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
-                        <input type="hidden" name="type" value="<?= e($type) ?>">
-                        <button type="submit" class="btn-delete btn-small">
-                            <?= e(admin_trans('delete')) ?>
-                        </button>
-                    </form>
+                        <?php if ($canEditThis): ?>
+                            <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
+                                class="btn-small">
+                                <?= e(admin_trans('edit')) ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if (admin_can('content.delete') && $canEditThis): ?>
+                        <form method="post"
+                            action="<?= url('admin/content/remove') ?>"
+                            data-confirm="<?= e(admin_trans('trash_confirm', ['name' => $item['title']])) ?>"
+                            data-confirm-title="<?= e(admin_trans('move_to_trash')) ?>"
+                            class="inline-form js-confirm-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                            <input type="hidden" name="type" value="<?= e($type) ?>">
+                            <button type="submit" class="btn-delete btn-small">
+                                <?= e(admin_trans('move_to_trash')) ?>
+                            </button>
+                        </form>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </td>
             </tr>

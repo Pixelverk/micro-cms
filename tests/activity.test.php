@@ -186,6 +186,18 @@ t('activity_action_label() falls back to a readable form', function () {
     assert_eq('Something odd here', activity_action_label('something.odd_here'));
 });
 
+t('trash actions are distinguishable from each other', function () {
+    assert_eq('Moved to trash', activity_action_label('content.trashed'));
+    assert_eq('Restored from trash', activity_action_label('content.untrashed'));
+    assert_eq('Deleted permanently', activity_action_label('content.purged'));
+
+    // Restoring from the trash must not read as restoring a version.
+    assert_true(
+        activity_action_label('content.untrashed') !== activity_action_label('content.restored'),
+        'trash restore and version restore have different labels'
+    );
+});
+
 t('every instrumented action has a label', function () {
     // Guards against adding a new logged action without a human label.
     foreach (activity_groups() as $group) {

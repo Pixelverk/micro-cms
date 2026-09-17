@@ -32,6 +32,7 @@ function generate_sitemap(): string
               AND status = 'published'
               AND published_at IS NOT NULL
               AND published_at <= :now
+              AND deleted_at IS NULL
         ");
         $stmt->execute(['type' => $type, 'now' => $now]);
 
