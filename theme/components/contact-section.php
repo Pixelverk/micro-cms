@@ -89,29 +89,70 @@ document.addEventListener('submit', function(e){
     const messageBox = form.querySelector('.message');
     messageBox.style.display = 'none';
 
-    fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: {'Accept':'application/json'}
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.redirect) {
-            window.location.href = data.redirect;
-            return;
-        }
-        messageBox.textContent = data.success
-            ? form.dataset.success
-            : form.dataset.error;
-        messageBox.className = 'message ' + (data.success ? 'success':'error');
-        messageBox.style.display = 'block';
-        if (data.success) form.reset();
-    })
-    .catch(() => {
-        messageBox.textContent = form.dataset.error;
+    submitForm();
+
+    // Posts the form. If the signed token has expired (page served from cache),
+    // fetch a fresh one and retry exactly once.
+    function submitForm(retried = false) {
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {'Accept':'application/json'}
+        })
+        .then(res => res.json().then(data => ({status: res.status, data})))
+        .then(({status, data}) => {
+            if (status === 419 && data.stale && !retried) {
+                return refreshToken().then(ok => {
+                    if (ok) submitForm(true);
+                    else showError(messageBox, form.dataset.error);
+                });
+            }
+
+            if (data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
+
+            if (!data.success && data.error && status >= 400) {
+                showError(messageBox, data.error);
+                return;
+            }
+
+            messageBox.textContent = data.success
+                ? form.dataset.success
+                : form.dataset.error;
+            messageBox.className = 'message ' + (data.success ? 'success':'error');
+            messageBox.style.display = 'block';
+            if (data.success) form.reset();
+        })
+        .catch(() => showError(messageBox, form.dataset.error));
+    }
+
+    function refreshToken() {
+        const formType = form.querySelector('[name="form_type"]')?.value;
+        if (!formType) return Promise.resolve(false);
+
+        const url = new URL(form.action, window.location.origin);
+        url.search = '';
+        url.pathname = url.pathname.replace(/\/form-submit\/?$/, '/form-token');
+        url.searchParams.set('form_type', formType);
+
+        return fetch(url, {headers: {'Accept':'application/json'}})
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                const input = form.querySelector('[name="_form_token"]');
+                if (!data || !data.token || !input) return false;
+                input.value = data.token;
+                return true;
+            })
+            .catch(() => false);
+    }
+
+    function showError(messageBox, text) {
+        messageBox.textContent = text;
         messageBox.className = 'message error';
         messageBox.style.display = 'block';
-    });
+    }
 });
 JS,
 
@@ -151,6 +192,7 @@ JS,
                               data-error="<?= e($error_message) ?>">
 
             <input type="hidden" name="form_type" value="<?= e($formType) ?>">
+            <?= form_token_field($formType) ?>
 
             <?php if (!empty($props['_page_id'])): ?>
                 <input type="hidden" name="page_id" value="<?= (int)$props['_page_id'] ?>">

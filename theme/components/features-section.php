@@ -53,6 +53,9 @@ CSS,
 
     extract($props, EXTR_SKIP);
 
+    // Optional prop: instances saved before the schema gained a title.
+    $title = $title ?? '';
+
     ?>
     <section class="py-5" id="<?= $id ?>">
         <div class="container px-5 my-5">

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $pageTitle = 'Form Submissions';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo   = db();
 $theme = theme_config();
@@ -115,4 +115,14 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('messages')) ?></h3>
+<p><?= e(admin_trans('messages_help')) ?></p>
+<p><?= e(admin_trans('messages_email_help')) ?></p>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'reference', 'section' => 'form-submissions'];
+
 include CMS_PATH . '/admin/partials/layout.php';

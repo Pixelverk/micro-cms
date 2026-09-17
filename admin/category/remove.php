@@ -56,6 +56,8 @@ $stmt->execute([$id]);
 // ----------------------------
 // Done
 // ----------------------------
+log_activity('taxonomy.deleted', 'taxonomy', $id, $category['name'], ['kind' => 'category']);
+
 redirect_with_toast(
     'category',
     'success',

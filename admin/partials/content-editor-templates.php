@@ -112,8 +112,7 @@
             <input type="hidden" class="field-input" data-image-picker>
 
             <!-- Preview image -->
-            <img class="image-preview" src="" alt="No image selected"
-                 style="width:auto; max-height:140px; object-fit:cover; display:block; margin-bottom:.5rem; cursor:pointer;">
+            <img class="image-preview" src="" alt="No image selected">
 
             <!-- Button to open modal -->
             <button type="button" class="select-image-btn">Select Image</button>

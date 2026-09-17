@@ -1,33 +1,345 @@
 <?php
 declare(strict_types=1);
 
+/*
+|--------------------------------------------------------------------------
+| Visibility & preview
+|--------------------------------------------------------------------------
+|
+| Every read path that serves a page must agree on who may see unpublished
+| content. These helpers are the single source of that rule.
+|
+| Preview has two layers:
+|
+|   1. can_preview_content()  — is this person allowed to preview at all?
+|   2. is_preview_request()   — did they actually ask for it, with a token?
+|
+| Only (2) relaxes the query filters and disables caching. Merely being signed
+| in must never change what a URL returns, or editor traffic would leak into
+| the public HTML cache.
+|
+*/
+
 /**
- * List content items of a given type
+ * May the current visitor see drafts / scheduled / archived content?
  *
- * @param string $type
- * @return array
+ * Requires an authenticated user with the preview capability (all roles have
+ * it today; Phase 12 narrows the matrix).
  */
-function list_content(string $type): array
+function can_preview_content(): bool
+{
+    if (!function_exists('is_logged_in') || !is_logged_in()) {
+        return false;
+    }
+
+    if (function_exists('admin_can') && !admin_can('content.preview')) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Cookie name holding the per-browser preview token.
+ */
+function preview_cookie_name(): string
+{
+    return 'cms_preview';
+}
+
+/**
+ * The token that turns a normal URL into a preview URL.
+ *
+ * It lives in its own cookie rather than the session on purpose: the session
+ * id is regenerated on login, which used to leave preview links pointing at a
+ * token the server no longer had. A cookie survives that untouched.
+ */
+function preview_token(): string
+{
+    static $token = null;
+
+    if (is_string($token) && $token !== '') {
+        return $token;
+    }
+
+    $cookie = $_COOKIE[preview_cookie_name()] ?? null;
+
+    if (is_string($cookie) && preg_match('/^[a-f0-9]{32}$/', $cookie)) {
+        return $token = $cookie;
+    }
+
+    return $token = bin2hex(random_bytes(16));
+}
+
+/**
+ * Issue the preview cookie for this browser (called on login).
+ */
+function preview_token_issue(?string $token = null): string
+{
+    $token = $token ?? bin2hex(random_bytes(16));
+
+    $_COOKIE[preview_cookie_name()] = $token;
+
+    if (session_status() !== PHP_SESSION_NONE) {
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
+        setcookie(preview_cookie_name(), $token, [
+            'expires'  => time() + (30 * 86400),
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+        ]);
+    }
+
+    return $token;
+}
+
+/**
+ * Forget the preview cookie (called on logout).
+ */
+function preview_token_clear(): void
+{
+    unset($_COOKIE[preview_cookie_name()]);
+
+    if (session_status() !== PHP_SESSION_NONE) {
+        setcookie(preview_cookie_name(), '', [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+}
+
+/**
+ * Is this request an explicit, token-bearing preview?
+ */
+function is_preview_request(): bool
+{
+    if (!can_preview_content()) {
+        return false;
+    }
+
+    $token = $_GET['preview'] ?? null;
+
+    if (!is_string($token) || $token === '') {
+        return false;
+    }
+
+    $expected = $_COOKIE[preview_cookie_name()] ?? null;
+
+    if (!is_string($expected) || $expected === '') {
+        return false;
+    }
+
+    return hash_equals($expected, $token);
+}
+
+/**
+ * Add (or replace) the preview token on a URL.
+ */
+function preview_url(string $url): string
+{
+    $token = preview_token();
+    $separator = str_contains($url, '?') ? '&' : '?';
+
+    return $url . $separator . 'preview=' . urlencode($token);
+}
+
+/**
+ * Should responses for this request be kept out of the HTML cache?
+ */
+function response_is_uncacheable(): bool
+{
+    return is_preview_request() || can_preview_content();
+}
+
+/**
+ * An extra WHERE fragment (starting with " AND ") that hides content the
+ * current visitor is not allowed to see.
+ *
+ * @return array{sql: string, params: array<string, mixed>}
+ */
+function content_visibility_sql(): array
+{
+    if (is_preview_request()) {
+        return ['sql' => '', 'params' => []];
+    }
+
+    return [
+        'sql'    => " AND status = 'published' AND published_at IS NOT NULL AND published_at <= :visibility_now",
+        'params' => ['visibility_now' => time()],
+    ];
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Loading
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Load a content item by its full slug path, honouring URL prefixes and
+ * parent/child nesting.
+ */
+function load_content_by_slug(string $slug, ?string $type = null): ?array
+{
+    $theme    = theme_config();
+    $settings = load_settings();
+    $types    = array_keys($theme['content_types'] ?? []);
+    $prefixes = $settings['content_prefixes'] ?? [];
+    $visible  = content_visibility_sql();
+
+    $pdo = db();
+
+    foreach ($types as $ct) {
+        if ($type !== null && $type !== $ct) {
+            continue;
+        }
+
+        $prefix = $prefixes[$ct] ?? '';
+
+        // Handle content prefixes (only at root level)
+        if ($prefix) {
+            if (!str_starts_with($slug, $prefix . '/')) {
+                continue;
+            }
+            $relativeSlug = substr($slug, strlen($prefix) + 1);
+        } else {
+            $relativeSlug = $slug;
+        }
+
+        if ($relativeSlug === '') {
+            continue;
+        }
+
+        // Split path into segments
+        $segments = array_values(array_filter(explode('/', $relativeSlug), 'strlen'));
+
+        $parentId = null;
+        $row      = null;
+
+        // Walk the hierarchy
+        foreach ($segments as $segment) {
+            $sql = "
+                SELECT *
+                FROM content
+                WHERE slug = :slug
+                  AND type = :type
+                  AND parent_id " . ($parentId === null ? 'IS NULL' : '= :parent_id') . "
+                  {$visible['sql']}
+                LIMIT 1
+            ";
+
+            $params = array_merge($visible['params'], [
+                'slug' => $segment,
+                'type' => $ct,
+            ]);
+
+            if ($parentId !== null) {
+                $params['parent_id'] = $parentId;
+            }
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch();
+
+            if (!$row) {
+                break;
+            }
+
+            $parentId = (int) $row['id'];
+        }
+
+        if (!$row) {
+            continue;
+        }
+
+        // Decode JSON columns safely
+        $body = json_decode($row['body'] ?? '', true);
+        $meta = json_decode($row['meta'] ?? '', true);
+
+        if (!is_array($body)) {
+            throw new RuntimeException("Invalid body JSON for {$ct}/{$relativeSlug}");
+        }
+
+        if ($meta !== null && !is_array($meta)) {
+            throw new RuntimeException("Invalid meta JSON for {$ct}/{$relativeSlug}");
+        }
+
+        // taxonomies
+        $tax = load_taxonomies_for_content($row['type'], (int) $row['id']);
+
+        // header/footer from content type settings
+        $ctConfig = $theme['content_types'][$ct] ?? [];
+
+        // Full public path (prefix + nested segments), used for canonical URLs.
+        $path = ($prefix ? $prefix . '/' : '') . $relativeSlug;
+
+        return [
+            'id'           => (int) $row['id'],
+            'parent_id'    => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
+            'type'         => $ct,
+            'slug'         => end($segments),
+            'path'         => $path,
+            'title'        => $row['title'],
+            'status'       => $row['status'],
+            'layout'       => $row['layout'] ?? $ctConfig['default_layout'] ?? $settings['default_layout'] ?? $theme['defaults']['layout'],
+            'header'       => $row['header'] ?? $ctConfig['default_header'] ?? $settings['default_header'] ?? $theme['defaults']['header'],
+            'footer'       => $row['footer'] ?? $ctConfig['default_footer'] ?? $settings['default_footer'] ?? $theme['defaults']['footer'],
+            'meta'         => $meta ?? [],
+            'components'   => $body ?? [],
+            'created_at'   => (int) $row['created_at'],
+            'updated_at'   => (int) $row['updated_at'],
+            'published_at' => $row['published_at'] ? (int) $row['published_at'] : null,
+            'scheduled_at' => $row['scheduled_at'] ? (int) $row['scheduled_at'] : null,
+            'categories'   => $tax['category'],
+            'tags'         => $tax['tag'],
+        ];
+    }
+
+    return null;
+}
+
+/**
+ * List content items of a given type. Anonymous visitors only ever see
+ * published, due content; signed-in editors see everything.
+ *
+ * @param array{status?: string, q?: string, order?: string} $filters
+ */
+function list_content(string $type, array $filters = []): array
 {
     $pdo = db();
-    $now = time();
 
-    // Base query
     $sql = "
-        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at, scheduled_at
+        SELECT id, slug, title, parent_id, status, published_at, created_at, updated_at, scheduled_at, created_by
         FROM content
         WHERE type = :type
     ";
 
     $params = ['type' => $type];
 
-    // If frontend, only show published items that are due
-    if (!is_logged_in()) {
-        $sql .= " AND status = 'published' AND published_at <= :now";
-        $params['now'] = $now;
+    $visible = content_visibility_sql();
+    $sql .= $visible['sql'];
+    $params = array_merge($params, $visible['params']);
+
+    if (!empty($filters['status'])) {
+        $sql .= " AND status = :status";
+        $params['status'] = $filters['status'];
     }
 
-    $sql .= " ORDER BY title COLLATE NOCASE ASC";
+    if (!empty($filters['q'])) {
+        // Match the title or the indexed body text (search_text).
+        $sql .= " AND (title LIKE :q OR search_text LIKE :q)";
+        $params['q'] = '%' . $filters['q'] . '%';
+    }
+
+    $order = strtoupper((string) ($filters['order'] ?? 'ASC'));
+    $sql .= $order === 'DESC'
+        ? ' ORDER BY title COLLATE NOCASE DESC'
+        : ' ORDER BY title COLLATE NOCASE ASC';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -55,7 +367,7 @@ function list_recent_content(string $type, int $limit = 3): array
     ");
     $stmt->execute([
         'type' => $type,
-        'now' => time(),
+        'now'  => time(),
     ]);
 
     $items = [];
@@ -69,49 +381,33 @@ function list_recent_content(string $type, int $limit = 3): array
     return $items;
 }
 
-
 /**
- * Load a content item of a given type by slug
- *
- * @param string $type
- * @param string $slug
- * @param int|null $parentId
- * @return array|null
+ * Load a content item by ID, honouring visibility.
  */
-function load_content(string $type, string $slug, ?int $parentId = null): ?array
+function load_content_by_id(int $id): ?array
 {
     $pdo = db();
-    $now = time();
+    $visible = content_visibility_sql();
 
-    $sql = "
+    $stmt = $pdo->prepare("
         SELECT *
         FROM content
-        WHERE type = :type
-          AND slug = :slug
-          AND parent_id " . ($parentId === null ? "IS NULL" : "= :parent_id") . "
+        WHERE id = :id
+        {$visible['sql']}
         LIMIT 1
-    ";
+    ");
+    $stmt->execute(array_merge(['id' => $id], $visible['params']));
 
-    $params = [
-        'type' => $type,
-        'slug' => $slug,
-    ];
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($parentId !== null) {
-        $params['parent_id'] = $parentId;
+    if (!$row) {
+        return null;
     }
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $row = $stmt->fetch();
-    if (!$row) return null;
+    $meta = $row['meta'] ? json_decode($row['meta'], true) : [];
+    $body = $row['body'] ? json_decode($row['body'], true) : [];
 
-    // Frontend visibility check
-    if (!is_logged_in()) {
-        if ($row['status'] !== 'published' || (int)$row['published_at'] > $now) {
-            return null; // hide drafts or scheduled content
-        }
-    }
+    $tax = load_taxonomies_for_content($row['type'], (int) $row['id']);
 
     return [
         'id'           => (int) $row['id'],
@@ -123,70 +419,127 @@ function load_content(string $type, string $slug, ?int $parentId = null): ?array
         'layout'       => $row['layout'],
         'header'       => $row['header'],
         'footer'       => $row['footer'],
-        'meta'         => $row['meta'] ? json_decode($row['meta'], true) : [],
-        'body'         => $row['body'] ? json_decode($row['body'], true) : [],
-        'published_at' => $row['published_at'],
-        'scheduled_at' => $row['scheduled_at'],
-        'created_at'   => $row['created_at'],
-        'updated_at'   => $row['updated_at'],
+        'meta'         => $meta,
+        'body'         => $body,
+        'components'   => $body,
+        'created_by'   => $row['created_by'] !== null ? (int) $row['created_by'] : null,
+        'updated_by'   => $row['updated_by'] !== null ? (int) $row['updated_by'] : null,
+        'published_at' => $row['published_at'] ? (int) $row['published_at'] : null,
+        'scheduled_at' => $row['scheduled_at'] ? (int) $row['scheduled_at'] : null,
+        'created_at'   => (int) $row['created_at'],
+        'updated_at'   => (int) $row['updated_at'],
+        'categories'   => $tax['category'],
+        'tags'         => $tax['tag'],
     ];
 }
 
 /**
- * Load a content item by ID
+ * Canonical JSON for the meta/body columns.
+ *
+ * `meta` is an object and `body` a list, so an empty value must be spelled
+ * "{}" and "[]" respectively. Without this, an empty PHP array would land in
+ * the column as "[]" for both, which made identical states hash differently
+ * in version history.
  */
-function load_content_by_id(int $id): ?array
+function content_json_for_column(mixed $value, string $emptyAs): string
 {
-    $pdo = db();
-    $now = time();
-
-    $stmt = $pdo->prepare("SELECT * FROM content WHERE id = :id LIMIT 1");
-    $stmt->execute(['id' => $id]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$row) return null;
-
-    // ----------------------------
-    // Frontend visibility check
-    // ----------------------------
-    if (!is_logged_in()) {
-        if ($row['status'] !== 'published' || (int)$row['published_at'] > $now) {
-            return null;
-        }
+    if (function_exists('content_version_json')) {
+        return content_version_json($value, $emptyAs);
     }
 
-    // ----------------------------
-    // Decode JSON first
-    // ----------------------------
-    $meta = $row['meta'] ? json_decode($row['meta'], true) : [];
-    $body = $row['body'] ? json_decode($row['body'], true) : [];
+    if ($value === null || (is_array($value) && $value === [])) {
+        return $emptyAs;
+    }
 
-    // ----------------------------
-    // Load taxonomies
-    // ----------------------------
-    $tax = load_taxonomies_for_content($row['type'], (int)$row['id']);
+    return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
 
-    // ----------------------------
-    // Return normalized object
-    // ----------------------------
+/*
+|--------------------------------------------------------------------------
+| Status model
+|--------------------------------------------------------------------------
+|
+| draft, scheduled, published, archived. `scheduled` is derived from a future
+| `scheduled_at`, so the stored status always matches reality.
+|
+*/
+
+/**
+ * The statuses the CMS understands, in workflow order.
+ *
+ * @return list<string>
+ */
+function content_statuses(): array
+{
+    return ['draft', 'scheduled', 'published', 'archived'];
+}
+
+/**
+ * Human label for a stored status.
+ */
+function content_status_label(string $status): string
+{
+    return ucfirst($status);
+}
+
+/**
+ * Decide the stored status and the published/scheduled timestamps.
+ *
+ * Used by both admin/content/save.php and save_content() so the two can never
+ * disagree about what "published" means.
+ *
+ * @param array<string, mixed> $data
+ * @return array{status: string, published_at: ?int, scheduled_at: ?int}
+ */
+function resolve_content_status(array $data, ?int $now = null): array
+{
+    $now = $now ?? time();
+
+    $status = (string) ($data['status'] ?? 'draft');
+
+    if (!in_array($status, content_statuses(), true)) {
+        $status = 'draft';
+    }
+
+    // Normalise scheduled_at: accept a timestamp, an ISO string, or nothing.
+    $scheduledAt = $data['scheduled_at'] ?? null;
+
+    if ($scheduledAt !== null && $scheduledAt !== '') {
+        if (is_numeric($scheduledAt)) {
+            $scheduledAt = (int) $scheduledAt;
+        } elseif (is_string($scheduledAt)) {
+            $scheduledAt = strtotime($scheduledAt) ?: null;
+        } else {
+            $scheduledAt = null;
+        }
+    } else {
+        $scheduledAt = null;
+    }
+
+    // Publishing with a future date means "scheduled", not "live".
+    if ($status === 'published' && $scheduledAt !== null && $scheduledAt > $now) {
+        $status = 'scheduled';
+    }
+
+    // Re-running a live item through the editor keeps its original go-live date.
+    $publishedAt = $data['published_at'] ?? null;
+    $publishedAt = $publishedAt !== null && $publishedAt !== '' ? (int) $publishedAt : null;
+
+    if ($status === 'published') {
+        $publishedAt = $publishedAt ?? $now;
+        $scheduledAt = null;
+    } elseif ($status === 'scheduled') {
+        $publishedAt = null;
+    } else {
+        // draft / archived: not a live publication.
+        $publishedAt = null;
+        $scheduledAt = null;
+    }
+
     return [
-        'id'           => (int)$row['id'],
-        'parent_id'    => $row['parent_id'] !== null ? (int)$row['parent_id'] : null,
-        'type'         => $row['type'],
-        'slug'         => $row['slug'],
-        'title'        => $row['title'],
-        'status'       => $row['status'],
-        'layout'       => $row['layout'],
-        'header'       => $row['header'],
-        'footer'       => $row['footer'],
-        'meta'         => $meta,
-        'body'         => $body,
-        'published_at' => $row['published_at'],
-        'scheduled_at' => $row['scheduled_at'],
-        'created_at'   => $row['created_at'],
-        'updated_at'   => $row['updated_at'],
-        'categories'   => $tax['category'],
-        'tags'         => $tax['tag'],
+        'status'       => $status,
+        'published_at' => $publishedAt,
+        'scheduled_at' => $scheduledAt,
     ];
 }
 
@@ -199,46 +552,30 @@ function load_content_by_id(int $id): ?array
  * @param int|null $id Optional ID for existing content
  * @return int|null The ID of the saved content
  */
-function save_content(string $type, string $slug, array $data, ?int $id = null): ?int
+/**
+ * Save or update a content item.
+ *
+ * @param array<string, mixed> $context ['reason' => string, 'user_id' => ?int]
+ */
+function save_content(string $type, string $slug, array $data, ?int $id = null, array $context = []): ?int
 {
     $pdo = db();
     $now = time();
+
+    $reason = (string) ($context['reason'] ?? 'save');
+    $userId = $context['user_id'] ?? (function_exists('current_user_id') ? current_user_id() : null);
+    $userId = $userId !== null ? (int) $userId : null;
 
     // Ensure required structures exist
     $data['meta'] ??= [];
     $data['body'] ??= [];
 
-    // ----------------------------
-    // Scheduled publishing
-    // ----------------------------
-    $scheduledAt = $data['scheduled_at'] ?? null;
+    // One place decides status / published_at / scheduled_at.
+    $resolved = resolve_content_status($data, $now);
 
-    if ($scheduledAt !== null && $scheduledAt !== '') {
-        if (is_numeric($scheduledAt)) {
-            $scheduledAt = (int)$scheduledAt;
-        } elseif (is_string($scheduledAt)) {
-            $scheduledAt = strtotime($scheduledAt) ?: null;
-        } else {
-            $scheduledAt = null;
-        }
-    } else {
-        $scheduledAt = null;
-    }
-
-    // ----------------------------
-    // Determine actual status
-    // ----------------------------
-    $status = $data['status'] ?? 'draft';
-
-    // If published but scheduled in future, mark as 'scheduled'
-    if ($status === 'published' && $scheduledAt && $scheduledAt > $now) {
-        $status = 'scheduled';
-    }
-
-    // Only set published_at if actually published
-    $publishedAt = $status === 'published'
-        ? ($data['published_at'] ?? $now)
-        : null;
+    $status      = $resolved['status'];
+    $publishedAt = $resolved['published_at'];
+    $scheduledAt = $resolved['scheduled_at'];
 
     // Parent handling (NULL = top-level)
     $parentId = $data['parent_id'] ?? null;
@@ -273,6 +610,21 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
         // ----------------------------
         // UPDATE
         // ----------------------------
+        // Snapshot the outgoing state and write the new one atomically, so a
+        // failure can never leave a version without its matching content.
+        $ownsTransaction = !$pdo->inTransaction();
+
+        if ($ownsTransaction) {
+            $pdo->beginTransaction();
+        }
+
+        try {
+            // Remember the outgoing state; it is snapshotted after the write
+            // so de-duplication can compare it against the new live row.
+            $outgoingRow = function_exists('content_version_current_row')
+                ? content_version_current_row((int) $existingId)
+                : null;
+
         $stmt = $pdo->prepare("
             UPDATE content SET
                 parent_id     = :parent_id,
@@ -285,6 +637,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
                 body          = :body,
                 published_at  = :published_at,
                 scheduled_at  = :scheduled_at,
+                updated_by    = :updated_by,
                 updated_at    = :updated_at
             WHERE id = :id
         ");
@@ -296,14 +649,36 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
             'layout'       => $data['layout'] ?? null,
             'header'       => $data['header'] ?? null,
             'footer'       => $data['footer'] ?? null,
-            'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
-            'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
+            'meta'         => content_json_for_column($data['meta'], '{}'),
+            'body'         => content_json_for_column($data['body'], '[]'),
             'published_at' => $publishedAt,
             'scheduled_at' => $scheduledAt,
+            'updated_by'   => $userId,
             'updated_at'   => $now,
         ]);
 
         $idToReturn = (int)$existingId;
+
+        // Snapshot the state we just replaced. Taken after the UPDATE so a
+        // re-save of the same values is recognised as "already the live row"
+        // and does not create a duplicate version.
+        if ($outgoingRow && function_exists('save_content_version')) {
+            save_content_version((int) $existingId, $outgoingRow, [
+                'reason'  => $reason,
+                'user_id' => $userId,
+            ]);
+        }
+
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $exception;
+        }
 
     } else {
         // ----------------------------
@@ -323,6 +698,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
                 body,
                 published_at,
                 scheduled_at,
+                created_by,
+                updated_by,
                 created_at,
                 updated_at
             ) VALUES (
@@ -338,6 +715,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
                 :body,
                 :published_at,
                 :scheduled_at,
+                :created_by,
+                :updated_by,
                 :created_at,
                 :updated_at
             )
@@ -351,10 +730,12 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
             'layout'       => $data['layout'] ?? null,
             'header'       => $data['header'] ?? null,
             'footer'       => $data['footer'] ?? null,
-            'meta'         => json_encode($data['meta'], JSON_THROW_ON_ERROR),
-            'body'         => json_encode($data['body'], JSON_THROW_ON_ERROR),
+            'meta'         => content_json_for_column($data['meta'], '{}'),
+            'body'         => content_json_for_column($data['body'], '[]'),
             'published_at' => $publishedAt,
             'scheduled_at' => $scheduledAt,
+            'created_by'   => $userId,
+            'updated_by'   => $userId,
             'created_at'   => $now,
             'updated_at'   => $now,
         ]);
@@ -365,6 +746,10 @@ function save_content(string $type, string $slug, array $data, ?int $id = null):
     // ----------------------------
     // Housekeeping
     // ----------------------------
+    if (function_exists('search_index_content')) {
+        search_index_content($idToReturn);
+    }
+
     invalidate_cache($slug, $type);
     save_sitemap();
 

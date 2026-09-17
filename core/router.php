@@ -36,9 +36,25 @@ function route_request($path): array
         exit;
     }
 
+    // Fresh signed tokens for forms rendered inside cached pages
+    if ($path === 'form-token') {
+        require CORE_PATH . '/form-token.php';
+        exit;
+    }
+
     // Sitemap
     if ($path === 'sitemap.xml') {
         $file = STORAGE_PATH . '/sitemap.xml';
+
+        // A fresh install has no sitemap yet; build it once on first request
+        // rather than serving a 404 to crawlers for the life of the site.
+        if (!is_file($file)) {
+            try {
+                save_sitemap();
+            } catch (Throwable $exception) {
+                debug_log('sitemap generation failed: ' . $exception->getMessage());
+            }
+        }
 
         if (!is_file($file)) {
             return load_fallback_404();
@@ -48,6 +64,11 @@ function route_request($path): array
         header('Cache-Control: public, max-age=3600');
         readfile($file);
         exit;
+    }
+
+    // Search results (query-driven, never cached or indexed)
+    if ($path === 'search') {
+        return route_search_request();
     }
 
     // Validate slug
@@ -137,6 +158,9 @@ function route_admin_request(): void
         return;
     }
 
+    // Page-level capability check (all capabilities are granted in Phase 1).
+    admin_guard($page);
+
     $file = CMS_PATH . '/admin/' . $page . '.php';
 
     if (!is_file($file)) {
@@ -181,4 +205,49 @@ function redirect_with_toast(
 
     header('Location: ' . $location);
     exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Search routing
+|--------------------------------------------------------------------------
+*/
+function route_search_request(): array
+{
+    $query = trim((string) ($_GET['q'] ?? ''));
+
+    $filters = [
+        'type'     => trim((string) ($_GET['type'] ?? '')),
+        'category' => trim((string) ($_GET['category'] ?? '')),
+        'tag'      => trim((string) ($_GET['tag'] ?? '')),
+    ];
+
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+
+    $results = search_query_is_valid($query)
+        ? search_content($query, $filters, $page)
+        : ['items' => [], 'total' => 0, 'query' => $query, 'page' => 1, 'pages' => 1];
+
+    $theme = theme_config();
+    $settings = load_settings();
+
+    return [
+        'id'         => null,
+        'type'       => 'search',
+        'slug'       => 'search',
+        'path'       => 'search',
+        'title'      => $query !== '' ? 'Search: ' . $query : 'Search',
+        'status'     => 'published',
+        'layout'     => $theme['search_layout'] ?? 'search',
+        'header'     => $settings['default_header'] ?? $theme['defaults']['header'] ?? 'site-header',
+        'footer'     => $settings['default_footer'] ?? $theme['defaults']['footer'] ?? 'site-footer',
+        // Search pages are never indexable.
+        'meta'       => ['robots_extra' => search_robots()],
+        'components' => [],
+        'query'      => $query,
+        'filters'    => $filters,
+        'results'    => $results,
+        'no_cache'   => true,
+        'updated_at' => time(),
+    ];
 }

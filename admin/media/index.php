@@ -2,7 +2,7 @@
 // admin/media.php
 
 $pageTitle = 'Media Manager';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo = db();
 
@@ -65,7 +65,7 @@ ob_start();
         <p><?= e(admin_trans('welcome')) ?>, <?= e($username) ?> 👋</p>
     </div>
 
-    <div class="page-actions" style="display:flex; gap:1rem; align-items:center;">
+    <div class="page-actions page-actions-inline">
         <!-- Search -->
         <form method="get">
             <input type="text" name="q" value="<?= e($search) ?>" placeholder="<?= e(admin_trans('search_files')) ?>">
@@ -73,6 +73,7 @@ ob_start();
 
         <!-- Upload -->
         <form action="<?= url('admin/media/save') ?>" method="post" enctype="multipart/form-data">
+            <?= csrf_field() ?>
             <input type="file" name="file" required>
             <button type="submit"><?= e(admin_trans('upload')) ?></button>
         </form>
@@ -129,21 +130,6 @@ ob_start();
 <?php endif; ?>
 
 
-<style>
-.media-layout { display:flex; gap:2rem; }
-.media-grid { flex:1; display:grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:1rem; }
-.media-item { cursor:pointer; border:2px solid transparent; height:fit-content; }
-.media-item.selected { border-color:#4f46e5; }
-.media-item img,
-.media-file { width:100%; height:150px; object-fit:contain; border-radius:6px; background:#f2f2f2; display:flex; align-items:center; justify-content:center; }
-.media-inspector { width:320px; border-left:1px solid #ddd; padding-left:1rem; }
-.media-inspector img { width:100%; margin-bottom:1rem; }
-.media-inspector label { display:block; margin-bottom:.75rem; }
-.media-inspector input,
-.media-inspector textarea,
-.media-inspector select { width:100%; padding:.25rem; margin-top:.25rem; }
-</style>
-
 <script>
 const inspector = document.getElementById('inspector');
 const items = document.querySelectorAll('.media-item');
@@ -193,6 +179,7 @@ items.forEach(item => {
             <small>${data.size} · ${data.time}</small>
 
             <form method="post" enctype="multipart/form-data" action="<?= url('admin/media/save') ?>">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="replace_id" value="${data.id}">
 
                 <label>
@@ -226,6 +213,7 @@ items.forEach(item => {
                 data-confirm-title="Delete media"
                 data-confirm="Do you really want to delete ${data.name}?"
                 style="margin-top:.5rem;">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="id" value="${data.id}">
                 <button class="btn btn-delete">Delete</button>
             </form>
@@ -274,5 +262,18 @@ items.forEach(item => {
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('media_manager')) ?></h3>
+<p><?= e(admin_trans('media_help')) ?></p>
+<ul>
+    <li><?= e(admin_trans('media_alt_help')) ?></li>
+    <li><?= e(admin_trans('media_delete_help')) ?></li>
+</ul>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'editor', 'section' => 'media'];
+
 include CMS_PATH . '/admin/partials/layout.php';
 ?>

@@ -28,6 +28,20 @@ $hasNewUpload = $file && $file['error'] === UPLOAD_ERR_OK;
 $maxSize = 10 * 1024 * 1024; // 10MB
 $allowedExtensions = ['jpg','jpeg','png','gif','webp','svg','pdf','mp4','webm'];
 
+// Extension -> acceptable sniffed MIME types. Uploads that claim one type but
+// contain another (a .png that is really PHP, say) are rejected.
+$allowedMimeTypes = [
+    'jpg'  => ['image/jpeg'],
+    'jpeg' => ['image/jpeg'],
+    'png'  => ['image/png', 'image/apng'],
+    'gif'  => ['image/gif'],
+    'webp' => ['image/webp'],
+    'svg'  => ['image/svg+xml', 'text/plain', 'text/html', 'application/xml', 'text/xml'],
+    'pdf'  => ['application/pdf'],
+    'mp4'  => ['video/mp4'],
+    'webm' => ['video/webm'],
+];
+
 $imageQuality = (int)($settings['image_quality'] ?? 80);
 $stripMeta    = (bool)($settings['strip_metadata'] ?? true);
 $generateWebp = (bool)($settings['generate_webp'] ?? true);
@@ -123,10 +137,38 @@ $lqip = null;
 if ($hasNewUpload) {
     if ($file['error'] !== UPLOAD_ERR_OK) redirect_with_toast('media', 'error', 'Upload error.');
     if ($file['size'] > $maxSize) redirect_with_toast('media', 'error', 'File too large.');
+    if (!is_uploaded_file($file['tmp_name'])) redirect_with_toast('media', 'error', 'Invalid upload.');
 
     $originalName = $file['name'];
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
     if (!in_array($extension, $allowedExtensions, true)) redirect_with_toast('media', 'error', 'Invalid file type.');
+
+    // SVG can carry scripts, so it is opt-in rather than always allowed.
+    if ($extension === 'svg' && ($settings['allow_svg'] ?? false) !== true) {
+        redirect_with_toast('media', 'error', 'SVG uploads are disabled. Enable them in Settings if you trust your editors.');
+    }
+
+    // Sniff the real type before the file reaches storage, so a .png that is
+    // really something else never lands on disk.
+    $sniffedMime = null;
+
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if ($finfo) {
+            $sniffedMime = finfo_file($finfo, $file['tmp_name']) ?: null;
+            finfo_close($finfo);
+        }
+    } elseif (function_exists('mime_content_type')) {
+        $sniffedMime = mime_content_type($file['tmp_name']) ?: null;
+    }
+
+    $expectedMimes = $allowedMimeTypes[$extension] ?? [];
+
+    if ($sniffedMime !== null && $expectedMimes && !in_array($sniffedMime, $expectedMimes, true)) {
+        debug_log("media upload rejected: {$originalName} sniffed as {$sniffedMime}");
+        redirect_with_toast('media', 'error', 'That file does not look like a real ' . strtoupper($extension) . ' file.');
+    }
 
     // Build YYYY/MM/unique folder
     $year  = date('Y');
@@ -138,11 +180,11 @@ if ($hasNewUpload) {
 
     // Move original file
     $baseName = sanitizeFilename(pathinfo($originalName, PATHINFO_FILENAME));
-    //$targetOriginal = "{$targetDir}/original.{$extension}";
+    if ($baseName === '') $baseName = 'file';
     $targetOriginal = "{$targetDir}/{$baseName}.{$extension}";
     if (!move_uploaded_file($file['tmp_name'], $targetOriginal)) redirect_with_toast('media', 'error', 'Failed to move uploaded file.');
 
-    $mimeType = mime_content_type($targetOriginal);
+    $mimeType = mime_content_type($targetOriginal) ?: ($sniffedMime ?? 'application/octet-stream');
     $originalSize = filesize($targetOriginal);
 
     // Determine if image
@@ -318,10 +360,22 @@ if ($replaceId) {
         $now
     ]);
 
+    $newMediaId = (int) $pdo->lastInsertId();
     $msg = 'File uploaded successfully.';
 }
 
 // ----------------------------
 // Done
 // ----------------------------
+// Audit the upload/replace (the id differs per branch, so read it here).
+$mediaId = $replaceId ?: ($newMediaId ?? null);
+
+log_activity(
+    $replaceId ? 'media.replaced' : 'media.uploaded',
+    'media',
+    $mediaId !== null ? (int) $mediaId : null,
+    (string) ($originalName ?? ''),
+    []
+);
+
 redirect_with_toast('media', 'success', $msg);

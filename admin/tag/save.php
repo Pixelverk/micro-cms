@@ -137,4 +137,6 @@ else {
 // ----------------------------
 // Done
 // ----------------------------
+log_activity($id ? 'taxonomy.updated' : 'taxonomy.created', 'taxonomy', $id ? (int) $id : null, $name, []);
+
 redirect_with_toast('tag', 'success', $msg);

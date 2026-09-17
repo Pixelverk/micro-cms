@@ -86,14 +86,23 @@ CSS,
 
     extract($props, EXTR_SKIP);
 
+    // Optional props: a block or an older instance may omit them, and passing
+    // null to url() would be a fatal error rather than a missing link.
+    $title    = $title ?? '';
+    $text     = $text ?? '';
+    $linktext = $linktext ?? '';
+    $url      = $url ?? '';
+
     ?>
     <section id="<?= $id ?>" class="cta">
         <div class="inner">
             <h1><?= e($title) ?></h1>
             <p><?= e($text) ?></p>
-            <a href="<?= url($url) ?>" class="cta-button">
-                <?= e($linktext) ?>
-            </a>
+            <?php if ($linktext !== ''): ?>
+                <a href="<?= e($url !== '' ? url($url) : '#') ?>" class="cta-button">
+                    <?= e($linktext) ?>
+                </a>
+            <?php endif; ?>
             <?php if (!empty($children)) {render_components($children, $page, $collectedJs, $collectedCss);} ?>
         </div>
     </section>

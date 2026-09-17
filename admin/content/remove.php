@@ -4,10 +4,18 @@ declare(strict_types=1);
 $pdo = db();
 
 // ----------------------------
+// POST only (destructive action)
+// ----------------------------
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method not allowed');
+}
+
+// ----------------------------
 // Get ID and type
 // ----------------------------
-$id = $_GET['id'] ?? $_POST['id'] ?? null;
-$type = $_GET['type'] ?? $_POST['type'] ?? 'page';
+$id = $_POST['id'] ?? null;
+$type = $_POST['type'] ?? 'page';
 
 if (!$id) {
     redirect_with_toast('content', 'error', 'Missing content ID.');
@@ -24,6 +32,11 @@ $contentTypes = $theme['content_types'] ?? [];
 if (!isset($contentTypes[$type])) {
     redirect_with_toast('content', 'error', 'Invalid content type.');
 }
+
+// ----------------------------
+// Permissions
+// ----------------------------
+require_capability('content.delete');
 
 // ----------------------------
 // Check if content exists
@@ -70,8 +83,10 @@ function collect_and_orphan(PDO $pdo, int $parentId): array {
 $descendantSlugs = collect_and_orphan($pdo, $id);
 
 // ----------------------------
-// Delete the content
+// Delete the content (and its version history)
 // ----------------------------
+delete_content_versions($id);
+
 $stmt = $pdo->prepare("DELETE FROM content WHERE id = :id");
 $stmt->execute(['id' => $id]);
 
@@ -87,6 +102,8 @@ foreach ($descendantSlugs as $slug) {
 // Update sitemap
 // ----------------------------
 save_sitemap();
+
+log_activity('content.deleted', 'content', $id, (string) $content['slug'], ['type' => $type]);
 
 redirect_with_toast(
     'content',

@@ -41,9 +41,27 @@ function invalidate_cache(string $path = '', string $type = ''): void
 }
 
 function minify_html(string $html): string {
-    // Remove newlines, tabs, multiple spaces
-    $html = preg_replace('/\s+/', ' ', $html);
-    // Remove spaces between tags
-    $html = preg_replace('/>\s+</', '><', $html);
+    // Collapse whitespace everywhere except inside elements where it is
+    // significant, so inline scripts and preformatted text survive intact.
+    $protected = [];
+
+    $html = preg_replace_callback(
+        '#<(script|style|pre|textarea)\b[^>]*>.*?</\1>#is',
+        function (array $match) use (&$protected) {
+            $key = "\x00MINIFY" . count($protected) . "\x00";
+            $protected[$key] = $match[0];
+
+            return $key;
+        },
+        $html
+    ) ?? $html;
+
+    $html = preg_replace('/\s+/', ' ', $html) ?? $html;
+    $html = preg_replace('/>\s+</', '><', $html) ?? $html;
+
+    if ($protected) {
+        $html = strtr($html, $protected);
+    }
+
     return trim($html);
 }

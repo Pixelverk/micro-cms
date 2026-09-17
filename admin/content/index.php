@@ -2,7 +2,7 @@
 // admin/content/index.php
 
 $pageTitle = 'Content';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 // ----------------------------
 // Determine content type
@@ -22,13 +22,77 @@ $prefix = rtrim($prefix, '/'); // <- remove trailing slash
 $homepageSlug = $settings['homepage_slug'];
 
 // ----------------------------
-// Load content items
+// Filters
 // ----------------------------
-$items = list_content($type);
+// Tags are offered as a bulk action target.
+$tagStmt = db()->prepare("
+    SELECT id, name
+    FROM taxonomy
+    WHERE taxonomy_type = 'tag'
+    AND content_type = ?
+    ORDER BY name
+");
+$tagStmt->execute([$type]);
+$tags = $tagStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-usort($items, function($a, $b) {
+$allItems = list_content($type);
+
+// Authors work on their own drafts; other roles see everything.
+if (!admin_can('content.edit.any')) {
+    $mine = function_exists('current_user_id') ? current_user_id() : null;
+
+    $allItems = array_values(array_filter($allItems, function ($item) use ($mine) {
+        $owner = $item['created_by'] ?? null;
+
+        // Unattributed content stays visible so it is not stranded.
+        return $owner === null || (int) $owner === (int) $mine;
+    }));
+}
+
+$statusFilter = (string) ($_GET['status'] ?? '');
+if ($statusFilter !== '' && !in_array($statusFilter, content_statuses(), true)) {
+    $statusFilter = '';
+}
+
+$searchFilter = trim((string) ($_GET['q'] ?? ''));
+
+// Counts are computed before filtering so every tab shows its own total.
+$statusCounts = array_fill_keys(content_statuses(), 0);
+foreach ($allItems as $item) {
+    $itemStatus = (string) ($item['status'] ?? 'draft');
+    $statusCounts[$itemStatus] = ($statusCounts[$itemStatus] ?? 0) + 1;
+}
+
+$items = $allItems;
+
+if ($statusFilter !== '') {
+    $items = array_values(array_filter($items, fn($item) => ($item['status'] ?? '') === $statusFilter));
+}
+
+if ($searchFilter !== '') {
+    $needle = mb_strtolower($searchFilter);
+    $items = array_values(array_filter($items, function ($item) use ($needle) {
+        return str_contains(mb_strtolower((string) ($item['title'] ?? '')), $needle)
+            || str_contains(mb_strtolower((string) ($item['slug'] ?? '')), $needle);
+    }));
+}
+
+// Order parents before their children, then by title (the query already sorts
+// by title, so this only groups the hierarchy).
+usort($items, function ($a, $b) {
     return ($a['parent_id'] ?? 0) <=> ($b['parent_id'] ?? 0);
 });
+
+// URL that preserves the current filters while changing one of them.
+$filterUrl = function (array $overrides = []) use ($type, $statusFilter, $searchFilter): string {
+    $query = array_filter(array_merge([
+        'type'   => $type,
+        'status' => $statusFilter,
+        'q'      => $searchFilter,
+    ], $overrides), fn($value) => $value !== '' && $value !== null);
+
+    return url('admin/content') . '?' . http_build_query($query);
+};
 
 // ----------------------------
 // Render
@@ -60,19 +124,104 @@ ob_start();
     </div>
 </div>
 
+<?php
+// ----------------------------
+// Filter bar: status tabs + search
+// ----------------------------
+$total = count($allItems);
+$tabs = ['' => ['label' => 'All', 'count' => $total]];
+
+foreach (content_statuses() as $status) {
+    $tabs[$status] = ['label' => content_status_label($status), 'count' => $statusCounts[$status] ?? 0];
+}
+?>
+<div class="content-filters">
+    <div class="status-tabs">
+        <?php foreach ($tabs as $value => $tab): ?>
+            <a href="<?= e($filterUrl(['status' => $value])) ?>"
+               class="status-tab <?= $statusFilter === (string) $value ? 'active' : '' ?>">
+                <?= e($tab['label']) ?>
+                <span class="status-tab-count"><?= (int) $tab['count'] ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <form method="get" class="content-search">
+        <input type="hidden" name="type" value="<?= e($type) ?>">
+        <?php if ($statusFilter !== ''): ?>
+            <input type="hidden" name="status" value="<?= e($statusFilter) ?>">
+        <?php endif; ?>
+        <input type="search" name="q" value="<?= e($searchFilter) ?>"
+               placeholder="<?= e(admin_trans('search_content')) ?>" aria-label="<?= e(admin_trans('search_content')) ?>">
+        <?php if ($searchFilter !== ''): ?>
+            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('clear')) ?></a>
+        <?php endif; ?>
+    </form>
+</div>
+
+<?php if (admin_can('content.bulk') && !empty($items)): ?>
+    <?php $availableTags = $tags; ?>
+    <form id="bulk-form" method="post" action="<?= e(url('admin/content/bulk')) ?>" class="bulk-toolbar" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="type" value="<?= e($type) ?>">
+
+        <span class="bulk-count"><strong id="bulk-count">0</strong> <?= e(admin_trans('selected')) ?></span>
+
+        <label>
+            <span class="visually-hidden"><?= e(admin_trans('bulk_action')) ?></span>
+            <select name="bulk_action" id="bulk-action" class="field-input">
+                <option value=""><?= e(admin_trans('bulk_action')) ?>…</option>
+                <?php if (admin_can('content.publish')): ?>
+                    <option value="publish"><?= e(admin_trans('publish')) ?></option>
+                <?php endif; ?>
+                <option value="draft"><?= e(admin_trans('draft')) ?></option>
+                <option value="archive"><?= e(admin_trans('archived')) ?></option>
+                <?php if (admin_can('content.delete')): ?>
+                    <option value="delete"><?= e(admin_trans('delete')) ?></option>
+                <?php endif; ?>
+                <option value="clear_cache"><?= e(admin_trans('clear_cache')) ?></option>
+                <option value="add_tag"><?= e(admin_trans('add_tag')) ?></option>
+                <option value="remove_tag"><?= e(admin_trans('remove_tag')) ?></option>
+            </select>
+        </label>
+
+        <label id="bulk-tag-wrap" hidden>
+            <span class="visually-hidden"><?= e(admin_trans('tag')) ?></span>
+            <select name="tag_id" id="bulk-tag" class="field-input">
+                <option value=""><?= e(admin_trans('choose_tag')) ?>…</option>
+                <?php foreach ($availableTags as $tagOption): ?>
+                    <option value="<?= (int) $tagOption['id'] ?>"><?= e($tagOption['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('apply')) ?></button>
+        <button type="button" class="btn-small btn-muted" id="bulk-clear"><?= e(admin_trans('clear_selection')) ?></button>
+    </form>
+<?php endif; ?>
+
 <?php if (empty($items)): ?>
-    <p><?= e(admin_trans('no_content', ['type' => $typeLabel])) ?></p>
+    <p class="empty-state">
+        <?= $statusFilter !== '' || $searchFilter !== ''
+            ? 'No ' . e($typeLabel) . 's match these filters.'
+            : e(admin_trans('no_content', ['type' => $typeLabel])) ?>
+    </p>
 <?php else: ?>
     <table class="content-table">
         <thead>
             <tr>
+                <?php if (admin_can('content.bulk')): ?>
+                    <th style="width:32px;">
+                        <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('select_all')) ?>">
+                    </th>
+                <?php endif; ?>
                 <th><?= e(admin_trans('content_title')) ?></th>
                 <th><?= e(admin_trans('slug')) ?></th>
                 <th><?= e(admin_trans('status')) ?></th>
                 <th><?= e(admin_trans('published')) ?></th>
                 <th><?= e(admin_trans('scheduled')) ?></th>
                 <th><?= e(admin_trans('updated')) ?></th>
-                <th style="width:180px;"><?= e(admin_trans('actions')) ?></th>
+                <th style="width:220px;"><?= e(admin_trans('actions')) ?></th>
             </tr>
         </thead>
         <tbody>
@@ -80,12 +229,20 @@ ob_start();
             $fullSlug = build_full_slug($item, $items);
             $url = '/' . ($prefix ? $prefix . '/' : '') . $fullSlug;
             $isHomepage = $item['slug'] === $homepageSlug;
+            $publicUrl = url($isHomepage ? '' : $url);
+            $itemStatus = (string) ($item['status'] ?? 'draft');
         ?>
-            <tr>
+            <tr data-content-id="<?= (int) $item['id'] ?>">
+                <?php if (admin_can('content.bulk')): ?>
+                    <td>
+                        <input type="checkbox" class="bulk-row" name="ids[]" value="<?= (int) $item['id'] ?>"
+                               form="bulk-form" aria-label="<?= e($item['title']) ?>">
+                    </td>
+                <?php endif; ?>
                 <td>
-                    <a href="<?= url($isHomepage ? '' : $url) ?>"
+                    <a href="<?= e($publicUrl) ?>"
                     target="_blank"
-                    style="text-decoration:none; color:inherit;">
+                    class="no-underline">
                         <?= e($item['title']) ?>
                         <?php if ($isHomepage): ?>
                             <span class="badge badge-home"><?= e(admin_trans('home')) ?></span>
@@ -96,8 +253,8 @@ ob_start();
                 <td><code><?= e($fullSlug) ?></code></td>
 
                 <td>
-                    <span class="status status-<?= e($item['status']) ?>">
-                        <?= e(ucfirst($item['status'])) ?>
+                    <span class="status status-<?= e($itemStatus) ?>">
+                        <?= e(content_status_label($itemStatus)) ?>
                     </span>
                 </td>
 
@@ -114,17 +271,37 @@ ob_start();
                 </td>
 
                 <td class="actions">
-                    <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
-                        class="btn-small">
-                        <?= e(admin_trans('edit')) ?>
+                    <?php $canEditThis = can_edit_content($item); ?>
+
+                    <a href="<?= e(preview_url($publicUrl)) ?>"
+                        target="_blank"
+                        class="btn-small btn-preview"
+                        title="Open a live, uncached preview">
+                        <?= e(admin_trans('preview')) ?>
                     </a>
 
-                    <a href="<?= url('admin/content/remove') ?>?id=<?= (int)$item['id'] ?>"
-                        class="js-confirm btn-delete btn-small"
+                    <?php if ($canEditThis): ?>
+                        <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
+                            class="btn-small">
+                            <?= e(admin_trans('edit')) ?>
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if (admin_can('content.delete') && $canEditThis): ?>
+                    <form method="post"
+                        action="<?= url('admin/content/remove') ?>"
+                        class="js-confirm-form"
                         data-confirm="<?= e(admin_trans('delete_content_confirm', ['name' => $item['title']])) ?>"
-                        data-confirm-title="<?= e(admin_trans('delete_content')) ?>">
-                        <?= e(admin_trans('delete')) ?>
-                    </a>
+                        data-confirm-title="<?= e(admin_trans('delete_content')) ?>"
+                        class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                        <input type="hidden" name="type" value="<?= e($type) ?>">
+                        <button type="submit" class="btn-delete btn-small">
+                            <?= e(admin_trans('delete')) ?>
+                        </button>
+                    </form>
+                    <?php endif; ?>
                 </td>
             </tr>
         <?php endforeach; ?>
@@ -133,6 +310,87 @@ ob_start();
 <?php endif; ?>
 
 <script>
+/* Bulk selection: the toolbar appears with the first checked row. */
+(() => {
+    const form = document.getElementById('bulk-form');
+
+    if (!form) return;
+
+    const boxes = Array.from(document.querySelectorAll('.bulk-row'));
+    const countEl = document.getElementById('bulk-count');
+    const selectAll = document.getElementById('bulk-select-all');
+    const actionSelect = document.getElementById('bulk-action');
+    const tagWrap = document.getElementById('bulk-tag-wrap');
+    const tagSelect = document.getElementById('bulk-tag');
+    const clearBtn = document.getElementById('bulk-clear');
+
+    const selected = () => boxes.filter(box => box.checked);
+
+    function sync() {
+        const chosen = selected();
+
+        form.hidden = chosen.length === 0;
+
+        if (countEl) countEl.textContent = chosen.length;
+
+        if (selectAll) {
+            selectAll.checked = chosen.length > 0 && chosen.length === boxes.length;
+            selectAll.indeterminate = chosen.length > 0 && chosen.length < boxes.length;
+        }
+    }
+
+    boxes.forEach(box => box.addEventListener('change', sync));
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            boxes.forEach(box => { box.checked = selectAll.checked; });
+            sync();
+        });
+    }
+
+    if (actionSelect) {
+        actionSelect.addEventListener('change', () => {
+            const needsTag = actionSelect.value === 'add_tag' || actionSelect.value === 'remove_tag';
+
+            if (tagWrap) tagWrap.hidden = !needsTag;
+            if (needsTag && tagSelect) tagSelect.required = true;
+            else if (tagSelect) tagSelect.required = false;
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            boxes.forEach(box => { box.checked = false; });
+            if (selectAll) selectAll.checked = false;
+            sync();
+        });
+    }
+
+    // Destructive actions get one confirmation for the whole selection.
+    form.addEventListener('submit', async event => {
+        const action = actionSelect ? actionSelect.value : '';
+        const total = selected().length;
+
+        if (!action || total === 0) {
+            event.preventDefault();
+            return;
+        }
+
+        if (!['delete', 'archive'].includes(action)) return;
+
+        event.preventDefault();
+
+        const ok = await confirmModal({
+            title: window.adminTranslations?.confirm_action || 'Confirm',
+            message: `${window.adminTranslations?.[action] || action}: ${total} item(s)?`
+        });
+
+        if (ok) form.submit();
+    });
+
+    sync();
+})();
+
 const typeSelect = document.getElementById('content-type-select');
 if (typeSelect) {
     typeSelect.addEventListener('change', () => {
@@ -160,5 +418,6 @@ ob_start();
 </ul>
 <?php
 $pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'editor', 'section' => 'creating-and-editing-content'];
 
 include CMS_PATH . '/admin/partials/layout.php';

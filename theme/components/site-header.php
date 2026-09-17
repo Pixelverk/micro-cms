@@ -44,6 +44,19 @@ return [
         border: 0;
     }
 }
+.navbar-search { display: flex; margin-left: auto; margin-right: 0.75rem; }
+.navbar-search input[type="search"] {
+    width: 12rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--theme-radius);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font: inherit;
+    font-size: 0.9rem;
+}
+.navbar-search input::placeholder { color: rgba(255, 255, 255, 0.6); }
+@media (max-width: 991.98px) { .navbar-search { margin-left: 0; } .navbar-search input[type="search"] { width: 100%; } }
 CSS,
 
 /** --------------------------------------------
@@ -98,6 +111,11 @@ JS,
     <header id="<?= $id ?>" class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container px-5">
             <a href="<?= url() ?>" class="navbar-brand">Start Bootstrap</a>
+            <form class="navbar-search" method="get" action="<?= e(url('search')) ?>" role="search">
+                <input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>"
+                       placeholder="Search…" aria-label="Search this site">
+            </form>
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
             <nav class="collapse navbar-collapse site-header-menu" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">

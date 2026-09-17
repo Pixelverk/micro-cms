@@ -2,7 +2,7 @@
 // admin/category/index.php
 
 $pageTitle = 'Categories';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo = db();
 
@@ -42,7 +42,7 @@ ob_start();
     <div class="page-actions flex gap-md items-center">
 
         <!-- Search -->
-        <form method="get" style="margin-right:1rem;">
+        <form method="get" class="mr-md">
             <input type="text" name="q" value="<?= e($search) ?>" placeholder="<?= e(admin_trans('search_categories')) ?>">
         </form>
 
@@ -82,7 +82,8 @@ ob_start();
                     <form method="post" action="<?= url('admin/category/remove') ?>" class="js-confirm-form" 
                         data-confirm-title="<?= e(admin_trans('delete_category')) ?>"
                         data-confirm="<?= e(admin_trans('delete_category_confirm', ['name' => $cat['name']])) ?>"
-                        style="display:inline-block; margin:0;">
+                        class="inline-form-block">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
                         <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('delete')) ?></button>
                     </form>

@@ -17,6 +17,7 @@ return [
     */
     'layouts' => [
         'default' => 'Default Layout',
+        'search' => 'Search Results Layout',
         'landing' => 'Landing Page Layout',
         'blog' => 'Blog Post Layout',
         'portfolio' => 'Portfolio Project Layout',
@@ -151,10 +152,15 @@ return [
     |--------------------------------------------------------------------------
     | Stylesheets (order matters)
     |--------------------------------------------------------------------------
+    | utilities.css is the shared class layer (grid, spacing, cards, buttons).
+    | style.css holds theme tokens and theme-wide rules. Per-component CSS is
+    | collected by core/render.php and injected after both, so a component can
+    | always override this layer.
     */
     'styles' => [
         'layout.css',
-        'style.css?v=4',
+        'utilities.css?v=5',
+        'style.css?v=5',
         'vendor/bootstrap-icons/bootstrap-icons.css',
     ],
 

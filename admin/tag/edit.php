@@ -2,7 +2,7 @@
 // admin/tag-edit.php
 
 $pageTitle = 'Edit Tag';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo = db();
 
@@ -56,6 +56,7 @@ ob_start();
 </div>
 
 <form method="post" action="<?= url('admin/tag/save') ?>" class="form-card">
+    <?= csrf_field() ?>
 
     <?php if ($id): ?>
         <input type="hidden" name="id" value="<?= (int)$id ?>">
@@ -124,28 +125,6 @@ ob_start();
     </div>
 
 </form>
-
-
-<style>
-.form-card {
-    max-width: 600px;
-    display:flex;
-    flex-direction:column;
-    gap:1rem;
-}
-
-.form-card input,
-.form-card textarea,
-.form-card select {
-    width:100%;
-}
-
-.form-actions {
-    margin-top:1rem;
-    display:flex;
-    gap:1rem;
-}
-</style>
 
 
 <script>

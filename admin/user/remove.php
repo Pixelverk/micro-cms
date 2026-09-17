@@ -4,9 +4,17 @@ declare(strict_types=1);
 $pdo = db();
 
 // ----------------------------
-// Get username from GET or POST
+// POST only (destructive action)
 // ----------------------------
-$username = trim($_GET['username'] ?? $_POST['username'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method not allowed');
+}
+
+// ----------------------------
+// Get username from the form
+// ----------------------------
+$username = trim($_POST['username'] ?? '');
 if ($username === '') {
     redirect_with_toast('user', 'error', 'Missing username.');
 }
@@ -34,6 +42,13 @@ if (!$user) {
 }
 
 // ----------------------------
+// Refuse to delete the only remaining administrator
+// ----------------------------
+if (admin_is_last_admin((int) $user['id'])) {
+    redirect_with_toast('user', 'error', 'This is the last administrator and cannot be removed.');
+}
+
+// ----------------------------
 // Delete user
 // ----------------------------
 $stmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
@@ -42,4 +57,6 @@ $stmt->execute(['id' => $user['id']]);
 // ----------------------------
 // Success
 // ----------------------------
+log_activity('user.deleted', 'user', (int) $user['id'], $username, []);
+
 redirect_with_toast('user', 'success', "User \"$username\" removed successfully.");

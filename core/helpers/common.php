@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// Entry points load this file with a plain require in places, so guard against
+// being included twice (which would redeclare every function below).
+if (function_exists('config')) {
+    return;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Config Access
@@ -9,7 +15,14 @@ declare(strict_types=1);
 
 function config(string $key, mixed $default = null): mixed
 {
-    $config = require CMS_PATH . '/config.php';
+    static $config = null;
+
+    if ($config === null) {
+        // CMS_CONFIG_FILE lets test runs point at their own config without
+        // touching the tracked config.php. Falls back to the real one.
+        $configFile = getenv('CMS_CONFIG_FILE') ?: CMS_PATH . '/config.php';
+        $config = require $configFile;
+    }
 
     $segments = explode('.', $key);
     $value = $config;
@@ -26,6 +39,107 @@ function config(string $key, mixed $default = null): mixed
 
 /*
 |--------------------------------------------------------------------------
+| Session boot
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Start the session with hardened defaults.
+ *
+ * Session files live in storage/sessions so the app does not depend on the
+ * host's (often read-only) PHP session directory. Tests point this elsewhere
+ * by defining CMS_SESSION_PATH before boot.
+ */
+function session_boot(): void
+{
+    if (session_status() !== PHP_SESSION_NONE) {
+        return;
+    }
+
+    $sessionPath = defined('CMS_SESSION_PATH')
+        ? CMS_SESSION_PATH
+        : STORAGE_PATH . '/sessions';
+
+    if (!is_dir($sessionPath)) {
+        @mkdir($sessionPath, 0775, true);
+    }
+
+    if (is_dir($sessionPath) && is_writable($sessionPath)) {
+        session_save_path($sessionPath);
+    }
+
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => $secure,
+    ]);
+
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+
+    session_start();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Core bootstrap
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Load the shared helper set once per request.
+ *
+ * Safe to call from every entry point (admin, front, tests) — repeated calls
+ * are a no-op. `$withContent` pulls in the heavier content/taxonomy helpers
+ * that the admin area needs and the cached front-end path does not.
+ */
+function bootstrap_core(bool $withContent = true): void
+{
+    // Two flags, because this file can be included before bootstrap_core() runs:
+    //  * cms_boot_started    — we are inside this function
+    //  * cms_boot_loaded     — the helper set is actually on disk
+    if (!empty($GLOBALS['cms_boot_loaded'])) {
+        return;
+    }
+
+    $GLOBALS['cms_boot_started'] = true;
+
+    require_once CORE_PATH . '/helpers/cache.php';
+    require_once CORE_PATH . '/helpers/settings.php';
+    require_once CORE_PATH . '/helpers/admin.php';
+    require_once CORE_PATH . '/helpers/icons.php';
+    require_once CORE_PATH . '/helpers/sitemap.php';
+    require_once CORE_PATH . '/helpers/csrf.php';
+    require_once CORE_PATH . '/helpers/validate.php';
+    require_once CORE_PATH . '/helpers/throttle.php';
+    require_once CORE_PATH . '/helpers/migrate.php';
+    require_once CORE_PATH . '/helpers/activity.php';
+    require_once CORE_PATH . '/helpers/seo.php';
+
+    if ($withContent) {
+        require_once CORE_PATH . '/helpers/content.php';
+        require_once CORE_PATH . '/helpers/menus.php';
+        require_once CORE_PATH . '/helpers/publishing.php';
+        require_once CORE_PATH . '/helpers/versions.php';
+        require_once CORE_PATH . '/helpers/search.php';
+        require_once CORE_PATH . '/helpers/blocks.php';
+    }
+
+    require_once CORE_PATH . '/db.php';
+
+    // User functions (current_user, is_logged_in) are needed by capability
+    // checks on BOTH entry points. The front end used to omit this file, so
+    // can_preview_content() could never resolve a signed-in user.
+    require_once CORE_PATH . '/auth.php';
+
+    $GLOBALS['cms_boot_loaded'] = true;
+}
+
+/*
+|--------------------------------------------------------------------------
 | Theme Helpers
 |--------------------------------------------------------------------------
 */
@@ -38,6 +152,12 @@ function theme(string $path = ''): string
 
 function theme_config(): array
 {
+    static $config = null;
+
+    if (is_array($config)) {
+        return $config;
+    }
+
     $themeFile = theme('theme.php');
 
     if (!file_exists($themeFile)) {
@@ -79,12 +199,6 @@ function json_encode_safe(mixed $data): string
     return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 }
 
-
-/** DUMP & DIE */
-function dd($obj) {
-    highlight_string("<?php\n" . print_r($obj, true) . "\n", false);
-    die;
-}
 
 /**
  * Generate a full URL for the site, respecting subfolder deployment.
@@ -196,102 +310,251 @@ function format_local_datetime(?int $timestamp, string $format = 'Y-m-d H:i'): s
     return $dt->format($format);
 }
 
+/*
+|--------------------------------------------------------------------------
+| Media helpers
+|--------------------------------------------------------------------------
+| A media row stores a `base_path` (e.g. 2026/03/abc123) and a `formats_json`
+| map of format => [relative variant paths]. Everything a theme needs is
+| derived from those two, so no column is read speculatively.
+|--------------------------------------------------------------------------
+*/
+
 /**
- * Return a picture element containing data for an uploaded image with the given id.
+ * Load a media row once per request.
+ */
+function media_by_id(int $id): ?array
+{
+    if ($id <= 0) {
+        return null;
+    }
+
+    static $cache = [];
+
+    if (array_key_exists($id, $cache)) {
+        return $cache[$id];
+    }
+
+    $stmt = db()->prepare("SELECT * FROM media WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+
+    return $cache[$id] = ($stmt->fetch(PDO::FETCH_ASSOC) ?: null);
+}
+
+/**
+ * Decoded formats map: ['webp' => ['path1', ...], 'jpg' => [...]].
+ *
+ * @return array<string, list<string>>
+ */
+function media_formats(array $media): array
+{
+    $formats = json_decode((string) ($media['formats_json'] ?? ''), true);
+
+    return is_array($formats) ? $formats : [];
+}
+
+/**
+ * Public URL for a media row, optionally the variant nearest a width.
+ *
+ * Non-image media (PDF, MP4, …) only has the original, which formats_json
+ * still records, so this works for every media type.
+ */
+function media_url(int $id, ?int $width = null, ?string $format = null): string
+{
+    $media = media_by_id($id);
+
+    if (!$media) {
+        return '';
+    }
+
+    $formats = media_formats($media);
+
+    $chosen = null;
+
+    if ($format !== null && !empty($formats[$format])) {
+        $chosen = $formats[$format];
+    } else {
+        foreach (['webp', 'jpg', 'jpeg', 'png', 'gif'] as $candidate) {
+            if (!empty($formats[$candidate])) {
+                $chosen = $formats[$candidate];
+                break;
+            }
+        }
+    }
+
+    // Fall back to whatever the first format recorded (covers pdf, mp4, …).
+    if ($chosen === null) {
+        foreach ($formats as $paths) {
+            if (!empty($paths)) {
+                $chosen = $paths;
+                break;
+            }
+        }
+    }
+
+    // A row with no recorded variants at all: rebuild the original path.
+    if ($chosen === null) {
+        $original = (string) ($media['original_name'] ?? '');
+
+        if ($original === '' || empty($media['base_path'])) {
+            return '';
+        }
+
+        $base = sanitize_slug(pathinfo($original, PATHINFO_FILENAME));
+        $ext  = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+
+        return $ext === '' ? '' : url("media/{$media['base_path']}/{$base}.{$ext}");
+    }
+
+    // Pick the variant whose width token is closest to the request.
+    $best = null;
+    $bestDistance = PHP_INT_MAX;
+
+    foreach ($chosen as $path) {
+        $variantWidth = null;
+
+        if (preg_match('/-(\d+)\.[a-z0-9]+$/i', $path, $matches)) {
+            $variantWidth = (int) $matches[1];
+        }
+
+        if ($width === null || $variantWidth === null) {
+            $best = $best ?? $path;
+            continue;
+        }
+
+        $distance = abs($variantWidth - $width);
+
+        if ($distance < $bestDistance) {
+            $best = $path;
+            $bestDistance = $distance;
+        }
+    }
+
+    $best = $best ?? reset($chosen);
+
+    return $best ? url('media/' . $best) : '';
+}
+
+/**
+ * Alt text for a media row (empty string when unknown).
+ */
+function media_alt(int $id): string
+{
+    $media = media_by_id($id);
+
+    return $media ? (string) ($media['alt_text'] ?? '') : '';
+}
+
+/**
+ * Is this media row renderable as an image?
+ */
+function media_is_image(array $media): bool
+{
+    return str_starts_with((string) ($media['mime_type'] ?? ''), 'image/');
+}
+
+/**
+ * A <picture> element (WebP source + LQIP background) for an uploaded image.
+ * Returns '' for missing rows, non-images, or rows without variants.
  */
 function picture(int $id, array $attrs = []): string
 {
-    if ($id <= 0) return '';
+    $media = media_by_id($id);
 
-    $pdo = db();
-    $stmt = $pdo->prepare("SELECT * FROM media WHERE id = ? LIMIT 1");
-    $stmt->execute([$id]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) return '';
+    if (!$media) {
+        return '';
+    }
 
-    $formats = json_decode($row['formats_json'] ?? '{}', true) ?? [];
-    $filePath = $row['file_path'] ?? '';
-    if (!$formats && !$filePath) return '';
+    if (!media_is_image($media)) {
+        debug_log("picture() called with non-image media #{$id} ({$media['mime_type']}); use media_url() instead");
 
-    $width  = (int)($row['width'] ?? 0);
-    $height = (int)($row['height'] ?? 0);
-    $lqip   = $row['lqip_base64'] ?? '';
+        return '';
+    }
 
-    // -------------------------
-    // build srcset helper
-    // -------------------------
-    $buildSrcset = function(array $paths) use ($filePath, $width) {
+    $formats = media_formats($media);
+
+    if (!$formats) {
+        return '';
+    }
+
+    $width  = (int) ($media['width'] ?? 0);
+    $height = (int) ($media['height'] ?? 0);
+    $lqip   = (string) ($media['lqip_base64'] ?? '');
+
+    /**
+     * Variant paths -> [width => URL], ordered by width.
+     */
+    $buildSrcset = function (array $paths) use ($width): array {
         $items = [];
 
-        if (empty($paths) && $filePath) {
-            // no variants → use original file
-            $items[$width ?: 0] = url('media/' . $filePath);
-        } else {
-            foreach ($paths as $path) {
-                if (preg_match('/\/(\d+)\./', $path, $m)) {
-                    $items[(int)$m[1]] = url('media/' . $path);
-                } else {
-                    // fallback if width not in filename
-                    $items[$width ?: 0] = url('media/' . $path);
-                }
+        foreach ($paths as $path) {
+            if (preg_match('/-(\d+)\.[a-z0-9]+$/i', $path, $matches)) {
+                $items[(int) $matches[1]] = url('media/' . $path);
+            } else {
+                // No width token in the filename: key it by the original width.
+                $items[$width ?: 0] = url('media/' . $path);
             }
         }
 
         ksort($items);
+
         return $items;
     };
 
-    // fallback format (first non-webp)
+    // Fallback format: the first non-webp entry.
     $fallbackFormat = null;
-    foreach ($formats as $fmt => $paths) {
-        if ($fmt !== 'webp') {
-            $fallbackFormat = $fmt;
+    foreach (array_keys($formats) as $format) {
+        if ($format !== 'webp') {
+            $fallbackFormat = $format;
             break;
         }
     }
-    if (!$fallbackFormat && $filePath) {
-        $fallbackFormat = pathinfo($filePath, PATHINFO_EXTENSION);
+
+    if ($fallbackFormat === null) {
+        return '';
     }
-    if (!$fallbackFormat) return '';
 
     $fallbackSet = $buildSrcset($formats[$fallbackFormat] ?? []);
-    if (!$fallbackSet && $filePath) {
-        $fallbackSet = [$width ?: 0 => url('media/' . $filePath)];
+
+    if (!$fallbackSet) {
+        return '';
     }
-    $fallbackSrc = reset($fallbackSet);
-    $fallbackSrcset = implode(', ', array_map(fn($url, $w) => "{$url} {$w}w", $fallbackSet, array_keys($fallbackSet)));
 
-    $webpSet = !empty($formats['webp']) ? $buildSrcset($formats['webp']) : [];
-    $webpSrcset = implode(', ', array_map(fn($url, $w) => "{$url} {$w}w", $webpSet, array_keys($webpSet)));
+    $fallbackSrc    = (string) reset($fallbackSet);
+    $fallbackSrcset = implode(', ', array_map(
+        fn($src, $w) => "{$src} {$w}w",
+        $fallbackSet,
+        array_keys($fallbackSet)
+    ));
 
-    // -------------------------
-    // default attributes
-    // -------------------------
+    $webpSet    = !empty($formats['webp']) ? $buildSrcset($formats['webp']) : [];
+    $webpSrcset = implode(', ', array_map(
+        fn($src, $w) => "{$src} {$w}w",
+        $webpSet,
+        array_keys($webpSet)
+    ));
+
+    // Defaults; callers can override any of them.
     $attrs['loading'] ??= 'lazy';
-    $attrs['alt'] ??= $row['alt_text'] ?? '';
+    $attrs['alt'] ??= (string) ($media['alt_text'] ?? '');
+
     if ($width && $height) {
         $attrs['width'] ??= $width;
         $attrs['height'] ??= $height;
     }
 
     $attrString = '';
-    foreach ($attrs as $k => $v) {
-        $attrString .= ' ' . e($k) . '="' . e((string)$v) . '"';
+    foreach ($attrs as $name => $value) {
+        $attrString .= ' ' . e($name) . '="' . e((string) $value) . '"';
     }
 
-    // -------------------------
-    // set initial sizes to smallest width
-    $smallestWidth = (int)array_key_first($fallbackSet);
-    $initialSizes = $smallestWidth ? $smallestWidth . 'px' : '100vw';
+    // Start at the smallest variant; main.js refines this to the real
+    // container width once the image is on screen.
+    $smallestWidth = (int) array_key_first($fallbackSet);
+    $initialSizes  = $smallestWidth ? $smallestWidth . 'px' : '100vw';
 
-    // -------------------------
-    // build html
-    // -------------------------
     $html = '<div class="image-wrapper"';
-    if ($lqip) {
-        $html .= ' style="background-image:url(' . e($lqip) . ');">';
-    }
-
+    $html .= $lqip ? ' style="background-image:url(' . e($lqip) . ');">' : '>';
     $html .= '<picture>';
 
     if ($webpSet) {

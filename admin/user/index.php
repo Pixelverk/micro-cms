@@ -1,7 +1,7 @@
 <?php
 
 $pageTitle = 'Users';
-$username = $_SESSION['user_id'] ?? 'User';
+$username = current_username();
 $users = load_users();
 
 ob_start();
@@ -47,12 +47,18 @@ ob_start();
                     <a href="<?= url('admin/user/edit') . '?username=' . urlencode($name) ?>" class="btn-small"><?= e(admin_trans('edit')) ?></a>
 
                     <?php if ($name !== $username): ?>
-                        <a href="<?= url('admin/user/remove') ?>?username=<?= urlencode($name) ?>"
-                            class="js-confirm btn-delete btn-small"
+                        <form method="post"
+                            action="<?= url('admin/user/remove') ?>"
+                            class="js-confirm-form"
                             data-confirm="<?= e(admin_trans('delete_user_confirm', ['name' => $name])) ?>"
-                            data-confirm-title="<?= e(admin_trans('delete_user')) ?>">
-                            <?= e(admin_trans('delete')) ?>
-                        </a>
+                            data-confirm-title="<?= e(admin_trans('delete_user')) ?>"
+                            class="inline-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="username" value="<?= e($name) ?>">
+                            <button type="submit" class="btn-delete btn-small">
+                                <?= e(admin_trans('delete')) ?>
+                            </button>
+                        </form>
                     <?php else: ?>
                         <button
                             type="button"
@@ -79,5 +85,6 @@ ob_start();
 <p><?= e(admin_trans('own_account_help')) ?></p>
 <?php
 $pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'reference', 'section' => 'roles'];
 
 include CMS_PATH . '/admin/partials/layout.php';

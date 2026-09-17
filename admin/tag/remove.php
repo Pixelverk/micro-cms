@@ -54,6 +54,8 @@ $pdo->prepare("
 // ----------------------------
 // Done
 // ----------------------------
+log_activity('taxonomy.deleted', 'taxonomy', $id, $tag['name'], ['kind' => 'tag']);
+
 redirect_with_toast(
     'tag',
     'success',

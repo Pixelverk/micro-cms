@@ -45,11 +45,74 @@ CREATE TABLE content (
     body JSON NOT NULL,
     published_at INTEGER,
     scheduled_at INTEGER,
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    search_text TEXT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     UNIQUE(type, parent_id, slug)
 );
 ");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_visibility ON content (type, status, published_at)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_parent ON content (parent_id)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_search ON content (search_text)");
+
+$pdo->exec("
+CREATE TABLE blocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
+    label TEXT NOT NULL,
+    description TEXT NULL,
+    tree JSON NOT NULL,
+    created_by INTEGER NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+");
+
+
+$pdo->exec("
+CREATE TABLE content_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content_id INTEGER NOT NULL,
+    version INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL,
+    layout TEXT,
+    header TEXT,
+    footer TEXT,
+    meta JSON,
+    body JSON NOT NULL,
+    published_at INTEGER,
+    scheduled_at INTEGER,
+    reason TEXT NOT NULL DEFAULT 'save',
+    content_hash TEXT NOT NULL,
+    created_by INTEGER NULL,
+    created_at INTEGER NOT NULL,
+    UNIQUE(content_id, version)
+);
+");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_content_versions_item ON content_versions (content_id, version DESC)");
+
+$pdo->exec("
+CREATE TABLE activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NULL,
+    username TEXT NULL,
+    action TEXT NOT NULL,
+    object_type TEXT NULL,
+    object_id INTEGER NULL,
+    summary TEXT NULL,
+    meta JSON NULL,
+    ip TEXT NULL,
+    created_at INTEGER NOT NULL
+);
+");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log (created_at DESC)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_object ON activity_log (object_type, object_id)");
 
 $pdo->exec("
 CREATE TABLE users (
@@ -59,6 +122,7 @@ CREATE TABLE users (
     last_name TEXT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'admin',
     ui_language TEXT NULL,
     created_at INTEGER NOT NULL,
     last_login INTEGER
@@ -858,6 +922,11 @@ insert_seed_content($pdo, $notFoundData);
 /* update the config to say setup has been done */
 function update_config_value(string $key, mixed $value): bool
 {
+    // Test runs must never rewrite the tracked config file.
+    if (defined('CMS_SETUP_READONLY') && CMS_SETUP_READONLY) {
+        return false;
+    }
+
     $configFile = CMS_PATH . '/config.php';
 
     if (!is_writable($configFile)) {
@@ -892,6 +961,12 @@ update_config_value('setup_completed', true);
 | First Run Complete
 |--------------------------------------------------------------------------
 */
+
+// Test runs seed the database and continue; a real first visit gets a message.
+if (defined('CMS_SETUP_READONLY') && CMS_SETUP_READONLY) {
+    return;
+}
+
 header('Refresh: 3');
 echo('Initial setup completed, the page will now refresh.');
 exit;

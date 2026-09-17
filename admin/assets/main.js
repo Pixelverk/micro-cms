@@ -88,9 +88,9 @@ const SIDEBAR_KEY = 'adminSidebarCollapsed';
 function setSidebar(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
 
-    shrinkBtn.style.display = collapsed ? 'none' : 'inline-flex';
-    growBtn.style.display   = collapsed ? 'inline-flex' : 'none';
-    sideBarTitle.textContent = collapsed ? 'CMS' : 'Micro CMS';
+    if (shrinkBtn) shrinkBtn.style.display = collapsed ? 'none' : 'inline-flex';
+    if (growBtn) growBtn.style.display = collapsed ? 'inline-flex' : 'none';
+    if (sideBarTitle) sideBarTitle.textContent = collapsed ? 'CMS' : 'Micro CMS';
 
     localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
 }
@@ -102,6 +102,41 @@ setSidebar(saved);
 // Click handlers
 shrinkBtn.addEventListener('click', () => setSidebar(true));
 growBtn.addEventListener('click',   () => setSidebar(false));
+
+/* mobile off-canvas navigation */
+
+const mobileMenuBtn = document.getElementById('mobile-menu');
+
+function setMobileNav(open) {
+    document.body.classList.toggle('mobile-nav-open', open);
+    mobileMenuBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+mobileMenuBtn?.addEventListener('click', () => {
+    setMobileNav(!document.body.classList.contains('mobile-nav-open'));
+});
+
+// Tapping the backdrop or following a link closes the drawer.
+document.addEventListener('click', event => {
+    if (!document.body.classList.contains('mobile-nav-open')) return;
+
+    if (event.target.closest('.sidebar a')) {
+        setMobileNav(false);
+        return;
+    }
+
+    if (!event.target.closest('.sidebar') && !event.target.closest('#mobile-menu')) {
+        setMobileNav(false);
+    }
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') setMobileNav(false);
+});
+
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) setMobileNav(false);
+});
 
 
 

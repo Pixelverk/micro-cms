@@ -5,22 +5,15 @@
 | Little Helpers
 |--------------------------------------------------------------------------
 */
-require CORE_PATH . '/helpers/common.php';
-require CORE_PATH . '/helpers/cache.php';
-require CORE_PATH . '/helpers/content.php';
-require CORE_PATH . '/helpers/menus.php';
-require CORE_PATH . '/helpers/settings.php';
-require CORE_PATH . '/helpers/admin.php';
-require CORE_PATH . '/helpers/sitemap.php';
-require CORE_PATH . '/helpers/icons.php';
+require_once CORE_PATH . '/helpers/common.php';
+bootstrap_core();
 
 /*
 |--------------------------------------------------------------------------
 | Core Systems
 |--------------------------------------------------------------------------
 */
-require CORE_PATH . '/auth.php';
-require CORE_PATH . '/db.php';
+require_once CORE_PATH . '/auth.php';
 require CORE_PATH . '/render.php';
 require CORE_PATH . '/router.php';
 
@@ -29,13 +22,33 @@ define('SITE_TIMEZONE', 'Europe/Stockholm');
 
 function serveAdmin($request) {
 
-    // Start session
-    if (session_status() === PHP_SESSION_NONE) session_start();
+    // Start the session with hardened cookie/session settings
+    session_boot();
 
     // Check session timeout
     session_timeout_check();
 
+    // Apply any pending schema migrations (cheap: a marker file when current).
+    migrate_run();
+
+    // Every admin POST must carry a valid token. The login form is the one
+    // exception: there is no session to protect yet, so it relies on the
+    // throttle in core/helpers/throttle.php instead.
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !admin_is_login_request()) {
+        csrf_assert();
+    }
+
     // Dispatch to admin router
     route_admin_request();
 
+}
+
+/**
+ * Is this request the login form (or its own assets)?
+ */
+function admin_is_login_request(): bool
+{
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+
+    return rtrim($path, '/') === '/admin/login';
 }

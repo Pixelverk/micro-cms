@@ -20,10 +20,6 @@ function render_page(array $page): array
     render_layout($layoutName, $page, $collectedJs, $collectedCss);
     $bodyContent = ob_get_clean();
 
-    $siteTitle = e(get_setting('site_title', 'My Site'));
-    $pageTitle = e($page['title'] ?? 'Untitled');
-    $metaDesc  = e($page['meta']['description'] ?? '');
-
     $head = '';
 
     // Charset & viewport
@@ -31,13 +27,10 @@ function render_page(array $page): array
     $head .= "<meta charset='" . e($meta['charset'] ?? 'UTF-8') . "'>\n";
     $head .= "<meta name='viewport' content='" . e($meta['viewport'] ?? 'width=device-width, initial-scale=1.0') . "'>\n";
 
-    // Title
-    $head .= "<title>{$pageTitle} - {$siteTitle}</title>\n";
-
-    // Meta description
-    if ($metaDesc !== '') {
-        $head .= "<meta name='description' content='{$metaDesc}'>\n";
-    }
+    // Title, description, canonical, robots, Open Graph and Twitter tags.
+    // All of it comes from core/helpers/seo.php so defaults stay in one place.
+    $head .= seo_head_tags($page);
+    $head .= seo_json_ld($page);
 
     // Icons
     if (!empty($theme['icons']['favicon'])) {
@@ -76,6 +69,7 @@ function render_page(array $page): array
     }
 
     $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language')) . "'>\n<head>\n{$head}</head>\n<body>\n";
+    $html .= render_preview_bar($page);
     $html .= $bodyContent;
     $html .= "</body>\n</html>";
 
@@ -89,6 +83,123 @@ function render_page(array $page): array
         'headers' => ['Content-Type: text/html; charset=utf-8'],
         'body'    => $html,
     ];
+}
+
+/*
+|--------------------------------------------------------------------------
+| Draft Preview Bar
+|--------------------------------------------------------------------------
+| Only ever rendered for a token-bearing preview request, so it can never
+| appear in cached HTML.
+|--------------------------------------------------------------------------
+*/
+function render_preview_bar(array $page): string
+{
+    if (!is_preview_request()) {
+        return '';
+    }
+
+    $status   = (string) ($page['status'] ?? 'published');
+    $title    = (string) ($page['title'] ?? 'Untitled');
+    $contentId = $page['id'] ?? null;
+
+    $statusText = match ($status) {
+        'draft'     => 'Draft — not visible to visitors',
+        'scheduled' => 'Scheduled — goes live later',
+        'archived'  => 'Archived — hidden from visitors',
+        '404'       => 'Not found page',
+        default     => 'Published',
+    };
+
+    $isUnpublished = $status !== 'published';
+
+    $editUrl = $contentId
+        ? url('admin/content/edit') . '?id=' . (int) $contentId . '&type=' . urlencode((string) ($page['type'] ?? 'page'))
+        : '';
+
+    $exitUrl = $_SERVER['REQUEST_URI'] ?? '/';
+    $exitUrl = preg_replace('/([?&])preview=[^&]*&?/', '$1', $exitUrl) ?? $exitUrl;
+    $exitUrl = rtrim($exitUrl, '?&');
+
+    ob_start();
+    ?>
+    <style>
+        #cms-preview-bar {
+            position: fixed;
+            inset: 0 0 auto 0;
+            z-index: 2147483000;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            font: 500 0.8125rem/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+            color: #fff;
+            background: <?= $isUnpublished ? '#b45309' : '#1f2937' ?>;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+        }
+        #cms-preview-bar .cms-preview-status { display: flex; gap: 0.5rem; align-items: center; }
+        #cms-preview-bar .cms-preview-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background: <?= $isUnpublished ? '#fbbf24' : '#34d399' ?>;
+        }
+        #cms-preview-bar .cms-preview-actions { display: flex; gap: 0.5rem; align-items: center; }
+        #cms-preview-bar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.25rem 0.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 4px;
+        }
+        #cms-preview-bar a:hover { background: rgba(255, 255, 255, 0.15); }
+        body { padding-top: 2.75rem; }
+    </style>
+    <div id="cms-preview-bar" role="status">
+        <span class="cms-preview-status">
+            <span class="cms-preview-dot" aria-hidden="true"></span>
+            <strong>Preview</strong>
+            <span><?= e($statusText) ?></span>
+            <span aria-hidden="true">·</span>
+            <span><?= e($title) ?></span>
+        </span>
+        <span class="cms-preview-actions">
+            <?php if ($editUrl !== ''): ?>
+                <a href="<?= e($editUrl) ?>">Edit</a>
+            <?php endif; ?>
+            <a href="<?= e($exitUrl) ?>">Exit preview</a>
+        </span>
+    </div>
+    <?php
+    return (string) ob_get_clean();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Collect inline CSS / JS
+|--------------------------------------------------------------------------
+| Components and layouts both contribute assets. The key de-duplicates, so a
+| layout can safely offer CSS that a component might also provide.
+|--------------------------------------------------------------------------
+*/
+function collect_css(array &$collectedCss, string $key, string $css): void
+{
+    if ($css === '' || in_array($key, array_column($collectedCss, 'file'), true)) {
+        return;
+    }
+
+    $collectedCss[] = ['file' => $key, 'content' => $css];
+}
+
+function collect_js(array &$collectedJs, string $key, string $js): void
+{
+    if ($js === '' || in_array($key, array_column($collectedJs, 'file'), true)) {
+        return;
+    }
+
+    $collectedJs[] = ['file' => $key, 'content' => $js];
 }
 
 /*
@@ -107,6 +218,12 @@ function render_layout(string $layout, array $page, array &$collectedJs = [], ar
 
     if (!file_exists($layoutFile)) {
         throw new RuntimeException("Layout '{$layout}' not found.");
+    }
+
+    // The path is known by the router but not stored on the page; the default
+    // layout needs it (canonical URLs, active nav state) so fill it in here.
+    if (!isset($page['path'])) {
+        $page['path'] = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
     }
 
     $headerComponent = $page['header'] ?? $settings['default_header'] ?? $theme['defaults']['header'];
@@ -145,7 +262,7 @@ function render_components(array $components, array $page, array &$collectedJs =
 |--------------------------------------------------------------------------
 */
 
-function component(string $name, array $props = [], array $page, array &$collectedJs = [], array &$collectedCss = []): void {
+function component(string $name, array $props, array $page, array &$collectedJs = [], array &$collectedCss = []): void {
     
  
     // get component path in theme or core
@@ -171,20 +288,13 @@ function component(string $name, array $props = [], array $page, array &$collect
         return;
     }
 
-    // Add component CSS to collection
-    if (!empty($component['css']) && !in_array($name, array_column($collectedCss, 'file'), true)) {
-        $collectedCss[] = [
-            'file'    => $name,
-            'content' => "/* CSS from component: {$name} */\n" . $component['css'],
-        ];
+    // Add component CSS / JS to the collections (de-duplicated by name)
+    if (!empty($component['css'])) {
+        collect_css($collectedCss, $name, "/* CSS from component: {$name} */\n" . $component['css']);
     }
 
-    // Add component JS to collection
-    if (!empty($component['js']) && !in_array($name, array_column($collectedJs, 'file'), true)) {
-        $collectedJs[] = [
-            'file'    => $name,
-            'content' => "/* JS from component: {$name} */\n" . $component['js'],
-        ];
+    if (!empty($component['js'])) {
+        collect_js($collectedJs, $name, "/* JS from component: {$name} */\n" . $component['js']);
     }
 
     // handle missing render

@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 /**
  * Generate sitemap XML from database content.
+ *
+ * Only published, due content is listed — drafts, scheduled and archived
+ * items must never be advertised to crawlers.
  */
 function generate_sitemap(): string
 {
@@ -12,16 +15,12 @@ function generate_sitemap(): string
     $types     = array_keys($theme['content_types'] ?? []);
     $homepageId = $settings['homepage_id'] ?? null;
 
-    // Base URL
-    $baseUrl = rtrim(
-        config('site.url')
-        ?? ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-            . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')),
-        '/'
-    );
+    // Canonical origin, from the site_url setting or the current request.
+    $baseUrl = seo_site_url();
 
     $pdo  = db();
     $urls = [];
+    $now  = time();
 
     foreach ($types as $type) {
         $prefix = $prefixes[$type] ?? '';
@@ -31,8 +30,10 @@ function generate_sitemap(): string
             FROM content
             WHERE type = :type
               AND status = 'published'
+              AND published_at IS NOT NULL
+              AND published_at <= :now
         ");
-        $stmt->execute(['type' => $type]);
+        $stmt->execute(['type' => $type, 'now' => $now]);
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
@@ -48,7 +49,7 @@ function generate_sitemap(): string
             }
 
             $urls[] = [
-                'loc'        => $baseUrl . '/' . $path,
+                'loc'        => $path === '' ? $baseUrl . '/' : $baseUrl . '/' . $path . '/',
                 'lastmod'    => $lastmod,
                 'changefreq' => 'weekly',
                 'priority'   => $type === 'page' ? '1.0' : '0.7',
@@ -67,7 +68,7 @@ function generate_sitemap(): string
         $url->addChild('priority', $u['priority']);
     }
 
-    return $xml->asXML();
+    return $xml->asXML() ?: '';
 }
 
 /**

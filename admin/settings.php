@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 $pageTitle = 'Settings';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo = db();
 
@@ -44,6 +44,30 @@ $settingFields = [
         'label'   => 'Site language',
         'help'    => 'Two-letter language code (e.g. en, fr).',
         'default' => 'en',
+    ],
+    'site_url' => [
+        'type'    => 'text',
+        'label'   => 'Site URL',
+        'help'    => 'Absolute address of this site (e.g. https://example.com). Used for canonical URLs, social tags and the sitemap.',
+        'default' => '',
+    ],
+    'seo_title_suffix' => [
+        'type'    => 'text',
+        'label'   => 'Title suffix',
+        'help'    => 'Appended to page titles, e.g. "| My Company". Leave blank to use "Page - Site title".',
+        'default' => '',
+    ],
+    'default_og_image' => [
+        'type'    => 'text',
+        'label'   => 'Default social image',
+        'help'    => 'Media ID, absolute URL, or a theme image filename. Used when content has no social image of its own.',
+        'default' => '',
+    ],
+    'twitter_site' => [
+        'type'    => 'text',
+        'label'   => 'Twitter/X handle',
+        'help'    => 'Default site handle for Twitter cards, e.g. @example.',
+        'default' => '',
     ],
     'admin_default_language' => [
         'type'    => 'select',
@@ -108,6 +132,12 @@ $settingFields = [
         'help'    => 'Comma-separated list of widths for generated images (e.g. 320,640,1280).',
         'default' => '320,640,1280',
     ],
+    'allow_svg' => [
+        'type'    => 'checkbox',
+        'label'   => 'Allow SVG uploads',
+        'help'    => 'SVG files can contain scripts. Only enable this if you trust everyone who can upload media.',
+        'default' => false,
+    ],
 ];
 
 // ----------------------------
@@ -130,54 +160,126 @@ foreach ($theme['content_types'] ?? [] as $type => $config) {
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $pdo = db();
-    $pdo->beginTransaction();
+    $errors      = [];
+    $newValues   = [];
+    $newPrefixes = [];
+
+    foreach ($settingFields as $key => $meta) {
+        $raw = $_POST[$key] ?? null;
+
+        // ----------------------------
+        // Normalise
+        // ----------------------------
+        if ($meta['type'] === 'checkbox') {
+            $value = !empty($raw);
+        } elseif ($meta['type'] === 'number') {
+            $value = $raw === '' || $raw === null ? null : (int) $raw;
+        } elseif ($key === 'media_sizes') {
+            $parsed = validate_sizes_csv($raw);
+
+            if ($parsed === null) {
+                $errors[$key] = "{$meta['label']} must be a comma-separated list of widths between 16 and 4000 (e.g. 320,640,1280).";
+                continue;
+            }
+
+            $value = $parsed;
+        } else {
+            $value = is_string($raw) ? trim($raw) : $raw;
+        }
+
+        // ----------------------------
+        // Validate
+        // ----------------------------
+        $label = $meta['label'] ?? $key;
+
+        if (str_starts_with($key, 'prefix_')) {
+            if (!is_string($value) || !validate_url_prefix($value)) {
+                $errors[$key] = "$label may only contain lowercase letters, numbers, dashes and slashes.";
+                continue;
+            }
+        } elseif ($meta['type'] === 'select') {
+            if (!validate_enum((string) $value, array_map('strval', array_keys($meta['options'] ?? [])))) {
+                $errors[$key] = "Invalid selection for $label.";
+                continue;
+            }
+        } elseif ($key === 'contact_email') {
+            if (!validate_email((string) $value, true)) {
+                $errors[$key] = 'Invalid contact email address.';
+                continue;
+            }
+        } elseif ($key === 'homepage_id') {
+            if ($value === null || $value === '' || $value === 0) {
+                $errors[$key] = 'Choose a homepage.';
+                continue;
+            }
+
+            if (!load_content_by_id((int) $value)) {
+                $errors[$key] = 'That homepage no longer exists.';
+                continue;
+            }
+        } elseif ($key === 'site_language') {
+            if (!validate_language_code((string) $value)) {
+                $errors[$key] = 'Site language must look like "en" or "en-GB".';
+                continue;
+            }
+        } elseif ($key === 'site_url') {
+            // Blank means "work it out from the request"; otherwise it must be
+            // an absolute origin so canonical URLs are trustworthy.
+            if ($value !== '' && !preg_match('#^https?://[a-z0-9.\-]+(:\d+)?$#i', (string) $value)) {
+                $errors[$key] = 'Site URL must be an absolute address such as https://example.com (no trailing slash or path).';
+                continue;
+            }
+
+            $value = rtrim((string) $value, '/');
+        } elseif ($key === 'default_og_image') {
+            $value = trim((string) $value);
+
+            if ($value !== '' && !ctype_digit($value) && !validate_url($value) && !preg_match('#^[a-z0-9._\-/]+\.(jpe?g|png|gif|webp|avif)$#i', $value)) {
+                $errors[$key] = 'Social image must be a media ID, an absolute URL, or a theme image filename.';
+                continue;
+            }
+        } elseif ($key === 'twitter_site') {
+            $value = trim((string) $value);
+
+            if ($value !== '' && !preg_match('/^@?[A-Za-z0-9_]{1,30}$/', $value)) {
+                $errors[$key] = 'Twitter/X handle looks invalid.';
+                continue;
+            }
+        } elseif ($meta['type'] === 'number') {
+            $min = (int) ($meta['min'] ?? 0);
+            $max = (int) ($meta['max'] ?? PHP_INT_MAX);
+
+            if ($value === null || !validate_int_range($value, $min, $max)) {
+                $errors[$key] = "$label must be between $min and $max.";
+                continue;
+            }
+        } elseif ($meta['type'] === 'text' && ($meta['required'] ?? false)) {
+            if (!validate_required($value)) {
+                $errors[$key] = "$label cannot be empty.";
+                continue;
+            }
+        }
+
+        // ----------------------------
+        // Stage
+        // ----------------------------
+        if (str_starts_with($key, 'prefix_')) {
+            $newPrefixes[substr($key, strlen('prefix_'))] = (string) $value;
+        } else {
+            $newValues[$key] = $value;
+        }
+    }
+
+    if ($errors) {
+        validate_throw($errors, 'settings');
+    }
 
     try {
-        $newPrefixes = [];
+        $pdo = db();
+        $pdo->beginTransaction();
 
-        foreach ($settingFields as $key => $meta) {
-            $value = $_POST[$key] ?? null;
-
-            // Checkbox handling
-            if ($meta['type'] === 'checkbox') {
-                $value = !empty($value);
-            }
-
-            // Number validation
-            if ($meta['type'] === 'number') {
-                $value = (int)$value;
-            }
-
-            // Comma-separated sizes
-            if ($key === 'media_sizes') {
-                $value = array_filter(array_map('intval', explode(',', $value)));
-            }
-
-            if (is_string($value) && $meta['type'] === 'text' && trim($value) === '') {
-                if (!str_starts_with($key, 'prefix_')) {
-                    throw new RuntimeException("{$meta['label']} cannot be empty.");
-                }
-            }
-
-            if ($key === 'contact_email' && $value !== '') {
-                if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    throw new RuntimeException('Invalid contact email address.');
-                }
-            }
-
-            if ($meta['type'] === 'select' && !array_key_exists($value, $meta['options'])) {
-                throw new RuntimeException("Invalid selection for {$meta['label']}.");
-            }
-
-            if ($key === 'homepage_id') {
-                set_setting($key, (int)$value);
-            } elseif (str_starts_with($key, 'prefix_')) {
-                $type = substr($key, 7);
-                $newPrefixes[$type] = trim($value);
-            } else {
-                set_setting($key, $value);
-            }
+        foreach ($newValues as $key => $value) {
+            set_setting($key, $value);
         }
 
         if ($newPrefixes) {
@@ -185,9 +287,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $pdo->commit();
+
+        // Once, after all writes, rather than inside every set_setting().
+        invalidate_cache();
+
+        log_activity('settings.updated', 'settings', null, implode(', ', array_keys($newValues)), []);
+
         redirect_with_toast('settings', 'success', 'Settings saved successfully.');
     } catch (Throwable $e) {
-        $pdo->rollBack();
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+
         redirect_with_toast('settings', 'error', $e->getMessage());
     }
 }
@@ -209,6 +320,7 @@ ob_start();
 </div>
 
 <form id="settings" method="post" class="form-card">
+    <?= csrf_field() ?>
     <?php foreach ($settingFields as $key => $meta): ?>
         <?php
         if ($key === 'homepage_id') {
@@ -266,4 +378,18 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('settings')) ?></h3>
+<p><?= e(admin_trans('settings_help')) ?></p>
+<ul>
+    <li><?= e(admin_trans('settings_site_help')) ?></li>
+    <li><?= e(admin_trans('settings_media_help')) ?></li>
+    <li><?= e(admin_trans('settings_seo_help')) ?></li>
+</ul>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'reference', 'section' => 'configuration'];
+
 include CMS_PATH . '/admin/partials/layout.php';

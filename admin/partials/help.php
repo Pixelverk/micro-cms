@@ -1,31 +1,21 @@
 <?php if (empty($pageHelp)) return; ?>
 
-<style>
-#help-panel {
-    position: fixed;
-    top: 6.5rem;
-    right: 2rem;
-    margin-left:2rem;
-    width: fit-content;
-    max-width: calc(100vw - 3rem);
-    background: #fff;
-    color: #222;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.25);
-    padding: 1rem 1.25rem;
-    display: none;
-    z-index: 9999;
-}
-
-#help-panel h3 {
-    margin-top: 0.5rem;
-}
-</style>
-
 <span id="help-fab" class="header-icon" type="button"><?= icon('help-circle', 26) ?></span>
 
 <div id="help-panel">
     <?= $pageHelp ?>
+
+    <?php
+    // Every help panel links into the full documentation. Pages can point at a
+    // specific section with $docsLink = ['tab' => 'editor', 'section' => 'slug'].
+    $docsLink = $docsLink ?? ['tab' => 'editor'];
+    $docsQuery = http_build_query(array_filter($docsLink));
+    ?>
+    <p class="help-docs-link">
+        <a href="<?= e(url('admin/docs') . ($docsQuery !== '' ? '?' . $docsQuery : '')) ?>">
+            <?= e(admin_trans('read_full_docs')) ?> &rarr;
+        </a>
+    </p>
 </div>
 
 <script>

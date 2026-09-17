@@ -1,7 +1,7 @@
 <?php
 
 $pageTitle = 'Content Editor';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 // ----------------------------
 // Determine mode
@@ -53,6 +53,10 @@ $title           = $contentData['title'] ?? '';
 $status          = $contentData['status'] ?? 'draft';
 $metaDescription = $contentData['meta']['description'] ?? '';
 $components      = $contentData['body'] ?? [];
+
+// SEO panel: keep the existing meta array and open the panel when it has content.
+$meta = is_array($contentData['meta'] ?? null) ? $contentData['meta'] : [];
+$seoHasValues = (bool) array_intersect(array_keys(seo_editable_fields()), array_keys($meta));
 
 $scheduledDate = '';
 if (!empty($contentData['scheduled_at'])) {
@@ -241,12 +245,14 @@ ksort($availableComponents);
 // ----------------------------
 // Render
 // ----------------------------
+// Editor libraries are vendored locally (no CDN, no build step). They must
+// execute before the editor module at the bottom of the page.
+$pageStyles[]  = ['href' => 'admin/assets/vendor/quill/quill.snow.css'];
+$pageScripts[] = ['src' => 'admin/assets/vendor/quill/quill.js'];
+$pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
+
 ob_start();
 ?>
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
 <div class="page-header">
     <div class="page-title">        
         <?php if ($isEdit): ?>
@@ -258,10 +264,24 @@ ob_start();
 
     <div class="page-actions">
         <?php if ($isEdit): ?>
-            <a style="color:inherit; margin-right:2rem;" 
-                href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>" 
+            <a class="no-underline mr-md"
+                href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>"
                 target="_blank">
                 Visit <?= e($typeLabel) ?>
+            </a>
+
+            <a class="btn-small btn-preview mr-md"
+                href="<?= e(preview_url(url($slug === $settings['homepage_slug'] ? '' : $url))) ?>"
+                target="_blank"
+                title="Renders live from the database, including unpublished changes">
+                <?= e(admin_trans('preview')) ?>
+            </a>
+
+            <?php $historyCount = count_content_versions((int) $contentData['id']); ?>
+            <a class="btn-small mr-md"
+                href="<?= url('admin/content/versions') ?>?type=<?= urlencode($type) ?>&id=<?= (int) $contentData['id'] ?>"
+                title="<?= e(admin_trans('version_history_help')) ?>">
+                <?= e(admin_trans('history')) ?> (<?= (int) $historyCount ?>)
             </a>
         <?php endif; ?>
 
@@ -272,6 +292,7 @@ ob_start();
 </div>
 
 <form class="flex flex-row gap-lg" id="save" method="post" action="<?= url('admin/content/save') ?>">
+    <?= csrf_field() ?>
     <input type="hidden" name="type" value="<?= e($type) ?>">
     <?php if ($isEdit): ?>
         <input type="hidden" name="id" value="<?= (int)$contentData['id'] ?>">
@@ -298,11 +319,6 @@ ob_start();
             <label>
                 Slug:
                 <input type="text" id="slug" name="slug" value="<?= e($slug) ?>">
-            </label>
-
-            <label>
-                Meta Description:
-                <textarea name="meta_description"><?= e($metaDescription) ?></textarea>
             </label>
 
             <label>
@@ -352,10 +368,24 @@ ob_start();
             <label>
                 Status:
                 <select name="status">
-                    <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
-                    <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
-                    <option value="scheduled" <?= $status === 'scheduled' ? 'selected' : '' ?>>Scheduled</option>
+                    <?php foreach (content_statuses() as $statusOption): ?>
+                        <?php
+                        // Publishing is an editorial capability; authors may
+                        // save drafts only. The server enforces this again.
+                        $statusAllowed = $statusOption !== 'published' || admin_can('content.publish');
+
+                        if (!$statusAllowed && $statusOption !== $status) {
+                            continue;
+                        }
+                        ?>
+                        <option value="<?= e($statusOption) ?>" <?= $status === $statusOption ? 'selected' : '' ?>>
+                            <?= e(admin_trans($statusOption)) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
+                <?php if (!admin_can('content.publish')): ?>
+                    <small><?= e(admin_trans('author_cannot_publish')) ?></small>
+                <?php endif; ?>
             </label>
 
             <label id="scheduled-container">
@@ -408,7 +438,61 @@ ob_start();
             </label>
         </fieldset>
 
+        <!-- SEO & social -->
+        <fieldset class="card">
+            <legend><?= e(admin_trans('seo_social')) ?></legend>
+
+            <details <?= $seoHasValues ? 'open' : '' ?>>
+                <summary><?= e(admin_trans('seo_social_help')) ?></summary>
+
+                <div class="seo-fields">
+                    <?php foreach (seo_editable_fields() as $key => $field): ?>
+                        <?php
+                        $fieldValue = (string) ($meta[$key] ?? '');
+                        $inputName  = 'meta_' . $key;
+                        $fieldId    = 'seo-' . $key;
+                        ?>
+                        <label class="field" for="<?= e($fieldId) ?>">
+                            <span class="field-label"><?= e($field['label']) ?></span>
+
+                            <?php if (($field['type'] ?? 'text') === 'textarea'): ?>
+                                <textarea class="field-input" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                    rows="2" <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>
+                                ><?= e($fieldValue) ?></textarea>
+                            <?php else: ?>
+                                <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                    value="<?= e($fieldValue) ?>"
+                                    <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>>
+                            <?php endif; ?>
+
+                            <?php if (!empty($field['help'])): ?>
+                                <small><?= e($field['help']) ?></small>
+                            <?php endif; ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </details>
+        </fieldset>
+
         <!-- Component list -->
+        <fieldset class="card">
+          <legend><?= e(admin_trans('saved_blocks')) ?></legend>
+
+          <div class="block-toolbar">
+              <select id="block-picker" class="field-input">
+                  <option value=""><?= e(admin_trans('insert_block')) ?>…</option>
+                  <?php foreach (blocks_enabled() ? blocks_for_type($type) : [] as $blockOption): ?>
+                      <option value="<?= (int) $blockOption['id'] ?>">
+                          <?= e($blockOption['label']) ?> (<?= (int) $blockOption['component_count'] ?>)
+                      </option>
+                  <?php endforeach; ?>
+              </select>
+
+              <button type="button" id="block-insert" class="btn-small"><?= e(admin_trans('insert_block')) ?></button>
+              <button type="button" id="block-save" class="btn-small btn-muted"><?= e(admin_trans('save_as_block')) ?></button>
+          </div>
+        </fieldset>
+
         <fieldset class="card">
           <legend>Component List</legend>
             <div id="component-palette">
@@ -429,13 +513,37 @@ window.availableComponents = <?= json_encode($availableComponents) ?>;
 window.initialComponents   = <?= json_encode($components) ?>;
 window.contentType         = '<?= e($type) ?>';
 window.mediaImages = <?= json_encode($mediaImagesJs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>;
+window.savedBlocks = <?= json_encode(blocks_enabled() ? array_map(static function (array $block): array {
+    return [
+        'id'    => (int) $block['id'],
+        'slug'  => $block['slug'],
+        'label' => $block['label'],
+        'tree'  => is_array($block['tree'] ?? null) ? $block['tree'] : [],
+    ];
+}, blocks_for_type($type)) : [], JSON_UNESCAPED_SLASHES) ?>;
+window.blockEndpoint = <?= json_encode(url('admin/block/json')) ?>;
+window.csrfToken = <?= json_encode(csrf_token()) ?>;
 </script>
 
 <?php include CMS_PATH . '/admin/partials/image-picker.php'; ?>
 <?php include CMS_PATH . '/admin/partials/content-editor-templates.php'; ?>
-<script type="module" src="<?= url('admin/assets/content-editor.js') ?>"></script>
+<script type="module" src="<?= admin_asset('admin/assets/content-editor.js') ?>"></script>
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('content_editor')) ?></h3>
+<p><?= e(admin_trans('editor_help')) ?></p>
+<ul>
+    <li><?= e(admin_trans('editor_components_help')) ?></li>
+    <li><?= e(admin_trans('editor_status_help')) ?></li>
+    <li><?= e(admin_trans('editor_preview_help')) ?></li>
+</ul>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'editor', 'section' => 'drafts-scheduling-and-preview'];
+
 include CMS_PATH . '/admin/partials/layout.php';
 

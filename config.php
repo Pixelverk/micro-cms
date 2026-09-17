@@ -26,6 +26,15 @@ return [
 
     'security' => [
         'password_min_length' => 10,
+
+        // Signs the cache-safe tokens used by public forms (contact, newsletter).
+        // Leave null to derive a stable secret from the install path, or set a
+        // random string here (recommended for production).
+        'form_secret' => null,
+
+        // Login throttling
+        'login_max_attempts' => 5,
+        'login_lockout_seconds' => 900,
     ],
 
     'defaults' => [
@@ -34,5 +43,14 @@ return [
     ],
 
     'cache_lifetime' => 3600, // seconds
+
+    'features' => [
+        'blocks' => true,
+    ],
+
+    // How long to keep audit-log entries (see core/helpers/activity.php).
+    'activity' => [
+        'retention_days' => 180,
+    ],
 
 ];

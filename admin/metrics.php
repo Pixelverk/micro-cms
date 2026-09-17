@@ -1,7 +1,7 @@
 <?php
 
 $pageTitle = 'Metrics';
-$username = $_SESSION['user_id'] ?? 'User';
+$username = current_username();
 
 ob_start();
 ?>
@@ -18,5 +18,14 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('metrics')) ?></h3>
+<p><?= e(admin_trans('metrics_help')) ?></p>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'reference', 'section' => 'maintenance'];
+
 
 include CMS_PATH . '/admin/partials/layout.php';

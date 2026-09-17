@@ -3,10 +3,24 @@
 // Handle form submission
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    csrf_assert();
+
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (login($username, $password)) {
+    if ($username === '' || $password === '') {
+        $error = 'Enter your username and password.';
+    } elseif (throttle_is_locked($username)) {
+        $minutes = (int) ceil(throttle_seconds_remaining($username) / 60);
+        $error = "Too many failed attempts. Try again in about {$minutes} minute(s).";
+        log_activity('user.login_locked', 'user', null, $username, []);
+    } elseif (login($username, $password)) {
+        // Opportunistic cleanup on a small share of successful logins.
+        if (random_int(1, 100) === 1) {
+            throttle_prune();
+            activity_maybe_prune();
+        }
+
         redirect_with_toast('dashboard', 'success', 'Login success');
         exit;
     } else {
@@ -20,52 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Editor Login - Micro CMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="<?= url('admin/assets/style.css') ?>">
-    <link rel='icon' href="<?= url('admin/assets/favicon.png')?>">
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        main {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-            background: #f7f7f7;
-        }
-        .login-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 100%;
-        }
-        .login-card h2 { margin-top:0; margin-bottom:1rem; text-align:center; }
-        .login-card form { display:flex; flex-direction:column; }
-        .login-card input {
-            padding:0.75rem;
-            margin-bottom:1rem;
-            border:1px solid #ccc;
-            border-radius:4px;
-            font-size:1rem;
-        }
-        .login-card button {
-            padding:0.75rem;
-            background:#1f2933;
-            color:#fff;
-            border:none;
-            border-radius:4px;
-            font-size:1rem;
-            cursor:pointer;
-        }
-        .error { color:red; text-align:center; margin-bottom:1rem; }
-    </style>
+    <link rel="stylesheet" href="<?= admin_asset('admin/assets/style.css') ?>">
+    <link rel='icon' href="<?= admin_asset('admin/assets/favicon.png')?>">
 </head>
-<body>
+<body class="auth-page">
 <header>
     <h1>Micro CMS - Editor Login</h1>
 </header>
@@ -76,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="error"><?= e($error) ?></div>
         <?php endif; ?>
         <form method="post" action="<?= url('admin/login') ?>">
+            <?= csrf_field() ?>
             <input type="text" name="username" placeholder="Username" required autofocus>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Log in</button>

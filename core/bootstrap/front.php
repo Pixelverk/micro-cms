@@ -1,31 +1,71 @@
 <?php
+declare(strict_types=1);
 
-function checkCache($request, $config) {
+/*
+|--------------------------------------------------------------------------
+| Front-end bootstrap
+|--------------------------------------------------------------------------
+|
+| Cached and fresh paths. Two rules keep the HTML cache honest:
+|
+|  * only anonymous, non-preview GETs may be cached, and
+|  * a cached file is never served to a signed-in user.
+|
+| The second rule matters because a cache file is keyed by path alone: an
+| editor's preview of /about/ would otherwise be published to every visitor.
+|
+*/
+
+/**
+ * Path of the cache file for a request path.
+ */
+function cache_file_for(string $request): string
+{
     $key = trim($request, '/') ?: 'home';
-    $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
+
+    return STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
+}
+
+function checkCache($request, $config)
+{
+    // Search results depend on the query string, which is not part of the
+    // cache key, so they are never served from it.
+    if (str_starts_with(trim($request, '/'), 'search')) {
+        return false;
+    }
+
+    // Nothing cached may be served to anyone with an identity, and a preview
+    // request must always be rendered live. checkCache() runs before the
+    // helper set is loaded, so probe for the helper rather than assuming it.
+    if (!empty($_SESSION['user_id'])) {
+        return false;
+    }
+
+    if (function_exists('can_preview_content') && can_preview_content()) {
+        return false;
+    }
+
+    $cacheFile = cache_file_for($request);
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && file_exists($cacheFile)
         && (time() - filemtime($cacheFile) < $config['cache_lifetime'])
-        
     ) {
-        return $cacheFile; // return filename
+        return $cacheFile;
     }
-    return false; // no cache
+
+    return false;
 }
 
-function serveCached($file, $config){
-
-    //helpers
-    require CORE_PATH . '/helpers/cache.php';
-    require CORE_PATH . '/helpers/settings.php';
-    require CORE_PATH . '/helpers/sitemap.php';
-
-    //core systems
-    require CORE_PATH . '/db.php';
+function serveCached($file, $config)
+{
+    // helpers — the same set the fresh path uses, because the shutdown hook
+    // below calls publishing_check(), which needs the content helpers.
+    require_once CORE_PATH . '/helpers/common.php';
+    bootstrap_core();
 
     // Start session
-    if (session_status() === PHP_SESSION_NONE) session_start();
+    session_boot();
 
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
@@ -42,23 +82,21 @@ function serveCached($file, $config){
     }
 }
 
-function serveFresh($request){
-
+function serveFresh($request)
+{
     // helpers
-    require CORE_PATH . '/helpers/common.php';
-    require CORE_PATH . '/helpers/cache.php';
-    require CORE_PATH . '/helpers/content.php';
-    require CORE_PATH . '/helpers/settings.php';
-    require CORE_PATH . '/helpers/menus.php';
-    require CORE_PATH . '/helpers/sitemap.php';
+    require_once CORE_PATH . '/helpers/common.php';
+    bootstrap_core();
 
     // Core Systems
-    require CORE_PATH . '/db.php';
     require CORE_PATH . '/render.php';
     require CORE_PATH . '/router.php';
 
     // Start session
-    if (session_status() === PHP_SESSION_NONE) session_start();
+    session_boot();
+
+    // Upgrade the schema before rendering (and explain failures clearly).
+    migrate_before_read();
 
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
@@ -67,74 +105,33 @@ function serveFresh($request){
     $page = route_request($request);
     $response = render_page($page);
 
+    // A preview is rendered live and labelled as such.
+    if (is_preview_request()) {
+        header('X-Preview: 1');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+    }
+
     http_response_code($response['status'] ?? 200);
     foreach ($response['headers'] ?? [] as $header) header($header);
     echo $response['body'];
 
-    // Cache successful GET responses, but skip drafts, admin visits and archive pages
-    $isAdminVisit = !empty($_SESSION['user_id']);
+    // Cache successful anonymous GETs only. Drafts, archives and anything
+    // produced for a signed-in user stay out of the shared cache.
     $isArchivePage = isset($page['taxonomy']);
+    // Query-driven views (search) must never be written to the shared cache.
+    $isQueryView = !empty($page['no_cache']);
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && ($response['status'] ?? 200) === 200
-        && ($page['status'] ?? '') !== 'draft'
-        && !$isAdminVisit
+        && ($page['status'] ?? '') === 'published'
+        && !response_is_uncacheable()
         && !$isArchivePage
+        && !$isQueryView
     ) {
-        $key = trim($request, '/') ?: 'home';
-        $cacheFile = STORAGE_PATH . '/cache/' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.html';
-
+        $cacheFile = cache_file_for($request);
         $temp = $cacheFile . '.tmp';
+
         file_put_contents($temp, $response['body']);
         rename($temp, $cacheFile);
     }
-
 }
-
-// Runs after the page has been served and checks for any cheduled content items that need to be published
-function publishing_check() {
-    $pdo = db();
-    $now = time();
-
-    // Find all scheduled content that should be published
-    $stmt = $pdo->prepare("
-        SELECT id
-        FROM content
-        WHERE status = 'scheduled'
-          AND scheduled_at IS NOT NULL
-          AND scheduled_at <= :now
-    ");
-    $stmt->execute(['now' => $now]);
-    $items = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-    if (empty($items)) {
-        return;
-    }
-
-    // Publish each item
-    $update = $pdo->prepare("
-        UPDATE content
-        SET status = 'published',
-            published_at = :now,
-            scheduled_at = NULL,
-            updated_at = :now
-        WHERE id = :id
-    ");
-
-    foreach ($items as $id) {
-        $update->execute([
-            'id'  => $id,
-            'now' => $now,
-        ]);
-
-        // Optional: invalidate cache / update sitemap for this item
-        $stmt = $pdo->prepare("SELECT slug, type FROM content WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        $slug = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($slug) {
-            invalidate_cache($slug['slug'], $slug['type']);
-        }
-    }
-    save_sitemap();
-};

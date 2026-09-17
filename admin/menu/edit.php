@@ -1,7 +1,7 @@
 <?php
 
 $pageTitle = 'Edit Menu';
-$username = $_SESSION['user_id'] ?? 'User';
+$username = current_username();
 
 // ----------------------------
 // Load all menus
@@ -58,6 +58,7 @@ ob_start();
 </form>
 
 <form id="menu-save" method="post" action="<?= url('admin/menu/save') ?>">
+    <?= csrf_field() ?>
 
     <input name="menu" id="menu-key" value="<?= e($menuKey) ?>">
     <input type="hidden" name="location" value="<?= e($location) ?>">
@@ -104,12 +105,16 @@ ob_start();
     </div>
 
     <?php if ($menuKey): ?>
-        <a href="<?= url('admin/menu/remove') ?>?menu=<?= urlencode($menuKey) ?>"
-            class="js-confirm btn-delete btn-small"
+        <form method="post"
+            action="<?= url('admin/menu/remove') ?>"
+            class="js-confirm-form"
             data-confirm="Do you want to remove this menu: <?= e($menuKey)?>"
-            data-confirm-title="Delete menu">
-            Delete
-        </a>
+            data-confirm-title="Delete menu"
+            style="display:inline">
+            <?= csrf_field() ?>
+            <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
+            <button type="submit" class="btn-delete btn-small">Delete</button>
+        </form>
     <?php endif; ?>
 </form>
 
@@ -139,4 +144,17 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+ob_start();
+?>
+<h3><?= e(admin_trans('menus')) ?></h3>
+<p><?= e(admin_trans('menu_help')) ?></p>
+<ul>
+    <li><?= e(admin_trans('menu_locations_help')) ?></li>
+    <li><?= e(admin_trans('menu_nesting_help')) ?></li>
+</ul>
+<?php
+$pageHelp = ob_get_clean();
+$docsLink = ['tab' => 'editor', 'section' => 'getting-around'];
+
 include CMS_PATH . '/admin/partials/layout.php';

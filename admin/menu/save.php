@@ -11,7 +11,9 @@ $items    = $_POST['items'] ?? [];
 
 $locations = theme_config()['menu_locations'] ?? [];
 if (!array_key_exists($location, $locations)) {
-    redirect_with_toast('menu/edit', 'error', 'Invalid menu location.');
+    log_activity('menu.updated', 'menu', null, $label !== '' ? $label : $menuSlug, []);
+
+redirect_with_toast('menu/edit', 'error', 'Invalid menu location.');
 }
 
 // ----------------------------

@@ -2,7 +2,7 @@
 // admin/tag/index.php
 
 $pageTitle = 'Tags';
-$username  = $_SESSION['user_id'] ?? 'User';
+$username  = current_username();
 
 $pdo = db();
 
@@ -141,6 +141,7 @@ ob_start();
                     data-confirm="<?= e(admin_trans('delete_tag_confirm', ['name' => $tag['name']])) ?>"
                     style="display:inline"
                 >
+                    <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">
                     <button type="submit" class="btn-delete btn-small">
                         <?= e(admin_trans('delete')) ?>

@@ -3,88 +3,115 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Load All Settings
+| Settings cache
 |--------------------------------------------------------------------------
+| Settings are read many times per request but written rarely. Both readers
+| below memoise into a shared array so a write can invalidate everything.
 */
-function load_settings(): array {
-    $pdo = db();
 
-    $stmt = $pdo->query("SELECT `key` FROM settings");
-    $settings = [];
+$GLOBALS['cms_settings_cache'] = ['loaded' => false, 'values' => [], 'single' => false];
 
-    while ($row = $stmt->fetch()) {
-        $settings[$row['key']] = get_setting($row['key']);
-    }
-
-    // If homepage_id is set, add homepage_slug and homepage_title for convenience
-    if (!empty($settings['homepage_id'])) {
-        $page = load_content_by_id((int)$settings['homepage_id']);
-        if ($page) {
-            $settings['homepage_slug']  = $page['slug'];
-            $settings['homepage_title'] = $page['title'];
-        } else {
-            $settings['homepage_slug']  = '';
-            $settings['homepage_title'] = '';
-        }
-    }
-
-    return $settings;
+function settings_cache_clear(): void
+{
+    $GLOBALS['cms_settings_cache'] = ['loaded' => false, 'values' => [], 'single' => false];
 }
 
 /*
 |--------------------------------------------------------------------------
-| Save All Settings
+| Load All Settings
 |--------------------------------------------------------------------------
 */
-function save_settings(array $settings): void
+
+/**
+ * Every setting as key => value, fetched in one query and memoised for the
+ * rest of the request (this used to be one query per key, several times over).
+ */
+function load_settings(bool $refresh = false): array
 {
+    if ($refresh) {
+        settings_cache_clear();
+    }
+
+    if ($GLOBALS['cms_settings_cache']['loaded']) {
+        return $GLOBALS['cms_settings_cache']['values'];
+    }
+
     $pdo = db();
-    $started = false;
 
-    if (!$pdo->inTransaction()) {
-        $pdo->beginTransaction();
-        $started = true;
+    $settings = [];
+    foreach ($pdo->query("SELECT `key`, `value` FROM settings") as $row) {
+        $settings[$row['key']] = decode_setting_value($row['value']);
     }
 
-    foreach ($settings as $key => $value) {
-        set_setting($key, $value);
+    // Convenience: which page is the homepage.
+    if (!empty($settings['homepage_id'])) {
+        $page = load_content_by_id((int) $settings['homepage_id']);
+        $settings['homepage_slug']  = $page['slug'] ?? '';
+        $settings['homepage_title'] = $page['title'] ?? '';
     }
 
-    if ($started) {
-        $pdo->commit();
-    }
+    $GLOBALS['cms_settings_cache']['values'] = $settings;
+    $GLOBALS['cms_settings_cache']['loaded'] = true;
 
-    invalidate_cache();
+    return $settings;
 }
+
 
 /*
 |--------------------------------------------------------------------------
 | Get a single setting
 |--------------------------------------------------------------------------
 */
-function get_setting(string $key, $default = null) {
-    $pdo = db();
-
-    $stmt = $pdo->prepare("SELECT value FROM settings WHERE `key` = :key LIMIT 1");
-    $stmt->execute(['key' => $key]);
-    $row = $stmt->fetch();
-
-    if ($row === false) {
-        return $default;
-    }
-
-    $value = $row['value'];
-
-    // Try JSON decode
+/**
+ * Settings values are stored as text; JSON is decoded back to arrays/scalars.
+ */
+function decode_setting_value(string $value): mixed
+{
     $decoded = json_decode($value, true);
 
-    // If valid JSON, return decoded value
-    if (json_last_error() === JSON_ERROR_NONE) {
-        return $decoded;
+    return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Save several settings at once
+|--------------------------------------------------------------------------
+| Writes inside a single transaction and clears the cache once, so a settings
+| form does not invalidate the cache per field.
+*/
+function save_settings(array $settings): void
+{
+    $pdo = db();
+    $started = !$pdo->inTransaction();
+
+    if ($started) {
+        $pdo->beginTransaction();
     }
 
-    // Otherwise return raw value
-    return $value;
+    try {
+        foreach ($settings as $key => $value) {
+            set_setting($key, $value);
+        }
+
+        if ($started) {
+            $pdo->commit();
+        }
+    } catch (Throwable $exception) {
+        if ($started && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $exception;
+    }
+
+    invalidate_cache();
+}
+
+function get_setting(string $key, mixed $default = null): mixed
+{
+    $settings = load_settings();
+
+    return array_key_exists($key, $settings) ? $settings[$key] : $default;
 }
 
 /*
@@ -114,4 +141,8 @@ function set_setting(string $key, $value): void
         'value'      => $value,
         'updated_at' => time(),
     ]);
+
+    // The cached map is now stale — refresh it so later reads in the same
+    // request (and tests) see the new value.
+    settings_cache_clear();
 }

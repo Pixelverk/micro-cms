@@ -1,4 +1,4 @@
-<div id="confirm-modal" class="modal-backdrop" style="display:none;">
+<div id="confirm-modal" class="modal-backdrop" hidden>
     <div class="modal">
         <h3 id="confirm-title"><?= e(admin_trans('confirm_action')) ?></h3>
         <p id="confirm-message"><?= e(admin_trans('are_you_sure')) ?></p>

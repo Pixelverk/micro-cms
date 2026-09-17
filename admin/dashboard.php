@@ -1,7 +1,7 @@
 <?php
 
 $pageTitle = 'Dashboard';
-$username = $_SESSION['user_id'] ?? 'User';
+$username = current_username();
 
 // page content
 ob_start();

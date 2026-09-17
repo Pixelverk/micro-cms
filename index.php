@@ -4,13 +4,19 @@ declare(strict_types=1);
 // figure out where we are
 define('CMS_PATH', __DIR__);
 define('CORE_PATH', CMS_PATH . '/core');
-define('STORAGE_PATH', CMS_PATH . '/storage');
 
 // decide timezone
 date_default_timezone_set('UTC');
 
 // get some info
-$config = require 'config.php';
+// CMS_CONFIG_FILE lets tooling (tests, alternate environments) point at its own
+// config; everything else keeps using ./config.php. A config may also relocate
+// storage, which keeps test runs out of the real storage/ directory.
+$configFile = getenv('CMS_CONFIG_FILE') ?: 'config.php';
+$config = require $configFile;
+
+define('STORAGE_PATH', $config['storage_path'] ?? CMS_PATH . '/storage');
+
 $logging = ($config['perf_logging'] ?? false) === true;
 $dbPath = STORAGE_PATH . '/data.sqlite';
 
@@ -87,6 +93,19 @@ if (str_starts_with($path, '/admin')) {
 
 // 3. Frontend
 require CORE_PATH . '/bootstrap/front.php';
+
+// The session must exist before the cache is consulted: a cached page is only
+// ever served to an anonymous visitor, and preview requests must be rendered
+// live. Both decisions depend on the session.
+require_once CORE_PATH . '/helpers/common.php';
+bootstrap_core();
+session_boot();
+
+// Schema migrations must run before ANY query reads content: a database created
+// by an older release lacks columns the current read paths select, and the
+// cache check below already touches content (via the homepage setting). A
+// database that cannot be upgraded fails loudly instead of 500-ing.
+migrate_before_read();
 
 // 3.1 Cached HTML
 if ($file = checkCache($request, $config)) {

@@ -17,6 +17,9 @@ declare(strict_types=1);
 $theme    = theme_config();
 $settings = load_settings();
 
+// Archive styling (injected as inline CSS, only on pages that need it)
+require theme('partials/taxonomy-archive.css.php');
+
 // Render header
 component($headerComponent, [], $page, $collectedJs, $collectedCss);
 

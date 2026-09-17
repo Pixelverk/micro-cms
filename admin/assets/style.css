@@ -442,54 +442,116 @@ header {
 
 /* 6. Components */
 
-/* 6.1 Buttons */
+/* 6.1 Buttons
+   A link styled as a button needs its own base (anchors do not inherit the
+   `button` element rules), so the shared shape lives here and the variants
+   below mostly set colour. Plain `button` elements keep the primary look. */
 
-.btn-primary {
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-muted,
+.btn-info,
+.btn-warning,
+.btn-delete,
+.btn-preview,
+.btn-small {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background: #00796b;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.4;
     color: #fff;
+    text-align: center;
     text-decoration: none;
-    border-radius: 4px;
+    white-space: nowrap;
+    background: var(--primary);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast) var(--ease),
+                border-color var(--transition-fast) var(--ease);
 }
 
-.btn-small {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    text-decoration: none;
-    background: #eee;
-    border: none;
-    cursor: pointer;
+.btn:hover,
+.btn-primary:hover { background: var(--primary-hover); }
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
 }
+.btn-secondary:hover { background: var(--surface-muted); }
+
+.btn-muted {
+    background: transparent;
+    color: var(--text-muted);
+    border-color: var(--border);
+}
+.btn-muted:hover { background: var(--surface-muted); color: var(--text); }
+
+.btn-info { background: #0e7490; }
+.btn-info:hover { background: #155e75; }
+
+.btn-warning { background: #b45309; }
+.btn-warning:hover { background: #92400e; }
 
 .btn-delete {
-    background: #b71c1c;
+    background: var(--danger);
     color: #fff;
-    margin-top:0;
+}
+.btn-delete:hover { background: var(--danger-hover); }
+.btn-delete:disabled { background: gray; cursor: not-allowed; }
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+.btn-danger:hover { background: var(--danger-hover); }
+
+.btn-preview { background: #eef3ff; color: #3b5bcc; }
+.btn-preview:hover { background: #dde6ff; }
+
+/* Smaller action buttons used inside tables and toolbars. */
+.btn-small {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    background: var(--surface-muted);
+    color: var(--text);
+    border-color: var(--border);
+}
+.btn-small:hover { background: var(--border); }
+
+/* .btn-small predates the .btn base class and is used on its own in markup,
+   so keep the standalone default noticeable rather than flat grey-on-grey. */
+a.btn-small,
+button.btn-small { color: inherit; }
+
+.btn:disabled,
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-.btn-delete:hover {
-    background: #751111;
+/* Inline action cluster in table cells. */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-.btn-delete:disabled {
-    background: gray;
-    cursor:not-allowed;
-}
+.actions form { margin: 0; }
 
-.add-component-btn {
-    margin-bottom: 1rem;
-}
+/* Disabled destructive action in the user list (own account). */
+.delete-user-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.remove-btn {
-    background: #b71c1c;
-}
 
-/*   6.2 Cards */
+/*   6.2 Cards & surfaces */
 
 .card {
     background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -504,8 +566,119 @@ header {
     display: inline-block;
     margin-top: 0.75rem;
     text-decoration: none;
-    color: #2563eb;
+    color: var(--link);
     font-weight: 500;
+}
+
+/* A plain panel for forms and tools. */
+.form-card,
+.utility-action {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-card fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0 0 1.5rem;
+}
+
+.form-card fieldset:last-of-type { margin-bottom: 0; }
+
+.form-card legend {
+    display: block;
+    width: 100%;
+    padding: 0 0 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: var(--font-weight-semibold);
+    border-bottom: 1px solid var(--border);
+}
+
+.utility-action h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.utility-action p {
+    margin: 0 0 0.85rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Forms laid out in the card grid. */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+/*   6.2.1 Page header */
+
+.page-title h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.page-title p {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/*   6.2.2 Form fields */
+
+.field {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.field-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-medium);
+}
+
+.field-input {
+    width: 100%;
+}
+
+.field .help,
+.field small {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.field-error {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--danger);
+    font-size: 0.8rem;
+}
+
+.invalid,
+.field-input.invalid {
+    border-color: var(--danger);
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
 }
 
 /*   6.3 Badges & status labels */
@@ -548,6 +721,97 @@ header {
     color: #2f855a;
 }
 
+.status-scheduled {
+    background: #fff4e5;
+    color: #b45309;
+}
+
+.status-archived {
+    background: #eceff1;
+    color: #546e7a;
+}
+
+/*   Content list: status tabs, search, preview action */
+
+.content-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.status-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.status-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+
+.status-tab:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.status-tab.active {
+    background: #1f2933;
+    border-color: #1f2933;
+    color: #fff;
+    font-weight: 600;
+}
+
+.status-tab-count {
+    font-size: 0.75rem;
+    opacity: 0.75;
+}
+
+.content-search {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.content-search input[type="search"] {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font: inherit;
+}
+
+.btn-preview {
+    background: #eef3ff;
+    color: #3b5bcc;
+}
+
+.btn-preview:hover {
+    background: #dde6ff;
+}
+
+.btn-muted {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: inherit;
+}
+
+.empty-state {
+    padding: 2rem 1rem;
+    color: var(--text-muted, #666);
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+}
+
 /*   6.4 Header (top bar) */
 
 .header-icon, .sidebar-icon {
@@ -564,6 +828,219 @@ header {
 .header-icon:hover svg {
     transform: scale(1.2);
     fill: var(--gray); 
+}
+
+/* Header actions are real buttons for keyboard/AT users; strip the chrome. */
+button.header-icon {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: inherit;
+}
+
+button.header-icon:hover { background: transparent; }
+
+/* Breadcrumb trail */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.breadcrumb a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover { color: var(--text); text-decoration: underline; }
+
+.breadcrumb [aria-current="page"] {
+    color: var(--text);
+    font-weight: var(--font-weight-medium);
+}
+
+.breadcrumb-sep { opacity: 0.5; }
+
+.only-mobile { display: none; }
+
+/*   6.5 Content editor chrome
+   The component editor mixes template-generated markup with JS-inserted
+   elements. These classes are selected by admin/assets/content-editor.js, so
+   their names are part of the editor's contract — style them here rather
+   than renaming them in the markup. */
+
+.component-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.actions-left,
+.actions-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.actions-right button,
+.add-child-btn {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.actions-right .remove-btn { background: var(--danger); }
+.actions-right .remove-btn:hover { background: var(--danger-hover); }
+
+.actions-right .duplicate-btn { background: var(--surface-muted); }
+
+.no-children {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.allowed-children-select {
+    width: auto;
+    min-width: 10rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.component-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.component-type { display: none; }
+
+.quill-editor {
+    min-height: 10rem;
+    background: #fff;
+    color: #222;
+}
+
+.quill-hidden { display: none; }
+
+/* SEO panel in the content editor */
+.seo-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.seo-fields textarea { min-height: 4rem; }
+
+.seo-fields small { color: var(--text-muted); }
+
+.image-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.select-image-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    background: var(--surface-muted);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.select-image-btn:hover { background: var(--border); }
+
+/* Small layout helpers used by page markup */
+
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+
+.inline-form { display: inline; }
+.inline-form-block { display: inline-block; margin: 0; }
+.no-underline { text-decoration: none; color: inherit; }
+.gap-sm { gap: 0.5rem; }
+.page-actions-inline { display: flex; gap: 1rem; align-items: center; }
+.mr-sm { margin-right: 0.5rem; }
+.mr-md { margin-right: 1rem; }
+
+.sidebar-footer { margin-top: auto; }
+
+/* Menu editor item rows (admin/partials/menu-editor-templates.php) */
+
+.menu-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.menu-item-title {
+    font-weight: var(--font-weight-semibold);
+    cursor: move;
+}
+
+.menu-field { display: block; }
+.menu-field-label { flex: 1 1 150px; }
+.menu-field-narrow { flex: 1 1 120px; }
+.menu-field-wide { flex: 1 1 200px; }
+
+.menu-children {
+    width: 100%;
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+}
+
+.menu-fields,
+.menu-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.menu-fields { gap: 1rem; width: 100%; }
+.menu-actions { margin-top: 0.5rem; gap: 0.25rem; }
+
+/* Menu row actions: small buttons generated from the item template.
+   Also covers the editor's move/duplicate/remove controls. */
+.menu-actions button,
+.menu-item .add-child,
+.menu-item .duplicate,
+.menu-item .remove,
+.actions-right .move-up,
+.actions-right .move-down {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    background: var(--surface-muted);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.menu-actions button:hover,
+.menu-item .add-child:hover,
+.menu-item .duplicate:hover { background: var(--border); }
+
+.menu-item .remove,
+.actions-right .remove-btn {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
 }
 
 /*   6.6 Sidebar */
@@ -599,6 +1076,20 @@ header {
     color: #fca5a5;
 }
 
+/* Logout (and any other form-based sidebar action) */
+.sidebar form {
+    margin: 0;
+}
+
+button.sidebar-link {
+    width: 100%;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
 .sidebar-icon svg path{
     stroke: #fff;
 }
@@ -615,12 +1106,19 @@ header {
     z-index: 9999;
 }
 
+/* Markup uses the `hidden` attribute; JS shows it by setting display:flex. */
+.modal-backdrop[hidden] { display: none; }
+.modal.hidden { display: none; }
+
 .modal {
-    background: #fff;
-    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    border-radius: var(--radius-lg);
     padding: 1.5rem;
     width: 100%;
     max-width: 420px;
+    max-height: 90vh;
+    overflow: auto;
     box-shadow: 0 20px 50px rgba(0,0,0,.25);
 }
 
@@ -635,9 +1133,76 @@ header {
     margin-top: 1.5rem;
 }
 
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal-header h3 { margin: 0; }
+
+.modal-body { color: var(--text); }
+
+.close-modal {
+    padding: 0.15rem 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.close-modal:hover { color: var(--text); background: transparent; }
+
 /* 7. Page-Specific Styles */
 
-/*   7.1 Content editor */
+/*   7.1 Tables */
+
+.content-table,
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+}
+
+.content-table th,
+.admin-table th {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+.content-table td,
+.admin-table td {
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.content-table tr:last-child td,
+.admin-table tr:last-child td { border-bottom: 0; }
+
+.content-table tbody tr:hover,
+.admin-table tbody tr:hover { background: var(--surface-muted); }
+
+.content-table code {
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+/*   7.2 Content editor */
 
 .components-container {
     flex:1;
@@ -706,9 +1271,432 @@ header {
 }
 
 
-/* 8. State-Dependent Styles */
-   
-/* 8.1 Sidebar collapsed */
+/*   7.3 Version history */
+
+.version-view { margin-bottom: 1.5rem; }
+
+.version-view-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.version-view-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.version-view-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.version-meta,
+.version-changes {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.version-changes .badge { margin-right: 0.25rem; }
+
+.version-meta-list,
+.version-component-list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    font-size: 0.9rem;
+}
+
+.version-component-list code {
+    margin-right: 0.4rem;
+}
+
+/*   7.4 Notices */
+
+.notice {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    margin-bottom: 1rem;
+}
+
+.notice p { margin: 0 0 0.35rem; }
+.notice p:last-child { margin-bottom: 0; }
+
+.notice-error { border-left-color: var(--danger); color: var(--danger); }
+.notice-success { border-left-color: #2e7d32; }
+.notice-info { border-left-color: var(--link); }
+
+/*   7.5 Block library */
+
+.block-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.block-toolbar select { flex: 1 1 12rem; }
+
+/*   7.6 Documentation */
+
+.docs-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.docs-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.docs-toc {
+    position: sticky;
+    top: 1rem;
+    flex: 0 0 14rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.docs-toc h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+.docs-toc ul { list-style: none; margin: 0; padding: 0; }
+
+.docs-toc a {
+    display: block;
+    padding: 0.25rem 0.35rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.docs-toc a:hover { background: var(--surface-muted); }
+.docs-toc a.active { background: var(--surface-muted); font-weight: var(--font-weight-medium); }
+
+.docs-body { flex: 1 1 32rem; min-width: 0; }
+
+.docs-filter { margin-bottom: 1rem; }
+.docs-filter input { max-width: 24rem; }
+
+.docs-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.docs-section:last-of-type { border-bottom: 0; }
+.docs-section h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+
+.docs-code {
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.docs-table th { width: 12rem; }
+.docs-empty { color: var(--text-muted); }
+
+/*   7.7 Bulk toolbar */
+
+.bulk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--link);
+    border-radius: var(--radius-md);
+    position: sticky;
+    top: 0.5rem;
+    z-index: 5;
+}
+
+.bulk-toolbar[hidden] { display: none; }
+
+/* Row selection checkbox: a deliberate hit target, not a full-width input. */
+.bulk-row,
+#bulk-select-all {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+.bulk-toolbar label { margin: 0; }
+.bulk-toolbar select { min-width: 10rem; }
+
+.bulk-count { font-size: 0.9rem; }
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/*   7.8 Activity log */
+
+.activity-filters {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.activity-filters .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.activity-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.activity-filters label.grow { flex: 1 1 12rem; }
+.activity-filters select,
+.activity-filters input { min-width: 9rem; }
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.pagination-status { color: var(--text-muted); font-size: 0.85rem; }
+
+/*   7.9 Media manager (moved out of an inline <style> block in admin/media/index.php) */
+
+.media-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.media-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.media-item {
+    cursor: pointer;
+    height: fit-content;
+    padding: 0.35rem;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+}
+
+.media-item:hover { border-color: var(--border); }
+.media-item.selected { border-color: var(--link); }
+
+.media-item img,
+.media-file {
+    width: 100%;
+    height: 150px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.media-file { font-size: 0.8rem; word-break: break-all; text-align: center; }
+
+.media-inspector {
+    width: 340px;
+    flex-shrink: 0;
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--border);
+}
+
+.media-inspector img { width: 100%; margin-bottom: 1rem; }
+
+.media-inspector label { display: block; margin-bottom: 0.75rem; }
+
+.media-inspector input,
+.media-inspector textarea,
+.media-inspector select { width: 100%; margin-top: 0.25rem; }
+
+/*   7.10 Image picker (moved out of admin/partials/image-picker.php) */
+
+.modal-content {
+    position: relative;
+    background: var(--surface);
+    color: var(--text);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+
+.image-grid img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.image-grid img.selected { border-color: var(--link); }
+
+.image-preview {
+    width: auto;
+    max-height: 140px;
+    object-fit: cover;
+    display: block;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+/*   7.11 Contextual help panel */
+
+#help-panel {
+    position: fixed;
+    top: 6.5rem;
+    right: 2rem;
+    width: fit-content;
+    max-width: calc(100vw - 3rem);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    padding: 1rem 1.25rem;
+    display: none;
+    z-index: var(--z-modal);
+}
+
+#help-panel h3 { margin-top: 0.5rem; }
+
+.help-docs-link { margin: 0.75rem 0 0; }
+.help-docs-link a { font-weight: var(--font-weight-medium); }
+
+/*   7.12 Toasts */
+
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: var(--z-modal);
+}
+
+.toast {
+    background: #333;
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-top: 0.5rem;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+}
+
+.toast.success { background: #2e7d32; }
+.toast.error { background: #c62828; }
+.toast.info { background: #1565c0; }
+.toast.hide { animation: fadeOut 0.4s forwards; }
+
+@keyframes fadeIn { to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
+
+/*   7.13 Auth shell (moved out of admin/auth/login.php) */
+
+body.auth-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body.auth-page main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-card h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.login-card form { display: flex; flex-direction: column; }
+
+.login-card input { margin-bottom: 1rem; }
+
+.login-card button { padding: 0.75rem; }
+
+.login-card .error {
+    color: var(--danger);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+/* 9. State-Dependent Styles */
+
+/* 9.1 Sidebar collapsed */
 
 body.sidebar-collapsed .sidebar {
     width: var(--sidebar-collapsed-width);
@@ -757,7 +1745,7 @@ body.sidebar-collapsed .sidebar-link:hover::after {
     opacity: 1;
 }
  
-/* 8.2 No-transition state (initial load) */
+/* 9.2 No-transition state (initial load) */
 
 .no-transitions *,
 .no-transitions *::before,
@@ -765,4 +1753,37 @@ body.sidebar-collapsed .sidebar-link:hover::after {
     transition: none !important;
 }
 
-/* 9. Media Queries & Responsiveness */
+/* 10. Media Queries & Responsiveness */
+
+/* 10.1 Mobile navigation (off-canvas sidebar) */
+
+@media (max-width: 900px) {
+    .only-mobile { display: inline-flex; }
+    .hide-on-mobile { display: none !important; }
+
+    .breadcrumb { display: none; }
+
+    .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: var(--z-modal);
+        transform: translateX(-100%);
+        transition: transform var(--transition-normal) var(--ease);
+        overflow-y: auto;
+    }
+
+    body.mobile-nav-open .sidebar { transform: translateX(0); }
+
+    body.mobile-nav-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: calc(var(--z-modal) - 1);
+    }
+
+    /* The collapsed rail makes no sense on a phone. */
+    body.sidebar-collapsed .sidebar { width: var(--sidebar-width); }
+    body.sidebar-collapsed .sidebar-link { font-size: inherit; justify-content: flex-start; }
+    body.sidebar-collapsed .sidebar-link::after { content: none; }
+}

@@ -58,73 +58,182 @@ if ($id && $parentId) {
 $contentData['parent_id'] = $parentId;
 
 // ----------------------------
+// Permissions
+// ----------------------------
+$existingForPermission = $id ? load_content_by_id((int) $id) : null;
+
+if ($id === null) {
+    require_capability('content.create');
+} else {
+    // Authors may only edit content they created.
+    if (!$existingForPermission || !can_edit_content($existingForPermission)) {
+        log_activity('security.forbidden', 'content', (int) $id, 'content.edit', []);
+        http_response_code(403);
+        render_admin_forbidden('content.edit.own');
+        exit;
+    }
+}
+
+// Publishing is a separate capability from editing.
+if (($_POST['status'] ?? 'draft') === 'published' && !admin_can('content.publish')) {
+    log_activity('security.forbidden', 'content', $id !== null ? (int) $id : null, 'content.publish', []);
+    http_response_code(403);
+    render_admin_forbidden('content.publish');
+    exit;
+}
+
+// ----------------------------
+// Validate the request before touching the database
+// ----------------------------
+$theme        = theme_config();
+$contentTypes = $theme['content_types'] ?? [];
+
+if (!isset($contentTypes[$contentType])) {
+    redirect_with_toast('content', 'error', 'Invalid content type.');
+}
+
+$ctConfig = $contentTypes[$contentType];
+$errors   = [];
+
+if ($slug === '') {
+    $errors['slug'] = 'A slug is required.';
+} elseif (!validate_slug($slug)) {
+    $errors['slug'] = 'The slug may only contain lowercase letters, numbers and dashes.';
+}
+
+$status = (string) ($_POST['status'] ?? 'draft');
+if (!validate_enum($status, content_statuses())) {
+    $errors['status'] = 'Unknown status.';
+}
+
+$title = trim((string) ($_POST['title'] ?? $contentData['title'] ?? ''));
+if ($title === '') {
+    $errors['title'] = 'A title is required.';
+}
+
+$layout = (string) ($_POST['layout'] ?? '');
+if ($layout !== '' && !array_key_exists($layout, $theme['layouts'] ?? [])) {
+    $errors['layout'] = 'Unknown layout.';
+}
+
+$header = (string) ($_POST['header'] ?? '');
+if ($header !== '' && !array_key_exists($header, $theme['headers'] ?? [])) {
+    $errors['header'] = 'Unknown header.';
+}
+
+$footer = (string) ($_POST['footer'] ?? '');
+if ($footer !== '' && !array_key_exists($footer, $theme['footers'] ?? [])) {
+    $errors['footer'] = 'Unknown footer.';
+}
+
+// A parent must exist and belong to the same content type.
+if ($parentId !== null) {
+    $parentStmt = db()->prepare("SELECT id FROM content WHERE id = :id AND type = :type LIMIT 1");
+    $parentStmt->execute(['id' => $parentId, 'type' => $contentType]);
+
+    if (!$parentStmt->fetchColumn()) {
+        $errors['parent_id'] = 'That parent page no longer exists.';
+    }
+}
+
+// The scheduled date is entered in the site timezone.
+$scheduledRaw = trim((string) ($_POST['scheduled_at'] ?? ''));
+$scheduledAt  = null;
+
+if ($status === 'scheduled') {
+    if ($scheduledRaw === '') {
+        $errors['scheduled_at'] = 'Choose a date and time to publish.';
+    } else {
+        $scheduledAt = validate_local_datetime($scheduledRaw, SITE_TIMEZONE);
+
+        if ($scheduledAt === null) {
+            $errors['scheduled_at'] = 'That publish date could not be understood.';
+        } elseif (!validate_future_timestamp($scheduledAt)) {
+            $errors['scheduled_at'] = 'The publish date must be in the future.';
+        }
+    }
+}
+
+// Taxonomy selections must exist and match this content type.
+$categoryId = !empty($_POST['category_id']) ? (int) $_POST['category_id'] : null;
+if ($categoryId) {
+    $catStmt = db()->prepare("SELECT id FROM taxonomy WHERE id = :id AND taxonomy_type = 'category' LIMIT 1");
+    $catStmt->execute(['id' => $categoryId]);
+
+    if (!$catStmt->fetchColumn()) {
+        $errors['category_id'] = 'That category no longer exists.';
+    }
+}
+
+$tagIds = array_values(array_filter(array_map('intval', (array) ($_POST['tag_ids'] ?? []))));
+if ($tagIds) {
+    $placeholders = implode(',', array_fill(0, count($tagIds), '?'));
+    $tagStmt = db()->prepare("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'tag' AND id IN ({$placeholders})");
+    $tagStmt->execute($tagIds);
+
+    if ((int) $tagStmt->fetchColumn() !== count($tagIds)) {
+        $errors['tag_ids'] = 'One or more selected tags no longer exist.';
+    }
+}
+
+if ($errors) {
+    validate_throw($errors, 'content/edit?id=' . (int) $id . '&type=' . urlencode($contentType));
+}
+
+// ----------------------------
 // Status, scheduled_at & timestamps
 // ----------------------------
-$status      = $_POST['status'] ?? 'draft';
 $currentTime = time(); // UTC
 
 // Ensure timestamps exist
 $contentData['updated_at'] = $currentTime;
 $contentData['created_at'] ??= $currentTime;
 
-// ----------------------------
-// Scheduled date (LOCAL → UTC)
-// ----------------------------
-$scheduledAt = null;
+// The editor posts status "scheduled" plus a local date/time; resolve_content_status()
+// derives the stored status/timestamps exactly as save_content() will.
+$resolved = resolve_content_status([
+    'status'       => $status,
+    'scheduled_at' => $scheduledAt,
+    'published_at' => $contentData['published_at'] ?? null,
+], $currentTime);
 
-if ($status === 'scheduled' && !empty($_POST['scheduled_at'])) {
-    $tzLocal = new DateTimeZone(SITE_TIMEZONE);
-    $tzUtc   = new DateTimeZone('UTC');
-
-    $dt = DateTime::createFromFormat(
-        'Y-m-d\TH:i',
-        $_POST['scheduled_at'],
-        $tzLocal
-    );
-
-    if ($dt !== false) {
-        $dt->setTimezone($tzUtc);
-        $scheduledAt = $dt->getTimestamp();
-    }
-}
-
-// Always explicitly set (allows clearing)
-$contentData['scheduled_at'] = $scheduledAt;
-
-// ----------------------------
-// Adjust status if publishing in future
-// ----------------------------
-if ($status === 'published' && $scheduledAt && $scheduledAt > $currentTime) {
-    $status = 'scheduled';
-}
-
-// ----------------------------
-// published_at handling
-// ----------------------------
-$contentData['published_at'] = $status === 'published'
-    ? ($contentData['published_at'] ?? $currentTime)
-    : null;
-
-$contentData['status'] = $status;
+$status                     = $resolved['status'];
+$contentData['status']      = $status;
+$contentData['published_at'] = $resolved['published_at'];
+$contentData['scheduled_at'] = $resolved['scheduled_at'];
 
 // ----------------------------
 // Basic fields
 // ----------------------------
 $contentData['type']  = $contentType;
-$contentData['title'] = trim($_POST['title'] ?? $contentData['title'] ?? "New {$contentType}");
+$contentData['title'] = $title;
 $contentData['meta'] ??= [];
 $contentData['meta']['description'] = trim($_POST['meta_description'] ?? $contentData['meta']['description'] ?? '');
+
+// SEO & social fields: trimmed, length-capped and validated.
+$contentData['meta'] = seo_collect_meta($_POST, $contentData['meta']);
+
+$canonical = (string) ($contentData['meta']['canonical'] ?? '');
+if ($canonical !== '' && !seo_validate_canonical($canonical)) {
+    $errors['meta_canonical'] = 'The canonical URL must be an absolute address on this site.';
+}
+
+$robotsExtra = (string) ($contentData['meta']['robots_extra'] ?? '');
+if ($robotsExtra !== '' && !preg_match('/^[a-z]+(,\s*[a-z]+)*$/', $robotsExtra)) {
+    $errors['meta_robots_extra'] = 'Robots override should look like "noindex, follow".';
+}
+
+// Every field has now been read and validated; stop before writing anything.
+if ($errors) {
+    validate_throw($errors, 'content/edit?id=' . (int) $id . '&type=' . urlencode($contentType));
+}
 
 // ----------------------------
 // Layout / header / footer
 // ----------------------------
-$layout = $_POST['layout'] ?? null;
-$header = $_POST['header'] ?? null;
-$footer = $_POST['footer'] ?? null;
-
-if ($layout !== null && $layout !== '') $contentData['layout'] = $layout; else unset($contentData['layout']);
-if ($header !== null && $header !== '') $contentData['header'] = $header; else unset($contentData['header']);
-if ($footer !== null && $footer !== '') $contentData['footer'] = $footer; else unset($contentData['footer']);
+if ($layout !== '') $contentData['layout'] = $layout; else unset($contentData['layout']);
+if ($header !== '') $contentData['header'] = $header; else unset($contentData['header']);
+if ($footer !== '') $contentData['footer'] = $footer; else unset($contentData['footer']);
 
 // ----------------------------
 // Rebuild nested components from POST
@@ -167,24 +276,42 @@ $contentData['body'] = reindexRecursive($componentsTree);
 // ----------------------------
 // Save content
 // ----------------------------
-$id = save_content($contentType, $slug, $contentData, $id !== null ? (int)$id : null);
+$isNew = empty($id);
+
+try {
+    $id = save_content($contentType, $slug, $contentData, $id !== null ? (int) $id : null, [
+        // Publish/status transitions are worth labelling in the history.
+        'reason' => $status === 'published' ? 'publish' : 'save',
+    ]);
+} catch (PDOException $exception) {
+    // Most likely UNIQUE(type, parent_id, slug): a sibling already uses it.
+    if (str_contains($exception->getMessage(), 'UNIQUE')) {
+        redirect_with_toast(
+            'content',
+            'error',
+            "The slug \"{$slug}\" is already used by another " . strtolower($ctConfig['label'] ?? $contentType) . ' at this level.'
+        );
+    }
+
+    throw $exception;
+}
 
 if (!$id) {
     redirect_with_toast("content", 'error', "Failed to save {$contentType}.");
 }
 
-// category stuff
-$categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null;
 $pdo = db();
 
-/* remove existing */
+// ----------------------------
+// Taxonomy relationships
+// ----------------------------
+// Replace all links for this item in one pass.
 $pdo->prepare("
     DELETE FROM taxonomy_term_relationships
     WHERE content_type = ?
     AND content_id = ?
 ")->execute([$contentType, $id]);
 
-/* insert new */
 if ($categoryId) {
     $pdo->prepare("
         INSERT INTO taxonomy_term_relationships
@@ -192,26 +319,6 @@ if ($categoryId) {
         VALUES (?, ?, ?)
     ")->execute([$contentType, $id, $categoryId]);
 }
-
-// tag stuff
-
-$tagIds = $_POST['tag_ids'] ?? [];
-$tagIds = array_map('intval', (array)$tagIds);
-$tagIds = array_filter($tagIds);
-
-// ----------------------------
-// TAG RELATIONSHIPS
-// ----------------------------
-
-// remove existing tag links
-$pdo->prepare("
-    DELETE FROM taxonomy_term_relationships
-    WHERE content_type = ?
-    AND content_id = ?
-    AND taxonomy_id IN (
-        SELECT id FROM taxonomy WHERE taxonomy_type = 'tag'
-    )
-")->execute([$contentType, $id]);
 
 // insert selected tags
 $stmt = $pdo->prepare("
@@ -228,6 +335,16 @@ foreach ($tagIds as $tagId) {
 // ----------------------------
 // Success redirect
 // ----------------------------
+log_activity(
+    $isNew
+        ? 'content.created'
+        : ($status === 'published' ? 'content.published' : 'content.updated'),
+    'content',
+    (int) $id,
+    $title,
+    ['type' => $contentType, 'status' => $status]
+);
+
 redirect_with_toast(
     'content/edit',
     'success',

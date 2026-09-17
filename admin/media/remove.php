@@ -77,4 +77,6 @@ $stmt->execute([$id]);
 // ----------------------------
 // Done
 // ----------------------------
+log_activity('media.deleted', 'media', (int) $id, (string) ($media['original_name'] ?? ''), []);
+
 redirect_with_toast('media', 'success', 'Media deleted.');

@@ -586,3 +586,130 @@ function getPreviewUrl(img) {
 
 // initial attach
 attachImagePicker();
+
+/* Saved blocks: insert a stored component tree, or save the current one. */
+
+const savedBlocks = window.savedBlocks || [];
+const blockEndpoint = window.blockEndpoint || null;
+const blockSaveEndpoint = window.blockSaveEndpoint || null;
+const blockPicker = document.getElementById('block-picker');
+const blockInsertBtn = document.getElementById('block-insert');
+const blockSaveBtn = document.getElementById('block-save');
+
+/**
+ * Append a stored tree to a container, recursively.
+ */
+function appendBlockTree(tree, parent = container) {
+    if (!Array.isArray(tree)) return 0;
+
+    let added = 0;
+
+    tree.forEach(item => {
+        if (!item || !item.type) return;
+
+        const node = createComponent(item.type, item.props || {});
+        parent.appendChild(node);
+        added++;
+
+        const children = item.children || [];
+        if (children.length) {
+            const childrenContainer = node.querySelector(':scope > .children-container')
+                || node.querySelector('.children-container');
+
+            if (childrenContainer) {
+                added += appendBlockTree(children, childrenContainer);
+            }
+        }
+    });
+
+    return added;
+}
+
+/**
+ * Read the current editor state as a component tree.
+ */
+function currentTree() {
+    // Build the tree from the DOM rather than trusting a serializer that may
+    // not exist: this mirrors what the form actually submits.
+    return Array.from(container.querySelectorAll(':scope > .component'))
+        .map(extractComponentData);
+}
+
+if (blockInsertBtn && blockPicker) {
+    blockInsertBtn.addEventListener('click', async () => {
+        const id = blockPicker.value;
+
+        if (!id) {
+            blockPicker.focus();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${blockEndpoint}?id=${encodeURIComponent(id)}&type=${encodeURIComponent(contentType)}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (!data || !Array.isArray(data.tree)) {
+                blockPicker.value = '';
+                return;
+            }
+
+            const added = appendBlockTree(data.tree);
+            renumberComponents();
+
+            if (added === 0) {
+                blockPicker.value = '';
+                return;
+            }
+
+            blockPicker.value = '';
+        } catch (error) {
+            // Leave the picker as-is; nothing was inserted.
+        }
+    });
+}
+
+if (blockSaveBtn && blockSaveEndpoint) {
+    blockSaveBtn.addEventListener('click', async () => {
+        const tree = currentTree();
+
+        if (!tree.length) {
+            return;
+        }
+
+        const label = window.prompt(window.adminTranslations?.save_block_prompt || 'Name this block', '');
+
+        if (!label || !label.trim()) {
+            return;
+        }
+
+        const body = new URLSearchParams();
+        body.set('label', label.trim());
+        body.set('tree', JSON.stringify(tree));
+        body.set('content_type', contentType);
+        body.set('_token', window.csrfToken || '');
+
+        try {
+            const response = await fetch(blockSaveEndpoint, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            if (data && data.ok && blockPicker) {
+                const option = document.createElement('option');
+                option.value = data.id;
+                option.textContent = data.label;
+                blockPicker.appendChild(option);
+            }
+        } catch (error) {
+            // Saving a block must never disturb the page being edited.
+        }
+    });
+}

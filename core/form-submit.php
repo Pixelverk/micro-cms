@@ -32,6 +32,29 @@ if (!$formType || !isset($formTypes[$formType])) {
     exit;
 }
 
+// --------------------------------------------------
+// Signed token (cache-safe CSRF for public forms)
+// --------------------------------------------------
+$submittedToken = $_POST['_form_token'] ?? null;
+
+if (!form_token_check((string) $formType, is_string($submittedToken) ? $submittedToken : null)) {
+    http_response_code(419);
+    echo json_encode([
+        'error' => 'That form has expired. Reloading the page should fix it.',
+        'stale' => true,
+    ]);
+    exit;
+}
+
+// --------------------------------------------------
+// Simple per-IP rate limit
+// --------------------------------------------------
+if (!form_rate_limit_ok((string) $formType)) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Too many submissions. Please try again later.']);
+    exit;
+}
+
 $formConfig = $formTypes[$formType];
 $fields     = $formConfig['fields'] ?? [];
 
@@ -190,3 +213,51 @@ if ($redirect) {
 
 echo json_encode($response);
 exit;
+
+/**
+ * Cheap per-IP, per-form rate limit. Keeps public forms from being used as a
+ * mail relay. Fails open when the table is unavailable.
+ */
+function form_rate_limit_ok(string $formType, int $maxPerHour = 12): bool
+{
+    try {
+        $pdo = db();
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS form_rate_limits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                form_type TEXT NOT NULL,
+                ip TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        ");
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
+        $cutoff = time() - 3600;
+
+        $count = $pdo->prepare("
+            SELECT COUNT(*) FROM form_rate_limits
+            WHERE form_type = :form_type AND ip = :ip AND created_at > :cutoff
+        ");
+        $count->execute(['form_type' => $formType, 'ip' => $ip, 'cutoff' => $cutoff]);
+
+        if ((int) $count->fetchColumn() >= $maxPerHour) {
+            return false;
+        }
+
+        $insert = $pdo->prepare("
+            INSERT INTO form_rate_limits (form_type, ip, created_at)
+            VALUES (:form_type, :ip, :now)
+        ");
+        $insert->execute(['form_type' => $formType, 'ip' => $ip, 'now' => time()]);
+
+        // Opportunistic cleanup
+        if (random_int(1, 20) === 1) {
+            $pdo->prepare("DELETE FROM form_rate_limits WHERE created_at < :cutoff")
+                ->execute(['cutoff' => time() - 86400]);
+        }
+
+        return true;
+    } catch (Throwable $exception) {
+        return true;
+    }
+}
