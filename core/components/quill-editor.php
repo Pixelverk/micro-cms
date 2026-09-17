@@ -1,6 +1,8 @@
 <?php
-// theme/components/quill-editor.php
-// treat quill editor like a type of input field, it will need a template in content-editor-templates.php
+// core/components/quill-editor.php
+
+// Rich text arrives as HTML and is rendered as-is. The editor template for the
+// 'quill' field type lives in admin/partials/content-editor-templates.php.
 
 return [
 
@@ -29,26 +31,19 @@ return [
 /** --------------------------------------------
  * Component CSS (optional)
  * -------------------------------------------- */
-'css' => <<<CSS
-CSS,
-
-/** --------------------------------------------
- * Component JS (optional)
- * -------------------------------------------- */
-'js' => <<<JS
-JS,
+'css' => '',
 
 /** --------------------------------------------
  * Render function
  * -------------------------------------------- */
-'render' => function (array $props, array &$collectedJs = [], array &$collectedCss = []) {
+'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     $id = 'quill-' . uniqid();
 
     extract($props, EXTR_SKIP);
 
     ?>
     <div id="<?= $id ?>" class="quill-editor-output">
-        <?= $content?>
+        <?= $content ?>
     </div>
     <?php
 },
