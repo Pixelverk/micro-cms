@@ -99,10 +99,9 @@ if (!str_starts_with($path, '/admin')
         && (time() - filemtime($cacheFile) < $cacheLifetime)
         && is_file($dbPath) && filesize($dbPath) > 0
     ) {
-        // Count the hit with the smallest boot that can do it. The insert runs
-        // in the shutdown flush, after the page has been sent.
+        // Count the hit with the smallest boot that can do it: the view is
+        // appended to a buffer file here and batched into the database later.
         require_once CORE_PATH . '/helpers/common.php';
-        require_once CORE_PATH . '/db.php';
         require_once CORE_PATH . '/helpers/analytics.php';
         analytics_record_view(null, true);
 
@@ -167,6 +166,9 @@ if (isset($_COOKIE[session_name()])) {
 // cache check below already touches content (via the homepage setting). A
 // database that cannot be upgraded fails loudly instead of 500-ing.
 migrate_before_read();
+
+// Move any views buffered since the last full-path request into the database.
+analytics_maybe_ingest();
 
 // 4.1 Cached HTML
 if ($file = checkCache($request, $config)) {

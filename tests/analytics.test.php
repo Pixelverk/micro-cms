@@ -6,9 +6,9 @@ declare(strict_types=1);
 | Analytics
 |--------------------------------------------------------------------------
 |
-| Views are buffered and written in one shutdown flush. These checks pin
-| what is stored (and what is deliberately never stored), how bots and
-| referrers are treated, and the queries behind the dashboard.
+| Views are appended to a buffer file and moved into the database in batches.
+| These checks pin what is stored (and what is deliberately never stored), how
+| bots and referrers are treated, and the queries behind the dashboard.
 |
 */
 
@@ -18,8 +18,12 @@ test_fresh_database();
 function analytics_reset(): void
 {
     db()->exec("DELETE FROM page_views");
-    $GLOBALS['cms_page_views'] = [];
-    $GLOBALS['cms_page_views_registered'] = false;
+
+    foreach (glob(analytics_buffer_path() . '*') ?: [] as $file) {
+        @unlink($file);
+    }
+
+    @unlink(STORAGE_PATH . '/.analytics-ingest');
 }
 
 t('a recorded view keeps the path, content id and hashes but never the IP', function () {
@@ -32,10 +36,11 @@ t('a recorded view keeps the path, content id and hashes but never the IP', func
 
     analytics_record_view(7);
 
-    // Nothing is written until the shutdown flush.
-    assert_eq(0, (int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn(), 'buffered, not written yet');
+    // The view lands in the buffer, not the database.
+    assert_eq(0, (int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn(), 'not written to the database yet');
+    assert_eq(1, count(file(analytics_buffer_path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []), 'the view is buffered');
 
-    analytics_flush();
+    assert_eq(1, analytics_ingest(), 'the buffered view is ingested');
 
     $row = db()->query("SELECT * FROM page_views")->fetch();
 
@@ -60,7 +65,7 @@ t('bot traffic is flagged, not silently dropped', function () {
     $_SERVER['REMOTE_ADDR']     = '198.51.100.4';
 
     analytics_record_view();
-    analytics_flush();
+    analytics_ingest();
 
     assert_eq(1, (int) db()->query("SELECT is_bot FROM page_views")->fetchColumn(), 'the view is stored with a bot flag');
     assert_eq(0, analytics_views(30), 'the dashboard counts humans only');
@@ -149,7 +154,7 @@ t('the cache-hit ratio comes from the recorded views, not perf.log', function ()
     analytics_record_view(null, true);  // served from the cache
     analytics_record_view(null, true);
     analytics_record_view(null, false); // rendered fresh
-    analytics_flush();
+    analytics_ingest();
 
     assert_eq(2, (int) db()->query("SELECT SUM(cache_hit) FROM page_views")->fetchColumn(), 'two cache hits are stored');
 
@@ -173,8 +178,14 @@ t('analytics_clear() removes every recorded view', function () {
     $insert->execute(['/a/', time()]);
     $insert->execute(['/b/', time()]);
 
+    // A buffered view must not survive the reset either.
+    $_SERVER['REQUEST_URI'] = '/buffered/';
+    analytics_record_view();
+    assert_true(is_file(analytics_buffer_path()), 'a view is buffered');
+
     assert_eq(2, analytics_clear(), 'every row is removed');
     assert_eq(0, (int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn());
+    assert_false(is_file(analytics_buffer_path()), 'the buffer is cleared too');
 });
 
 t('a window can be offset to the previous period', function () {
@@ -197,6 +208,65 @@ t('a window can be offset to the previous period', function () {
     assert_eq(null, analytics_change(1, 0), 'a zero baseline has no percentage');
     assert_eq(100.0, analytics_change(2, 1), 'doubling is +100%');
     assert_eq(-50.0, analytics_change(1, 2), 'halving is -50%');
+});
+
+t('analytics_maybe_ingest() batches on a marker', function () {
+    analytics_reset();
+
+    $_SERVER['REQUEST_URI']     = '/buffered/';
+    $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0';
+    $_SERVER['HTTP_REFERER']    = '';
+    $_SERVER['REMOTE_ADDR']     = '203.0.113.9';
+
+    analytics_record_view();
+    analytics_maybe_ingest();
+
+    assert_eq(1, (int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn(), 'the first call ingests');
+
+    analytics_record_view();
+    analytics_maybe_ingest();
+
+    assert_eq(1, (int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn(), 'the marker throttles the next call');
+    assert_true(is_file(analytics_buffer_path()), 'the second view is still buffered');
+
+    analytics_reset();
+});
+
+t('the buffer is capped so a down database cannot grow it forever', function () {
+    analytics_reset();
+
+    $buffer = analytics_buffer_path();
+    file_put_contents($buffer, str_repeat('x', analytics_buffer_limit() + 1));
+    clearstatcache(true, $buffer);
+
+    $_SERVER['REQUEST_URI'] = '/overflow/';
+    analytics_record_view();
+
+    clearstatcache(true, $buffer);
+    assert_eq(analytics_buffer_limit() + 1, (int) filesize($buffer), 'the view is dropped once the buffer is full');
+
+    analytics_reset();
+});
+
+t('a batch orphaned by a crash is recovered on the next ingest', function () {
+    analytics_reset();
+
+    $_SERVER['REQUEST_URI']     = '/orphan/';
+    $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0';
+    $_SERVER['HTTP_REFERER']    = '';
+    $_SERVER['REMOTE_ADDR']     = '203.0.113.9';
+
+    // What a process that died between the rename and the insert leaves behind.
+    analytics_record_view();
+    $orphan = analytics_buffer_path() . '.99999.staging';
+    rename(analytics_buffer_path(), $orphan);
+    assert_true(is_file($orphan), 'precondition: an orphan exists');
+
+    assert_eq(1, analytics_ingest(), 'the orphan is ingested');
+    assert_false(is_file($orphan), 'the orphan is removed');
+    assert_eq('/orphan/', db()->query("SELECT path FROM page_views")->fetchColumn());
+
+    analytics_reset();
 });
 
 exit(test_summary());

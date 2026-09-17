@@ -74,7 +74,29 @@ function analytics_visitor_hash(string $userAgent): string
 }
 
 /**
- * Buffer one page view. Written by analytics_flush() at shutdown.
+ * Path of the file that buffers page views between requests.
+ *
+ * Appending here is one small write, so even a cache hit never pays for a
+ * database connection; analytics_ingest() moves the rows in batches.
+ */
+function analytics_buffer_path(): string
+{
+    return STORAGE_PATH . '/page-views.log';
+}
+
+/**
+ * Hard ceiling for the buffer file.
+ *
+ * Analytics is best-effort: if the database stays unreachable, dropping views
+ * is better than an ever-growing file and an ever-slower retry loop.
+ */
+function analytics_buffer_limit(): int
+{
+    return 2 * 1024 * 1024;
+}
+
+/**
+ * Record one page view by appending it to the buffer.
  *
  * $cacheHit is true when the view was served from the HTML cache.
  */
@@ -85,7 +107,7 @@ function analytics_record_view(?int $contentId = null, bool $cacheHit = false): 
 
     $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
 
-    $GLOBALS['cms_page_views'][] = [
+    $view = [
         'path'          => $path,
         'content_id'    => $contentId,
         'referrer_host' => analytics_referrer_host($_SERVER['HTTP_REFERER'] ?? null),
@@ -96,24 +118,63 @@ function analytics_record_view(?int $contentId = null, bool $cacheHit = false): 
         'viewed_at'     => time(),
     ];
 
-    if (empty($GLOBALS['cms_page_views_registered'])) {
-        $GLOBALS['cms_page_views_registered'] = true;
-        register_shutdown_function('analytics_flush');
-    }
-}
+    // Best-effort: a page must never break because analytics could not write,
+    // and a database that stays down must not grow the buffer forever.
+    $buffer = analytics_buffer_path();
 
-/**
- * Write every buffered view in one pass.
- */
-function analytics_flush(): void
-{
-    $views = $GLOBALS['cms_page_views'] ?? [];
-
-    if (!$views) {
+    if (is_file($buffer) && filesize($buffer) > analytics_buffer_limit()) {
         return;
     }
 
-    $GLOBALS['cms_page_views'] = [];
+    @file_put_contents(
+        $buffer,
+        json_encode($view, JSON_UNESCAPED_SLASHES) . "\n",
+        FILE_APPEND | LOCK_EX
+    );
+}
+
+/**
+ * Move buffered views into page_views, one transaction per batch.
+ *
+ * Recovers batches left behind by a process that died mid-ingest, so a crash
+ * cannot strand rows in a staging file forever.
+ *
+ * @return int rows inserted
+ */
+function analytics_ingest(): int
+{
+    $buffer   = analytics_buffer_path();
+    $staging  = $buffer . '.' . getmypid() . '.staging';
+    $inserted = 0;
+
+    // Claim each orphan with a rename, so two concurrent ingests cannot both
+    // read the same file.
+    foreach (glob($buffer . '.*.staging') ?: [] as $orphan) {
+        if (@rename($orphan, $staging)) {
+            $inserted += analytics_ingest_file($staging);
+        }
+    }
+
+    if (is_file($buffer) && filesize($buffer) > 0 && @rename($buffer, $staging)) {
+        $inserted += analytics_ingest_file($staging);
+    }
+
+    return $inserted;
+}
+
+/**
+ * Insert one staging file and remove it.
+ *
+ * On failure the rows go back to the buffer (while it is still under the
+ * limit) so a transient error loses nothing.
+ */
+function analytics_ingest_file(string $file): int
+{
+    if (!is_file($file)) {
+        return 0;
+    }
+
+    $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
 
     try {
         $pdo  = db();
@@ -122,12 +183,76 @@ function analytics_flush(): void
             VALUES (:path, :content_id, :referrer_host, :ua_hash, :visitor_hash, :is_bot, :cache_hit, :viewed_at)
         ");
 
-        foreach ($views as $view) {
-            $stmt->execute($view);
+        $pdo->beginTransaction();
+        $inserted = 0;
+
+        foreach ($lines as $line) {
+            $view = json_decode($line, true);
+
+            if (!is_array($view) || !isset($view['path'], $view['visitor_hash'], $view['viewed_at'])) {
+                continue;
+            }
+
+            $stmt->execute([
+                'path'          => $view['path'],
+                'content_id'    => $view['content_id'] ?? null,
+                'referrer_host' => $view['referrer_host'] ?? null,
+                'ua_hash'       => $view['ua_hash'] ?? null,
+                'visitor_hash'  => $view['visitor_hash'],
+                'is_bot'        => (int) ($view['is_bot'] ?? 0),
+                'cache_hit'     => (int) ($view['cache_hit'] ?? 0),
+                'viewed_at'     => (int) $view['viewed_at'],
+            ]);
+
+            $inserted++;
         }
+
+        $pdo->commit();
+        @unlink($file);
+
+        return $inserted;
     } catch (Throwable $exception) {
-        // Analytics must never break a page that has already been served.
-        debug_log('analytics flush failed: ' . $exception->getMessage());
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        // Keep the rows for the next attempt, but only while the buffer is
+        // still under the limit.
+        $buffer = analytics_buffer_path();
+        $size   = is_file($buffer) ? (int) filesize($buffer) : 0;
+
+        if ($size < analytics_buffer_limit()) {
+            @file_put_contents($buffer, (string) @file_get_contents($file), FILE_APPEND | LOCK_EX);
+        }
+
+        @unlink($file);
+        debug_log('analytics ingest failed: ' . $exception->getMessage());
+
+        return 0;
+    }
+}
+
+/**
+ * Ingest at most once a minute.
+ *
+ * The full front-end path calls this, and the scheduled-publishing fall-through
+ * guarantees one such request a minute on a busy cached site.
+ */
+function analytics_maybe_ingest(): void
+{
+    $marker = STORAGE_PATH . '/.analytics-ingest';
+
+    if (is_file($marker) && (time() - (int) filemtime($marker)) < 60) {
+        return;
+    }
+
+    @touch($marker);
+
+    try {
+        analytics_ingest();
+    } catch (Throwable $exception) {
+        // Housekeeping: never let an ingest problem reach the request.
+        debug_log('analytics maybe_ingest failed: ' . $exception->getMessage());
     }
 }
 
@@ -185,12 +310,18 @@ function analytics_change(int $current, int $previous): ?float
 }
 
 /**
- * Delete every recorded page view.
+ * Delete every recorded page view, including anything still buffered.
  *
  * @return int rows removed
  */
 function analytics_clear(): int
 {
+    // Drop anything buffered or orphaned, or the next ingest would bring the
+    // views back.
+    foreach (glob(analytics_buffer_path() . '*') ?: [] as $file) {
+        @unlink($file);
+    }
+
     if (!analytics_table_exists()) {
         return 0;
     }
