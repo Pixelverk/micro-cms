@@ -1,7 +1,6 @@
 <?php
 
 $pageTitle = admin_trans('nav_menus');
-$username = current_username();
 
 // ----------------------------
 // Load all menus
@@ -9,15 +8,28 @@ $menus = load_menus();
 $theme = theme_config();
 $locations = $theme['menu_locations'] ?? [];
 $assignments = get_setting('menu_locations', []);
-$location = $_GET['location'] ?? array_key_first($locations);
-if (!array_key_exists($location, $locations)) {
-    $location = array_key_first($locations);
+if (!is_array($assignments)) {
+    $assignments = [];
 }
-$assignedMenu = is_array($assignments) ? ($assignments[$location] ?? '') : '';
-$menuKey = $_GET['menu'] ?? $assignedMenu;
+
+// "New menu" clears the selection; the menu is created on first save.
+$isNew = isset($_GET['new']);
+$menuKey = $isNew ? '' : (string) ($_GET['menu'] ?? '');
+if ($menuKey !== '' && !isset($menus[$menuKey])) {
+    $menuKey = '';
+}
+
 $currentMenu = $menus[$menuKey] ?? ['label' => '', 'items' => []];
 
-// Load pages for left panel
+// Which locations this menu currently fills.
+$menuLocations = [];
+foreach ($locations as $locationKey => $locationLabel) {
+    if (($assignments[$locationKey] ?? '') === $menuKey && $menuKey !== '') {
+        $menuLocations[] = $locationKey;
+    }
+}
+
+// Load pages for the add-item panel
 $pages = list_content('page');
 
 // Render
@@ -26,112 +38,140 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <h2><?= e(admin_trans('nav_menus')) ?></h2>
         <p><?= e(admin_trans('menu_edit_title')) ?></p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="menu-save" style="margin-top:1rem;"><?= e(admin_trans('menu_save')) ?></button>
+        <?php if ($menuKey !== ''): ?>
+            <form method="post"
+                action="<?= url('admin/menu/remove') ?>"
+                class="js-confirm-form"
+                data-confirm="<?= e(admin_trans('menu_delete_confirm', ['name' => $menuKey])) ?>"
+                data-confirm-title="<?= e(admin_trans('menu_delete')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
+                <button type="submit" class="btn-secondary"><?= e(admin_trans('menu_delete')) ?></button>
+            </form>
+        <?php endif; ?>
+
+        <button type="submit" form="menu-save"><?= e(admin_trans('menu_save')) ?></button>
     </div>
 </div>
-
-<!-- Select or create menu -->
-<form method="get" style="margin-bottom:1rem;">
-    <label>
-        <?= e(admin_trans('menu_location')) ?>:
-        <select name="location" onchange="this.form.submit()">
-            <?php foreach ($locations as $locationKey => $locationLabel): ?>
-                <option value="<?= e($locationKey) ?>" <?= $locationKey === $location ? 'selected' : '' ?>><?= e($locationLabel) ?></option>
-            <?php endforeach; ?>
-        </select>
-    </label>
-    <label>
-        <?= e(admin_trans('menu_assigned')) ?>:
-        <select name="menu" onchange="this.form.submit()">
-            <option value=""><?= e(admin_trans('menu_new')) ?></option>
-            <?php foreach ($menus as $key => $m): ?>
-                <option value="<?= e($key) ?>" <?= $key === $menuKey ? 'selected' : '' ?>>
-                    <?= e($m['label'] ?: $key) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
-</form>
 
 <form id="menu-save" method="post" action="<?= url('admin/menu/save') ?>">
     <?= csrf_field() ?>
 
-    <input name="menu" id="menu-key" value="<?= e($menuKey) ?>">
-    <input type="hidden" name="location" value="<?= e($location) ?>">
+    <!-- Derived from the label for a new menu, fixed for an existing one. -->
+    <input type="hidden" name="menu" id="menu-key" value="<?= e($menuKey) ?>">
 
-    <label>
-        <?= e(admin_trans('menu_label')) ?>:
-        <input type="text" name="label" id="menu-label" value="<?= e($currentMenu['label']) ?>">
-    </label>
+    <div class="menu-editor">
 
-    <div style="display:flex; gap:2rem; margin-top:1rem;">
+        <!-- Sidebar: which menu, what it is called, where it shows, what to add -->
+        <aside class="menu-sidebar">
 
-        <!-- Left panel: add items -->
-        <div style="flex:1; border:1px solid #ccc; padding:1rem;">
-            <h3><?= e(admin_trans('menu_add_items')) ?></h3>
-            
-            <div>
-                <label><?= e(admin_trans('menu_from_pages')) ?></label>
-                <select id="new-item-page">
-                    <option value=""><?= e(admin_trans('menu_select_page')) ?></option>
-                    <?php foreach ($pages as $p): ?>
-                        <option value="<?= e($p['slug']) ?>"><?= e($p['title']) ?></option>
+            <section class="menu-panel">
+                <h3><?= e(admin_trans('menu_select')) ?></h3>
+
+                <select id="menu-picker" class="field-input">
+                    <option value=""><?= e(admin_trans('menu_new')) ?></option>
+                    <?php foreach ($menus as $key => $menu): ?>
+                        <option value="<?= e($key) ?>" <?= $key === $menuKey ? 'selected' : '' ?>>
+                            <?= e($menu['label'] ?: $key) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
-                <button type="button" id="add-page-item"><?= e(admin_trans('common_add')) ?></button>
-            </div>
+            </section>
 
-            <div style="margin-top:1rem;">
-                <label><?= e(admin_trans('menu_custom_url')) ?></label>
-                <input type="text" id="new-item-url" placeholder="https://example.com">
-                <input type="text" id="new-item-label" placeholder="<?= e(admin_trans('common_label')) ?>">
-                <select id="new-item-target">
-                    <option value="_self"><?= e(admin_trans('menu_target_same')) ?></option>
-                    <option value="_blank"><?= e(admin_trans('menu_target_new')) ?></option>
-                </select>
-                <button type="button" id="add-url-item"><?= e(admin_trans('common_add')) ?></button>
-            </div>
-        </div>
+            <section class="menu-panel">
+                <div class="field">
+                    <label class="field-label" for="menu-label"><?= e(admin_trans('menu_label')) ?></label>
+                    <input type="text" class="field-input" name="label" id="menu-label" value="<?= e($currentMenu['label']) ?>" placeholder="<?= e(admin_trans('menu_label_help')) ?>">
+                    <small><?= e(admin_trans('menu_label_help')) ?></small>
+                </div>
+            </section>
 
-        <!-- Right panel: menu items editor -->
-        <div style="flex:2;">
+            <?php if ($locations): ?>
+                <section class="menu-panel">
+                    <h3><?= e(admin_trans('menu_location')) ?></h3>
+
+                    <div class="menu-locations">
+                        <?php foreach ($locations as $locationKey => $locationLabel): ?>
+                            <label class="menu-location">
+                                <input type="checkbox" name="locations[]" value="<?= e($locationKey) ?>"
+                                    <?= in_array($locationKey, $menuLocations, true) ? 'checked' : '' ?>>
+                                <?= e($locationLabel) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <p class="menu-panel-hint"><?= e(admin_trans('menu_locations_help')) ?></p>
+                </section>
+            <?php endif; ?>
+
+            <section class="menu-panel">
+                <h3><?= e(admin_trans('menu_add_items')) ?></h3>
+
+                <div class="field">
+                    <label class="field-label" for="new-item-page"><?= e(admin_trans('menu_from_pages')) ?></label>
+                    <select id="new-item-page" class="field-input">
+                        <option value=""><?= e(admin_trans('menu_select_page')) ?></option>
+                        <?php foreach ($pages as $page): ?>
+                            <option value="<?= e($page['slug']) ?>"><?= e($page['title']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="button" id="add-page-item" class="btn-secondary"><?= e(admin_trans('common_add')) ?></button>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="new-item-url"><?= e(admin_trans('menu_custom_url')) ?></label>
+                    <input type="text" id="new-item-url" class="field-input" placeholder="https://example.com">
+                    <input type="text" id="new-item-label" class="field-input" placeholder="<?= e(admin_trans('common_label')) ?>">
+                    <select id="new-item-target" class="field-input">
+                        <option value="_self"><?= e(admin_trans('menu_target_same')) ?></option>
+                        <option value="_blank"><?= e(admin_trans('menu_target_new')) ?></option>
+                    </select>
+                    <button type="button" id="add-url-item" class="btn-secondary"><?= e(admin_trans('common_add')) ?></button>
+                </div>
+            </section>
+        </aside>
+
+        <!-- The menu itself -->
+        <section class="menu-items-panel">
             <h3><?= e(admin_trans('menu_items')) ?></h3>
             <div id="menu-items-container"></div>
-        </div>
+        </section>
     </div>
 </form>
 
-<?php if ($menuKey): ?>
-    <form method="post"
-        action="<?= url('admin/menu/remove') ?>"
-        class="js-confirm-form"
-        data-confirm="<?= e(admin_trans('menu_delete_confirm', ['name' => $menuKey])) ?>"
-        data-confirm-title="<?= e(admin_trans('menu_delete')) ?>"
-        style="display:inline">
-        <?= csrf_field() ?>
-        <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
-        <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('common_delete')) ?></button>
-    </form>
-<?php endif; ?>
-
 <!-- Menu item template -->
 <?php include CMS_PATH . '/admin/partials/menu-editor-templates.php'; ?>
+
+<?php
+// Editor libraries are vendored locally (no CDN, no build step) and must run
+// before the editor module below. Sortable powers drag-and-drop ordering of
+// menu items, including into and out of a nested position.
+$pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
+?>
 <script type="module" src="<?= url('admin/assets/menu-editor.js') ?>"></script>
 
 <script>
     window.initialMenuItems = <?= json_encode($currentMenu['items']) ?>;
 
-    // Auto-generate menuKey from label if new
+    // Selecting a menu navigates to it; the panel is part of the save form, so
+    // the choice is made with a plain GET rather than a nested form.
+    document.getElementById('menu-picker').addEventListener('change', (event) => {
+        const slug = event.target.value;
+        window.location = slug === ''
+            ? <?= json_encode(url('admin/menu/edit') . '?new=1') ?>
+            : <?= json_encode(url('admin/menu/edit')) ?> + '?menu=' + encodeURIComponent(slug);
+    });
+
+    // Auto-generate the menu key from the label while it is still new.
     const menuLabelInput = document.getElementById('menu-label');
     const menuKeyInput   = document.getElementById('menu-key');
 
     menuLabelInput.addEventListener('input', () => {
-        // Only auto-generate if creating new menu
-        if (!<?= json_encode((bool)$menuKey) ?>) {
+        if (!<?= json_encode((bool) $menuKey) ?>) {
             menuKeyInput.value = menuLabelInput.value.toLowerCase()
                 .replace(/[\s_]+/g, '-')
                 .replace(/[^a-z0-9\-]/g, '')
@@ -139,7 +179,6 @@ ob_start();
                 .replace(/^-+|-+$/g, '');
         }
     });
-
 </script>
 
 <?php

@@ -13,91 +13,136 @@ if (!$editUsername || !$user) {
 
 $pageTitle = admin_trans('user_edit_title', ['name' => $editUsername]);
 $adminLanguages = admin_languages();
+$passwordMinLength = (int) config('security.password_min_length', 10);
+$isSelf = $editUsername === $username;
+
+// The person is named in the heading, so the page leads with who is being
+// edited rather than repeating the signed-in user from the top bar.
+$displayName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+if ($displayName === '') {
+    $displayName = (string) ($user['username'] ?? $editUsername);
+}
 
 ob_start();
 ?>
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <h2><?= e($displayName) ?></h2>
         <p><?= e(admin_trans('user_editing', ['name' => $editUsername])) ?></p>
     </div>
     <div class="page-actions">
+        <?php if (!$isSelf): ?>
+            <form method="post"
+                action="<?= url('admin/user/remove') ?>"
+                class="js-confirm-form"
+                data-confirm="<?= e(admin_trans('user_delete_confirm', ['name' => $editUsername])) ?>"
+                data-confirm-title="<?= e(admin_trans('user_delete')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="username" value="<?= e($editUsername) ?>">
+                <button type="submit" class="btn-secondary"><?= e(admin_trans('user_delete')) ?></button>
+            </form>
+        <?php endif; ?>
         <button type="submit" form="edit-user"><?= e(admin_trans('common_save')) ?></button>
     </div>
 </div>
 
+<div class="page-sections">
 <form id="edit-user" method="post" action="<?= url('admin/user/save') ?>" class="form-card">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="update">
     <input type="hidden" name="original_username" value="<?= e($editUsername) ?>">
 
-    <fieldset>
-        <legend><?= e(admin_trans('user_info')) ?></legend>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('profile-circle', 18) ?>
+            <?= e(admin_trans('user_info')) ?>
+        </legend>
 
-        <label>
-            <?= e(admin_trans('user_username')) ?>:
-            <input type="text" name="username" value="<?= e($user['username'] ?? '') ?>" readonly>
-            <small><?= e(admin_trans('user_username_fixed')) ?></small>
-        </label>
+        <div class="field-grid">
+            <div class="field">
+                <label class="field-label" for="user-username"><?= e(admin_trans('user_username')) ?></label>
+                <input class="field-input" type="text" id="user-username" name="username" value="<?= e($user['username'] ?? '') ?>" readonly>
+                <small><?= e(admin_trans('user_username_fixed')) ?></small>
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_first_name')) ?>:
-            <input type="text" name="first_name" value="<?= e($user['first_name'] ?? '') ?>">
-        </label>
+            <?php if (admin_can('users.manage')): ?>
+                <div class="field">
+                    <label class="field-label" for="user-role"><?= e(admin_trans('user_role')) ?></label>
+                    <select class="field-input" id="user-role" name="role">
+                        <?php foreach (admin_roles() as $roleCode): ?>
+                            <option value="<?= e($roleCode) ?>" <?= (($user['role'] ?? 'author') === $roleCode) ? 'selected' : '' ?>>
+                                <?= e(admin_role_label($roleCode)) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small><?= e(admin_trans('user_help_role')) ?></small>
+                </div>
+            <?php endif; ?>
 
-        <label>
-            <?= e(admin_trans('user_last_name')) ?>:
-            <input type="text" name="last_name" value="<?= e($user['last_name'] ?? '') ?>">
-        </label>
+            <div class="field">
+                <label class="field-label" for="user-first-name"><?= e(admin_trans('user_first_name')) ?></label>
+                <input class="field-input" type="text" id="user-first-name" name="first_name" value="<?= e($user['first_name'] ?? '') ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_email')) ?>:
-            <input type="email" name="email" value="<?= e($user['email'] ?? '') ?>">
-        </label>
+            <div class="field">
+                <label class="field-label" for="user-last-name"><?= e(admin_trans('user_last_name')) ?></label>
+                <input class="field-input" type="text" id="user-last-name" name="last_name" value="<?= e($user['last_name'] ?? '') ?>">
+            </div>
 
-        <?php if (admin_can('users.manage')): ?>
-            <label>
-                <?= e(admin_trans('user_role')) ?>:
-                <select name="role">
-                    <?php foreach (admin_roles() as $roleCode): ?>
-                        <option value="<?= e($roleCode) ?>" <?= (($user['role'] ?? 'author') === $roleCode) ? 'selected' : '' ?>>
-                            <?= e(admin_role_label($roleCode)) ?>
+            <div class="field">
+                <label class="field-label" for="user-email"><?= e(admin_trans('user_email')) ?></label>
+                <input class="field-input" type="email" id="user-email" name="email" value="<?= e($user['email'] ?? '') ?>">
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="user-language"><?= e(admin_trans('user_language')) ?></label>
+                <select class="field-input" id="user-language" name="ui_language">
+                    <option value=""><?= e(admin_trans('user_language_default')) ?></option>
+                    <?php foreach ($adminLanguages as $languageCode => $languageLabel): ?>
+                        <option value="<?= e($languageCode) ?>" <?= (($user['ui_language'] ?? '') === $languageCode) ? 'selected' : '' ?>>
+                            <?= e($languageLabel) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <small><?= e(admin_trans('user_help_role')) ?></small>
-            </label>
-        <?php endif; ?>
-
-        <label>
-            <?= e(admin_trans('user_language')) ?>:
-            <select name="ui_language">
-                <option value=""><?= e(admin_trans('user_language_default')) ?></option>
-                <?php foreach ($adminLanguages as $languageCode => $languageLabel): ?>
-                    <option value="<?= e($languageCode) ?>" <?= (($user['ui_language'] ?? '') === $languageCode) ? 'selected' : '' ?>>
-                        <?= e($languageLabel) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small><?= e(admin_trans('user_language_help')) ?></small>
-        </label>
+                <small><?= e(admin_trans('user_language_help')) ?></small>
+            </div>
+        </div>
     </fieldset>
 
-    <fieldset>
-        <legend><?= e(admin_trans('user_password_update')) ?></legend>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('settings', 18) ?>
+            <?= e(admin_trans('user_password_update')) ?>
+        </legend>
 
-        <label>
-            <?= e(admin_trans('user_password')) ?>:
-            <input type="password" name="password" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
-        </label>
+        <div class="field-grid">
+            <div class="field">
+                <label class="field-label" for="user-password"><?= e(admin_trans('user_password')) ?></label>
+                <input class="field-input" type="password" id="user-password" name="password" autocomplete="new-password" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_confirm_password')) ?>:
-            <input type="password" name="password_confirm" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
-        </label>
+            <div class="field">
+                <label class="field-label" for="user-password-confirm"><?= e(admin_trans('user_confirm_password')) ?></label>
+                <input class="field-input" type="password" id="user-password-confirm" name="password_confirm" autocomplete="new-password" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
+            </div>
+
+            <p class="field-note field-span"><?= e(admin_trans('user_password_hint', ['min' => $passwordMinLength])) ?></p>
+        </div>
     </fieldset>
 </form>
+
+<div class="card">
+    <h2 class="card-title"><?= e(admin_trans('user_account_meta')) ?></h2>
+    <dl class="meta-list">
+        <dt><?= e(admin_trans('common_created')) ?></dt>
+        <dd><?= isset($user['created_at']) ? e(date('Y-m-d H:i', (int) $user['created_at'])) : '—' ?></dd>
+
+        <dt><?= e(admin_trans('user_last_login')) ?></dt>
+        <dd><?= isset($user['last_login']) ? e(date('Y-m-d H:i', (int) $user['last_login'])) : '—' ?></dd>
+    </dl>
+</div>
+</div>
 
 <?php
 $content = ob_get_clean();

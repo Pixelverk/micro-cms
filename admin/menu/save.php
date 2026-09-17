@@ -4,17 +4,16 @@ declare(strict_types=1);
 // ----------------------------
 // Read input
 // ----------------------------
-$menuSlug = trim($_POST['menu'] ?? '');
-$label    = trim($_POST['label'] ?? '');
-$location = trim($_POST['location'] ?? '');
-$items    = $_POST['items'] ?? [];
+$menuSlug  = trim($_POST['menu'] ?? '');
+$label     = trim($_POST['label'] ?? '');
+$items     = $_POST['items'] ?? [];
+$checked   = $_POST['locations'] ?? [];
+$checked   = is_array($checked) ? $checked : [];
 
 $locations = theme_config()['menu_locations'] ?? [];
-if (!array_key_exists($location, $locations)) {
-    log_activity('menu.updated', 'menu', null, $label !== '' ? $label : $menuSlug, []);
 
-redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_location'));
-}
+// Only locations the theme declares, and no duplicates.
+$checkedLocations = array_values(array_intersect(array_keys($locations), array_map('strval', $checked)));
 
 // ----------------------------
 // Validate menu slug
@@ -85,8 +84,24 @@ if (!save_menu($menuData)) {
 }
 
 $assignments = get_setting('menu_locations', []);
-if (!is_array($assignments)) $assignments = [];
-$assignments[$location] = $menuSlug;
+if (!is_array($assignments)) {
+    $assignments = [];
+}
+
+// This menu is assigned to exactly the locations that are checked. A location
+// checked here is taken over from whatever menu held it before; one that is
+// unchecked while held by this menu is released.
+foreach (array_keys($locations) as $locationKey) {
+    $isChecked = in_array($locationKey, $checkedLocations, true);
+    $holdsIt   = ($assignments[$locationKey] ?? '') === $menuSlug;
+
+    if ($isChecked) {
+        $assignments[$locationKey] = $menuSlug;
+    } elseif ($holdsIt) {
+        unset($assignments[$locationKey]);
+    }
+}
+
 set_setting('menu_locations', $assignments);
 
 // ----------------------------

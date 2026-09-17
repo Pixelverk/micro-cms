@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 require_capability('docs.view');
 
+$pageTitle = admin_trans('nav_docs');
+
 // Content lives in a partial so it can be edited without touching the view.
 require_once CMS_PATH . '/admin/partials/docs-content.php';
 

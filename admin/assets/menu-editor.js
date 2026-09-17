@@ -42,7 +42,38 @@ function createMenuItem(data = {}) {
         updateMenuItemLegend(node);
     });
 
+    // A cloned row brings its own children container, which needs to be
+    // sortable too. Bound here rather than after insertion so a nested item
+    // built by the loop above is already sortable when it lands.
+    node.querySelectorAll('.children-container').forEach(bindSortableList);
+
     return node;
+}
+
+// ----------------------------
+// Drag to reorder
+// ----------------------------
+// The same library the content editor uses, vendored locally. Drag only
+// reorders within one list: nesting is done with the add-child button, so
+// dragging an item over another must never move it in or out of a level.
+// Each list therefore gets its own group name, which is how Sortable isolates
+// them from one another.
+const SORTABLE_GROUP = 'menu-items';
+
+function bindSortableList(list) {
+    if (!list || list._menuSortable) return;
+
+    list._menuSortable = new Sortable(list, {
+        group: { name: SORTABLE_GROUP, pull: false, put: false },
+        handle: '.menu-item-title',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        fallbackOnBody: true,
+        swapThreshold: 0.65,
+        onEnd: () => {
+            renumberMenuItems();
+        },
+    });
 }
 
 // ----------------------------
@@ -59,6 +90,9 @@ function updateMenuItemLegend(node) {
 // ----------------------------
 initialItems.forEach(item => container.appendChild(createMenuItem(item)));
 renumberMenuItems();
+
+// The root list is empty until the loop above fills it, so it is bound after.
+bindSortableList(container);
 
 // ----------------------------
 // Add top-level page item
@@ -127,12 +161,19 @@ document.getElementById('add-url-item').addEventListener('click', async () => {
 // ----------------------------
 // Event delegation for menu item buttons
 // ----------------------------
+// The row buttons are icon-only, so a real click lands on the <path> inside the
+// button rather than on the button itself. Match with closest() — which does
+// traverse into inline SVG — and not with target.classList, which does not.
 container.addEventListener('click', async e => {
     const item = e.target.closest('.menu-item');
     if (!item) return;
 
+    const removeBtn = e.target.closest('.remove');
+    const addChildBtn = e.target.closest('.add-child');
+    const duplicateBtn = e.target.closest('.duplicate');
+
     // Remove
-    if (e.target.classList.contains('remove')) {
+    if (removeBtn) {
         const hasChildren =
             item.querySelector('.children-container')?.children.length > 0;
 
@@ -150,31 +191,19 @@ container.addEventListener('click', async e => {
 
         item.remove();
         renumberMenuItems();
+        return;
     }
 
     // Add child
-    if (e.target.classList.contains('add-child')) {
+    if (addChildBtn) {
         const children = item.querySelector('.children-container');
         children.appendChild(createMenuItem());
         renumberMenuItems();
-    }
-
-    // Move up
-    if (e.target.classList.contains('move-up')) {
-        const prev = item.previousElementSibling;
-        if (prev) prev.before(item);
-        renumberMenuItems();
-    }
-
-    // Move down
-    if (e.target.classList.contains('move-down')) {
-        const next = item.nextElementSibling;
-        if (next) next.after(item);
-        renumberMenuItems();
+        return;
     }
 
     // Duplicate
-    if (e.target.classList.contains('duplicate')) {
+    if (duplicateBtn) {
         const data = extractMenuItemData(item);
         item.after(createMenuItem(data));
         renumberMenuItems();

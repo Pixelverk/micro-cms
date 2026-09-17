@@ -62,35 +62,37 @@ ob_start();
     <?php endif; ?>
 
     <!-- Name -->
-    <label>
-        <strong><?= e(admin_trans('common_name')) ?></strong>
+    <div class="field">
+        <label class="field-label" for="name"><?= e(admin_trans('common_name')) ?></label>
         <input
+            class="field-input"
             type="text"
-            name="name"
             id="name"
+            name="name"
             required
             value="<?= e($tag['name']) ?>"
             placeholder="featured, design, tips…"
         >
-    </label>
+    </div>
 
     <!-- Slug -->
-    <label>
-        <strong><?= e(admin_trans('common_slug')) ?></strong>
+    <div class="field">
+        <label class="field-label" for="slug"><?= e(admin_trans('common_slug')) ?></label>
         <input
+            class="field-input"
             type="text"
-            name="slug"
             id="slug"
+            name="slug"
             value="<?= e($tag['slug']) ?>"
             placeholder="featured"
         >
         <small><?= e(admin_trans('common_used_in_urls')) ?></small>
-    </label>
+    </div>
 
     <!-- Content type -->
-    <label>
-        <strong><?= e(admin_trans('content_type')) ?></strong>
-        <select name="content_type" required>
+    <div class="field">
+        <label class="field-label" for="content_type"><?= e(admin_trans('content_type')) ?></label>
+        <select class="field-input" id="content_type" name="content_type" required>
             <?php foreach ($contentTypes as $key => $config): ?>
                 <option
                     value="<?= e($key) ?>"
@@ -100,17 +102,19 @@ ob_start();
             <?php endforeach; ?>
         </select>
         <small><?= e(admin_trans('tag_content_type_help')) ?></small>
-    </label>
+    </div>
 
     <!-- Description -->
-    <label>
-        <strong><?= e(admin_trans('common_description')) ?></strong>
+    <div class="field">
+        <label class="field-label" for="description"><?= e(admin_trans('common_description')) ?></label>
         <textarea
+            class="field-input"
+            id="description"
             name="description"
             rows="4"
             placeholder="<?= e(admin_trans('common_optional_description')) ?>"
         ><?= e($tag['description']) ?></textarea>
-    </label>
+    </div>
 
     <!-- Actions -->
     <div class="form-actions">

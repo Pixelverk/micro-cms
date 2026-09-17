@@ -47,7 +47,7 @@ ob_start();
 <div class="form-card">
 
     <!-- Filter -->
-    <form method="get" style="margin-bottom:1rem;">
+    <form method="get" class="messages-filter">
         <label>
             <strong><?= e(admin_trans('forms_type')) ?></strong>
             <select name="form" onchange="this.form.submit()">
@@ -62,52 +62,57 @@ ob_start();
     </form>
 
     <?php if (!$submissions): ?>
-        <p><?= e(admin_trans('forms_empty')) ?></p>
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true"><?= icon('mail-in', 24) ?></span>
+            <p class="empty-state-title"><?= e(admin_trans('forms_empty')) ?></p>
+        </div>
     <?php else: ?>
 
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th><?= e(admin_trans('forms_form')) ?></th>
-                    <th><?= e(admin_trans('forms_submitted_at')) ?></th>
-                    <th><?= e(admin_trans('forms_data')) ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($submissions as $row): ?>
-                    <?php
-                    $data = json_decode($row['data'], true);
-                    if (!is_array($data)) {
-                        $data = [];
-                    }
-                    ?>
+        <div class="card">
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <td>
-                            <?= e($formTypes[$row['form_type']]['label']
-                                ?? ucfirst($row['form_type'])) ?>
-                        </td>
-
-                        <td>
-                            <?= date('Y-m-d H:i', (int)$row['created_at']) ?>
-                        </td>
-
-                        <td>
-                            <details>
-                                <summary><?= e(admin_trans('common_view')) ?></summary>
-                                <ul style="margin-top:0.5rem;">
-                                    <?php foreach ($data as $key => $value): ?>
-                                        <li>
-                                            <strong><?= e(ucfirst($key)) ?>:</strong>
-                                            <?= nl2br(e((string)$value)) ?>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </details>
-                        </td>
+                        <th><?= e(admin_trans('forms_form')) ?></th>
+                        <th><?= e(admin_trans('forms_submitted_at')) ?></th>
+                        <th><?= e(admin_trans('forms_data')) ?></th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($submissions as $row): ?>
+                        <?php
+                        $data = json_decode($row['data'], true);
+                        if (!is_array($data)) {
+                            $data = [];
+                        }
+                        ?>
+                        <tr>
+                            <td>
+                                <?= e($formTypes[$row['form_type']]['label']
+                                    ?? ucfirst($row['form_type'])) ?>
+                            </td>
+
+                            <td>
+                                <?= date('Y-m-d H:i', (int)$row['created_at']) ?>
+                            </td>
+
+                            <td>
+                                <details>
+                                    <summary><?= e(admin_trans('common_view')) ?></summary>
+                                    <ul class="messages-data">
+                                        <?php foreach ($data as $key => $value): ?>
+                                            <li>
+                                                <strong><?= e(ucfirst($key)) ?>:</strong>
+                                                <?= nl2br(e((string)$value)) ?>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </details>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
 
     <?php endif; ?>
 

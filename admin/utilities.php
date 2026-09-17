@@ -134,101 +134,155 @@ ob_start();
     </div>
 </div>
 
-<form id="utilities-form" method="post" class="stack">
+<form id="utilities-form" method="post">
     <?= csrf_field() ?>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_clear_cache')) ?></h3>
-        <p><?= e(admin_trans('utilities_clear_cache_help')) ?></p>
-        <button type="button" data-action="clear_cache" class="btn btn-warning">
-            <?= e(admin_trans('utilities_clear_cache')) ?>
-        </button>
-    </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('wrench', 18) ?>
+            <?= e(admin_trans('utilities_group_maintenance')) ?>
+        </legend>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_reset_analytics')) ?></h3>
-        <p><?= e(admin_trans('utilities_reset_analytics_help')) ?></p>
-        <button type="button" data-action="reset_analytics" class="btn btn-danger">
-            <?= e(admin_trans('utilities_reset_analytics')) ?>
-        </button>
-    </div>
+        <div class="utility-grid">
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('wrench', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_clear_cache')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_clear_cache_help')) ?></p>
+                <button type="button" data-action="clear_cache" class="btn btn-secondary">
+                    <?= e(admin_trans('utilities_clear_cache')) ?>
+                </button>
+            </div>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_clear_trash')) ?></h3>
-        <?php if ($trashCount): ?>
-            <p><?= e(admin_trans('utilities_clear_trash_help', ['count' => $trashCount])) ?></p>
-            <button type="button" data-action="clear_trash" class="btn btn-danger">
-                <?= e(admin_trans('utilities_clear_trash')) ?>
-            </button>
-        <?php else: ?>
-            <p><?= e(admin_trans('utilities_clear_trash_empty')) ?></p>
-            <button type="button" class="btn btn-muted" disabled>
-                <?= e(admin_trans('utilities_clear_trash')) ?>
-            </button>
-        <?php endif; ?>
-    </div>
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('clock', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_warm_cache')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_warm_cache_help')) ?></p>
+                <button type="button" data-action="warm_cache" class="btn btn-secondary">
+                    <?= e(admin_trans('utilities_warm_cache')) ?>
+                </button>
+            </div>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_warm_cache')) ?></h3>
-        <p><?= e(admin_trans('utilities_warm_cache_help')) ?></p>
-        <button type="button" data-action="warm_cache" class="btn btn-secondary">
-            <?= e(admin_trans('utilities_warm_cache')) ?>
-        </button>
-    </div>
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('open-in-browser', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_sitemap')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_help_sitemap')) ?></p>
+                <button type="button" data-action="regenerate_sitemap" class="btn btn-info">
+                    <?= e(admin_trans('utilities_sitemap')) ?>
+                </button>
+            </div>
+        </div>
+    </fieldset>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_export_static')) ?></h3>
-        <p><?= e(admin_trans('utilities_export_static_help')) ?></p>
-        <?php if (zip_available()): ?>
-            <button type="button" data-action="export_static" class="btn btn-info">
-                <?= e(admin_trans('utilities_export_static')) ?>
-            </button>
-        <?php else: ?>
-            <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
-            <button type="button" class="btn btn-muted" disabled>
-                <?= e(admin_trans('utilities_export_static')) ?>
-            </button>
-        <?php endif; ?>
-    </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('post', 18) ?>
+            <?= e(admin_trans('utilities_group_content')) ?>
+        </legend>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_backup')) ?></h3>
-        <p><?= e(admin_trans('utilities_backup_help')) ?></p>
-        <?php if (zip_available()): ?>
-            <button type="button" data-action="export_backup" class="btn btn-secondary">
-                <?= e(admin_trans('utilities_backup')) ?>
-            </button>
-        <?php else: ?>
-            <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
-            <button type="button" class="btn btn-muted" disabled>
-                <?= e(admin_trans('utilities_backup')) ?>
-            </button>
-        <?php endif; ?>
-    </div>
+        <div class="utility-grid">
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('mail-in', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_publish_due')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_publish_due_help')) ?></p>
+                <button type="button" data-action="publish_due" class="btn btn-primary">
+                    <?= e(admin_trans('utilities_publish_due_button')) ?>
+                </button>
+            </div>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_sitemap')) ?></h3>
-        <p><?= e(admin_trans('utilities_help_sitemap')) ?></p>
-        <button type="button" data-action="regenerate_sitemap" class="btn btn-info">
-            <?= e(admin_trans('utilities_sitemap')) ?>
-        </button>
-    </div>
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('post', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_clear_trash')) ?></h3>
+                </div>
+                <?php if ($trashCount): ?>
+                    <p><?= e(admin_trans('utilities_clear_trash_help', ['count' => $trashCount])) ?></p>
+                    <button type="button" data-action="clear_trash" class="btn btn-danger">
+                        <?= e(admin_trans('utilities_clear_trash')) ?>
+                    </button>
+                <?php else: ?>
+                    <p><?= e(admin_trans('utilities_clear_trash_empty')) ?></p>
+                    <button type="button" class="btn btn-muted" disabled>
+                        <?= e(admin_trans('utilities_clear_trash')) ?>
+                    </button>
+                <?php endif; ?>
+            </div>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_publish_due')) ?></h3>
-        <p><?= e(admin_trans('utilities_publish_due_help')) ?></p>
-        <button type="button" data-action="publish_due" class="btn btn-primary">
-            <?= e(admin_trans('utilities_publish_due_button')) ?>
-        </button>
-    </div>
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('clipboard-check', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_reset_analytics')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_reset_analytics_help')) ?></p>
+                <button type="button" data-action="reset_analytics" class="btn btn-danger">
+                    <?= e(admin_trans('utilities_reset_analytics')) ?>
+                </button>
+            </div>
+        </div>
+    </fieldset>
 
-    <div class="utility-action">
-        <h3><?= e(admin_trans('utilities_migrations')) ?></h3>
-        <p><?= e(admin_trans('utilities_migrations_help')) ?></p>
-        <button type="button" data-action="run_migrations" class="btn btn-info">
-            <?= e(admin_trans('utilities_migrations_button')) ?>
-        </button>
-    </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('book', 18) ?>
+            <?= e(admin_trans('utilities_group_system')) ?>
+        </legend>
+
+        <div class="utility-grid">
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('expand', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_export_static')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_export_static_help')) ?></p>
+                <?php if (zip_available()): ?>
+                    <button type="button" data-action="export_static" class="btn btn-info">
+                        <?= e(admin_trans('utilities_export_static')) ?>
+                    </button>
+                <?php else: ?>
+                    <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
+                    <button type="button" class="btn btn-muted" disabled>
+                        <?= e(admin_trans('utilities_export_static')) ?>
+                    </button>
+                <?php endif; ?>
+            </div>
+
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('book', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_backup')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_backup_help')) ?></p>
+                <?php if (zip_available()): ?>
+                    <button type="button" data-action="export_backup" class="btn btn-secondary">
+                        <?= e(admin_trans('utilities_backup')) ?>
+                    </button>
+                <?php else: ?>
+                    <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
+                    <button type="button" class="btn btn-muted" disabled>
+                        <?= e(admin_trans('utilities_backup')) ?>
+                    </button>
+                <?php endif; ?>
+            </div>
+
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('settings', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_migrations')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_migrations_help')) ?></p>
+                <button type="button" data-action="run_migrations" class="btn btn-info">
+                    <?= e(admin_trans('utilities_migrations_button')) ?>
+                </button>
+            </div>
+        </div>
+    </fieldset>
 
     <!-- Hidden input for submitting the chosen action -->
     <input type="hidden" name="utility_action" id="utility-action-input">

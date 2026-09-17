@@ -35,9 +35,18 @@
         <div class="children-container menu-children"></div>
 
         <div class="menu-actions">
-            <button type="button" class="add-child"><?= e(admin_trans('editor_child')) ?></button>
-            <button type="button" class="duplicate"><?= e(admin_trans('editor_duplicate')) ?></button>
-            <button type="button" class="remove"><?= e(admin_trans('common_remove')) ?></button>
+            <button type="button" class="add-child" title="<?= e(admin_trans('editor_child')) ?>">
+                <?= icon('corner-down-right', 16) ?>
+                <span class="off-screen"><?= e(admin_trans('editor_child')) ?></span>
+            </button>
+            <button type="button" class="duplicate" title="<?= e(admin_trans('editor_duplicate')) ?>">
+                <?= icon('copy', 16) ?>
+                <span class="off-screen"><?= e(admin_trans('editor_duplicate')) ?></span>
+            </button>
+            <button type="button" class="remove" title="<?= e(admin_trans('common_remove')) ?>">
+                <?= icon('xmark', 16) ?>
+                <span class="off-screen"><?= e(admin_trans('common_remove')) ?></span>
+            </button>
         </div>
     </fieldset>
 </template>

@@ -164,11 +164,67 @@ $settingFields = [
 ];
 
 // ----------------------------
+// Field groups
+// ----------------------------
+// `columns` is the number of tracks the group's grid has; a field either takes
+// one track or spans the whole row. Tracks are the only thing that decides a
+// field's width, so no input needs a max-width of its own.
+$settingGroups = [
+    'general' => [
+        'label'   => 'settings_group_general',
+        'icon'    => 'settings',
+        'columns' => 2,
+        'fields'  => ['site_title', 'site_language', 'homepage_id', 'site_url', 'contact_email'],
+    ],
+    'account' => [
+        'label'   => 'settings_group_account',
+        'icon'    => 'profile-circle',
+        'columns' => 2,
+        'fields'  => ['admin_default_language'],
+    ],
+    'design' => [
+        'label'   => 'settings_group_design',
+        'icon'    => 'book',
+        'columns' => 3,
+        'fields'  => ['default_layout', 'default_header', 'default_footer'],
+    ],
+    'seo' => [
+        'label'   => 'settings_group_seo',
+        'icon'    => 'open-in-browser',
+        'columns' => 2,
+        'fields'  => ['seo_title_suffix', 'default_og_image', 'twitter_site', 'robots_extra'],
+    ],
+    'media' => [
+        'label'   => 'settings_group_media',
+        'icon'    => 'media-image',
+        'columns' => 2,
+        'fields'  => ['generate_webp', 'quality_webp', 'strip_metadata', 'allow_svg', 'media_sizes'],
+    ],
+    'code' => [
+        'label'   => 'settings_group_code',
+        'icon'    => 'wrench',
+        'columns' => 2,
+        'fields'  => ['header_scripts', 'footer_scripts'],
+    ],
+    'urls' => [
+        'label'   => 'settings_group_urls',
+        'icon'    => 'label',
+        'columns' => 3,
+        'fields'  => [], // filled with the prefix_* fields below
+    ],
+];
+
+// Fields that take the whole row rather than one track: the long ones, and the
+// comma list that would otherwise sit under a checkbox column.
+$settingSpanFields = ['media_sizes', 'robots_extra'];
+
+// ----------------------------
 // Dynamic prefix fields
 // ----------------------------
 foreach ($theme['content_types'] ?? [] as $type => $config) {
     $label = $config['label'] ?? ucfirst($type);
-    $settingFields["prefix_$type"] = [
+    $key = "prefix_$type";
+    $settingFields[$key] = [
         'type'          => 'text',
         'label'         => 'settings_prefix_label',
         'label_replace' => ['type' => $label],
@@ -177,6 +233,7 @@ foreach ($theme['content_types'] ?? [] as $type => $config) {
             ?? $config['url_prefix']
             ?? '',
     ];
+    $settingGroups['urls']['fields'][] = $key;
 }
 
 // ----------------------------
@@ -333,65 +390,104 @@ ob_start();
 
 <form id="settings" method="post" class="form-card">
     <?= csrf_field() ?>
-    <?php foreach ($settingFields as $key => $meta): ?>
+    <?php foreach ($settingGroups as $groupKey => $group): ?>
         <?php
-        if ($key === 'homepage_id') {
-            $value = $settings['homepage_id'] ?? $meta['default'] ?? '';
-        } elseif (str_starts_with($key, 'prefix_')) {
-            $type  = substr($key, strlen('prefix_'));
-            $value = $settings['content_prefixes'][$type] ?? $meta['default'] ?? '';
-        } else {
-            $value = $settings[$key] ?? $meta['default'] ?? '';
+        $groupFields = array_filter(
+            array_map(fn($name) => isset($settingFields[$name]) ? [$name, $settingFields[$name]] : null, $group['fields'])
+        );
+
+        if (!$groupFields) {
+            continue;
         }
         ?>
-        <fieldset>
-            <legend><?= e(admin_trans($meta['label'], $meta['label_replace'] ?? [])) ?></legend>
+        <fieldset class="settings-group">
+            <legend>
+                <?= icon($group['icon'], 18) ?>
+                <?= e(admin_trans($group['label'])) ?>
+            </legend>
 
-            <?php if ($meta['type'] === 'text' || $meta['type'] === 'number'): ?>
-                <label>
-                    <input
-                        type="<?= $meta['type'] === 'number' ? 'number' : 'text' ?>"
-                        name="<?= e($key) ?>"
-                        value="<?= is_array($value) ? e(implode(',', $value)) : e($value) ?>"
-                        <?= $meta['min'] ?? '' ? "min=\"{$meta['min']}\"" : '' ?>
-                        <?= $meta['max'] ?? '' ? "max=\"{$meta['max']}\"" : '' ?>
-                    >
-                    <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
+            <?php
+            $groupColumns = max(1, (int) ($group['columns'] ?? 2));
+            // The column count is expressed as a class so no inline style is
+            // needed; the stylesheet owns the widths.
+            $gridClass = 'field-grid' . ($groupColumns === 2 ? '' : ' field-grid-' . $groupColumns);
+            ?>
+            <div class="<?= e($gridClass) ?>">
+                <?php foreach ($groupFields as [$key, $meta]): ?>
+                    <?php
+                    if ($key === 'homepage_id') {
+                        $value = $settings['homepage_id'] ?? $meta['default'] ?? '';
+                    } elseif (str_starts_with($key, 'prefix_')) {
+                        $type  = substr($key, strlen('prefix_'));
+                        $value = $settings['content_prefixes'][$type] ?? $meta['default'] ?? '';
+                    } else {
+                        $value = $settings[$key] ?? $meta['default'] ?? '';
+                    }
+
+                    $fieldId = 'setting-' . str_replace('_', '-', $key);
+                    $label   = admin_trans($meta['label'], $meta['label_replace'] ?? []);
+                    $help    = !empty($meta['help'])
+                        ? admin_trans($meta['help'], $meta['help_replace'] ?? [])
+                        : '';
+
+                    $classes = ['field'];
+                    if (in_array($key, $settingSpanFields, true)) {
+                        $classes[] = 'field-span';
+                    }
+                    ?>
+
+                    <?php if ($meta['type'] === 'checkbox'): ?>
+                        <div class="<?= e(implode(' ', $classes)) ?> field-check">
+                            <input type="checkbox" id="<?= e($fieldId) ?>" name="<?= e($key) ?>" value="1" <?= $value ? 'checked' : '' ?>>
+                            <label class="field-label" for="<?= e($fieldId) ?>"><?= e($label) ?></label>
+                            <?php if ($help !== ''): ?>
+                                <small><?= e($help) ?></small>
+                            <?php endif; ?>
+                        </div>
+
+                    <?php elseif ($meta['type'] === 'textarea'): ?>
+                        <div class="<?= e(implode(' ', $classes)) ?>">
+                            <label class="field-label" for="<?= e($fieldId) ?>"><?= e($label) ?></label>
+                            <textarea class="field-input" id="<?= e($fieldId) ?>" name="<?= e($key) ?>" rows="6"><?= e((string) $value) ?></textarea>
+                            <?php if ($help !== ''): ?>
+                                <small><?= e($help) ?></small>
+                            <?php endif; ?>
+                        </div>
+
+                    <?php elseif ($meta['type'] === 'select'): ?>
+                        <div class="<?= e(implode(' ', $classes)) ?>">
+                            <label class="field-label" for="<?= e($fieldId) ?>"><?= e($label) ?></label>
+                            <select class="field-input" id="<?= e($fieldId) ?>" name="<?= e($key) ?>">
+                                <?php foreach ($meta['options'] as $optionValue => $optionLabel): ?>
+                                    <option value="<?= e($optionValue) ?>" <?= ((string) $optionValue === (string) $value) ? 'selected' : '' ?>>
+                                        <?= e($optionLabel) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if ($help !== ''): ?>
+                                <small><?= e($help) ?></small>
+                            <?php endif; ?>
+                        </div>
+
+                    <?php else: ?>
+                        <div class="<?= e(implode(' ', $classes)) ?>">
+                            <label class="field-label" for="<?= e($fieldId) ?>"><?= e($label) ?></label>
+                            <input
+                                class="field-input<?= str_starts_with($key, 'prefix_') ? ' content-prefix' : '' ?>"
+                                type="<?= $meta['type'] === 'number' ? 'number' : 'text' ?>"
+                                id="<?= e($fieldId) ?>"
+                                name="<?= e($key) ?>"
+                                value="<?= is_array($value) ? e(implode(',', $value)) : e($value) ?>"
+                                <?= $meta['min'] ?? '' ? "min=\"{$meta['min']}\"" : '' ?>
+                                <?= $meta['max'] ?? '' ? "max=\"{$meta['max']}\"" : '' ?>
+                            >
+                            <?php if ($help !== ''): ?>
+                                <small><?= e($help) ?></small>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
-                </label>
-
-            <?php elseif ($meta['type'] === 'select'): ?>
-                <label>
-                    <select name="<?= e($key) ?>">
-                        <?php foreach ($meta['options'] as $val => $label): ?>
-                            <option value="<?= e($val) ?>" <?= ((string)$val === (string)$value) ? 'selected' : '' ?>>
-                                <?= e($label) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
-                    <?php endif; ?>
-                </label>
-
-            <?php elseif ($meta['type'] === 'checkbox'): ?>
-                <label>
-                    <input type="checkbox" name="<?= e($key) ?>" value="1" <?= $value ? 'checked' : '' ?>>
-                    <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
-                    <?php endif; ?>
-                </label>
-
-            <?php elseif ($meta['type'] === 'textarea'): ?>
-                <label>
-                    <textarea name="<?= e($key) ?>" rows="6"><?= e((string) $value) ?></textarea>
-                    <?php if (!empty($meta['help'])): ?>
-                        <small><?= e(admin_trans($meta['help'], $meta['help_replace'] ?? [])) ?></small>
-                    <?php endif; ?>
-                </label>
-            <?php endif; ?>
-
+                <?php endforeach; ?>
+            </div>
         </fieldset>
     <?php endforeach; ?>
 </form>

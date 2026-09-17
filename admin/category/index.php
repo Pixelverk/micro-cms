@@ -56,41 +56,43 @@ ob_start();
 <?php if (empty($categories)): ?>
     <p><?= e(admin_trans('category_empty')) ?></p>
 <?php else: ?>
-    <table class="content-table">
-        <thead>
-            <tr>
-                <th><?= e(admin_trans('common_name')) ?></th>
-                <th><?= e(admin_trans('common_slug')) ?></th>
-                <th><?= e(admin_trans('common_description')) ?></th>
-                <th><?= e(admin_trans('common_created')) ?></th>
-                <th><?= e(admin_trans('common_updated')) ?></th>
-                <th style="width:180px;"><?= e(admin_trans('common_actions')) ?></th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($categories as $cat): ?>
-            <tr>
-                <td><?= e($cat['name']) ?></td>
-                <td><code><?= e($cat['slug']) ?></code></td>
-                <td><?= e($cat['description']) ?></td>
-                <td><?= format_local_datetime($cat['created_at'], 'Y-m-d') ?></td>
-                <td><?= format_local_datetime($cat['updated_at'], 'Y-m-d') ?></td>
-                <td class="actions">
-                    <a href="<?= url('admin/category/edit') ?>?id=<?= (int)$cat['id'] ?>" class="btn-small"><?= e(admin_trans('common_edit')) ?></a>
+    <div class="card">
+        <table class="content-table">
+            <thead>
+                <tr>
+                    <th><?= e(admin_trans('common_name')) ?></th>
+                    <th><?= e(admin_trans('common_slug')) ?></th>
+                    <th><?= e(admin_trans('common_description')) ?></th>
+                    <th><?= e(admin_trans('common_created')) ?></th>
+                    <th><?= e(admin_trans('common_updated')) ?></th>
+                    <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($categories as $cat): ?>
+                <tr>
+                    <td><?= e($cat['name']) ?></td>
+                    <td><code><?= e($cat['slug']) ?></code></td>
+                    <td><?= e($cat['description']) ?></td>
+                    <td><?= format_local_datetime($cat['created_at'], 'Y-m-d') ?></td>
+                    <td><?= format_local_datetime($cat['updated_at'], 'Y-m-d') ?></td>
+                    <td class="actions">
+                        <a href="<?= url('admin/category/edit') ?>?id=<?= (int)$cat['id'] ?>" class="btn-small"><?= e(admin_trans('common_edit')) ?></a>
 
-                    <form method="post" action="<?= url('admin/category/remove') ?>"
-                        data-confirm-title="<?= e(admin_trans('category_delete')) ?>"
-                        data-confirm="<?= e(admin_trans('category_delete_confirm', ['name' => $cat['name']])) ?>"
-                        class="inline-form-block js-confirm-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
-                        <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('common_delete')) ?></button>
-                    </form>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
+                        <form method="post" action="<?= url('admin/category/remove') ?>"
+                            data-confirm-title="<?= e(admin_trans('category_delete')) ?>"
+                            data-confirm="<?= e(admin_trans('category_delete_confirm', ['name' => $cat['name']])) ?>"
+                            class="inline-form-block js-confirm-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
+                            <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('common_delete')) ?></button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 <?php endif; ?>
 
 <?php

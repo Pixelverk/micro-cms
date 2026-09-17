@@ -96,108 +96,129 @@ ob_start();
     <?= csrf_field() ?>
     <input type="hidden" name="redirect_action" value="save">
 
-    <fieldset>
-        <legend><?= e($editId ? admin_trans('redirects_edit') : admin_trans('redirects_add')) ?></legend>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('open-in-browser', 18) ?>
+            <?= e($editId ? admin_trans('redirects_edit') : admin_trans('redirects_add')) ?>
+        </legend>
 
-        <label class="field">
-            <span class="field-label"><?= e(admin_trans('redirects_from')) ?></span>
-            <input class="field-input" type="text" name="from_path" value="<?= e($fromValue) ?>"
-                   placeholder="/old-url/" <?= $editId ? 'readonly' : '' ?>>
-        </label>
+        <div class="field-grid field-grid-inline">
+            <div class="field">
+                <label class="field-label" for="redirect-from"><?= e(admin_trans('redirects_from')) ?></label>
+                <input class="field-input" type="text" id="redirect-from" name="from_path" value="<?= e($fromValue) ?>"
+                       placeholder="/old-url/" <?= $editId ? 'readonly' : '' ?>>
+                <?php if ($editId): ?>
+                    <small><?= e(admin_trans('redirects_from_fixed')) ?></small>
+                <?php endif; ?>
+            </div>
 
-        <label class="field">
-            <span class="field-label"><?= e(admin_trans('redirects_to')) ?></span>
-            <input class="field-input" type="text" name="to_path" value="<?= e($toValue) ?>"
-                   placeholder="/new-url/">
-        </label>
+            <div class="field">
+                <label class="field-label" for="redirect-to"><?= e(admin_trans('redirects_to')) ?></label>
+                <input class="field-input" type="text" id="redirect-to" name="to_path" value="<?= e($toValue) ?>"
+                       placeholder="/new-url/">
+            </div>
 
-        <label class="field">
-            <span class="field-label"><?= e(admin_trans('redirects_type')) ?></span>
-            <select class="field-input" name="redirect_status">
-                <option value="301" <?= $statusValue === 301 ? 'selected' : '' ?>><?= e(admin_trans('redirects_301')) ?></option>
-                <option value="302" <?= $statusValue === 302 ? 'selected' : '' ?>><?= e(admin_trans('redirects_302')) ?></option>
-            </select>
-        </label>
+            <div class="field field-narrow">
+                <label class="field-label" for="redirect-status"><?= e(admin_trans('redirects_type')) ?></label>
+                <select class="field-input" id="redirect-status" name="redirect_status">
+                    <option value="301" <?= $statusValue === 301 ? 'selected' : '' ?>><?= e(admin_trans('redirects_301')) ?></option>
+                    <option value="302" <?= $statusValue === 302 ? 'selected' : '' ?>><?= e(admin_trans('redirects_302')) ?></option>
+                </select>
+            </div>
 
-        <div class="form-actions">
-            <button type="submit"><?= e(admin_trans('redirects_save')) ?></button>
-            <?php if ($editId): ?>
-                <a class="btn-small btn-muted" href="<?= e(url('admin/redirects')) ?>"><?= e(admin_trans('common_cancel')) ?></a>
-            <?php endif; ?>
+            <div class="field field-btn">
+                <div class="form-actions">
+                    <button type="submit"><?= e(admin_trans('redirects_save')) ?></button>
+                    <?php if ($editId): ?>
+                        <a class="btn-muted" href="<?= e(url('admin/redirects')) ?>"><?= e(admin_trans('common_cancel')) ?></a>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </fieldset>
 </form>
 
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th><?= e(admin_trans('redirects_from')) ?></th>
-            <th><?= e(admin_trans('redirects_to')) ?></th>
-            <th><?= e(admin_trans('redirects_type')) ?></th>
-            <th><?= e(admin_trans('redirects_hits')) ?></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (!$redirects): ?>
-            <tr><td colspan="5"><?= e(admin_trans('redirects_empty')) ?></td></tr>
-        <?php else: ?>
-            <?php foreach ($redirects as $row): ?>
+<div class="card">
+    <h2 class="card-title"><?= e(admin_trans('redirects_title')) ?></h2>
+
+    <?php if (!$redirects): ?>
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true"><?= icon('open-in-browser', 24) ?></span>
+            <p class="empty-state-title"><?= e(admin_trans('redirects_empty')) ?></p>
+        </div>
+    <?php else: ?>
+        <table class="admin-table">
+            <thead>
                 <tr>
-                    <td><code>/<?= e($row['from_path']) ?>/</code></td>
-                    <td><?= e($row['to_path']) ?></td>
-                    <td><?= (int) $row['status'] ?></td>
-                    <td><?= (int) $row['hits'] ?></td>
-                    <td class="actions">
-                        <a class="btn-small" href="<?= e(url('admin/redirects') . '?edit=' . (int) $row['id']) ?>">
-                            <?= e(admin_trans('redirects_edit')) ?>
-                        </a>
-
-                        <form method="post" class="inline-form js-confirm-form"
-                              data-confirm="<?= e(admin_trans('redirects_delete_confirm', ['from' => '/' . $row['from_path'] . '/'])) ?>"
-                              data-confirm-title="<?= e(admin_trans('redirects_delete')) ?>">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="redirect_action" value="delete">
-                            <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                            <button type="submit" class="btn-small btn-danger"><?= e(admin_trans('redirects_delete')) ?></button>
-                        </form>
-                    </td>
+                    <th><?= e(admin_trans('redirects_from')) ?></th>
+                    <th><?= e(admin_trans('redirects_to')) ?></th>
+                    <th><?= e(admin_trans('redirects_type')) ?></th>
+                    <th><?= e(admin_trans('redirects_hits')) ?></th>
+                    <th class="col-actions"></th>
                 </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </tbody>
-</table>
+            </thead>
+            <tbody>
+                <?php foreach ($redirects as $row): ?>
+                    <tr>
+                        <td><code>/<?= e($row['from_path']) ?>/</code></td>
+                        <td><?= e($row['to_path']) ?></td>
+                        <td>
+                            <span class="badge"><?= (int) $row['status'] ?></span>
+                        </td>
+                        <td><?= (int) $row['hits'] ?></td>
+                        <td class="actions">
+                            <a class="btn-small" href="<?= e(url('admin/redirects') . '?edit=' . (int) $row['id']) ?>">
+                                <?= e(admin_trans('redirects_edit')) ?>
+                            </a>
 
-<h3><?= e(admin_trans('redirects_404_title')) ?></h3>
+                            <form method="post" class="inline-form js-confirm-form"
+                                  data-confirm="<?= e(admin_trans('redirects_delete_confirm', ['from' => '/' . $row['from_path'] . '/'])) ?>"
+                                  data-confirm-title="<?= e(admin_trans('redirects_delete')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="redirect_action" value="delete">
+                                <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                                <button type="submit" class="btn-small btn-delete"><?= e(admin_trans('redirects_delete')) ?></button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>
 
-<?php if (!$misses): ?>
-    <p class="empty-state"><?= e(admin_trans('redirects_404_empty')) ?></p>
-<?php else: ?>
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th><?= e(admin_trans('redirects_from')) ?></th>
-                <th><?= e(admin_trans('redirects_hits')) ?></th>
-                <th><?= e(admin_trans('redirects_last_seen')) ?></th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($misses as $miss): ?>
+<div class="card">
+    <h2 class="card-title"><?= e(admin_trans('redirects_404_title')) ?></h2>
+
+    <?php if (!$misses): ?>
+        <p class="empty-state"><?= e(admin_trans('redirects_404_empty')) ?></p>
+    <?php else: ?>
+        <table class="admin-table">
+            <thead>
                 <tr>
-                    <td><code><?= e($miss['path']) ?></code></td>
-                    <td><?= (int) $miss['views'] ?></td>
-                    <td><?= e(date('Y-m-d H:i', (int) $miss['last_seen'])) ?></td>
-                    <td class="actions">
-                        <a class="btn-small" href="<?= e(url('admin/redirects') . '?from=' . urlencode((string) $miss['path'])) ?>">
-                            <?= e(admin_trans('redirects_use_404')) ?>
-                        </a>
-                    </td>
+                    <th><?= e(admin_trans('redirects_from')) ?></th>
+                    <th><?= e(admin_trans('redirects_hits')) ?></th>
+                    <th><?= e(admin_trans('redirects_last_seen')) ?></th>
+                    <th></th>
                 </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php endif; ?>
+            </thead>
+            <tbody>
+                <?php foreach ($misses as $miss): ?>
+                    <tr>
+                        <td><code><?= e($miss['path']) ?></code></td>
+                        <td><?= (int) $miss['views'] ?></td>
+                        <td><?= e(date('Y-m-d H:i', (int) $miss['last_seen'])) ?></td>
+                        <td class="actions">
+                            <a class="btn-small" href="<?= e(url('admin/redirects') . '?from=' . urlencode((string) $miss['path'])) ?>">
+                                <?= e(admin_trans('redirects_use_404')) ?>
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>
 
 <?php
 $content = ob_get_clean();

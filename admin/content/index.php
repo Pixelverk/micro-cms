@@ -224,7 +224,7 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
         <thead>
             <tr>
                 <?php if (admin_can('content.bulk')): ?>
-                    <th style="width:32px;">
+                    <th class="col-select">
                         <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
                     </th>
                 <?php endif; ?>
@@ -234,7 +234,7 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                 <th><?= e(admin_trans('status_published')) ?></th>
                 <th><?= e(admin_trans('status_scheduled')) ?></th>
                 <th><?= e(admin_trans('common_updated')) ?></th>
-                <th style="width:220px;"><?= e(admin_trans('common_actions')) ?></th>
+                <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
         <tbody>

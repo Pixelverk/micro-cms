@@ -26,8 +26,9 @@ function docs_content(): array
             'intro' => 'Everything you need to publish content, without touching code.',
             'sections' => [
                 'Getting around' => [
-                    ['p' => 'The sidebar groups the admin area: Content, Collections (categories and tags), Forms, then Menus, Media and Reports. Anything your role cannot use is hidden.'],
-                    ['p' => 'The top bar has a link to the live site, a search field, dark-mode and full-screen toggles, and your profile. The buttons at the top left collapse the sidebar or open it on a phone.'],
+                    ['p' => 'The sidebar is the map of the admin: Welcome, Content, Collections (categories and tags), Forms, More (menus, media, redirects, activity, documentation, analytics) and System (users, settings, utilities, health). Anything your role cannot use is hidden.'],
+                    ['p' => 'The top bar names the page you are on. On the right are a link to the live site, the help button, the light/dark switch, a full-screen toggle, and your account. Each page carries its own working buttons at the top right of the content area.'],
+                    ['p' => 'On a narrow screen the sidebar becomes a drawer and the top bar keeps only the menu and account controls.'],
                 ],
                 'Creating and editing content' => [
                     ['p' => 'Open Content, choose the type (Page, Blog Post, Portfolio Item), then Add. The editor has three parts: components in the middle, details on the right, and the component palette below.'],
@@ -58,23 +59,44 @@ function docs_content(): array
                 'Deleting and restoring' => [
                     ['p' => 'Deleting moves an item to the trash instead of removing it. It leaves the site and the Content list, keeps its version history, and can be brought back from the Trash tab.'],
                     ['p' => 'Trashed items are purged automatically after a while — 30 days by default, see trash.retention_days in config.php. "Delete permanently" in the Trash tab removes one item immediately, and Utilities → Clear Trash empties the whole trash at once. Trashing a page also trashes the pages nested under it.'],
+                    ['p' => 'Utilities → Clear Trash cannot be undone. Everything else on the Utilities page either can be repeated safely or makes a file you download.'],
                 ],
                 'Media' => [
                     ['p' => 'Upload images, PDFs or video in Media. Give each image alt text so it is accessible and searchable.'],
-                    ['p' => 'Uploads are automatically resized into several widths and converted to WebP where possible, with a JPEG or PNG fallback. Never delete a file another page still uses.'],
-                ],
-                'Search and listings' => [
-                    ['p' => 'The site search covers titles and body text. Use the admin search field on the content list to find an item by title or text.'],
+                    ['p' => 'Uploads are automatically resized into several widths and converted to WebP where possible, with a JPEG or PNG fallback. The original is kept as well.'],
+                    ['p' => 'Selecting a file opens an inspector on the right: the preview, its name, size and upload date, the alt text and description, and an optional replacement file.'],
+                    ['p' => 'Choose size/format lists every stored variant with its pixel dimensions, so you can pick the right one before pressing Copy URL. The URL goes on the clipboard ready to paste into content or a template.'],
+                    ['p' => 'There is no usage report yet, so check whether a file is still referenced before deleting it. Media has a search box for finding a file by name, alt text or description.'],
+                    ['p' => 'Authors may pick from the media library but cannot upload or delete.'],
                 ],
                 'Bulk actions' => [
                     ['p' => 'Tick the boxes on the left of the content list to reveal a toolbar. You can publish, draft, archive, delete, clear cache, or add and remove a tag across the whole selection at once.'],
                     ['p' => 'Authors can only bulk-edit their own items; anything else is skipped and reported.'],
                 ],
+                'Finding things' => [
+                    ['p' => 'The site search covers titles and body text. In the admin, the content list has its own search box, and the status tabs above it filter by draft, scheduled, published, archived or trashed.'],
+                    ['p' => 'Media has a search box, and the activity log can be filtered by action, object, author, period and free text.'],
+                    ['p' => 'Documentation has a filter of its own; typing in it hides every section that does not match.'],
+                ],
                 'Activity log' => [
-                    ['p' => 'Reports shows who changed what, when. Filter by action, object, person or date. Entries are written automatically and cannot be edited.'],
+                    ['p' => 'More → Activity log shows who changed what, when. Entries are written automatically and cannot be edited.'],
+                ],
+                'Menus' => [
+                    ['p' => 'A menu is a list of links — pages or custom URLs — that the theme can print in a location such as the main navigation or the footer.'],
+                    ['p' => 'Open Menus and pick the menu you want from the dropdown at the top of the sidebar. Choosing "New menu" clears the selection so the next save creates one; name it in the Menu Label field.'],
+                    ['p' => 'Tick the locations the menu should fill. A location holds one menu at a time, so ticking one that already has a menu moves it here, and unticking releases it.'],
+                    ['p' => 'Add pages or custom URLs from the sidebar. Each item has a label, a type, a slug or URL, and a target (same tab or new tab). Drag the grip to reorder, and use the child action to nest an item under the one above it — one level deep.'],
+                    ['p' => 'Deleting a menu leaves its locations empty until another menu is assigned to them.'],
+                ],
+                'Settings' => [
+                    ['p' => 'Settings is grouped by what you are changing: Site, Editor account, Layout, SEO and social, Media uploads, Custom code, and the URL prefix for each content type. Related fields sit side by side, and a Save button for the whole page is at the top right.'],
+                    ['p' => 'Site URL matters most: set it to the site\'s real address so canonical URLs, the sitemap and social sharing are correct. Leave it blank and the CMS works it out from the request.'],
+                    ['p' => 'Change a URL prefix only on a site that is not yet public, or with redirects ready: existing links to the old paths will break.'],
+                    ['p' => 'Custom code is written into every public page exactly as typed, so treat it as trusted-admin-only input. Saving settings clears the page cache.'],
                 ],
                 'SEO and sharing' => [
                     ['p' => 'The SEO & Social panel on each item controls the browser title, the description search engines show, the canonical URL, and the image and text used when the page is shared. Leave a field blank to inherit a sensible default.'],
+                    ['p' => 'Site-wide defaults for the title suffix, the social image and the Twitter/X handle live under Settings → SEO and social. Anything set on an item overrides them.'],
                 ],
             ],
         ],
@@ -145,6 +167,15 @@ function docs_content(): array
                     ['p' => 'Admin strings live in admin/lang/. Copy en.php, translate the values, and add the language to admin_languages() in core/helpers/admin.php. Every string is fetched with admin_trans(key).'],
                     ['p' => 'Keys are short and descriptive: area_element, such as nav_dashboard, trash_move or settings_site_title_help. The area names the screen (nav, common, content, editor, versions, settings …) and the element names the string. Both files must carry the same keys; a missing one falls back to the key itself.'],
                 ],
+                'The admin UI' => [
+                    ['p' => 'admin/assets/style.css is the only admin stylesheet, and it is the single source of styling. Two rules the test suite enforces: every class used in admin markup must be defined there, and nothing is styled inline — neither style blocks in a page nor style attributes on an element.'],
+                    ['p' => 'Colour, spacing, radii and shadows are CSS custom properties in :root, with html.dark overriding the whole ramp. A component reads a token rather than a literal colour, so a palette change is a change in one block.'],
+                    ['code' => ":root {\n    --surface: #ffffff;\n    --surface-muted: #f9fafb;\n    --text: #1f2937;\n    --text-muted: #626d7d;\n    --border: #e5e7eb;\n    --primary: #00796b;\n    --primary-contrast: #ffffff;\n    --radius-md: 8px;\n    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);\n}\n\nhtml.dark {\n    --surface: #0f172a;\n    --text: #e5e7eb;\n    --primary: #14b8a6;\n    --primary-contrast: #04201d;\n}"],
+                    ['p' => 'Buttons say what they do rather than what colour they are: btn-primary for the one main action, btn-secondary for an alternative, btn-muted for a quiet one, btn-info for export and system actions, btn-danger and btn-delete for anything that discards data, and btn-small as a size modifier that can go with any of them.'],
+                    ['p' => 'Forms use .field-grid: two equal columns by default, .field-grid-3 for three, and .field-span for a field that needs the whole row. Set the column count per group rather than giving an individual input a width, so fields in a row stay the same size.'],
+                    ['p' => 'States that only appear conditionally — the .notice-* callouts, .status-* labels, .field-error, .empty-state and the .off-screen helper — are kept even when a search for them finds nothing. They render in states a static check cannot see.'],
+                    ['p' => 'Icons live in admin/assets/icons/ as single SVGs drawn with stroke="currentColor", so they take the colour of the text around them. icon($name, $size) inlines one.'],
+                ],
             ],
         ],
 
@@ -191,6 +222,9 @@ function docs_content(): array
                 ],
                 'Redirects' => [
                     ['p' => 'Redirects keep old URLs working. Add one when a page moves, or use the recent-404s list to catch links that are already broken. Saving a redirect clears its cached page, so it applies immediately.'],
+                    ['p' => 'The add form is one row: the old path, the new path, and whether the redirect is permanent (301) or temporary (302). Pressing "Redirect this" in the 404 list fills the form for you.'],
+                    ['p' => 'Renaming the slug of a published page creates its 301 automatically. Drafts do not, because their URL was never public.'],
+                    ['p' => 'A handful of paths belong to the CMS and cannot be redirected: the admin area, media, search, the form endpoints, sitemap.xml and robots.txt.'],
                 ],
                 'robots.txt' => [
                     ['p' => '/robots.txt is generated rather than stored, so it cannot go stale: it allows every crawler and points at the sitemap on the address set in Site URL. Add your own rules under Settings and they are appended exactly as written, which is where Disallow lines belong.'],
@@ -199,17 +233,19 @@ function docs_content(): array
                     ['p' => 'The health page checks PHP and its extensions, that storage is writable, that the schema is current and that production settings are safe. It only reads; fix what it flags before it turns into a blank page or a silently uncached site.'],
                 ],
                 'Maintenance' => [
+                    ['p' => 'Utilities groups its actions by what they touch. Maintenance holds the reversible ones, Content and data the ones that change content state, and Export and system the ones that produce a file or update the schema. Red buttons act on data that cannot be brought back.'],
                     ['ul' => [
-                        'Utilities → Clear Cache: removes all cached pages.',
-                        'Utilities → Reset Analytics: deletes all recorded page views.',
-                        'Utilities → Clear Trash: permanently deletes everything in the trash at once.',
-                        'Utilities → Warm Cache: renders every published page into the cache.',
-                        'Utilities → Export Static Site: downloads the cached pages, theme assets and media as a zip.',
-                        'Utilities → Download Backup: downloads the database, media and sitemap as a zip.',
-                        'Utilities → Regenerate Sitemap: rebuilds sitemap.xml.',
-                        'Utilities → Publish Due Content: publishes anything past its scheduled time.',
-                        'Utilities → Run Migrations: applies schema updates after upgrading the code.',
+                        'Maintenance → Clear Cache: removes all cached pages. They rebuild on the next visit.',
+                        'Maintenance → Warm Cache: renders every published page into the cache, so the next visitor does not pay for it.',
+                        'Maintenance → Regenerate Sitemap: rebuilds sitemap.xml.',
+                        'Content and data → Publish Due Content: publishes anything past its scheduled time. The site also does this automatically from time to time.',
+                        'Content and data → Clear Trash: permanently deletes everything in the trash. Not reversible.',
+                        'Content and data → Reset Analytics: deletes all recorded page views. Not reversible.',
+                        'Export and system → Export Static Site: downloads the cached pages, theme assets and media as a zip. The pages need no PHP, so this is how you publish to static hosting.',
+                        'Export and system → Download Backup: downloads the database, media library and sitemap as a zip.',
+                        'Export and system → Run Migrations: applies schema updates after upgrading the code.',
                     ]],
+                    ['p' => 'Export and system actions need the PHP zip extension. Without it the CMS falls back to Phar; if neither is available those buttons are disabled and say so.'],
                     ['h' => 'Restoring a backup'],
                     ['p' => 'Unzip the archive and put data.sqlite, media/ and sitemap.xml back into storage/, replacing what is there. The cache is not in the backup; it rebuilds on the next visit. There is deliberately no upload-and-restore button: a wrong database would brick the site.'],
                 ],

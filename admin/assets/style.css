@@ -82,25 +82,61 @@ img {
 
 /* 2. Design Tokens (CSS Variables) */
 
+/* Every component below reaches for a token instead of a literal colour, so a
+   palette change is a change in this block and nothing else. Components that
+   are deliberately dark in both themes (the sidebar) have their own tokens. */
+
 :root {
-    /* 2.1 Color system */
+    /* 2.1 Colour system */
     --gray: #f4f6f8;
-    --bg: #f4f6f8;
+    --bg: #f5f6f8;
     --surface: #ffffff;
     --surface-muted: #f9fafb;
+    --surface-sunken: #f1f3f6;
 
-    --text: #222222;
-    --text-muted: #6b7280;
+    --text: #1f2937;
+    /* Dark enough to clear AA on both the page background and the muted and
+       sunken surfaces, which is where badges and table headers sit. */
+    --text-muted: #626d7d;
 
     --border: #e5e7eb;
+    --border-strong: #d1d5db;
 
     --primary: #00796b;
-    --primary-hover: #004d40;
+    --primary-hover: #00695c;
+    /* Tinted accent surface, used by the dashboard tile icons. */
+    --primary-soft: #e3f1ef;
+    /* Text drawn on a filled accent surface. Dark mode's accent is a light
+       teal, so white would only reach 2.5:1 against it. */
+    --primary-contrast: #ffffff;
 
-    --danger: #b71c1c;
-    --danger-hover: #751111;
+    --danger: #b91c1c;
+    --danger-hover: #991b1b;
+    --danger-soft: #fee2e2;
+
+    --success: #15803d;
+    --success-soft: #dcfce7;
+
+    --warning: #b45309;
+    --warning-soft: #fef3c7;
+
+    --info: #0369a1;
+    --info-soft: #e0f2fe;
 
     --link: #2563eb;
+
+    /* Keyboard focus ring, drawn with box-shadow so it follows the element's
+       border radius. */
+    --ring: rgba(0, 121, 107, 0.35);
+
+    /* The sidebar is a dark panel in both themes. */
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #cbd5f5;
+    --sidebar-border: #1e293b;
+    --sidebar-active-bg: rgba(255, 255, 255, 0.12);
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+
+    --code-bg: #f6f8fa;
 
     /* 2.2 Typography */
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -108,7 +144,6 @@ img {
     --font-size-base: 1rem;
     --line-height-base: 1.5;
 
-    --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
@@ -117,18 +152,23 @@ img {
     --sidebar-width: 14rem;
     --sidebar-collapsed-width: 7rem;
 
-    --header-height: 5rem;
+    --header-height: 4.5rem;
 
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 10px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
 
-    /* 2.4 Motion / transitions */
+    /* 2.4 Elevation */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.18);
+
+    /* 2.5 Motion / transitions */
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: 150ms;
     --transition-normal: 250ms;
 
-    /* 2.5 Z-index layers */
+    /* 2.6 Z-index layers */
     --z-sidebar: 100;
     --z-header: 200;
     --z-modal-backdrop: 900;
@@ -136,19 +176,76 @@ img {
 }
 
 html.dark {
-    --bg: #0f172a;
-    --surface: #020617;
-    --surface-muted: #020617;
+    --gray: #0f172a;
+    --bg: #0b1120;
+    --surface: #0f172a;
+    --surface-muted: #172033;
+    --surface-sunken: #0b1120;
 
     --text: #e5e7eb;
-    --text-muted: #9ca3af;
+    --text-muted: #94a3b8;
 
-    --border: #1e293b;
+    --border: #23304a;
+    --border-strong: #334155;
 
     --primary: #14b8a6;
-    --primary-hover: #0f766e;
+    --primary-hover: #2dd4bf;
+    --primary-soft: #0e2f2c;
+    --primary-contrast: #04201d;
+
+    /* The semantic colours are tuned so white text on the filled variant
+       clears WCAG AA (4.5:1) in this theme. */
+    --danger: #e5484d;
+    --danger-hover: #d93d42;
+    --danger-soft: #3b1517;
+
+    --success: #4ade80;
+    --success-soft: #143223;
+
+    --warning: #fbbf24;
+    --warning-soft: #3a2a08;
+
+    --info: #5da4f8;
+    --info-soft: #16283f;
 
     --link: #60a5fa;
+
+    --ring: rgba(20, 184, 166, 0.45);
+
+    --sidebar-bg: #0b1120;
+    --sidebar-text: #cbd5f5;
+    --sidebar-border: #1e293b;
+    --sidebar-active-bg: rgba(45, 212, 191, 0.16);
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+
+    --code-bg: #020617;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* 2.7 Focus ring
+   One visible focus style for every interactive element. Declared before the
+   components so a component only needs to opt out, never in. */
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-muted:focus-visible,
+.btn-info:focus-visible,
+.btn-warning:focus-visible,
+.btn-delete:focus-visible,
+.btn-danger:focus-visible,
+.btn-preview:focus-visible,
+.btn-small:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring);
 }
 
 /* 3. Utilities */
@@ -184,8 +281,13 @@ html.dark {
     .hide-on-mobile {
         display: none !important;
     }
+    /* Keeps the icon and its hit target, drops the label. `!important` because
+       component rules such as .btn-small also set font-size. */
     .hide-text-on-mobile {
-        font-size:0;
+        font-size: 0 !important;
+        gap: 0;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 }
 
@@ -201,7 +303,7 @@ html.dark {
 
 /* 3.3 Text helpers */
 
-.text-muted { color: #6b7280; }
+.text-muted { color: var(--text-muted); }
 
 .text-small { font-size: 0.875rem; }
 
@@ -223,6 +325,9 @@ body {
 
 main {
     flex: 1;
+    /* A flex item defaults to min-width: auto, so a wide table inside would
+       stretch the whole column instead of scrolling within it. */
+    min-width: 0;
     height: 100%;
 }
 
@@ -257,20 +362,46 @@ input,
 textarea,
 select {
     width: 100%;
-    padding: .5rem;
+    padding: .5rem .65rem;
     box-sizing: border-box;
-    border-radius: 4px;
-    border-width: 1px;
-    background:white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
     font-family: inherit;
     font-size: 0.95rem;
+    transition: border-color var(--transition-fast) var(--ease),
+                background-color var(--transition-fast) var(--ease);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--primary);
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* A checkbox is a hit target, not a field. Without this it inherits the
+   full-width rule above and stretches across its container. */
+input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    padding: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
 }
 
 select {
@@ -283,46 +414,31 @@ textarea {
 }
 
 button {
-    padding: .5rem 1rem;
-    font-size: 1rem;
+    padding: .45rem 1rem;
+    font-size: 0.95rem;
     background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 4px;
+    color: var(--primary-contrast);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
+    transition: background-color var(--transition-fast) var(--ease),
+                border-color var(--transition-fast) var(--ease);
 }
 
 button:hover {
     background: var(--primary-hover);
+    border-color: var(--primary-hover);
 }
 
 button:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* 4.5 Tables */
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-}
-
-th, td {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-}
-
-th {
-    background: #f5f5f5;
-    font-weight: bold;
-}
-
-tr:hover {
-    background: #fafafa;
-}
+/* 4.5 Tables
+   Table styling itself lives with `.content-table` / `.admin-table` (7.1);
+   every table in the admin carries one of those classes. */
 
 /* 5. Layout Structure */
 
@@ -339,27 +455,87 @@ tr:hover {
     min-height: 100vh;
 }
 
-/* 5.2 Headers */
+/* 5.2 Headers
+   The top bar carries the page title and the account block. Pages set
+   `$pageTitle` before including the layout. */
 
 header {
-    background: #fff;
-    padding: 1.25rem 2rem;
-    display:flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.75rem;
+    display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 5rem;
+    gap: 1.5rem;
+    height: var(--header-height);
+}
+
+/* The bar is a single line: the heading truncates before the actions do. */
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.header-left {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.header-right { flex: 0 0 auto; }
+
+.header-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-left a {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: #222;
+    color: var(--text);
 }
 
-.header-left, .header-right {
-    display:flex;
-    gap: 1.25rem;
+/* The account block: initials disc plus name. */
+.header-account {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.header-account:hover {
+    background: var(--surface-muted);
+    text-decoration: none;
+}
+
+.header-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    font-size: 0.85rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+}
+
+.header-account-name {
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-medium);
 }
 
 .page-header {
@@ -374,51 +550,185 @@ header {
 
 .sidebar {
     width: var(--sidebar-width);
-    background: #0f172a;
-    color: #cbd5f5;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
     margin-top: 0;
     transition: width 0.25s ease;
-    border-right: 1px solid #fff;
-}
-
-.sidebar-section {
-    margin: 0 1.25rem 1.5rem;
-}
-
-.sidebar-section a {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    border-right: 1px solid var(--sidebar-border);
 }
 
 .sidebar-header {
-    height: 5rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid #fff;
+    height: var(--header-height);
+    margin-bottom: 1.25rem;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--sidebar-border);
     display: flex;
     align-items: center;
 }
 
-.sidebar-header h1 {
-    margin: 0 1.25rem;
-    text-wrap: nowrap;
+/* The brand is a mark plus a wordmark; only the mark shows in the rail. */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0.5rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
 }
 
-/* 5.4 Card grid */
+.sidebar-brand:hover {
+    text-decoration: none;
+    background: var(--sidebar-hover-bg);
+}
+
+.sidebar-brand-mark {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-sm);
+    background: var(--sidebar-active-bg);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.02em;
+}
+
+.sidebar-brand-name {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+/* 5.4 Card grid
+   Used by the analytics metric tiles. */
 
 .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
+    gap: 1.25rem;
 }
+
+/* 5.5 Section rhythm
+   Top-level blocks on a page are separated by one gap, so a page reads as a
+   stack of sections rather than one long scroll of boxes. Cards manage their
+   own internal spacing and drop their trailing margin inside a stack. */
+
+.analytics-sections,
+.page-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.analytics-sections > .card,
+.analytics-sections > .form-card,
+.page-sections > .card,
+.page-sections > .form-card,
+.stack > .card {
+    margin-bottom: 0;
+}
+
+/* 5.6 Dashboard tiles
+   Whole-surface links: the icon disc, the label and the summary line, with an
+   arrow that slides in on hover. */
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.tile {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color var(--transition-fast) var(--ease),
+                box-shadow var(--transition-fast) var(--ease),
+                transform var(--transition-fast) var(--ease);
+}
+
+.tile:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.tile-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.tile-title {
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+}
+
+.tile-meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Status summary under the tiles. */
+.dashboard-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.dashboard-strip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.dashboard-strip-link {
+    margin-left: auto;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.dashboard-strip-link:hover { color: var(--text); text-decoration: none; }
 
 /* 6. Components */
 
 /* 6.1 Buttons
-   A link styled as a button needs its own base (anchors do not inherit the
-   `button` element rules), so the shared shape lives here and the variants
-   below mostly set colour. Plain `button` elements keep the primary look. */
+   One base (.btn) plus intent variants; either can carry .btn-small.
+   Anchors do not inherit the `button` element rules, so every variant repeats
+   the base selector list. Plain `button` elements keep the primary look
+   because much of the admin markup ships a bare submit button. */
 
 .btn,
 .btn-primary,
@@ -427,82 +737,102 @@ header {
 .btn-info,
 .btn-warning,
 .btn-delete,
-.btn-preview,
-.btn-small {
-    display: inline-block;
-    padding: 0.5rem 1rem;
+.btn-danger,
+.btn-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
     font-family: inherit;
     font-size: 0.95rem;
     line-height: 1.4;
-    color: #fff;
     text-align: center;
     text-decoration: none;
     white-space: nowrap;
-    background: var(--primary);
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
     cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     transition: background-color var(--transition-fast) var(--ease),
-                border-color var(--transition-fast) var(--ease);
+                border-color var(--transition-fast) var(--ease),
+                color var(--transition-fast) var(--ease);
 }
 
+/* Filled accent is the default, so a variant only has to describe what makes
+   it different. */
+.btn,
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-contrast);
+}
 .btn:hover,
-.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 
 .btn-secondary {
     background: var(--surface);
     color: var(--text);
-    border-color: var(--border);
 }
 .btn-secondary:hover { background: var(--surface-muted); }
 
 .btn-muted {
     background: transparent;
     color: var(--text-muted);
-    border-color: var(--border);
+    box-shadow: none;
 }
 .btn-muted:hover { background: var(--surface-muted); color: var(--text); }
 
-.btn-info { background: #0e7490; }
-.btn-info:hover { background: #155e75; }
+/* Soft variants carry a tinted surface with the matching foreground; they read
+   as secondary actions without competing with the filled accent. */
+.btn-preview {
+    background: var(--info-soft);
+    border-color: transparent;
+    color: var(--info);
+}
+.btn-preview:hover { background: var(--surface-sunken); border-color: var(--border); }
 
-.btn-warning { background: #b45309; }
-.btn-warning:hover { background: #92400e; }
-
-.btn-delete {
-    background: var(--danger);
+.btn-info {
+    background: var(--info);
+    border-color: var(--info);
     color: #fff;
 }
-.btn-delete:hover { background: var(--danger-hover); }
-.btn-delete:disabled { background: gray; cursor: not-allowed; }
+.btn-info:hover { background: #075985; border-color: #075985; }
 
+.btn-warning {
+    background: var(--warning);
+    border-color: var(--warning);
+    color: #fff;
+}
+.btn-warning:hover { background: #92400e; border-color: #92400e; }
+
+.btn-delete,
 .btn-danger {
     background: var(--danger);
+    border-color: var(--danger);
     color: #fff;
 }
-.btn-danger:hover { background: var(--danger-hover); }
-
-.btn-preview { background: #eef3ff; color: #3b5bcc; }
-.btn-preview:hover { background: #dde6ff; }
+.btn-delete:hover,
+.btn-danger:hover { background: var(--danger-hover); border-color: var(--danger-hover); }
 
 /* Smaller action buttons used inside tables and toolbars. */
 .btn-small {
-    padding: 0.35rem 0.75rem;
+    padding: 0.3rem 0.65rem;
     font-size: 0.85rem;
-    background: var(--surface-muted);
-    color: var(--text);
-    border-color: var(--border);
+    gap: 0.3rem;
 }
-.btn-small:hover { background: var(--border); }
-
-/* .btn-small predates the .btn base class and is used on its own in markup,
-   so keep the standalone default noticeable rather than flat grey-on-grey. */
-a.btn-small,
-button.btn-small { color: inherit; }
 
 .btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-muted:disabled,
+.btn-info:disabled,
+.btn-warning:disabled,
+.btn-delete:disabled,
+.btn-danger:disabled,
+.btn-preview:disabled,
 button:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
@@ -519,6 +849,22 @@ button:disabled {
 /* Disabled destructive action in the user list (own account). */
 .delete-user-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* The dark theme's amber, blue and red fills are light colours, so the white
+   text the base variants set would only reach 1.7:1, 2.6:1 and 3.9:1. Darker
+   text clears AA on all three. Declared after the variants so it wins on
+   source order. */
+html.dark .btn-warning,
+html.dark .btn-info {
+    color: #10203a;
+}
+
+html.dark .btn-delete,
+html.dark .btn-danger,
+html.dark .actions-right .remove-btn,
+html.dark .menu-item .remove {
+    color: #2b0a0c;
+}
+
 
 /*   6.2 Cards & surfaces */
 
@@ -527,13 +873,16 @@ button:disabled {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
 }
 
-.card h2 {
+.card h2,
+.card-title {
     margin-top: 0;
     font-size: 1.1rem;
 }
+
+.card-title { margin-bottom: 1rem; }
 
 .card a {
     display: inline-block;
@@ -574,7 +923,7 @@ button:disabled {
     margin-top: 0.35rem;
 }
 
-.stat-card .delta-up { color: #15803d; }
+.stat-card .delta-up { color: var(--success); }
 .stat-card .delta-down { color: var(--danger); }
 
 /* A plain panel for forms and tools. */
@@ -585,6 +934,17 @@ button:disabled {
     border-radius: var(--radius-md);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+}
+
+/* Cards placed directly on a page get one consistent section gap. Grid and
+   flex parents already space their children, and a card at the end of a page
+   does not need a trailing gap. */
+.main-container > .card {
+    margin-bottom: 1.5rem;
+}
+
+.main-container > .card:last-child {
+    margin-bottom: 0;
 }
 
 .form-card fieldset {
@@ -605,7 +965,7 @@ button:disabled {
 }
 
 .utility-action h3 {
-    margin: 0 0 0.35rem;
+    margin: 0;
     font-size: 1rem;
 }
 
@@ -615,12 +975,107 @@ button:disabled {
     font-size: 0.9rem;
 }
 
-/* Forms laid out in the card grid. */
-.cards {
+/* Icon disc plus heading, the same pairing as a dashboard tile. */
+.utility-action-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+
+/* Utilities sit in a grid of equally sized cards, grouped by what they touch. */
+.utility-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
     gap: 1.25rem;
 }
+
+/* Transparent inside the grid: the grid gap replaces the margins, and the
+   cards do not need an inner border twice over. */
+.utility-grid .utility-action {
+    margin-bottom: 0;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Menu editor shell (admin/menu/edit.php). A sidebar holds the menu's own
+   settings and the add-item tools; the wide column holds the items. */
+.menu-editor {
+    display: grid;
+    grid-template-columns: minmax(18rem, 21rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .menu-editor {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.menu-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.menu-panel,
+.menu-items-panel {
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.menu-panel h3,
+.menu-items-panel h3 {
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+}
+
+.menu-panel .field {
+    margin-bottom: 0;
+}
+
+.menu-panel-hint {
+    margin: 0.7rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+/* Location checkboxes: one row each, like the settings checkboxes. */
+.menu-locations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.menu-location {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.menu-location input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+/* The add buttons sit under their own fields, full width of the panel. */
+.menu-panel .field button {
+    width: 100%;
+    margin-top: 0.6rem;
+}
+
+.menu-panel .field .field-input + .field-input {
+    margin-top: 0.5rem;
+}
+
 
 /*   6.2.1 Page header */
 
@@ -646,32 +1101,213 @@ button:disabled {
 
 .field {
     display: block;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Inside a grid the gap supplies the spacing. */
+.field-grid > .field {
+    margin-bottom: 0;
 }
 
 .field-label {
     display: block;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
     font-size: 0.9rem;
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-semibold);
 }
 
 .field-input {
     width: 100%;
 }
 
+/* The settings form lays each group out in a grid of equal tracks, so a field
+   either takes one track or the whole row. The track is the only thing that
+   decides a field's width — capping one with a max-width made it look shorter
+   than its neighbours for no visible reason. */
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 1.5rem;
+}
+
+.field-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Long values (a comma list, a robots.txt snippet) get the full row. */
+.field-span {
+    grid-column: 1 / -1;
+}
+
+/* Grid items default to min-width: auto, which lets a wide child push the
+   track open. */
+.field-grid > .field {
+    min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .field-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .field-grid,
+    .field-grid-3 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .field-span {
+        grid-column: auto;
+    }
+}
+
+/* A form row with inline controls, as on the redirects page: the text fields
+   share the remaining width, the select is only as wide as its options, and the
+   button is content-sized. Wraps to as many rows as it needs when narrow. */
+.field-grid-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.field-grid-inline > .field {
+    flex: 1 1 11rem;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.field-grid-inline > .field-narrow {
+    flex: 0 1 12rem;
+}
+
+.field-grid-inline > .field-btn {
+    flex: 0 0 auto;
+    /* Anchored to the top of the row, then offset by a label's height (a
+       0.9rem line box at the normal line height, plus its bottom margin), so
+       the button sits on the input line and a taller neighbour cannot drag it
+       down. */
+    align-self: flex-start;
+    display: flex;
+    align-items: flex-start;
+    padding-top: calc(0.9rem * 1.2 + 0.4rem);
+}
+
+/* The button lines up with the inputs, not with their labels. */
+.field-grid-inline > .field-btn .form-actions {
+    margin-top: 0;
+}
+
+.field-grid-inline .field-span {
+    flex-basis: 100%;
+}
+
+/* A checkbox reads as a line of text with its help underneath, so it is not
+   given a label block above it. */
+.field-check {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    align-content: center;
+    gap: 0 0.6rem;
+}
+
+.field-check input[type="checkbox"] {
+    grid-row: span 2;
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+.field-check .field-label {
+    margin-bottom: 0;
+    grid-column: 2;
+}
+
+.field-check small {
+    grid-column: 2;
+    margin-top: 0.1rem;
+}
+
+/* Section headings inside a settings form. */
+.settings-group {
+    border: 0;
+    padding: 0;
+    margin: 0 0 2rem;
+}
+
+/* A form card spaces its own children, so the last group need not. */
+.form-card > .settings-group:last-child,
+.settings-group:last-child {
+    margin-bottom: 0;
+}
+
+/* A full-width hint inside a field grid, for text that belongs to the group
+   rather than to one field. */
+.field-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+/* Key/value facts about a record. */
+.meta-list {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.4rem 1.25rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.meta-list dt {
+    color: var(--text-muted);
+}
+
+.meta-list dd {
+    margin: 0;
+}
+
+.settings-group legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0 0 0.6rem;
+    margin-bottom: 1.1rem;
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-group legend svg {
+    color: var(--text-muted);
+}
+
+/* URL prefixes are short slugs, not sentences. */
+.field-input.content-prefix {
+    max-width: 12rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+    .field-input.content-prefix { max-width: none; }
+}
+
 .field .help,
 .field small {
     display: block;
-    margin-top: 0.3rem;
+    margin-top: 0.35rem;
     color: var(--text-muted);
     font-size: 0.8rem;
+    line-height: 1.45;
 }
 
 /* Error text under a field; only rendered when validation fails. */
 .field-error {
     display: block;
-    margin-top: 0.3rem;
+    margin-top: 0.35rem;
     color: var(--danger);
     font-size: 0.8rem;
 }
@@ -686,62 +1322,61 @@ button:disabled {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.6rem;
-    margin-top: 1.25rem;
+    margin-top: 1.5rem;
 }
 
-/*   6.3 Badges & status labels */
+/*   6.3 Badges & status labels
+   A badge flags something ("home", a version change) and a status reports
+   state; both share one shape so a row never mixes two pill sizes. */
+
+.badge,
+.status {
+    display: inline-block;
+    padding: 0.2em 0.5em;
+    font-size: 0.7rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
+    border-radius: var(--radius-sm);
+    vertical-align: middle;
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+}
 
 .badge {
-    display: inline-block;
     margin-left: 0.4em;
-    padding: 0.15em 0.45em;
-    font-size: 0.65rem;
-    font-weight: 600;
-    line-height: 1;
-    border-radius: 10px;
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    vertical-align: middle;
-    background: #e9ecef;
-    color: #555;
 }
 
 .badge-home {
-    background: #eef3ff;
-    color: #3b5bcc;
-}
-
-.status {
-    display: inline-block;
-    padding: 0.2em 0.45em;
-    font-size: 0.7rem;
-    border-radius: 4px;
-    font-weight: 600;
+    background: var(--info-soft);
+    color: var(--info);
 }
 
 .status-draft {
-    background: #f1f1f1;
-    color: #666;
+    background: var(--surface-sunken);
+    color: var(--text-muted);
 }
 
 .status-published {
-    background: #e6f4ea;
-    color: #2f855a;
+    background: var(--success-soft);
+    color: var(--success);
 }
 
 .status-scheduled {
-    background: #fff4e5;
-    color: #b45309;
+    background: var(--warning-soft);
+    color: var(--warning);
 }
 
 .status-failed {
-    background: #fdecea;
+    background: var(--danger-soft);
     color: var(--danger);
 }
 
 .status-archived {
-    background: #eceff1;
-    color: #546e7a;
+    background: var(--surface-sunken);
+    color: var(--text-muted);
 }
 
 /*   Content list: status tabs, search, preview action */
@@ -774,13 +1409,13 @@ button:disabled {
 }
 
 .status-tab:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--surface-sunken);
 }
 
 .status-tab.active {
-    background: #1f2933;
-    border-color: #1f2933;
-    color: #fff;
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--surface);
     font-weight: 600;
 }
 
@@ -795,35 +1430,49 @@ button:disabled {
     align-items: center;
 }
 
+/* The search box is an ordinary input; it was re-stating base properties. */
 .content-search input[type="search"] {
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
     font: inherit;
 }
 
-.btn-preview {
-    background: #eef3ff;
-    color: #3b5bcc;
-}
-
-.btn-preview:hover {
-    background: #dde6ff;
-}
-
-.btn-muted {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: inherit;
-}
-
 .empty-state {
-    padding: 2rem 1rem;
-    color: var(--text-muted, #666);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 2.5rem 1.5rem;
+    color: var(--text-muted);
     text-align: center;
     border: 1px dashed var(--border);
     border-radius: var(--radius-md);
 }
+
+/* A row of summary values or a status line, at the top of a report page. */
+.health-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-bottom: 0.35rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+}
+
+.empty-state-title {
+    color: var(--text);
+    font-weight: var(--font-weight-semibold);
+}
+
+.empty-state p { margin: 0; max-width: 34rem; }
 
 /*   6.4 Header (top bar) */
 
@@ -838,9 +1487,8 @@ button:disabled {
     display: block;
 }
 
-.header-icon:hover svg {
-    transform: scale(1.2);
-    fill: var(--gray); 
+.header-icon:hover {
+    color: var(--primary);
 }
 
 /* Header actions are real buttons for keyboard/AT users; strip the chrome. */
@@ -852,30 +1500,6 @@ button.header-icon {
 }
 
 button.header-icon:hover { background: transparent; }
-
-/* Breadcrumb trail */
-.breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.breadcrumb a {
-    color: var(--text-muted);
-    text-decoration: none;
-}
-
-.breadcrumb a:hover { color: var(--text); text-decoration: underline; }
-
-.breadcrumb [aria-current="page"] {
-    color: var(--text);
-    font-weight: var(--font-weight-medium);
-}
-
-.breadcrumb-sep { opacity: 0.5; }
 
 .only-mobile { display: none; }
 
@@ -904,18 +1528,6 @@ button.header-icon:hover { background: transparent; }
     gap: 0.35rem;
 }
 
-.actions-right button,
-.add-child-btn {
-    padding: 0.25rem 0.6rem;
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
-.actions-right .remove-btn { background: var(--danger); }
-.actions-right .remove-btn:hover { background: var(--danger-hover); }
-
-.actions-right .duplicate-btn { background: var(--surface-muted); }
-
 .no-children {
     margin: 0;
     color: var(--text-muted);
@@ -939,8 +1551,8 @@ button.header-icon:hover { background: transparent; }
 
 .quill-editor {
     min-height: 10rem;
-    background: #fff;
-    color: #222;
+    background: var(--surface);
+    color: var(--text);
 }
 
 .quill-hidden { display: none; }
@@ -972,7 +1584,7 @@ button.header-icon:hover { background: transparent; }
     border: 1px solid var(--border);
 }
 
-.select-image-btn:hover { background: var(--border); }
+.select-image-btn:hover { background: var(--surface-sunken); }
 
 /* Small layout helpers used by page markup */
 
@@ -982,72 +1594,204 @@ button.header-icon:hover { background: transparent; }
 .inline-form-block { display: inline-block; margin: 0; }
 .no-underline { text-decoration: none; color: inherit; }
 .gap-sm { gap: 0.5rem; }
-.page-actions-inline { display: flex; gap: 1rem; align-items: center; }
+
+/* A toolbar of controls beside a page title: the search box and the upload
+   form line up on one baseline rather than wrapping mid-row. */
+.page-actions-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-actions-inline form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.page-actions-inline input[type="text"] { min-width: 12rem; }
+
+/* A file input carries browser-rendered chrome, so it is sized as a control
+   rather than a full-width field. */
+.page-actions-inline input[type="file"] {
+    width: auto;
+    max-width: 18rem;
+    padding: 0.3rem;
+    font-size: 0.85rem;
+}
+
+/* Below the tablet breakpoint the toolbar stacks and every control shrinks to
+   the column, so nothing forces the page wider than the viewport. */
+@media (max-width: 900px) {
+    .page-actions-inline {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-actions-inline form {
+        flex-wrap: wrap;
+    }
+
+    .page-actions-inline input[type="text"],
+    .page-actions-inline input[type="file"] {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+}
+
 .mr-sm { margin-right: 0.5rem; }
 .mr-md { margin-right: 1rem; }
 
 .sidebar-footer { margin-top: auto; }
 
-/* Menu editor item rows (admin/partials/menu-editor-templates.php) */
+/* Menu editor item rows (admin/partials/menu-editor-templates.php).
+   A row is a title, a grid of fields, then the icon actions. Rows sit on the
+   muted surface so they read as items inside the panel rather than as more
+   panels. Dragging reorders within one list; the child action nests. */
 
 .menu-item {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
-    background: var(--surface);
+    display: block;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.6rem;
+    background: var(--surface-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
 
 .menu-item-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0;
+    margin-bottom: 0.65rem;
+    font-size: 0.85rem;
     font-weight: var(--font-weight-semibold);
     cursor: move;
 }
 
+/* The grip is decorative; it hints that the row is draggable. */
+.menu-item-title::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.85rem;
+    background-image: radial-gradient(var(--text-muted) 1px, transparent 1px);
+    background-size: 0.25rem 0.28rem;
+    opacity: 0.55;
+}
+
 .menu-field { display: block; }
-.menu-field-label { flex: 1 1 150px; }
-.menu-field-narrow { flex: 1 1 120px; }
-.menu-field-wide { flex: 1 1 200px; }
+
+/* One row for the four controls, aligned on their inputs rather than on their
+   labels. Label and slug share the spare width; the two selects are only as
+   wide as their options need. */
+.menu-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+    width: 100%;
+}
+
+.menu-field-label,
+.menu-field-wide,
+.menu-field-narrow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
+}
+
+.menu-field-label { flex: 4 1 10rem; }
+.menu-field-wide { flex: 4 1 12rem; }
+
+/* `field-sizing: content` shrinks a select to its chosen option; max-width
+   stops a long label from spreading the row, and the fallback width keeps the
+   row even where field-sizing is not supported. */
+.menu-field-narrow {
+    flex: 0 1 auto;
+    width: max-content;
+    max-width: 9rem;
+}
+
+.menu-field-narrow .field-input {
+    width: 100%;
+    min-width: 6.5rem;
+    field-sizing: content;
+}
+
+.menu-fields .field-input {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .menu-field-label,
+    .menu-field-wide {
+        flex-basis: 12rem;
+    }
+}
+
 
 .menu-children {
     width: 100%;
     margin-left: 1rem;
-    margin-top: 0.5rem;
+    margin-top: 0.6rem;
 }
 
-.menu-fields,
 .menu-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
+    margin-top: 0.7rem;
 }
 
-.menu-fields { gap: 1rem; width: 100%; }
-.menu-actions { margin-top: 0.5rem; gap: 0.25rem; }
-
-/* Menu row actions: small buttons generated from the item template.
-   Also covers the editor's move/duplicate/remove controls. */
+/* Icon-only row actions: square, with the label as a tooltip. */
 .menu-actions button,
 .menu-item .add-child,
 .menu-item .duplicate,
 .menu-item .remove,
-.actions-right .move-up,
-.actions-right .move-down {
-    padding: 0.25rem 0.6rem;
+.actions-right button,
+.add-child-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem;
     font-size: 0.85rem;
-    background: var(--surface-muted);
-    color: var(--text);
+    background: var(--surface);
+    color: var(--text-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
+    box-shadow: none;
+}
+
+.menu-actions button svg { display: block; }
+
+/* The row buttons are icon-only. Without this a click lands on the <path>
+   inside the button rather than on the button, which is easy to mishandle in
+   the click handler. */
+.menu-actions button svg,
+.menu-actions button svg * {
+    pointer-events: none;
 }
 
 .menu-actions button:hover,
 .menu-item .add-child:hover,
-.menu-item .duplicate:hover { background: var(--border); }
+.menu-item .duplicate:hover,
+.actions-right .duplicate-btn:hover,
+.actions-right .move-up:hover,
+.actions-right .move-down:hover,
+.add-child-btn:hover {
+    background: var(--surface-sunken);
+    color: var(--text);
+    border-color: var(--border-strong);
+}
 
 .menu-item .remove,
 .actions-right .remove-btn {
@@ -1056,34 +1800,76 @@ button.header-icon:hover { background: transparent; }
     border-color: var(--danger);
 }
 
-/*   6.6 Sidebar */
+.menu-item .remove:hover,
+.actions-right .remove-btn:hover {
+    background: var(--danger-hover);
+    color: #fff;
+    border-color: var(--danger-hover);
+}
+
+/*   6.6 Sidebar
+   The nav is the one surface that stays dark in both themes, so it uses the
+   --sidebar-* token family rather than the theme ramp. */
+
+.sidebar-section {
+    margin: 0 0.75rem 1.5rem;
+}
 
 .sidebar-title {
-    font-size: 0.75rem;
+    margin: 0 0 0.4rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
-    opacity: 0.7;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.07em;
+    color: inherit;
+    opacity: 0.65;
 }
 
 .sidebar-link {
-    display: block;
-    padding: 0.6rem 0.75rem;
-    margin: 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.65rem;
+    margin: 0.1rem 0;
     color: inherit;
+    font-size: 0.9rem;
     text-decoration: none;
-    border-radius: 6px;
-    transition: background-color 0.2s ease;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast) var(--ease),
+                color var(--transition-fast) var(--ease);
     position: relative;
 }
 
 .sidebar-link:hover {
-    background: rgba(255,255,255,0.08);
+    background: var(--sidebar-hover-bg);
+    text-decoration: none;
 }
 
 .sidebar-link.active {
-    background: rgba(255,255,255,0.15);
-    font-weight: 600;
+    background: var(--sidebar-active-bg);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
 }
+
+/* Active row gets a small accent bar in the gutter. */
+.sidebar-link.active::before {
+    content: "";
+    position: absolute;
+    left: -0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 1.1rem;
+    border-radius: 0 3px 3px 0;
+    background: var(--primary);
+}
+
+.sidebar-link .sidebar-icon {
+    flex: 0 0 auto;
+    opacity: 0.85;
+}
+
+.sidebar-link.active .sidebar-icon { opacity: 1; }
 
 .sidebar-link.danger {
     color: #fca5a5;
@@ -1099,13 +1885,13 @@ button.sidebar-link {
     border: 0;
     background: none;
     font: inherit;
+    font-size: 0.9rem;
     text-align: left;
     cursor: pointer;
 }
 
-.sidebar-icon svg path{
-    stroke: #fff;
-}
+/* Icons draw with `stroke="currentColor"`; the link colour is the only thing
+   that needs to change, so nothing here overrides the SVG itself. */
 
 /*   6.7 Modals */
 
@@ -1132,7 +1918,7 @@ button.sidebar-link {
     max-width: 420px;
     max-height: 90vh;
     overflow: auto;
-    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    box-shadow: var(--shadow-lg);
 }
 
 .modal h3 {
@@ -1184,13 +1970,20 @@ button.sidebar-link {
     margin-top: 1rem;
 }
 
+/* Inside a card the border and top margin would double up with its own. */
+.card > .content-table,
+.card > .admin-table {
+    margin-top: 0;
+    border: 0;
+}
+
 .content-table th,
 .admin-table th {
-    padding: 0.7rem 0.85rem;
-    font-size: 0.8rem;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.75rem;
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     color: var(--text-muted);
     background: var(--surface-muted);
     border-bottom: 1px solid var(--border);
@@ -1199,16 +1992,24 @@ button.sidebar-link {
 
 .content-table td,
 .admin-table td {
-    padding: 0.7rem 0.85rem;
+    padding: 0.7rem 0.9rem;
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
 }
 
-.content-table tr:last-child td,
-.admin-table tr:last-child td { border-bottom: 0; }
-
+/* Rows sit on the card surface; only the hovered row tints. */
 .content-table tbody tr:hover,
 .admin-table tbody tr:hover { background: var(--surface-muted); }
+
+/* Column sizing for report tables. These were inline `style="width:…"` on the
+   `<th>` elements; a class keeps the widths together and themeable. */
+.col-select { width: 32px; }
+.col-actions { width: 180px; }
+.col-when,
+.col-author { width: 170px; }
+
+.content-table tr:last-child td,
+.admin-table tr:last-child td { border-bottom: 0; }
 
 .content-table code {
     font-size: 0.85em;
@@ -1220,11 +2021,12 @@ button.sidebar-link {
 .components-container {
     flex:1;
     border: 1px solid var(--border);
+    min-width: 0;
 }
 
 .component {
-    min-width: fit-content;
-    flex-grow:1;
+    min-width: 0;
+    flex-grow: 1;
 }
 
 .sidebar-container {
@@ -1241,8 +2043,10 @@ button.sidebar-link {
 
 .component-actions {
     display:flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    align-items:center;
+    align-items: center;
+    gap: 0.5rem;
     margin-top: 1.25rem
 }
 
@@ -1251,10 +2055,17 @@ button.sidebar-link {
     margin-top: 0;
 }
 
+/* Inline action cluster; either a table cell's row of buttons or the two
+   halves of the component editor's toolbar. */
 .actions {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
-    justify-content: space-between;
+}
+
+.component-actions .actions {
+    justify-content: flex-end;
 }
 
 .actions-left {
@@ -1264,7 +2075,7 @@ button.sidebar-link {
 
 .sortable-ghost {
     opacity: 0.5;
-    border: 2px dashed #aaa;
+    border: 2px dashed var(--border-strong);
 }
 
 #components-container .component-title {
@@ -1278,9 +2089,10 @@ button.sidebar-link {
 .draggable-component {
     padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     cursor: grab;
-    background: #fff;
+    background: var(--surface);
 }
 
 
@@ -1348,82 +2160,148 @@ button.sidebar-link {
 .notice p:last-child { margin-bottom: 0; }
 
 .notice-error { border-left-color: var(--danger); color: var(--danger); }
-.notice-success { border-left-color: #2e7d32; }
-.notice-info { border-left-color: var(--link); }
+.notice-success { border-left-color: var(--success); }
+.notice-info { border-left-color: var(--info); }
 
-/*   7.6 Documentation */
+/*   7.6 Documentation
+   Long-form prose, so it gets its own reading rhythm: a bounded line length,
+   generous line height, and real space between blocks. Without this the
+   paragraphs and list items run together at the browser defaults. */
 
 .docs-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .docs-layout {
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem;
+    gap: 2.5rem;
     align-items: flex-start;
 }
 
 .docs-toc {
     position: sticky;
-    top: 1rem;
+    /* Clears the sticky top bar rather than a guessed offset. */
+    top: calc(var(--header-height) + 1rem);
     flex: 0 0 14rem;
-    padding: 1rem;
+    padding: 1.1rem 1rem;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
 .docs-toc h3 {
-    margin: 0 0 0.5rem;
-    font-size: 0.8rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
 }
 
 .docs-toc ul { list-style: none; margin: 0; padding: 0; }
 
+.docs-toc li + li { margin-top: 0.15rem; }
+
 .docs-toc a {
     display: block;
-    padding: 0.25rem 0.35rem;
-    color: inherit;
+    padding: 0.3rem 0.45rem;
+    color: var(--text-muted);
     text-decoration: none;
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
 }
 
-.docs-toc a:hover { background: var(--surface-muted); }
-.docs-toc a.active { background: var(--surface-muted); font-weight: var(--font-weight-medium); }
+.docs-toc a:hover { background: var(--surface-muted); color: var(--text); }
+.docs-toc a.active { background: var(--surface-muted); color: var(--text); font-weight: var(--font-weight-medium); }
 
-.docs-body { flex: 1 1 32rem; min-width: 0; }
+.docs-body {
+    flex: 1 1 32rem;
+    min-width: 0;
+    /* Comfortable measure: full width at this size runs to ~110 characters. */
+    max-width: 44rem;
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
 
-.docs-filter { margin-bottom: 1rem; }
+/* On a narrow screen the table of contents stacks above the text and pushes it
+   off the first screen, while the filter below stays reachable. Drop it. */
+@media (max-width: 900px) {
+    .docs-toc {
+        display: none;
+    }
+}
+
+.docs-filter { margin-bottom: 2rem; }
 .docs-filter input { max-width: 24rem; }
 
 .docs-section {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
     border-bottom: 1px solid var(--border);
 }
 
-.docs-section:last-of-type { border-bottom: 0; }
-.docs-section h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+.docs-section:last-of-type { border-bottom: 0; padding-bottom: 0; }
+
+.docs-section h2 {
+    margin: 0 0 1.1rem;
+    font-size: 1.3rem;
+    line-height: 1.3;
+}
+
+/* Blocks inside a section. Only direct children, so the same elements nested
+   in a table cell or a callout keep their own spacing. */
+.docs-section > p + p,
+.docs-section > ul + p,
+.docs-section > p + ul,
+.docs-section > p + h3,
+.docs-section > h3 + p { margin-top: 1.15rem; }
+
+.docs-section > h3 {
+    margin-bottom: 0.6rem;
+    font-size: 1.05rem;
+}
+
+.docs-section > ul {
+    margin: 0;
+    padding-left: 1.35rem;
+    list-style: disc;
+}
+
+.docs-section > ul li { margin-bottom: 0.5rem; }
+.docs-section > ul li:last-child { margin-bottom: 0; }
+
+.docs-section > p { margin: 0; }
 
 .docs-code {
-    padding: 0.85rem 1rem;
+    margin-top: 1.15rem;
+    padding: 1rem 1.15rem;
     overflow-x: auto;
-    background: var(--surface-muted);
+    background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
-    line-height: 1.5;
+    line-height: 1.6;
+}
+
+/* The first block in a section sits right under its heading. */
+.docs-section > *:first-child { margin-top: 0; }
+
+.docs-table {
+    margin-top: 1.35rem;
 }
 
 .docs-table th { width: 12rem; }
+
+.docs-table td {
+    line-height: 1.6;
+}
+
 .docs-empty { color: var(--text-muted); }
 
 /*   7.7 Bulk toolbar */
@@ -1487,14 +2365,18 @@ button.sidebar-link {
 .activity-filters label {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-medium);
 }
 
 .activity-filters label.grow { flex: 1 1 12rem; }
 .activity-filters select,
 .activity-filters input { min-width: 9rem; }
+
+/* Sit the submit on the same baseline as the 36px controls beside it. */
+.activity-filters button { font-size: 0.9rem; }
 
 .pagination {
     display: flex;
@@ -1554,15 +2436,127 @@ button.sidebar-link {
     border-left: 1px solid var(--border);
 }
 
-.media-inspector img { width: 100%; margin-bottom: 1rem; }
+/* Below the tablet breakpoint the grid and the inspector stack: side by side
+   the fixed 340px panel leaves the grid too little room, and the page ends up
+   wider than the viewport. */
+@media (max-width: 900px) {
+    .media-layout {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
 
-.media-inspector label { display: block; margin-bottom: 0.75rem; }
+    .media-inspector {
+        width: auto;
+        padding-left: 0;
+        padding-top: 1.25rem;
+        border-left: 0;
+        border-top: 1px solid var(--border);
+    }
+}
 
-.media-inspector input,
+/* The inspector is a stack of blocks: the file, its fields, its URLs and the
+   delete action. Each is separated rather than run together. */
+.media-inspector > * + * {
+    margin-top: 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+}
+
+.media-inspector img { width: 100%; border-radius: var(--radius-sm); }
+
+/* <picture> is inline by default, so the preview needs its own box. */
+.media-preview {
+    display: block;
+    margin: 0;
+}
+
+.media-inspector-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.media-inspector-head strong {
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
+.media-inspector-head small {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.media-inspector .field {
+    margin-bottom: 1rem;
+}
+
+.media-inspector .field:last-child {
+    margin-bottom: 0;
+}
+
+.media-inspector input[type="text"],
+.media-inspector input[type="file"],
 .media-inspector textarea,
-.media-inspector select { width: 100%; margin-top: 0.25rem; }
+.media-inspector select {
+    width: 100%;
+}
+
+/* The panel is narrow, so its actions are a column of full-width buttons. */
+.media-inspector .form-actions {
+    margin-top: 0;
+}
+
+.media-inspector .form-actions button {
+    width: 100%;
+}
+
+/* The panel is narrow, so the size picker gets its own row and Copy URL sits
+   under it; side by side the selected label truncates. */
+.media-url-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.media-url-row select {
+    width: 100%;
+}
+
+.media-url-row button {
+    width: 100%;
+}
+
+/* Destructive action, kept apart from the save form above it. */
+.media-delete {
+    display: flex;
+}
+
+.media-delete button {
+    width: 100%;
+}
+
+/* Search and upload share the page-actions row. */
+.media-search {
+    flex: 1 1 12rem;
+}
+
+.media-search input[type="search"] {
+    width: 100%;
+}
+
+.media-upload {
+    flex: 0 1 auto;
+}
 
 /*   7.10 Image picker (moved out of admin/partials/image-picker.php) */
+
+/* Search box above the grid inside the picker modal. */
+.image-search {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.6rem;
+}
 
 .modal-content {
     position: relative;
@@ -1603,6 +2597,46 @@ button.sidebar-link {
     cursor: pointer;
 }
 
+/*   7.14 Form submissions (admin/messages.php) */
+
+/* One filter above the table rather than a full card of its own. */
+.messages-filter {
+    margin-bottom: 1rem;
+}
+
+.messages-filter label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+    max-width: 20rem;
+}
+
+.messages-filter strong {
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-medium);
+}
+
+/* The submitted values, revealed by the row's <details>. */
+.messages-data {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    list-style: disc;
+}
+
+.messages-data li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.messages-data li:last-child {
+    margin-bottom: 0;
+}
+
+.messages-data strong {
+    font-weight: var(--font-weight-semibold);
+}
+
 /*   7.11 Contextual help panel */
 
 #help-panel {
@@ -1615,7 +2649,7 @@ button.sidebar-link {
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    box-shadow: var(--shadow-lg);
     padding: 1rem 1.25rem;
     display: none;
     z-index: var(--z-modal);
@@ -1636,19 +2670,19 @@ button.sidebar-link {
 }
 
 .toast {
-    background: #333;
-    color: #fff;
+    background: var(--text);
+    color: var(--surface);
     padding: 0.75rem 1.25rem;
     border-radius: var(--radius-md);
     margin-top: 0.5rem;
     opacity: 0;
     animation: fadeIn 0.3s forwards;
-    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    box-shadow: var(--shadow-md);
 }
 
-.toast.success { background: #2e7d32; }
-.toast.error { background: #c62828; }
-.toast.info { background: #1565c0; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--info); }
 .toast.hide { animation: fadeOut 0.4s forwards; }
 
 @keyframes fadeIn { to { opacity: 1; } }
@@ -1660,6 +2694,28 @@ body.auth-page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+}
+
+.auth-header {
+    padding: 1rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: 400px;
+    margin: 0 auto;
+    color: var(--text-muted);
+}
+
+.auth-brand h1 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text);
 }
 
 body.auth-page main {
@@ -1675,56 +2731,67 @@ body.auth-page main {
     border: 1px solid var(--border);
     padding: 2rem;
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
     max-width: 400px;
     width: 100%;
 }
 
 .login-card h2 {
-    margin-top: 0;
-    margin-bottom: 1rem;
+    margin: 0 0 1.5rem;
+    font-size: 1.15rem;
     text-align: center;
 }
 
-.login-card form { display: flex; flex-direction: column; }
+.login-card .field { margin-bottom: 1.25rem; }
+.login-card .field:last-of-type { margin-bottom: 1.5rem; }
 
-.login-card input { margin-bottom: 1rem; }
-
-.login-card button { padding: 0.75rem; }
-
-.login-card .error {
-    color: var(--danger);
-    text-align: center;
-    margin-bottom: 1rem;
-}
+.login-card button[type="submit"] { width: 100%; }
 
 /* 9. State-Dependent Styles */
 
-/* 9.1 Sidebar collapsed */
+/* 9.1 Sidebar collapsed
+   The rail shows icons only; `data-label` supplies the hover tooltip and the
+   section headings are dropped because they have nothing to head. */
 
 body.sidebar-collapsed .sidebar {
     width: var(--sidebar-collapsed-width);
 }
 
-body.sidebar-collapsed .sidebar-section a {
-    gap: 0;
-}
-
-body.sidebar-collapsed .sidebar-title {
-    text-align: center;
-}
-
 body.sidebar-collapsed .sidebar-link {
     justify-content: center;
-    padding: 0.75rem 0;
-}
-
-body.sidebar-collapsed .sidebar-link {
+    gap: 0;
+    padding: 0.7rem 0;
     font-size: 0;
 }
 
+body.sidebar-collapsed .sidebar-title {
+    /* No room for a heading in the rail; the spacing keeps the groups apart. */
+    display: none;
+}
+
+/* The rail is narrower than the wordmark, so it shows the mark instead. Both
+   are real elements: relying on a font-size override to hide text loses to the
+   element's own font-size and clipped "Micro CMS" down to "M". */
+body.sidebar-collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+    padding: 0.35rem;
+    margin: auto;
+}
+
+body.sidebar-collapsed .sidebar-brand-mark {
+    display: inline-flex;
+}
+
+body.sidebar-collapsed .sidebar-brand-name {
+    display: none;
+}
+
 body.sidebar-collapsed .sidebar-icon {
-    transform: scale(1.3);
+    transform: scale(1.2);
 }
 
 body.sidebar-collapsed .sidebar-link::after {
@@ -1759,13 +2826,65 @@ body.sidebar-collapsed .sidebar-link:hover::after {
 
 /* 10. Media Queries & Responsiveness */
 
+/* Table rows are wider than a phone; scroll them inside the card instead of
+   letting the whole page scroll sideways. `display: block` is what makes the
+   table a scroll container, so `width: 100%` keeps it filling its parent. */
+@media (max-width: 900px) {
+    .content-table,
+    .admin-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    /* The component editor's 350px details column cannot fit beside the
+       component list here; let the row wrap and give the column full width.
+       `.flex-row` is used only by that form. */
+    .flex-row {
+        flex-wrap: wrap;
+    }
+
+    .sidebar-container {
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: none;
+    }
+
+    .main-container {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-container {
+        padding: 1rem;
+    }
+
+    header {
+        padding: 0 0.9rem;
+        gap: 0.5rem;
+    }
+
+    /* The top bar cannot fit the account name beside the page title on a
+       phone; the avatar still links to the profile. */
+    .header-account-name {
+        display: none;
+    }
+
+    .header-account { padding: 0.2rem; }
+
+    .header-right { gap: 0.35rem; }
+
+    .header-title { font-size: 1.05rem; }
+
+    .page-actions { width: 100%; }
+}
+
 /* 10.1 Mobile navigation (off-canvas sidebar) */
 
 @media (max-width: 900px) {
     .only-mobile { display: inline-flex; }
     .hide-on-mobile { display: none !important; }
-
-    .breadcrumb { display: none; }
 
     .sidebar {
         position: fixed;

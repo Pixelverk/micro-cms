@@ -38,37 +38,45 @@ ob_start();
 </div>
 
 <?php if ($summary['fail'] === 0 && $summary['warn'] === 0): ?>
-    <p><span class="status status-published"><?= e(admin_trans('health_all_ok')) ?></span></p>
+    <div class="health-summary">
+        <span class="tile-icon" aria-hidden="true"><?= icon('clipboard-check', 20) ?></span>
+        <span class="status status-published"><?= e(admin_trans('health_all_ok')) ?></span>
+    </div>
 <?php else: ?>
-    <p class="text-muted">
-        <?= e(admin_trans('health_summary', ['problems' => $summary['fail'], 'warnings' => $summary['warn']])) ?>
-    </p>
+    <div class="health-summary">
+        <span class="tile-icon" aria-hidden="true"><?= icon('clipboard-check', 20) ?></span>
+        <span class="text-muted">
+            <?= e(admin_trans('health_summary', ['problems' => $summary['fail'], 'warnings' => $summary['warn']])) ?>
+        </span>
+    </div>
 <?php endif; ?>
 
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th><?= e(admin_trans('health_check')) ?></th>
-            <th><?= e(admin_trans('health_status')) ?></th>
-            <th><?= e(admin_trans('health_detail')) ?></th>
-            <th><?= e(admin_trans('health_fix')) ?></th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($checks as $check): ?>
+<div class="card">
+    <table class="admin-table">
+        <thead>
             <tr>
-                <td><?= e($check['label']) ?></td>
-                <td>
-                    <span class="status <?= e($statusClasses[$check['status']] ?? 'status-draft') ?>">
-                        <?= e($statusLabels[$check['status']] ?? $check['status']) ?>
-                    </span>
-                </td>
-                <td><?= e($check['detail']) ?></td>
-                <td><?= e($check['fix']) ?></td>
+                <th><?= e(admin_trans('health_check')) ?></th>
+                <th><?= e(admin_trans('health_status')) ?></th>
+                <th><?= e(admin_trans('health_detail')) ?></th>
+                <th><?= e(admin_trans('health_fix')) ?></th>
             </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            <?php foreach ($checks as $check): ?>
+                <tr>
+                    <td><?= e($check['label']) ?></td>
+                    <td>
+                        <span class="status <?= e($statusClasses[$check['status']] ?? 'status-draft') ?>">
+                            <?= e($statusLabels[$check['status']] ?? $check['status']) ?>
+                        </span>
+                    </td>
+                    <td><?= e($check['detail']) ?></td>
+                    <td><?= e($check['fix']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
 
 <?php
 $content = ob_get_clean();

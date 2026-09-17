@@ -38,20 +38,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel='icon' href="<?= admin_asset('admin/assets/favicon.png')?>">
 </head>
 <body class="auth-page">
-<header>
-    <h1>Micro CMS - <?= e(admin_trans('auth_title')) ?></h1>
+<header class="auth-header">
+    <div class="auth-brand">
+        <?= icon('profile-circle', 20) ?>
+        <h1><?= e(admin_trans('auth_title')) ?></h1>
+    </div>
 </header>
 <main>
     <div class="login-card">
         <h2><?= e(admin_trans('auth_login')) ?></h2>
+
         <?php if ($error): ?>
-            <div class="error"><?= e($error) ?></div>
+            <div class="notice notice-error"><?= e($error) ?></div>
         <?php endif; ?>
+
         <form method="post" action="<?= url('admin/login') ?>">
             <?= csrf_field() ?>
-            <input type="text" name="username" placeholder="<?= e(admin_trans('auth_username')) ?>" required autofocus>
-            <input type="password" name="password" placeholder="<?= e(admin_trans('auth_password')) ?>" required>
-            <button type="submit"><?= e(admin_trans('auth_log_in')) ?></button>
+
+            <div class="field">
+                <label class="field-label" for="username"><?= e(admin_trans('auth_username')) ?></label>
+                <input class="field-input" type="text" id="username" name="username" required autofocus autocomplete="username">
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="password"><?= e(admin_trans('auth_password')) ?></label>
+                <input class="field-input" type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-primary"><?= e(admin_trans('auth_log_in')) ?></button>
         </form>
     </div>
 </main>

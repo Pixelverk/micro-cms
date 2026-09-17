@@ -20,78 +20,52 @@ ob_start();
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="create">
 
-    <fieldset>
+    <fieldset class="settings-group">
         <legend><?= e(admin_trans('user_details')) ?></legend>
 
-        <label>
-            <?= e(admin_trans('user_username')) ?>:
-            <input
-                type="text"
-                name="username"
-                required
-                autocomplete="off"
-                placeholder="<?= e(admin_trans('user_username_placeholder')) ?>"
-            >
-        </label>
+        <div class="field-grid">
+            <div class="field">
+                <label class="field-label" for="new-user-username"><?= e(admin_trans('user_username')) ?></label>
+                <input class="field-input" type="text" id="new-user-username" name="username" required autocomplete="off" placeholder="<?= e(admin_trans('user_username_placeholder')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_first_name')) ?>:
-            <input
-                type="text"
-                name="first_name"
-                placeholder="<?= e(admin_trans('common_optional')) ?>"
-            >
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-role"><?= e(admin_trans('user_role')) ?></label>
+                <select class="field-input" id="new-user-role" name="role">
+                    <?php foreach (admin_roles() as $roleCode): ?>
+                        <option value="<?= e($roleCode) ?>" <?= $roleCode === 'author' ? 'selected' : '' ?>>
+                            <?= e(admin_role_label($roleCode)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small><?= e(admin_trans('user_help_role')) ?></small>
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_last_name')) ?>:
-            <input
-                type="text"
-                name="last_name"
-                placeholder="<?= e(admin_trans('common_optional')) ?>"
-            >
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-first-name"><?= e(admin_trans('user_first_name')) ?></label>
+                <input class="field-input" type="text" id="new-user-first-name" name="first_name" placeholder="<?= e(admin_trans('common_optional')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_email')) ?>:
-            <input
-                type="email"
-                name="email"
-                placeholder="<?= e(admin_trans('common_optional')) ?>"
-            >
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-last-name"><?= e(admin_trans('user_last_name')) ?></label>
+                <input class="field-input" type="text" id="new-user-last-name" name="last_name" placeholder="<?= e(admin_trans('common_optional')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_password')) ?>:
-            <input
-                type="password"
-                name="password"
-                required
-                placeholder="<?= e(admin_trans('user_password_placeholder')) ?>"
-            >
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-email"><?= e(admin_trans('user_email')) ?></label>
+                <input class="field-input" type="email" id="new-user-email" name="email" placeholder="<?= e(admin_trans('common_optional')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_role')) ?>:
-            <select name="role">
-                <?php foreach (admin_roles() as $roleCode): ?>
-                    <option value="<?= e($roleCode) ?>" <?= $roleCode === 'author' ? 'selected' : '' ?>>
-                        <?= e(admin_role_label($roleCode)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small><?= e(admin_trans('user_help_role')) ?></small>
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-password"><?= e(admin_trans('user_password')) ?></label>
+                <input class="field-input" type="password" id="new-user-password" name="password" required placeholder="<?= e(admin_trans('user_password_placeholder')) ?>">
+            </div>
 
-        <label>
-            <?= e(admin_trans('user_confirm_password')) ?>:
-            <input
-                type="password"
-                name="password_confirm"
-                required
-                placeholder="<?= e(admin_trans('user_confirm_password_placeholder')) ?>"
-            >
-        </label>
+            <div class="field">
+                <label class="field-label" for="new-user-password-confirm"><?= e(admin_trans('user_confirm_password')) ?></label>
+                <input class="field-input" type="password" id="new-user-password-confirm" name="password_confirm" required placeholder="<?= e(admin_trans('user_confirm_password_placeholder')) ?>">
+            </div>
+        </div>
     </fieldset>
 
 </form>

@@ -109,7 +109,7 @@ t('the design system defines the shared page furniture', function () {
         '.field', '.field-label', '.field-input', '.form-actions',
         '.content-table', '.admin-table', '.actions',
         '.badge', '.status', '.status-draft', '.status-scheduled', '.status-archived',
-        '.modal', '.modal-content', '.sidebar', '.sidebar-link', '.breadcrumb',
+        '.modal', '.modal-content', '.sidebar', '.sidebar-link', '.header-title',
         '.toast', '.media-grid', '.media-inspector', '.image-grid', '.login-card',
     ] as $selector) {
         assert_contains($selector, $css, "{$selector} should be styled");
@@ -124,13 +124,13 @@ t('dark mode overrides the core surface tokens', function () {
     assert_contains('--text:', $css);
 });
 
-t('the header exposes accessible controls and breadcrumbs', function () {
+t('the header exposes accessible controls', function () {
     $header = (string) file_get_contents(CMS_PATH . '/admin/partials/header.php');
 
-    assert_contains('breadcrumb', $header);
+    assert_contains('header-title', $header, 'the bar names the current page');
     assert_contains('aria-label', $header, 'icon-only controls need labels');
     assert_contains('id="mobile-menu"', $header, 'mobile navigation toggle');
-    assert_contains('aria-current="page"', $header);
+    assert_contains('current_username', $header, 'the account block names the signed-in editor');
 });
 
 t('the mobile navigation toggle is wired up in main.js', function () {

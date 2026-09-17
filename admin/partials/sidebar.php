@@ -58,7 +58,10 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
 <nav class="sidebar">
 
     <div class="sidebar-header">
-        <h1><a href="<?= url('admin/dashboard')?>">Micro CMS</a></h1>
+        <a class="sidebar-brand" href="<?= url('admin/dashboard') ?>">
+            <span class="sidebar-brand-mark" aria-hidden="true">MC</span>
+            <span class="sidebar-brand-name">Micro CMS</span>
+        </a>
     </div>
 
     <div class="sidebar-section">

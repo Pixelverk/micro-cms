@@ -103,80 +103,82 @@ ob_start();
     </div>
 </div>
 
-<div class="cards">
-    <div class="card stat-card">
-        <h2><?= e((string) $views) ?></h2>
-        <p><?= e(admin_trans('analytics_views')) ?></p>
-        <p class="stat-change <?= e($viewsChange['class']) ?>"><?= e($viewsChange['text']) ?></p>
-    </div>
+<div class="analytics-sections">
+    <div class="cards">
+        <div class="card stat-card">
+            <h2><?= e((string) $views) ?></h2>
+            <p><?= e(admin_trans('analytics_views')) ?></p>
+            <p class="stat-change <?= e($viewsChange['class']) ?>"><?= e($viewsChange['text']) ?></p>
+        </div>
 
-    <div class="card stat-card">
-        <h2><?= e((string) $visitors) ?></h2>
-        <p><?= e(admin_trans('analytics_unique_visitors')) ?></p>
-        <p class="stat-change <?= e($visitorsChange['class']) ?>"><?= e($visitorsChange['text']) ?></p>
-    </div>
+        <div class="card stat-card">
+            <h2><?= e((string) $visitors) ?></h2>
+            <p><?= e(admin_trans('analytics_unique_visitors')) ?></p>
+            <p class="stat-change <?= e($visitorsChange['class']) ?>"><?= e($visitorsChange['text']) ?></p>
+        </div>
 
-    <div class="card stat-card">
-        <h2><?= e($ratioValue) ?></h2>
-        <p><?= e(admin_trans('analytics_cache_ratio')) ?></p>
-        <p class="stat-change <?= e($ratioChange['class']) ?>"><?= e($ratioChange['text']) ?></p>
-    </div>
-</div>
-
-<div class="card">
-    <h2><?= e(admin_trans('analytics_daily', ['range' => $rangeLabel])) ?></h2>
-    <?= analytics_sparkline(array_values($dailyViews)) ?>
-</div>
-
-<div class="stack">
-    <div class="card">
-        <h2><?= e(admin_trans('analytics_top_pages')) ?></h2>
-
-        <?php if (!$topPages): ?>
-            <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
-        <?php else: ?>
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th><?= e(admin_trans('analytics_path')) ?></th>
-                        <th><?= e(admin_trans('analytics_views')) ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($topPages as $row): ?>
-                        <tr>
-                            <td><code><?= e($row['path']) ?></code></td>
-                            <td><?= e((string) $row['views']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+        <div class="card stat-card">
+            <h2><?= e($ratioValue) ?></h2>
+            <p><?= e(admin_trans('analytics_cache_ratio')) ?></p>
+            <p class="stat-change <?= e($ratioChange['class']) ?>"><?= e($ratioChange['text']) ?></p>
+        </div>
     </div>
 
     <div class="card">
-        <h2><?= e(admin_trans('analytics_top_referrers')) ?></h2>
+        <h2><?= e(admin_trans('analytics_daily', ['range' => $rangeLabel])) ?></h2>
+        <?= analytics_sparkline(array_values($dailyViews)) ?>
+    </div>
 
-        <?php if (!$topReferrers): ?>
-            <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
-        <?php else: ?>
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th><?= e(admin_trans('analytics_referrer')) ?></th>
-                        <th><?= e(admin_trans('analytics_views')) ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($topReferrers as $row): ?>
+    <div class="stack">
+        <div class="card">
+            <h2><?= e(admin_trans('analytics_top_pages')) ?></h2>
+
+            <?php if (!$topPages): ?>
+                <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
+            <?php else: ?>
+                <table class="admin-table">
+                    <thead>
                         <tr>
-                            <td><?= e($row['referrer_host']) ?></td>
-                            <td><?= e((string) $row['views']) ?></td>
+                            <th><?= e(admin_trans('analytics_path')) ?></th>
+                            <th><?= e(admin_trans('analytics_views')) ?></th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topPages as $row): ?>
+                            <tr>
+                                <td><code><?= e($row['path']) ?></code></td>
+                                <td><?= e((string) $row['views']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <div class="card">
+            <h2><?= e(admin_trans('analytics_top_referrers')) ?></h2>
+
+            <?php if (!$topReferrers): ?>
+                <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
+            <?php else: ?>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th><?= e(admin_trans('analytics_referrer')) ?></th>
+                            <th><?= e(admin_trans('analytics_views')) ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topReferrers as $row): ?>
+                            <tr>
+                                <td><?= e($row['referrer_host']) ?></td>
+                                <td><?= e((string) $row['views']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
