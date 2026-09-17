@@ -49,10 +49,9 @@ ob_start();
                     <?php if ($name !== $username): ?>
                         <form method="post"
                             action="<?= url('admin/user/remove') ?>"
-                            class="js-confirm-form"
                             data-confirm="<?= e(admin_trans('delete_user_confirm', ['name' => $name])) ?>"
                             data-confirm-title="<?= e(admin_trans('delete_user')) ?>"
-                            class="inline-form">
+                            class="inline-form js-confirm-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="username" value="<?= e($name) ?>">
                             <button type="submit" class="btn-delete btn-small">

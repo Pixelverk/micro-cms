@@ -204,6 +204,32 @@ function can_edit_content(array $page): bool
 }
 
 /**
+ * Is this a request a signed-in user may make for their own account?
+ *
+ * The sidebar and top bar link every role to /admin/profile, which redirects
+ * to /admin/user/edit. Managers reach it through users.manage; everyone else
+ * gets this narrow exception, and admin/user/save.php still refuses any change
+ * to another account, a username, or a role.
+ */
+function admin_is_self_service_request(string $page): bool
+{
+    $page = trim($page, '/');
+
+    if ($page === 'user/edit') {
+        $target = (string) ($_GET['username'] ?? '');
+    } elseif ($page === 'user/save') {
+        $target = (string) ($_POST['original_username'] ?? ($_POST['username'] ?? ''));
+    } else {
+        return false;
+    }
+
+    $current = function_exists('current_user') ? current_user() : null;
+    $currentName = is_array($current) ? (string) ($current['username'] ?? '') : '';
+
+    return $target !== '' && $currentName !== '' && $target === $currentName;
+}
+
+/**
  * Abort an admin request when the current page needs a capability the user
  * does not have.
  */
@@ -223,6 +249,11 @@ function admin_guard(string $page): void
     }
 
     if ($required === null || admin_can($required)) {
+        return;
+    }
+
+    // Self-service profile edit/save for users without users.manage.
+    if ($required === 'users.manage' && admin_is_self_service_request($page)) {
         return;
     }
 

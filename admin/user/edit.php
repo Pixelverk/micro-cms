@@ -56,17 +56,19 @@ ob_start();
             <input type="email" name="email" value="<?= e($user['email'] ?? '') ?>">
         </label>
 
-        <label>
-            <?= e(admin_trans('role')) ?>:
-            <select name="role">
-                <?php foreach (admin_roles() as $roleCode): ?>
-                    <option value="<?= e($roleCode) ?>" <?= (($user['role'] ?? 'author') === $roleCode) ? 'selected' : '' ?>>
-                        <?= e(admin_role_label($roleCode)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small><?= e(admin_trans('role_help')) ?></small>
-        </label>
+        <?php if (admin_can('users.manage')): ?>
+            <label>
+                <?= e(admin_trans('role')) ?>:
+                <select name="role">
+                    <?php foreach (admin_roles() as $roleCode): ?>
+                        <option value="<?= e($roleCode) ?>" <?= (($user['role'] ?? 'author') === $roleCode) ? 'selected' : '' ?>>
+                            <?= e(admin_role_label($roleCode)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small><?= e(admin_trans('role_help')) ?></small>
+            </label>
+        <?php endif; ?>
 
         <label>
             <?= e(admin_trans('ui_language')) ?>:

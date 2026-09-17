@@ -829,7 +829,7 @@ function save_taxonomy(string $kind, array $post): void
         redirect_with_toast($kind, 'error', 'Content type is required.');
     }
 
-    $slug = slugify($slug !== '' ? $slug : $name);
+    $slug = sanitize_slug($slug !== '' ? $slug : $name) ?: $kind;
 
     // Keep the slug unique within this taxonomy type.
     $baseSlug = $slug;

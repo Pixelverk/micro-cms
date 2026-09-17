@@ -78,10 +78,10 @@ ob_start();
                 <td class="actions">
                     <a href="<?= url('admin/category/edit') ?>?id=<?= (int)$cat['id'] ?>" class="btn-small"><?= e(admin_trans('edit')) ?></a>
 
-                    <form method="post" action="<?= url('admin/category/remove') ?>" class="js-confirm-form" 
+                    <form method="post" action="<?= url('admin/category/remove') ?>"
                         data-confirm-title="<?= e(admin_trans('delete_category')) ?>"
                         data-confirm="<?= e(admin_trans('delete_category_confirm', ['name' => $cat['name']])) ?>"
-                        class="inline-form-block">
+                        class="inline-form-block js-confirm-form">
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
                         <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('delete')) ?></button>

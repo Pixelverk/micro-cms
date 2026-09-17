@@ -289,10 +289,9 @@ foreach (content_statuses() as $status) {
                     <?php if (admin_can('content.delete') && $canEditThis): ?>
                     <form method="post"
                         action="<?= url('admin/content/remove') ?>"
-                        class="js-confirm-form"
                         data-confirm="<?= e(admin_trans('delete_content_confirm', ['name' => $item['title']])) ?>"
                         data-confirm-title="<?= e(admin_trans('delete_content')) ?>"
-                        class="inline-form">
+                        class="inline-form js-confirm-form">
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                         <input type="hidden" name="type" value="<?= e($type) ?>">

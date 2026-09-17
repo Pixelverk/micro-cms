@@ -85,7 +85,7 @@ function save_menu(array $menu): bool
     $now = time();
 
     $label = $menu['label'] ?? '';
-    $slug  = $menu['slug'] ?? slugify($label);
+    $slug  = $menu['slug'] ?? (sanitize_slug($label) ?: 'menu');
     $items = json_encode($menu['items'] ?? [], JSON_THROW_ON_ERROR);
 
     // Check existence
@@ -137,17 +137,4 @@ function delete_menu(string $slug): bool
     $success = $stmt->execute(['slug' => $slug]);
     invalidate_cache();
     return $success;
-}
-
-/**
- * Generate URL-safe slug from label
- */
-function slugify(string $text): string
-{
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    $text = trim($text, '-');
-    $text = preg_replace('~-+~', '-', $text);
-    return strtolower($text ?: 'menu');
 }

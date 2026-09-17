@@ -103,20 +103,20 @@ ob_start();
             <div id="menu-items-container"></div>
         </div>
     </div>
-
-    <?php if ($menuKey): ?>
-        <form method="post"
-            action="<?= url('admin/menu/remove') ?>"
-            class="js-confirm-form"
-            data-confirm="Do you want to remove this menu: <?= e($menuKey)?>"
-            data-confirm-title="Delete menu"
-            style="display:inline">
-            <?= csrf_field() ?>
-            <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
-            <button type="submit" class="btn-delete btn-small">Delete</button>
-        </form>
-    <?php endif; ?>
 </form>
+
+<?php if ($menuKey): ?>
+    <form method="post"
+        action="<?= url('admin/menu/remove') ?>"
+        class="js-confirm-form"
+        data-confirm="Do you want to remove this menu: <?= e($menuKey)?>"
+        data-confirm-title="Delete menu"
+        style="display:inline">
+        <?= csrf_field() ?>
+        <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
+        <button type="submit" class="btn-delete btn-small">Delete</button>
+    </form>
+<?php endif; ?>
 
 <!-- Menu item template -->
 <?php include CMS_PATH . '/admin/partials/menu-editor-templates.php'; ?>

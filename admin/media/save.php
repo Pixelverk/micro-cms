@@ -42,7 +42,7 @@ $allowedMimeTypes = [
     'webm' => ['video/webm'],
 ];
 
-$imageQuality = (int)($settings['image_quality'] ?? 80);
+$imageQuality = (int)($settings['quality_webp'] ?? 80);
 $stripMeta    = (bool)($settings['strip_metadata'] ?? true);
 $generateWebp = (bool)($settings['generate_webp'] ?? true);
 

@@ -381,8 +381,14 @@ function formatPath(path) {
 // ----------------------------
 // Slug auto-generation
 // ----------------------------
+// Matches the server-side sanitize_slug(): strip diacritics, then keep
+// lowercase letters, digits and dashes.
 function slugify(value) {
-    return value.toLowerCase().trim()
+    return value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
         .replace(/[\s_]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')

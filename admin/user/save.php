@@ -112,6 +112,24 @@ if ($errors) {
 }
 
 // --------------------------------------------
+// Self-service guard
+// --------------------------------------------
+// A user without users.manage may only update their own account, and may not
+// change their own username or role. The role override matters because the
+// profile form hides the role field, so a posted role would default to 'author'.
+if (!admin_can('users.manage')) {
+    if ($action !== 'update' || $lookupName !== current_username()) {
+        log_activity('security.forbidden', 'user', (int) ($targetUser['id'] ?? 0), 'users.manage', []);
+        http_response_code(403);
+        render_admin_forbidden('users.manage');
+        exit;
+    }
+
+    $username = $lookupName;
+    $role     = (string) $targetUser['role'];
+}
+
+// --------------------------------------------
 // CREATE
 // --------------------------------------------
 if ($action === 'create') {

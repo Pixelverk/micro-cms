@@ -136,10 +136,9 @@ ob_start();
                 <form
                     action="<?= url('admin/tag/remove') ?>"
                     method="post"
-                    class="js-confirm-form"
+                    class="inline-form js-confirm-form"
                     data-confirm-title="<?= e(admin_trans('delete_tag')) ?>"
                     data-confirm="<?= e(admin_trans('delete_tag_confirm', ['name' => $tag['name']])) ?>"
-                    style="display:inline"
                 >
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">

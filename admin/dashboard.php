@@ -31,7 +31,7 @@ ob_start();
     <div class="card">
         <h2><?= e(admin_trans('menus')) ?></h2>
         <p><?= e(admin_trans('menus_card_intro')) ?></p>
-        <a href="<?= url('admin/menu') ?>"><?= e(admin_trans('manage_menus')) ?></a>
+        <a href="<?= url('admin/menu/edit') ?>"><?= e(admin_trans('manage_menus')) ?></a>
     </div>
 
     <div class="card">

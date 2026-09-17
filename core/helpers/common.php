@@ -240,19 +240,27 @@ function url(string $path = ''): string
     return $url;
 }
 
-// Slugify string
-function sanitize_slug(string $slug): string {
-    // Convert to lowercase
+/**
+ * URL-safe slug.
+ *
+ * Transliterates first, so a non-ASCII label keeps its letters ("Smörgås"
+ * becomes "smorgas") instead of losing them. Returns '' when nothing usable
+ * is left; callers that need a fallback choose their own.
+ */
+function sanitize_slug(string $slug): string
+{
+    $transliterated = @iconv('utf-8', 'us-ascii//TRANSLIT', $slug);
+
+    if ($transliterated !== false) {
+        $slug = $transliterated;
+    }
+
     $slug = strtolower($slug);
-    // Replace spaces and underscores with dashes
     $slug = preg_replace('/[\s_]+/', '-', $slug);
-    // Remove all characters except letters, numbers, and dashes
     $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
-    // Remove multiple consecutive dashes
     $slug = preg_replace('/-+/', '-', $slug);
-    // Trim leading/trailing dashes
-    $slug = trim($slug, '-');
-    return $slug;
+
+    return trim($slug, '-');
 }
 
 /**
