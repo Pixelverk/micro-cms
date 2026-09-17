@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Cache warm-up and static export
+| Cache warm-up, static export and backup
 |--------------------------------------------------------------------------
 |
 | The Utilities page can render every published page ahead of the first
@@ -236,28 +236,75 @@ function static_export_entries(): array
  */
 function export_static_site(): string
 {
-    if (!class_exists('ZipArchive')) {
-        throw new RuntimeException('Static export needs the PHP zip extension (ZipArchive), which is not installed.');
+    if (!zip_available()) {
+        throw new RuntimeException('Static export needs the PHP zip or phar extension, and neither is available.');
     }
 
     warm_cache();
 
     $archive = STORAGE_PATH . '/static-site.zip';
-    $zip     = new ZipArchive();
+    zip_write($archive, static_export_entries());
 
-    if ($zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-        throw new RuntimeException('Could not create the export archive.');
+    return $archive;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Backup
+|--------------------------------------------------------------------------
+|
+| A zip of the data, not the pages: the database, the media library and the
+| sitemap. The cache is excluded because it is regenerable; config.php (which
+| holds the form secret), sessions and logs are runtime state and stay out too.
+| Restore is manual — see the in-app documentation.
+|
+*/
+
+/**
+ * Build a backup zip of the data. Returns its path.
+ */
+function backup_build(): string
+{
+    if (!zip_available()) {
+        throw new RuntimeException('Backups need the PHP zip or phar extension, and neither is available.');
     }
 
-    foreach (static_export_entries() as $entry) {
-        if (isset($entry['source'])) {
-            $zip->addFile($entry['source'], $entry['name']);
-        } else {
-            $zip->addFromString($entry['name'], $entry['content']);
+    $dbPath  = STORAGE_PATH . '/data.sqlite';
+    $dbCopy  = STORAGE_PATH . '/backup-data.sqlite';
+    $archive = STORAGE_PATH . '/backup.zip';
+
+    if (!is_file($dbPath)) {
+        throw new RuntimeException('The database file is missing.');
+    }
+
+    @unlink($dbCopy);
+
+    // VACUUM INTO gives a consistent snapshot even while the site is writing.
+    try {
+        $pdo = db();
+        $pdo->exec('VACUUM INTO ' . $pdo->quote($dbCopy));
+    } catch (Throwable $exception) {
+        // Older SQLite builds: a plain copy is better than no backup.
+        if (!@copy($dbPath, $dbCopy)) {
+            throw new RuntimeException('Could not copy the database for the backup.');
         }
     }
 
-    $zip->close();
+    $entries = [['name' => 'data.sqlite', 'source' => $dbCopy]];
+
+    foreach (export_directory_files(STORAGE_PATH . '/media') as $file) {
+        $entries[] = [
+            'name'   => 'media/' . substr($file, strlen(STORAGE_PATH . '/media') + 1),
+            'source' => $file,
+        ];
+    }
+
+    if (is_file(STORAGE_PATH . '/sitemap.xml')) {
+        $entries[] = ['name' => 'sitemap.xml', 'source' => STORAGE_PATH . '/sitemap.xml'];
+    }
+
+    zip_write($archive, $entries);
+    @unlink($dbCopy);
 
     return $archive;
 }

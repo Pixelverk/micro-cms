@@ -12,23 +12,7 @@ end stays as a deferred design.
 
 ## Next up
 
-### 1. Backup download
-
-**Why:** there is no way to take the content with you; the static export is
-pages, not data. Every WordPress and Joomla host offers a backup export, and it
-is the cheapest insurance against a bad host move.
-
-**Sketch:** a Utilities button that zips `data.sqlite` (via `VACUUM INTO` for a
-consistent copy), `media/`, `sitemap.xml` and the cache, streamed and discarded
-like the static export. Exclude `config.php`, which holds the form secret.
-
-**Effort:** S.
-
-**Verify:** build a backup, open it and assert it contains the database and
-media; keep the existing `ZipArchive` guard test. Restore stays manual and
-documented — an admin-uploaded database can brick a live site.
-
-### 2. Trash (soft delete)
+### 1. Trash (soft delete)
 
 **Why:** deleting is permanent today and takes the version history with it.
 WordPress and Squarespace both keep a trash.
@@ -43,7 +27,7 @@ permanent delete; purge items older than N days from the existing shutdown hook
 **Verify:** trashed items leave the front end, cache and sitemap; restore brings
 them back; permanent delete removes the row and its versions.
 
-### 3. robots.txt
+### 2. robots.txt
 
 **Why:** there is no route for it, so crawlers never discover the sitemap.
 WordPress serves a virtual robots.txt.

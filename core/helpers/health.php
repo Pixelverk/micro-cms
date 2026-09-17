@@ -45,21 +45,26 @@ function health_checks(): array
         $phpOk ? '' : 'Upgrade PHP to 8.0 or newer.'
     );
 
-    // pdo_sqlite and imagick are real requirements; zip only powers the static
-    // export and backups, so a missing zip is a warning, not a failure.
-    foreach (['pdo_sqlite' => true, 'imagick' => true, 'zip' => false] as $extension => $required) {
+    // pdo_sqlite and imagick are real requirements.
+    foreach (['pdo_sqlite', 'imagick'] as $extension) {
         $loaded = extension_loaded($extension);
 
-        if ($loaded) {
-            $checks[] = health_result("Extension: {$extension}", 'ok', 'Loaded');
-            continue;
-        }
+        $checks[] = $loaded
+            ? health_result("Extension: {$extension}", 'ok', 'Loaded')
+            : health_result("Extension: {$extension}", 'fail', 'Missing (required)', "Install the php-{$extension} extension.");
+    }
 
+    // Zip is optional: ZipArchive is preferred and PharData is the fallback.
+    if (extension_loaded('zip')) {
+        $checks[] = health_result('Extension: zip', 'ok', 'Loaded');
+    } elseif (class_exists('PharData')) {
+        $checks[] = health_result('Extension: zip', 'ok', 'Not loaded; the static export and backups use the Phar fallback.');
+    } else {
         $checks[] = health_result(
-            "Extension: {$extension}",
-            $required ? 'fail' : 'warn',
-            $required ? 'Missing (required)' : 'Missing (optional: static export and backups)',
-            "Install the php-{$extension} extension."
+            'Extension: zip',
+            'warn',
+            'Missing, with no Phar fallback; the static export and backups are unavailable.',
+            'Install the php-zip extension.'
         );
     }
 

@@ -107,28 +107,23 @@ t('static_export_entries() lays pages out as pretty paths with assets', function
     }
 });
 
-t('export_static_site() reports a missing zip extension or writes an archive', function () {
+t('export_static_site() refuses without a backend, or writes an archive', function () {
     test_clear_cache_files();
 
-    if (!class_exists('ZipArchive')) {
+    if (!zip_available()) {
         try {
             export_static_site();
         } catch (RuntimeException $exception) {
-            assert_contains('ZipArchive', $exception->getMessage());
+            assert_contains('zip', strtolower($exception->getMessage()));
             return;
         }
 
-        throw new RuntimeException('expected export_static_site() to refuse without ZipArchive');
+        throw new RuntimeException('expected export_static_site() to refuse without a zip backend');
     }
 
     $archive = export_static_site();
     assert_true(is_file($archive), 'an archive is written');
-
-    $zip = new ZipArchive();
-    if ($zip->open($archive) === true) {
-        assert_true($zip->locateName('index.html') !== false, 'the archive contains the front page');
-        $zip->close();
-    }
+    assert_true(in_array('index.html', zip_entry_names($archive), true), 'the archive contains the front page');
 
     @unlink($archive);
 });

@@ -125,6 +125,39 @@ function seed_content(array $overrides = []): int
 }
 
 /**
+ * Entry names in a zip, using ZipArchive when present and PharData otherwise.
+ *
+ * @return list<string>
+ */
+function zip_entry_names(string $archive): array
+{
+    $names = [];
+
+    if (class_exists('ZipArchive')) {
+        $zip = new ZipArchive();
+        $zip->open($archive);
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $names[] = (string) $zip->getNameIndex($i);
+        }
+
+        $zip->close();
+
+        return $names;
+    }
+
+    $prefix = 'phar://' . $archive . '/';
+
+    foreach (new RecursiveIteratorIterator(new PharData($archive)) as $entry) {
+        $path = str_replace('\\', '/', (string) $entry->getPathname());
+
+        $names[] = str_starts_with($path, $prefix) ? substr($path, strlen($prefix)) : $path;
+    }
+
+    return $names;
+}
+
+/**
  * Print the summary and return a process exit code.
  */
 

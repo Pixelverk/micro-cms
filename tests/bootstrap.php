@@ -66,6 +66,7 @@ require CORE_PATH . '/helpers/activity.php';
 require CORE_PATH . '/helpers/analytics.php';
 require CORE_PATH . '/helpers/health.php';
 require CORE_PATH . '/helpers/redirects.php';
+require CORE_PATH . '/helpers/zip.php';
 require CORE_PATH . '/helpers/seo.php';
 require CORE_PATH . '/helpers/icons.php';
 require CORE_PATH . '/helpers/admin.php';

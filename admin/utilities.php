@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'reset_analytics', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -56,6 +56,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // response the browser can save without a download endpoint.
                 header('Content-Type: application/zip');
                 header('Content-Disposition: attachment; filename="static-site.zip"');
+                header('Content-Length: ' . filesize($archive));
+                readfile($archive);
+                @unlink($archive);
+                exit;
+
+            case 'export_backup':
+                try {
+                    $archive = backup_build();
+                } catch (Throwable $exception) {
+                    redirect_with_toast('utilities', 'error', $exception->getMessage());
+                }
+
+                log_activity('utility.backup', 'utility', null, basename($archive), ['bytes' => filesize($archive)]);
+
+                header('Content-Type: application/zip');
+                header('Content-Disposition: attachment; filename="site-backup.zip"');
                 header('Content-Length: ' . filesize($archive));
                 readfile($archive);
                 @unlink($archive);
@@ -138,14 +154,29 @@ ob_start();
     <div class="utility-action">
         <h3>Export Static Site</h3>
         <p>Download a zip of the cached pages, the theme assets and the media library, with asset and media URLs rewritten relative so the pages need no PHP.</p>
-        <?php if (class_exists('ZipArchive')): ?>
+        <?php if (zip_available()): ?>
             <button type="button" data-action="export_static" class="btn btn-info">
                 Export Static Site
             </button>
         <?php else: ?>
-            <p class="text-muted text-small">Requires the PHP zip extension (ZipArchive).</p>
+            <p class="text-muted text-small">Requires the PHP zip or phar extension.</p>
             <button type="button" class="btn btn-muted" disabled>
                 Export Static Site
+            </button>
+        <?php endif; ?>
+    </div>
+
+    <div class="utility-action">
+        <h3>Download Backup</h3>
+        <p>Download a zip of the database, the media library and the sitemap — the data, not the pages. Keep a copy somewhere safe before a host move. Restore is manual; see the documentation.</p>
+        <?php if (zip_available()): ?>
+            <button type="button" data-action="export_backup" class="btn btn-secondary">
+                Download Backup
+            </button>
+        <?php else: ?>
+            <p class="text-muted text-small">Requires the PHP zip or phar extension.</p>
+            <button type="button" class="btn btn-muted" disabled>
+                Download Backup
             </button>
         <?php endif; ?>
     </div>
@@ -187,6 +218,7 @@ const confirmations = {
     reset_analytics: 'Delete all recorded page views? This cannot be undone.',
     warm_cache: 'Render and cache every published page?',
     export_static: 'Warm the cache and download a static copy of the site?',
+    export_backup: 'Download a backup of the database and media?',
     regenerate_sitemap: 'Are you sure you want to regenerate the sitemap.xml?',
     publish_due: 'Publish every scheduled item that is due?',
     run_migrations: 'Apply any pending database migrations?'
