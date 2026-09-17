@@ -1,7 +1,7 @@
 <?php
 // admin/category/edit.php
 
-$pageTitle = 'Edit Category';
+$pageTitle = admin_trans('category_edit');
 
 $theme = theme_config();
 $contentTypes = $theme['content_types'] ?? [];
@@ -30,7 +30,7 @@ if ($id) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) {
-        redirect_with_toast('category', 'error', 'Category not found.');
+        redirect_with_toast('category', 'error', admin_trans('category_error_not_found'));
     }
 
     $category = $row;
@@ -121,12 +121,12 @@ $content = ob_get_clean();
 // ----------------------------
 ob_start();
 ?>
-<h3>Category editor</h3>
-<p>Create or update a category.</p>
+<h3><?= e(admin_trans('category_help_title')) ?></h3>
+<p><?= e(admin_trans('category_help')) ?></p>
 <ul>
-    <li><strong>Name</strong> is displayed to users</li>
-    <li><strong>Slug</strong> becomes the URL identifier</li>
-    <li><strong>Description</strong> is optional metadata</li>
+    <li><strong><?= e(admin_trans('common_name')) ?></strong> <?= e(admin_trans('category_help_name')) ?></li>
+    <li><strong><?= e(admin_trans('common_slug')) ?></strong> <?= e(admin_trans('category_help_slug')) ?></li>
+    <li><strong><?= e(admin_trans('common_description')) ?></strong> <?= e(admin_trans('category_help_description')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

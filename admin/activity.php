@@ -104,7 +104,12 @@ ob_start();
             <span><?= e(admin_trans('activity_period')) ?></span>
             <select name="range">
                 <option value=""><?= e(admin_trans('activity_all_time')) ?></option>
-                <?php foreach ([1 => 'Today', 7 => 'Last 7 days', 30 => 'Last 30 days', 90 => 'Last 90 days'] as $value => $label): ?>
+                <?php foreach ([
+                        1  => admin_trans('activity_range_today'),
+                        7  => admin_trans('activity_range_7'),
+                        30 => admin_trans('activity_range_30'),
+                        90 => admin_trans('activity_range_90'),
+                    ] as $value => $label): ?>
                     <option value="<?= (int) $value ?>" <?= $range === (string) $value ? 'selected' : '' ?>>
                         <?= e($label) ?>
                     </option>

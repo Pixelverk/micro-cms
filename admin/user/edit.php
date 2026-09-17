@@ -8,10 +8,10 @@ $users = load_users();
 $user = $users[$editUsername] ?? [];
 
 if (!$editUsername || !$user) {
-    redirect_with_toast('user', 'error', 'User not found');
+    redirect_with_toast('user', 'error', admin_trans('user_error_not_found'));
 }
 
-$pageTitle = 'Edit User: ' . $editUsername;
+$pageTitle = admin_trans('user_edit_title', ['name' => $editUsername]);
 $adminLanguages = admin_languages();
 
 ob_start();
@@ -19,7 +19,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('user_editing', ['name' => $editUsername])) ?></p>
     </div>
     <div class="page-actions">

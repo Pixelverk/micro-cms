@@ -15,7 +15,7 @@ declare(strict_types=1);
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 $theme        = theme_config();
@@ -26,11 +26,11 @@ $type = (string) ($_POST['type'] ?? 'page');
 $purge = !empty($_POST['purge']);
 
 if ($id < 1) {
-    redirect_with_toast('content', 'error', 'Missing content ID.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_missing_id'));
 }
 
 if (!isset($contentTypes[$type])) {
-    redirect_with_toast('content', 'error', 'Invalid content type.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_type'));
 }
 
 require_capability('content.delete');
@@ -39,13 +39,15 @@ require_capability('content.delete');
 $existing = load_content_by_id_any($id);
 
 if (!$existing || (string) $existing['type'] !== $type) {
-    redirect_with_toast('content', 'error', ucfirst($type) . ' not found.', ['type' => $type]);
+    redirect_with_toast('content', 'error', admin_trans('content_error_not_found', ['type' => ucfirst($type)]), ['type' => $type]);
 }
 
 if ($purge) {
     $done    = purge_content($id);
     $action  = 'content.purged';
-    $message = $done ? ucfirst($type) . ' deleted permanently.' : ucfirst($type) . ' could not be deleted.';
+    $message = $done
+        ? admin_trans('content_purged', ['type' => ucfirst($type)])
+        : admin_trans('content_error_purge', ['type' => ucfirst($type)]);
 } else {
     $done    = trash_content($id);
     $action  = 'content.trashed';

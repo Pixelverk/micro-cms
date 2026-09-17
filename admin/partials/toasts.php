@@ -19,7 +19,7 @@ function showToast(message, type = 'info', duration = 4000) {
 
 document.addEventListener('DOMContentLoaded', () => {
     showToast(
-        <?= json_encode($_SESSION['toast']['message']) ?>,
+        <?= json_encode($_SESSION['toast']['message'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
         <?= json_encode($_SESSION['toast']['type']) ?>
     );
 });

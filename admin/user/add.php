@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Add User';
+$pageTitle = admin_trans('user_add_title');
 $username = current_username();
 
 ob_start();
@@ -8,7 +8,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('user_create')) ?></p>
     </div>
     <div class="page-actions">

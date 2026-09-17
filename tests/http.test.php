@@ -708,6 +708,36 @@ t('bulk actions are audited', function () use ($base) {
     assert_contains('1 item(s)', (string) $result['items'][0]['summary']);
 });
 
+t('the admin renders in the language of the signed-in user', function () use ($base) {
+    db()->prepare("UPDATE users SET ui_language = 'sv' WHERE username = 'demo'")->execute();
+
+    http_login($base);
+
+    [$status, $utilities] = http('GET', $base . '/admin/utilities');
+
+    assert_eq(200, $status);
+    assert_contains('Rensa cache', $utilities, 'utilities headings are translated');
+    assert_not_contains('Clear Cache', $utilities, 'the English heading is gone');
+
+    [, $editor] = http('GET', $base . '/admin/content/edit?type=page');
+    assert_contains('Utkast', $editor, 'the status dropdown is translated');
+
+    [, $list] = http('GET', $base . '/admin/content?type=page');
+    assert_contains('Utkast', $list, 'status tabs use the translated label');
+
+    // Messages follow too: an unknown utility action answers in Swedish.
+    http('POST', $base . '/admin/utilities', true, [
+        '_token'         => http_csrf_token($base),
+        'utility_action' => 'nonsense',
+    ]);
+
+    [, $after] = http('GET', $base . '/admin/utilities');
+    assert_contains('Okänd åtgärd', $after, 'toast messages are translated');
+
+    db()->prepare("UPDATE users SET ui_language = 'en' WHERE username = 'demo'")->execute();
+    http_login($base);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

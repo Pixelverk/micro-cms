@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Edit Menu';
+$pageTitle = admin_trans('nav_menus');
 $username = current_username();
 
 // ----------------------------
@@ -26,18 +26,18 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p>Edit your navigation menu</p>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <p><?= e(admin_trans('menu_edit_title')) ?></p>
     </div>
     <div class="page-actions">
-        <button type="submit" form="menu-save" style="margin-top:1rem;">Save Menu</button>
+        <button type="submit" form="menu-save" style="margin-top:1rem;"><?= e(admin_trans('menu_save')) ?></button>
     </div>
 </div>
 
 <!-- Select or create menu -->
 <form method="get" style="margin-bottom:1rem;">
     <label>
-        Menu Location:
+        <?= e(admin_trans('menu_location')) ?>:
         <select name="location" onchange="this.form.submit()">
             <?php foreach ($locations as $locationKey => $locationLabel): ?>
                 <option value="<?= e($locationKey) ?>" <?= $locationKey === $location ? 'selected' : '' ?>><?= e($locationLabel) ?></option>
@@ -45,9 +45,9 @@ ob_start();
         </select>
     </label>
     <label>
-        Assigned Menu:
+        <?= e(admin_trans('menu_assigned')) ?>:
         <select name="menu" onchange="this.form.submit()">
-            <option value="">-- New Menu --</option>
+            <option value=""><?= e(admin_trans('menu_new')) ?></option>
             <?php foreach ($menus as $key => $m): ?>
                 <option value="<?= e($key) ?>" <?= $key === $menuKey ? 'selected' : '' ?>>
                     <?= e($m['label'] ?: $key) ?>
@@ -64,7 +64,7 @@ ob_start();
     <input type="hidden" name="location" value="<?= e($location) ?>">
 
     <label>
-        Menu Label:
+        <?= e(admin_trans('menu_label')) ?>:
         <input type="text" name="label" id="menu-label" value="<?= e($currentMenu['label']) ?>">
     </label>
 
@@ -72,34 +72,34 @@ ob_start();
 
         <!-- Left panel: add items -->
         <div style="flex:1; border:1px solid #ccc; padding:1rem;">
-            <h3>Add Items</h3>
+            <h3><?= e(admin_trans('menu_add_items')) ?></h3>
             
             <div>
-                <label>From Pages:</label>
+                <label><?= e(admin_trans('menu_from_pages')) ?></label>
                 <select id="new-item-page">
-                    <option value="">-- Select page --</option>
+                    <option value=""><?= e(admin_trans('menu_select_page')) ?></option>
                     <?php foreach ($pages as $p): ?>
                         <option value="<?= e($p['slug']) ?>"><?= e($p['title']) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <button type="button" id="add-page-item">Add</button>
+                <button type="button" id="add-page-item"><?= e(admin_trans('common_add')) ?></button>
             </div>
 
             <div style="margin-top:1rem;">
-                <label>Custom URL:</label>
+                <label><?= e(admin_trans('menu_custom_url')) ?></label>
                 <input type="text" id="new-item-url" placeholder="https://example.com">
-                <input type="text" id="new-item-label" placeholder="Label">
+                <input type="text" id="new-item-label" placeholder="<?= e(admin_trans('common_label')) ?>">
                 <select id="new-item-target">
-                    <option value="_self">Same tab</option>
-                    <option value="_blank">New tab</option>
+                    <option value="_self"><?= e(admin_trans('menu_target_same')) ?></option>
+                    <option value="_blank"><?= e(admin_trans('menu_target_new')) ?></option>
                 </select>
-                <button type="button" id="add-url-item">Add</button>
+                <button type="button" id="add-url-item"><?= e(admin_trans('common_add')) ?></button>
             </div>
         </div>
 
         <!-- Right panel: menu items editor -->
         <div style="flex:2;">
-            <h3>Menu Items</h3>
+            <h3><?= e(admin_trans('menu_items')) ?></h3>
             <div id="menu-items-container"></div>
         </div>
     </div>
@@ -109,12 +109,12 @@ ob_start();
     <form method="post"
         action="<?= url('admin/menu/remove') ?>"
         class="js-confirm-form"
-        data-confirm="Do you want to remove this menu: <?= e($menuKey)?>"
-        data-confirm-title="Delete menu"
+        data-confirm="<?= e(admin_trans('menu_delete_confirm', ['name' => $menuKey])) ?>"
+        data-confirm-title="<?= e(admin_trans('menu_delete')) ?>"
         style="display:inline">
         <?= csrf_field() ?>
         <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
-        <button type="submit" class="btn-delete btn-small">Delete</button>
+        <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('common_delete')) ?></button>
     </form>
 <?php endif; ?>
 

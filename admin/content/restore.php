@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 $theme        = theme_config();
@@ -22,11 +22,11 @@ $id   = (int) ($_POST['id'] ?? 0);
 $type = (string) ($_POST['type'] ?? 'page');
 
 if ($id < 1) {
-    redirect_with_toast('content', 'error', 'Missing content ID.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_missing_id'));
 }
 
 if (!isset($contentTypes[$type])) {
-    redirect_with_toast('content', 'error', 'Invalid content type.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_type'));
 }
 
 require_capability('content.delete');
@@ -40,6 +40,8 @@ if ($restored) {
 redirect_with_toast(
     'content',
     $restored ? 'success' : 'error',
-    $restored ? ucfirst($type) . ' restored.' : 'That item is not in the trash.',
+    $restored
+        ? admin_trans('content_restored', ['type' => ucfirst($type)])
+        : admin_trans('trash_not_in_trash'),
     ['type' => $type, 'status' => 'trash']
 );

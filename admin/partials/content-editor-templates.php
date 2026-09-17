@@ -90,7 +90,7 @@
     <div class="field">
         <span class="field-label"></span>
         <input type="hidden" class="field-input quill-hidden">  <!-- the actual thing submitted with form -->
-        <div class="quill-editor">JS will put the editor here</div> <!-- the visual input for the user -->
+        <div class="quill-editor"><?= e(admin_trans('editor_js_placeholder')) ?></div> <!-- the visual input for the user -->
     </div>
 </template>
 
@@ -111,10 +111,10 @@
             <input type="hidden" class="field-input" data-image-picker>
 
             <!-- Preview image -->
-            <img class="image-preview" src="" alt="No image selected">
+            <img class="image-preview" src="" alt="<?= e(admin_trans('media_no_image')) ?>">
 
             <!-- Button to open modal -->
-            <button type="button" class="select-image-btn">Select Image</button>
+            <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
         </div>
     </label>
 </template>

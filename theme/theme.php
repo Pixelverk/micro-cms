@@ -82,11 +82,7 @@ return [
             'default_header' => 'site-header',
             'default_footer' => 'site-footer',
             'available_components' => [
-                // A post is written, not assembled: rich text is the main tool.
-                'quill-editor',
-                'blog-featured-section',
-                'blog-news-section',
-                'blog-stories-section',
+                'quill-editor', // A post is written, not assembled: rich text is the main tool.
             ],
             'url_prefix' => 'blog',
             'taxonomy_layout' => 'blog-archive',

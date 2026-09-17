@@ -16,7 +16,7 @@ $uiLanguage       = trim((string) ($_POST['ui_language'] ?? ''));
 $role             = trim((string) ($_POST['role'] ?? 'author'));
 
 if (!in_array($action, ['create', 'update'], true)) {
-    redirect_with_toast('user', 'error', 'Invalid action.');
+    redirect_with_toast('user', 'error', admin_trans('user_error_action'));
 }
 
 // Normalise before validating.
@@ -28,21 +28,21 @@ $redirectArgs = $action === 'create' ? [] : ['username' => $originalUsername !==
 $errors = [];
 
 if ($username === '') {
-    $errors['username'] = 'A username is required.';
+    $errors['username'] = admin_trans('user_error_username_required');
 } elseif (!validate_username($username)) {
-    $errors['username'] = 'Usernames are 3-32 characters: lowercase letters, numbers, dot, dash or underscore.';
+    $errors['username'] = admin_trans('user_error_username_format');
 }
 
 if ($email !== '' && !validate_email($email)) {
-    $errors['email'] = 'That email address does not look valid.';
+    $errors['email'] = admin_trans('user_error_email');
 }
 
 if ($uiLanguage !== '' && !array_key_exists($uiLanguage, admin_languages())) {
-    $errors['ui_language'] = 'Unknown admin language.';
+    $errors['ui_language'] = admin_trans('user_error_language');
 }
 
 if (!in_array($role, admin_roles(), true)) {
-    $errors['role'] = 'Unknown role.';
+    $errors['role'] = admin_trans('user_error_role');
 }
 
 $minLength = (int) config('security.password_min_length', 10);
@@ -50,17 +50,17 @@ $minLength = (int) config('security.password_min_length', 10);
 // Password rules differ: required on create, optional on update.
 if ($action === 'create') {
     if ($password === '' || $passwordConfirm === '') {
-        $errors['password'] = 'A password is required.';
+        $errors['password'] = admin_trans('user_error_password_required');
     } elseif (strlen($password) < $minLength) {
-        $errors['password'] = "Passwords must be at least {$minLength} characters.";
+        $errors['password'] = admin_trans('user_error_password_length', ['min' => $minLength]);
     } elseif ($password !== $passwordConfirm) {
-        $errors['password_confirm'] = 'The two passwords do not match.';
+        $errors['password_confirm'] = admin_trans('user_error_password_match');
     }
 } elseif ($password !== '' || $passwordConfirm !== '') {
     if (strlen($password) < $minLength) {
-        $errors['password'] = "Passwords must be at least {$minLength} characters.";
+        $errors['password'] = admin_trans('user_error_password_length', ['min' => $minLength]);
     } elseif ($password !== $passwordConfirm) {
-        $errors['password_confirm'] = 'The two passwords do not match.';
+        $errors['password_confirm'] = admin_trans('user_error_password_match');
     }
 }
 
@@ -74,18 +74,18 @@ if (!$errors) {
     $targetUser = $existing->fetch(PDO::FETCH_ASSOC) ?: null;
 
     if ($action === 'create' && $targetUser) {
-        $errors['username'] = 'That username is already taken.';
+        $errors['username'] = admin_trans('user_error_username_taken');
     }
 
     if ($action === 'update' && !$targetUser) {
-        $errors['username'] = 'That user no longer exists.';
+        $errors['username'] = admin_trans('user_error_missing_user');
     }
 
     $targetId = (int) ($targetUser['id'] ?? 0);
 
     // Refuse to demote the only remaining administrator.
     if (!$errors && $action === 'update' && $role !== 'admin' && admin_is_last_admin($targetId)) {
-        $errors['role'] = 'This is the last administrator; promote someone else first.';
+        $errors['role'] = admin_trans('user_error_last_admin_promote');
     }
 
     if (!$errors && $username !== $lookupName) {
@@ -93,7 +93,7 @@ if (!$errors) {
         $clash->execute(['username' => $username, 'id' => $targetId]);
 
         if ((int) $clash->fetchColumn() > 0) {
-            $errors['username'] = 'Another account already uses that username.';
+            $errors['username'] = admin_trans('user_error_username_duplicate');
         }
     }
 
@@ -102,7 +102,7 @@ if (!$errors) {
         $emailClash->execute(['email' => $email, 'id' => $targetId]);
 
         if ((int) $emailClash->fetchColumn() > 0) {
-            $errors['email'] = 'Another account already uses that email address.';
+            $errors['email'] = admin_trans('user_error_email_duplicate');
         }
     }
 }
@@ -137,7 +137,7 @@ if ($action === 'create') {
 
     log_activity('user.created', 'user', null, $username, []);
 
-    redirect_with_toast('user', 'success', "User \"{$username}\" created successfully.");
+    redirect_with_toast('user', 'success', admin_trans('user_success_created', ['name' => $username]));
 }
 
 // --------------------------------------------
@@ -164,4 +164,4 @@ save_user($updateData);
 
 log_activity('user.updated', 'user', (int) $targetUser['id'], $username, ['role' => $role]);
 
-redirect_with_toast('user', 'success', "User \"{$username}\" updated successfully.");
+redirect_with_toast('user', 'success', admin_trans('user_success_updated', ['name' => $username]));

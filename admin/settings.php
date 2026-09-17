@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Settings';
+$pageTitle = admin_trans('nav_settings');
 $username  = current_username();
 
 $pdo = db();
@@ -47,26 +47,26 @@ $settingFields = [
     ],
     'site_url' => [
         'type'    => 'text',
-        'label'   => 'Site URL',
-        'help'    => 'Absolute address of this site (e.g. https://example.com). Used for canonical URLs, social tags and the sitemap.',
+        'label'   => 'settings_site_url',
+        'help'    => 'settings_site_url_help',
         'default' => '',
     ],
     'seo_title_suffix' => [
         'type'    => 'text',
-        'label'   => 'Title suffix',
-        'help'    => 'Appended to page titles, e.g. "| My Company". Leave blank to use "Page - Site title".',
+        'label'   => 'settings_title_suffix',
+        'help'    => 'settings_title_suffix_help',
         'default' => '',
     ],
     'default_og_image' => [
         'type'    => 'text',
-        'label'   => 'Default social image',
-        'help'    => 'Media ID, absolute URL, or a theme image filename. Used when content has no social image of its own.',
+        'label'   => 'settings_og_image',
+        'help'    => 'settings_og_image_help',
         'default' => '',
     ],
     'twitter_site' => [
         'type'    => 'text',
-        'label'   => 'Twitter/X handle',
-        'help'    => 'Default site handle for Twitter cards, e.g. @example.',
+        'label'   => 'settings_twitter',
+        'help'    => 'settings_twitter_help',
         'default' => '',
     ],
     'robots_extra' => [
@@ -140,8 +140,8 @@ $settingFields = [
     ],
     'allow_svg' => [
         'type'    => 'checkbox',
-        'label'   => 'Allow SVG uploads',
-        'help'    => 'SVG files can contain scripts. Only enable this if you trust everyone who can upload media.',
+        'label'   => 'settings_allow_svg',
+        'help'    => 'settings_allow_svg_help',
         'default' => false,
     ],
 
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $parsed = validate_sizes_csv($raw);
 
             if ($parsed === null) {
-                $errors[$key] = "{$meta['label']} must be a comma-separated list of widths between 16 and 4000 (e.g. 320,640,1280).";
+                $errors[$key] = admin_trans('settings_error_media_sizes', ['label' => admin_trans((string) $meta['label'])]);
                 continue;
             }
 
@@ -214,43 +214,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ----------------------------
         // Validate
         // ----------------------------
-        $label = $meta['label'] ?? $key;
+        $label = admin_trans((string) ($meta['label'] ?? $key), $meta['label_replace'] ?? []);
 
         if (str_starts_with($key, 'prefix_')) {
             if (!is_string($value) || !validate_url_prefix($value)) {
-                $errors[$key] = "$label may only contain lowercase letters, numbers, dashes and slashes.";
+                $errors[$key] = admin_trans('settings_error_prefix', ['label' => $label]);
                 continue;
             }
         } elseif ($meta['type'] === 'select') {
             if (!validate_enum((string) $value, array_map('strval', array_keys($meta['options'] ?? [])))) {
-                $errors[$key] = "Invalid selection for $label.";
+                $errors[$key] = admin_trans('settings_error_selection', ['label' => $label]);
                 continue;
             }
         } elseif ($key === 'contact_email') {
             if (!validate_email((string) $value, true)) {
-                $errors[$key] = 'Invalid contact email address.';
+                $errors[$key] = admin_trans('settings_error_email');
                 continue;
             }
         } elseif ($key === 'homepage_id') {
             if ($value === null || $value === '' || $value === 0) {
-                $errors[$key] = 'Choose a homepage.';
+                $errors[$key] = admin_trans('settings_error_homepage');
                 continue;
             }
 
             if (!load_content_by_id((int) $value)) {
-                $errors[$key] = 'That homepage no longer exists.';
+                $errors[$key] = admin_trans('settings_error_homepage_missing');
                 continue;
             }
         } elseif ($key === 'site_language') {
             if (!validate_language_code((string) $value)) {
-                $errors[$key] = 'Site language must look like "en" or "en-GB".';
+                $errors[$key] = admin_trans('settings_error_language');
                 continue;
             }
         } elseif ($key === 'site_url') {
             // Blank means "work it out from the request"; otherwise it must be
             // an absolute origin so canonical URLs are trustworthy.
             if ($value !== '' && !preg_match('#^https?://[a-z0-9.\-]+(:\d+)?$#i', (string) $value)) {
-                $errors[$key] = 'Site URL must be an absolute address such as https://example.com (no trailing slash or path).';
+                $errors[$key] = admin_trans('settings_error_site_url');
                 continue;
             }
 
@@ -259,14 +259,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $value = trim((string) $value);
 
             if ($value !== '' && !ctype_digit($value) && !validate_url($value) && !preg_match('#^[a-z0-9._\-/]+\.(jpe?g|png|gif|webp|avif)$#i', $value)) {
-                $errors[$key] = 'Social image must be a media ID, an absolute URL, or a theme image filename.';
+                $errors[$key] = admin_trans('settings_error_og_image');
                 continue;
             }
         } elseif ($key === 'twitter_site') {
             $value = trim((string) $value);
 
             if ($value !== '' && !preg_match('/^@?[A-Za-z0-9_]{1,30}$/', $value)) {
-                $errors[$key] = 'Twitter/X handle looks invalid.';
+                $errors[$key] = admin_trans('settings_error_twitter');
                 continue;
             }
         } elseif ($meta['type'] === 'number') {
@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         log_activity('settings.updated', 'settings', null, $changedKeys, []);
 
-        redirect_with_toast('settings', 'success', 'Settings saved successfully.');
+        redirect_with_toast('settings', 'success', admin_trans('settings_saved'));
     } catch (Throwable $e) {
         redirect_with_toast('settings', 'error', $e->getMessage());
     }
@@ -323,7 +323,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('settings_intro')) ?></p>
     </div>
     <div class="page-actions">

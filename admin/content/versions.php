@@ -19,17 +19,17 @@ $theme        = theme_config();
 $contentTypes = $theme['content_types'] ?? [];
 
 if (!isset($contentTypes[$type])) {
-    redirect_with_toast('content', 'error', 'Invalid content type.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_type'));
 }
 
 $content = load_content_by_id_admin($id);
 
 if (!$content) {
-    redirect_with_toast('content', 'error', 'Content not found.', ['type' => $type]);
+    redirect_with_toast('content', 'error', admin_trans('content_error_missing'), ['type' => $type]);
 }
 
 $typeLabel = $contentTypes[$type]['label'] ?? ucfirst($type);
-$pageTitle = 'History: ' . $content['title'];
+$pageTitle = admin_trans('versions_page_title', ['title' => $content['title']]);
 
 // ----------------------------
 // Restore
@@ -38,18 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $versionId = (int) ($_POST['version_id'] ?? 0);
 
     if ($versionId <= 0) {
-        redirect_with_toast('content/versions', 'error', 'Choose a version to restore.', ['id' => $id, 'type' => $type]);
+        redirect_with_toast('content/versions', 'error', admin_trans('versions_error_choose'), ['id' => $id, 'type' => $type]);
     }
 
     $version = load_content_version($versionId);
 
     // The version must belong to this item; never trust the posted id alone.
     if (!$version || (int) $version['content_id'] !== $id) {
-        redirect_with_toast('content/versions', 'error', 'That version does not belong to this content.', ['id' => $id, 'type' => $type]);
+        redirect_with_toast('content/versions', 'error', admin_trans('versions_error_other_content'), ['id' => $id, 'type' => $type]);
     }
 
     if (restore_content_version($versionId, ['reason' => 'restore'])) {
-        log_activity('content.restored', 'content', $id, 'Restored version ' . (int) $version['version'] . '.', [
+        log_activity('content.restored', 'content', $id, admin_trans('versions_restored', ['number' => (int) $version['version']]), [
             'id'      => $id,
             'version' => (int) $version['version'],
         ]);
@@ -57,12 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_with_toast(
             'content/versions',
             'success',
-            'Restored version ' . (int) $version['version'] . '.',
+            admin_trans('versions_restored', ['number' => (int) $version['version']]),
             ['id' => $id, 'type' => $type]
         );
     }
 
-    redirect_with_toast('content/versions', 'error', 'Could not restore that version.', ['id' => $id, 'type' => $type]);
+    redirect_with_toast('content/versions', 'error', admin_trans('versions_error_restore'), ['id' => $id, 'type' => $type]);
 }
 
 // ----------------------------

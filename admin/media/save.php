@@ -6,7 +6,7 @@ declare(strict_types=1);
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 $pdo = db();
@@ -135,17 +135,17 @@ $lqip = null;
 // Handle file upload
 // ----------------------------
 if ($hasNewUpload) {
-    if ($file['error'] !== UPLOAD_ERR_OK) redirect_with_toast('media', 'error', 'Upload error.');
-    if ($file['size'] > $maxSize) redirect_with_toast('media', 'error', 'File too large.');
-    if (!is_uploaded_file($file['tmp_name'])) redirect_with_toast('media', 'error', 'Invalid upload.');
+    if ($file['error'] !== UPLOAD_ERR_OK) redirect_with_toast('media', 'error', admin_trans('media_error_upload'));
+    if ($file['size'] > $maxSize) redirect_with_toast('media', 'error', admin_trans('media_error_too_large'));
+    if (!is_uploaded_file($file['tmp_name'])) redirect_with_toast('media', 'error', admin_trans('media_error_invalid_upload'));
 
     $originalName = $file['name'];
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-    if (!in_array($extension, $allowedExtensions, true)) redirect_with_toast('media', 'error', 'Invalid file type.');
+    if (!in_array($extension, $allowedExtensions, true)) redirect_with_toast('media', 'error', admin_trans('media_error_type'));
 
     // SVG can carry scripts, so it is opt-in rather than always allowed.
     if ($extension === 'svg' && ($settings['allow_svg'] ?? false) !== true) {
-        redirect_with_toast('media', 'error', 'SVG uploads are disabled. Enable them in Settings if you trust your editors.');
+        redirect_with_toast('media', 'error', admin_trans('media_error_svg'));
     }
 
     // Sniff the real type before the file reaches storage, so a .png that is
@@ -167,7 +167,7 @@ if ($hasNewUpload) {
 
     if ($sniffedMime !== null && $expectedMimes && !in_array($sniffedMime, $expectedMimes, true)) {
         debug_log("media upload rejected: {$originalName} sniffed as {$sniffedMime}");
-        redirect_with_toast('media', 'error', 'That file does not look like a real ' . strtoupper($extension) . ' file.');
+        redirect_with_toast('media', 'error', admin_trans('media_error_not_real', ['extension' => strtoupper($extension)]));
     }
 
     // Build YYYY/MM/unique folder
@@ -182,7 +182,7 @@ if ($hasNewUpload) {
     $baseName = sanitizeFilename(pathinfo($originalName, PATHINFO_FILENAME));
     if ($baseName === '') $baseName = 'file';
     $targetOriginal = "{$targetDir}/{$baseName}.{$extension}";
-    if (!move_uploaded_file($file['tmp_name'], $targetOriginal)) redirect_with_toast('media', 'error', 'Failed to move uploaded file.');
+    if (!move_uploaded_file($file['tmp_name'], $targetOriginal)) redirect_with_toast('media', 'error', admin_trans('media_error_move'));
 
     $mimeType = mime_content_type($targetOriginal) ?: ($sniffedMime ?? 'application/octet-stream');
     $originalSize = filesize($targetOriginal);
@@ -263,7 +263,7 @@ if ($replaceId) {
     $stmt = $pdo->prepare("SELECT * FROM media WHERE id = ?");
     $stmt->execute([$replaceId]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$existing) redirect_with_toast('media', 'error', 'Media item not found.');
+    if (!$existing) redirect_with_toast('media', 'error', admin_trans('media_error_item_not_found'));
 
     if (!$hasNewUpload) {
         // Keep old file data
@@ -314,7 +314,7 @@ if ($replaceId) {
         $replaceId
     ]);
 
-    $msg = 'Media updated successfully.';
+    $msg = admin_trans('media_updated');
 } else {
     $stmt = $pdo->prepare("
         INSERT INTO media (
@@ -351,7 +351,7 @@ if ($replaceId) {
     ]);
 
     $newMediaId = (int) $pdo->lastInsertId();
-    $msg = 'File uploaded successfully.';
+    $msg = admin_trans('media_uploaded');
 }
 
 // ----------------------------

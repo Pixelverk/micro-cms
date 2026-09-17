@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Content Editor';
+$pageTitle = admin_trans('editor_title');
 
 // ----------------------------
 // Determine mode
@@ -35,7 +35,7 @@ if ($id) {
         redirect_with_toast(
             "content/?type={$type}",
             'error',
-            "{$typeLabel} not found."
+            admin_trans('content_error_not_found', ['type' => $typeLabel])
         );
     }
 
@@ -260,9 +260,9 @@ ob_start();
 <div class="page-header">
     <div class="page-title">        
         <?php if ($isEdit): ?>
-            <h2>Editing <?= e($typeLabel) ?>: <?= e($title) ?></h2>
+            <h2><?= e(admin_trans('editor_editing', ['type' => $typeLabel, 'title' => $title])) ?></h2>
         <?php else: ?>
-            <h2>Create new <?= e($typeLabel) ?></h2>
+            <h2><?= e(admin_trans('editor_create', ['type' => $typeLabel])) ?></h2>
         <?php endif; ?>
     </div>
 
@@ -271,13 +271,13 @@ ob_start();
             <a class="no-underline mr-md"
                 href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>"
                 target="_blank">
-                Visit <?= e($typeLabel) ?>
+                <?= e(admin_trans('editor_visit', ['type' => $typeLabel])) ?>
             </a>
 
             <a class="btn-small btn-preview mr-md"
                 href="<?= e(preview_url(url($slug === $settings['homepage_slug'] ? '' : $url))) ?>"
                 target="_blank"
-                title="Renders live from the database, including unpublished changes">
+                title="<?= e(admin_trans('editor_preview_title')) ?>">
                 <?= e(admin_trans('common_preview')) ?>
             </a>
 
@@ -290,7 +290,7 @@ ob_start();
         <?php endif; ?>
 
         <button type="submit" form="save">
-            Save <?= e($typeLabel) ?>
+            <?= e(admin_trans('editor_save', ['type' => $typeLabel])) ?>
         </button>
     </div>
 </div>
@@ -304,7 +304,7 @@ ob_start();
 
     <!-- Components -->
     <fieldset class="card components-container">
-        <legend>Components</legend>
+        <legend><?= e(admin_trans('common_components')) ?></legend>
         <div id="components-container" class=""></div>
     </fieldset>
 
@@ -313,22 +313,22 @@ ob_start();
 
         <!-- Content Info -->
         <fieldset class="card">
-            <legend><?= e($typeLabel) ?> Info</legend>
+            <legend><?= e($typeLabel) ?> <?= e(admin_trans('editor_info')) ?></legend>
 
             <label>
-                Title:
+                <?= e(admin_trans('content_title')) ?>:
                 <input type="text" id="title" name="title" value="<?= e($title) ?>" required>
             </label>
 
             <label>
-                Slug:
+                <?= e(admin_trans('common_slug')) ?>:
                 <input type="text" id="slug" name="slug" value="<?= e($slug) ?>">
             </label>
 
             <label>
-                Category
+                <?= e(admin_trans('editor_category')) ?>
                 <select name="category_id">
-                    <option value="">— None —</option>
+                    <option value=""><?= e(admin_trans('common_none')) ?></option>
 
                     <?php foreach ($categories as $cat): ?>
                         <option
@@ -341,7 +341,7 @@ ob_start();
             </label>
 
             <label>
-                Tags
+                <?= e(admin_trans('nav_tags')) ?>
                 <select name="tag_ids[]" multiple size="6">
                     <?php foreach ($tags as $tag): ?>
                         <option
@@ -351,13 +351,13 @@ ob_start();
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <small>Hold Ctrl/Cmd to select multiple</small>
+                <small><?= e(admin_trans('editor_hold_ctrl')) ?></small>
             </label>
 
             <label>
-                Parent:
+                <?= e(admin_trans('editor_parent')) ?>:
                 <select name="parent_id">
-                    <option value="">— No parent (top level) —</option>
+                    <option value=""><?= e(admin_trans('editor_no_parent')) ?></option>
                     <?php foreach ($parentOptions as $p): ?>
                         <option
                             value="<?= (int) $p['id'] ?>"
@@ -370,7 +370,7 @@ ob_start();
             </label>
 
             <label>
-                Status:
+                <?= e(admin_trans('common_status')) ?>:
                 <select name="status">
                     <?php foreach (content_statuses() as $statusOption): ?>
                         <?php
@@ -393,23 +393,23 @@ ob_start();
             </label>
 
             <label id="scheduled-container">
-                Scheduled Publish:
+                <?= e(admin_trans('editor_scheduled_publish')) ?>:
                 <input 
                     type="datetime-local" 
                     name="scheduled_at" 
                     value="<?= $scheduledDate ?>"
                 >
-                <small>Leave blank for immediate publishing</small>
+                <small><?= e(admin_trans('editor_schedule_help')) ?></small>
             </label>
 
         </fieldset>
 
         <!-- Layout -->
         <fieldset class="card">
-            <legend>Layout & Theme</legend>
+            <legend><?= e(admin_trans('editor_layout_theme')) ?></legend>
 
             <label>
-                Layout:
+                <?= e(admin_trans('editor_layout')) ?>:
                 <select name="layout">
                     <?php foreach ($availableLayouts as $val => $label): ?>
                         <option value="<?= e($val) ?>" <?= $val === $pageLayout ? 'selected' : '' ?>>
@@ -420,7 +420,7 @@ ob_start();
             </label>
 
             <label>
-                Header:
+                <?= e(admin_trans('editor_header')) ?>:
                 <select name="header">
                     <?php foreach ($availableHeaders as $val => $label): ?>
                         <option value="<?= e($val) ?>" <?= $val === $pageHeader ? 'selected' : '' ?>>
@@ -431,7 +431,7 @@ ob_start();
             </label>
 
             <label>
-                Footer:
+                <?= e(admin_trans('editor_footer')) ?>:
                 <select name="footer">
                     <?php foreach ($availableFooters as $val => $label): ?>
                         <option value="<?= e($val) ?>" <?= $val === $pageFooter ? 'selected' : '' ?>>
@@ -480,7 +480,7 @@ ob_start();
 
         <!-- Component list -->
         <fieldset class="card">
-          <legend>Component List</legend>
+          <legend><?= e(admin_trans('editor_component_list')) ?></legend>
             <div id="component-palette">
                 <?php foreach (array_keys($availableComponents) as $name): ?>
                     <div class="draggable-component" draggable="true" data-type="<?= e($name) ?>">

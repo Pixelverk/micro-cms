@@ -1,7 +1,7 @@
 <?php
 // admin/tag/index.php
 
-$pageTitle = 'Tags';
+$pageTitle = admin_trans('nav_tags');
 $username  = current_username();
 
 $pdo = db();
@@ -54,8 +54,8 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Tags</h2>
-        <p><?= e(admin_trans('nav_welcome')) ?>, <?= e($username) ?> 👋</p>
+        <h2><?= e(admin_trans('tag_title')) ?></h2>
+        <p><?= e(admin_trans('common_hello', ['name' => $username])) ?></p>
     </div>
 
     <div class="page-actions flex gap-md items-center">
@@ -168,7 +168,7 @@ ob_start();
 <ul>
     <li><?= e(admin_trans('tag_help_many')) ?></li>
     <li><?= e(admin_trans('tag_help_filter')) ?></li>
-    <li>Tags are specific to a content type</li>
+    <li><?= e(admin_trans('tag_content_type_help')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

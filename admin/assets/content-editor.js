@@ -2,6 +2,8 @@
 // Content Editor JS
 // ----------------------------
 
+const t = (key, fallback) => window.adminTranslations?.[key] || fallback;
+
 const container = document.getElementById('components-container');
 const availableComponents = window.availableComponents || {};
 const initialComponents = window.initialComponents || [];
@@ -98,7 +100,7 @@ function createComponent(type, data = {}) {
             if (field.required) {
                 const placeholder = document.createElement('option');
                 placeholder.value = '';
-                placeholder.textContent = '-- Select --';
+                placeholder.textContent = t('editor_select_placeholder', '-- Select --');
                 input.appendChild(placeholder);
             }
 
@@ -238,11 +240,11 @@ container.addEventListener('click', async e => {
         const type = comp.dataset.type;
         const hasChildren = comp.querySelector('.children-container')?.children.length > 0;
 
-        let message = `Remove "${type}" component?`;
-        if (hasChildren) message = `Remove "${type}" and child components?`;
+        let message = t('editor_remove_confirm', 'Remove ":type" component?').replace(':type', type);
+        if (hasChildren) message = t('editor_remove_confirm_children', 'Remove ":type" and child components?').replace(':type', type);
 
         const ok = await confirmModal({
-            title: 'Remove component',
+            title: t('editor_remove_component', 'Remove component'),
             message: message,
         });
 
@@ -264,8 +266,8 @@ container.addEventListener('click', async e => {
 
         if (!type || !availableComponents[type]) {
             await window.confirmModal({
-                title: 'Invalid component',
-                message: 'Please select a valid child component.',
+                title: t('editor_invalid_component', 'Invalid component'),
+                message: t('editor_invalid_component_help', 'Please select a valid child component.'),
                 simple: true,
             });
             return;
@@ -561,7 +563,7 @@ function attachImagePicker() {
 
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.textContent = 'Pick Image';
+        btn.textContent = t('media_pick_image', 'Pick Image');
         btn.className = 'image-picker-btn';
         btn.style.marginLeft = '0.5rem';
         input.insertAdjacentElement('afterend', btn);

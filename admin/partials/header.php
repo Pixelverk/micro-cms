@@ -50,11 +50,11 @@ foreach ($trail as $index => $segment) {
 ?>
 <header>
     <div class="header-left">
-        <button type="button" id="sidebar-collapse" class="header-icon" aria-label="Collapse sidebar"><?= icon('sidebar-collapse', 26) ?></button>
-        <button type="button" id="sidebar-expand" class="header-icon" aria-label="Expand sidebar"><?= icon('sidebar-expand', 26) ?></button>
-        <button type="button" id="mobile-menu" class="header-icon only-mobile" aria-label="Open menu"><?= icon('menu', 26) ?></button>
+        <button type="button" id="sidebar-collapse" class="header-icon" aria-label="<?= e(admin_trans('nav_aria_collapse')) ?>"><?= icon('sidebar-collapse', 26) ?></button>
+        <button type="button" id="sidebar-expand" class="header-icon" aria-label="<?= e(admin_trans('nav_aria_expand')) ?>"><?= icon('sidebar-expand', 26) ?></button>
+        <button type="button" id="mobile-menu" class="header-icon only-mobile" aria-label="<?= e(admin_trans('nav_aria_menu')) ?>"><?= icon('menu', 26) ?></button>
 
-        <nav class="breadcrumb" aria-label="Breadcrumb">
+        <nav class="breadcrumb" aria-label="<?= e(admin_trans('nav_aria_breadcrumb')) ?>">
             <?php foreach ($crumbs as $crumb): ?>
                 <?php if ($crumb['href'] !== null): ?>
                     <a href="<?= e($crumb['href']) ?>"><?= e($crumb['label']) ?></a>
@@ -74,10 +74,10 @@ foreach ($trail as $index => $segment) {
 
         <?php include __DIR__ . '/help.php'; ?>
 
-        <button type="button" id="light-mode" class="header-icon" aria-label="Light mode"><?= icon('sun-light', 26) ?></button>
-        <button type="button" id="dark-mode" class="header-icon" aria-label="Dark mode"><?= icon('half-moon', 26) ?></button>
-        <button type="button" id="full-screen-expand" class="header-icon hide-on-mobile" aria-label="Full screen"><?= icon('expand', 26) ?></button>
-        <button type="button" id="full-screen-collapse" class="header-icon hide-on-mobile" aria-label="Exit full screen"><?= icon('collapse', 26) ?></button>
+        <button type="button" id="light-mode" class="header-icon" aria-label="<?= e(admin_trans('nav_aria_light')) ?>"><?= icon('sun-light', 26) ?></button>
+        <button type="button" id="dark-mode" class="header-icon" aria-label="<?= e(admin_trans('nav_aria_dark')) ?>"><?= icon('half-moon', 26) ?></button>
+        <button type="button" id="full-screen-expand" class="header-icon hide-on-mobile" aria-label="<?= e(admin_trans('nav_aria_fullscreen')) ?>"><?= icon('expand', 26) ?></button>
+        <button type="button" id="full-screen-collapse" class="header-icon hide-on-mobile" aria-label="<?= e(admin_trans('nav_aria_exit_fullscreen')) ?>"><?= icon('collapse', 26) ?></button>
 
         <a class="hide-on-mobile" href="<?= url('admin/profile') ?>" aria-label="<?= e(admin_trans('nav_profile')) ?>">
             <span id="user-blob" class="header-icon"><?= icon('profile-circle', 26) ?></span>

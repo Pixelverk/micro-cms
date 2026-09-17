@@ -19,7 +19,7 @@ require_capability('content.bulk');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 const BULK_LIMIT = 200;
@@ -37,13 +37,13 @@ $contentTypes = $theme['content_types'] ?? [];
 $errors = [];
 
 if (!isset($contentTypes[$type])) {
-    $errors[] = 'Unknown content type.';
+    $errors[] = admin_trans('bulk_error_type');
 }
 
 $allowedActions = ['publish', 'draft', 'archive', 'delete', 'clear_cache', 'add_tag', 'remove_tag'];
 
 if (!in_array($action, $allowedActions, true)) {
-    $errors[] = 'Unknown bulk action.';
+    $errors[] = admin_trans('bulk_error_unknown_action');
 }
 
 if (!is_array($rawIds)) {
@@ -53,31 +53,31 @@ if (!is_array($rawIds)) {
 $ids = array_values(array_unique(array_filter(array_map('intval', $rawIds), static fn($id) => $id > 0)));
 
 if (!$ids) {
-    $errors[] = 'Select at least one item.';
+    $errors[] = admin_trans('bulk_error_no_selection');
 } elseif (count($ids) > BULK_LIMIT) {
-    $errors[] = 'Select at most ' . BULK_LIMIT . ' items at a time.';
+    $errors[] = admin_trans('bulk_error_limit', ['count' => BULK_LIMIT]);
 }
 
 // Publishing needs the publish capability; deletion needs delete.
 if ($action === 'publish' && !admin_can('content.publish')) {
-    $errors[] = 'Your role cannot publish content.';
+    $errors[] = admin_trans('bulk_error_cannot_publish');
 }
 
 if ($action === 'delete' && !admin_can('content.delete')) {
-    $errors[] = 'Your role cannot delete content.';
+    $errors[] = admin_trans('bulk_error_cannot_delete');
 }
 
 if ($action === 'add_tag' || $action === 'remove_tag') {
     $tagId = (int) ($_POST['tag_id'] ?? 0);
 
     if ($tagId <= 0) {
-        $errors[] = 'Choose a tag.';
+        $errors[] = admin_trans('bulk_error_choose_tag');
     } else {
         $tagCheck = db()->prepare("SELECT id FROM taxonomy WHERE id = :id AND taxonomy_type = 'tag' LIMIT 1");
         $tagCheck->execute(['id' => $tagId]);
 
         if (!$tagCheck->fetchColumn()) {
-            $errors[] = 'That tag no longer exists.';
+            $errors[] = admin_trans('bulk_error_tag_missing');
         }
     }
 }
@@ -119,7 +119,7 @@ foreach ($rows as $row) {
 $skipped += count($ids) - count($rows);
 
 if (!$selected) {
-    redirect_with_toast('content', 'error', 'None of the selected items could be changed.', ['type' => $type]);
+    redirect_with_toast('content', 'error', admin_trans('bulk_error_none_changed'), ['type' => $type]);
 }
 
 // ----------------------------
@@ -223,7 +223,7 @@ try {
 
     debug_log('bulk action failed: ' . $exception->getMessage());
 
-    redirect_with_toast('content', 'error', 'The bulk action failed and nothing was changed.', ['type' => $type]);
+    redirect_with_toast('content', 'error', admin_trans('bulk_error_failed'), ['type' => $type]);
 }
 
 // Cache/sitemap upkeep once, not per row.
@@ -239,10 +239,10 @@ log_activity('content.bulk_' . $action, 'content', null, $changed . ' item(s)', 
     'skipped' => $skipped,
 ]);
 
-$summary = $changed . ' item(s) updated.';
+$summary = admin_trans('bulk_summary_updated', ['count' => $changed]);
 
 if ($skipped > 0) {
-    $summary .= ' ' . $skipped . ' skipped (not yours to change).';
+    $summary .= ' ' . admin_trans('bulk_summary_skipped', ['count' => $skipped]);
 }
 
 redirect_with_toast('content', 'success', $summary, ['type' => $type]);

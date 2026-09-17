@@ -4,13 +4,13 @@ declare(strict_types=1);
 // Only allow POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 $id = (int)($_POST['id'] ?? 0);
 
 if (!$id) {
-    redirect_with_toast('media', 'error', 'Invalid media item.');
+    redirect_with_toast('media', 'error', admin_trans('media_error_invalid_item'));
 }
 
 $pdo = db();
@@ -23,14 +23,14 @@ $stmt->execute([$id]);
 $media = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$media) {
-    redirect_with_toast('media', 'error', 'Media not found.');
+    redirect_with_toast('media', 'error', admin_trans('media_error_not_found'));
 }
 
 $mediaRoot = realpath(STORAGE_PATH . '/media');
 $folder    = realpath($mediaRoot . '/' . $media['base_path']);
 
 if (!$folder || !str_starts_with($folder, $mediaRoot)) {
-    redirect_with_toast('media', 'error', 'Invalid media path.');
+    redirect_with_toast('media', 'error', admin_trans('media_error_invalid_path'));
 }
 
 // ----------------------------
@@ -58,4 +58,4 @@ $stmt->execute([$id]);
 // ----------------------------
 log_activity('media.deleted', 'media', (int) $id, (string) ($media['original_name'] ?? ''), []);
 
-redirect_with_toast('media', 'success', 'Media deleted.');
+redirect_with_toast('media', 'success', admin_trans('media_deleted'));

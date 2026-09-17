@@ -13,14 +13,14 @@ $locations = theme_config()['menu_locations'] ?? [];
 if (!array_key_exists($location, $locations)) {
     log_activity('menu.updated', 'menu', null, $label !== '' ? $label : $menuSlug, []);
 
-redirect_with_toast('menu/edit', 'error', 'Invalid menu location.');
+redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_location'));
 }
 
 // ----------------------------
 // Validate menu slug
 // ----------------------------
 if ($menuSlug === '') {
-    redirect_with_toast('menu/edit', 'error', 'Menu name is required.');
+    redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_name_required'));
 }
 
 // Normalize menu slug
@@ -31,7 +31,7 @@ $menuSlug = preg_replace('/-+/', '-', $menuSlug);
 $menuSlug = trim($menuSlug, '-');
 
 if ($menuSlug === '') {
-    redirect_with_toast('menu/edit', 'error', 'Invalid menu name.');
+    redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_name_invalid'));
 }
 
 // ----------------------------
@@ -79,7 +79,7 @@ if (!save_menu($menuData)) {
     redirect_with_toast(
         'menu/edit',
         'error',
-        'Failed to save menu.',
+        admin_trans('menu_error_save'),
         ['menu' => $menuSlug]
     );
 }
@@ -95,6 +95,6 @@ set_setting('menu_locations', $assignments);
 redirect_with_toast(
     'menu/edit',
     'success',
-    "Menu \"{$menuData['label']}\" saved successfully.",
+    admin_trans('menu_saved', ['name' => $menuData['label']]),
     ['menu' => $menuSlug]
 );

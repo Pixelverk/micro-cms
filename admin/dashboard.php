@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Dashboard';
+$pageTitle = admin_trans('nav_dashboard');
 $username = current_username();
 
 // page content
@@ -8,7 +8,7 @@ ob_start();
 ?>
 <div class="page-header">
     <div class="page-title">
-        <h2>Welcome, <?php echo e($username); ?> 👋</h2>
+        <h2><?= e(admin_trans('dashboard_welcome', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('dashboard_intro')) ?></p>
     </div>
     <div class="page-actions">
@@ -59,12 +59,12 @@ $content = ob_get_clean();
 // page help
 ob_start();
 ?>
-<h3>Dashboard page</h3>
-<p>This screen has links to the CMS features.</p>
+<h3><?= e(admin_trans('dashboard_help_title')) ?></h3>
+<p><?= e(admin_trans('dashboard_help_intro')) ?></p>
 <ul>
-    <li>Click 'Manage content' to manage your content.</li>
-    <li>Click 'Manage users' to manage your users.</li>
-    <li>Click 'View site' to open the front-end site in a new tab.</li>
+    <li><?= e(admin_trans('dashboard_help_content')) ?></li>
+    <li><?= e(admin_trans('dashboard_help_users')) ?></li>
+    <li><?= e(admin_trans('dashboard_help_site')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

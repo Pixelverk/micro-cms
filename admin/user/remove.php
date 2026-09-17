@@ -8,7 +8,7 @@ $pdo = db();
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 // ----------------------------
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ----------------------------
 $username = trim($_POST['username'] ?? '');
 if ($username === '') {
-    redirect_with_toast('user', 'error', 'Missing username.');
+    redirect_with_toast('user', 'error', admin_trans('user_error_missing'));
 }
 
 // Normalize username
@@ -27,7 +27,7 @@ $username = strtolower($username);
 // ----------------------------
 $currentUser = current_user();
 if ($currentUser && $username === $currentUser['username']) {
-    redirect_with_toast('user', 'error', 'You cannot remove your own account.');
+    redirect_with_toast('user', 'error', admin_trans('user_error_self'));
 }
 
 // ----------------------------
@@ -38,14 +38,14 @@ $stmt->execute(['username' => $username]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    redirect_with_toast('user', 'error', 'User not found.');
+    redirect_with_toast('user', 'error', admin_trans('user_error_not_found'));
 }
 
 // ----------------------------
 // Refuse to delete the only remaining administrator
 // ----------------------------
 if (admin_is_last_admin((int) $user['id'])) {
-    redirect_with_toast('user', 'error', 'This is the last administrator and cannot be removed.');
+    redirect_with_toast('user', 'error', admin_trans('user_error_last_admin'));
 }
 
 // ----------------------------
@@ -59,4 +59,4 @@ $stmt->execute(['id' => $user['id']]);
 // ----------------------------
 log_activity('user.deleted', 'user', (int) $user['id'], $username, []);
 
-redirect_with_toast('user', 'success', "User \"$username\" removed successfully.");
+redirect_with_toast('user', 'success', admin_trans('user_success_removed', ['name' => $username]));

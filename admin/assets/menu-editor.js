@@ -2,6 +2,8 @@
 // Menu Editor JS
 // ----------------------------
 
+const t = (key, fallback) => window.adminTranslations?.[key] || fallback;
+
 const container = document.getElementById('menu-items-container');
 const template = document.getElementById('menu-item-template');
 const initialItems = window.initialMenuItems || [];
@@ -47,7 +49,7 @@ function createMenuItem(data = {}) {
 // Update <legend> label
 // ----------------------------
 function updateMenuItemLegend(node) {
-    const label = node.querySelector('[data-field="label"]')?.value || 'Menu Item';
+    const label = node.querySelector('[data-field="label"]')?.value || t('menu_item', 'Menu Item');
     const legend = node.querySelector('.menu-item-title');
     if (legend) legend.textContent = label;
 }
@@ -66,8 +68,8 @@ document.getElementById('add-page-item').addEventListener('click', async () => {
 
     if (!pageSelect.value) {
         await window.confirmModal({
-            title: 'Missing selection',
-            message: 'Select a page first.',
+            title: t('menu_error_no_page_title', 'Missing selection'),
+            message: t('menu_error_no_page', 'Select a page first.'),
             simple: true,
         });
         return;
@@ -97,8 +99,8 @@ document.getElementById('add-url-item').addEventListener('click', async () => {
 
     if (!urlInput.value || !labelInput.value) {
         await confirmModal({
-            title: 'Missing information',
-            message: 'Enter both URL and label.',
+            title: t('menu_error_missing_title', 'Missing information'),
+            message: t('menu_error_url_and_label', 'Enter both URL and label.'),
             simple: true,
         });
         return;
@@ -134,13 +136,13 @@ container.addEventListener('click', async e => {
         const hasChildren =
             item.querySelector('.children-container')?.children.length > 0;
 
-        let message = 'Remove this menu item?';
+        let message = t('menu_remove_confirm', 'Remove this menu item?');
         if (hasChildren) {
-            message = 'Remove this menu item and child items?';
+            message = t('menu_remove_confirm_children', 'Remove this menu item and child items?');
         }
 
         const ok = await confirmModal({
-            title: 'Remove menu item',
+            title: t('menu_remove_title', 'Remove menu item'),
             message: message,
         });
 

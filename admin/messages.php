@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$pageTitle = 'Form Submissions';
+$pageTitle = admin_trans('forms_title');
 $username  = current_username();
 
 $pdo   = db();
@@ -39,8 +39,8 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p>View form submissions collected from your site.</p>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <p><?= e(admin_trans('forms_intro')) ?></p>
     </div>
 </div>
 
@@ -49,9 +49,9 @@ ob_start();
     <!-- Filter -->
     <form method="get" style="margin-bottom:1rem;">
         <label>
-            <strong>Form type:</strong>
+            <strong><?= e(admin_trans('forms_type')) ?></strong>
             <select name="form" onchange="this.form.submit()">
-                <option value="">All forms</option>
+                <option value=""><?= e(admin_trans('forms_all')) ?></option>
                 <?php foreach ($formTypes as $key => $meta): ?>
                     <option value="<?= e($key) ?>" <?= $key === $activeForm ? 'selected' : '' ?>>
                         <?= e($meta['label'] ?? ucfirst($key)) ?>
@@ -62,15 +62,15 @@ ob_start();
     </form>
 
     <?php if (!$submissions): ?>
-        <p>No submissions found.</p>
+        <p><?= e(admin_trans('forms_empty')) ?></p>
     <?php else: ?>
 
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>Form</th>
-                    <th>Submitted At</th>
-                    <th>Data</th>
+                    <th><?= e(admin_trans('forms_form')) ?></th>
+                    <th><?= e(admin_trans('forms_submitted_at')) ?></th>
+                    <th><?= e(admin_trans('forms_data')) ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -93,7 +93,7 @@ ob_start();
 
                         <td>
                             <details>
-                                <summary>View</summary>
+                                <summary><?= e(admin_trans('common_view')) ?></summary>
                                 <ul style="margin-top:0.5rem;">
                                     <?php foreach ($data as $key => $value): ?>
                                         <li>

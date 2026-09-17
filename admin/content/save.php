@@ -22,11 +22,11 @@ if ($id) {
 // ----------------------------
 $slug = trim($_POST['slug'] ?? '');
 if (!$slug) {
-    redirect_with_toast('content', 'error', "Save - Missing slug for {$contentType}.");
+    redirect_with_toast('content', 'error', admin_trans('content_error_missing_slug', ['type' => $contentType]));
 }
 $slug = sanitize_slug($slug);
 if (!$slug) {
-    redirect_with_toast('content', 'error', "Invalid slug for {$contentType}.");
+    redirect_with_toast('content', 'error', admin_trans('content_error_invalid_slug', ['type' => $contentType]));
 }
 $contentData['slug'] = $slug;
 
@@ -80,41 +80,41 @@ $theme        = theme_config();
 $contentTypes = $theme['content_types'] ?? [];
 
 if (!isset($contentTypes[$contentType])) {
-    redirect_with_toast('content', 'error', 'Invalid content type.');
+    redirect_with_toast('content', 'error', admin_trans('content_error_type'));
 }
 
 $ctConfig = $contentTypes[$contentType];
 $errors   = [];
 
 if ($slug === '') {
-    $errors['slug'] = 'A slug is required.';
+    $errors['slug'] = admin_trans('content_error_slug_required');
 } elseif (!validate_slug($slug)) {
-    $errors['slug'] = 'The slug may only contain lowercase letters, numbers and dashes.';
+    $errors['slug'] = admin_trans('content_error_slug_format');
 }
 
 $status = (string) ($_POST['status'] ?? 'draft');
 if (!validate_enum($status, content_statuses())) {
-    $errors['status'] = 'Unknown status.';
+    $errors['status'] = admin_trans('content_error_status');
 }
 
 $title = trim((string) ($_POST['title'] ?? $contentData['title'] ?? ''));
 if ($title === '') {
-    $errors['title'] = 'A title is required.';
+    $errors['title'] = admin_trans('content_error_title');
 }
 
 $layout = (string) ($_POST['layout'] ?? '');
 if ($layout !== '' && !array_key_exists($layout, $theme['layouts'] ?? [])) {
-    $errors['layout'] = 'Unknown layout.';
+    $errors['layout'] = admin_trans('content_error_layout');
 }
 
 $header = (string) ($_POST['header'] ?? '');
 if ($header !== '' && !array_key_exists($header, $theme['headers'] ?? [])) {
-    $errors['header'] = 'Unknown header.';
+    $errors['header'] = admin_trans('content_error_header');
 }
 
 $footer = (string) ($_POST['footer'] ?? '');
 if ($footer !== '' && !array_key_exists($footer, $theme['footers'] ?? [])) {
-    $errors['footer'] = 'Unknown footer.';
+    $errors['footer'] = admin_trans('content_error_footer');
 }
 
 // A parent must exist and belong to the same content type.
@@ -123,7 +123,7 @@ if ($parentId !== null) {
     $parentStmt->execute(['id' => $parentId, 'type' => $contentType]);
 
     if (!$parentStmt->fetchColumn()) {
-        $errors['parent_id'] = 'That parent page no longer exists.';
+        $errors['parent_id'] = admin_trans('content_error_parent');
     }
 }
 
@@ -133,14 +133,14 @@ $scheduledAt  = null;
 
 if ($status === 'scheduled') {
     if ($scheduledRaw === '') {
-        $errors['scheduled_at'] = 'Choose a date and time to publish.';
+        $errors['scheduled_at'] = admin_trans('content_error_schedule_missing');
     } else {
         $scheduledAt = validate_local_datetime($scheduledRaw, SITE_TIMEZONE);
 
         if ($scheduledAt === null) {
-            $errors['scheduled_at'] = 'That publish date could not be understood.';
+            $errors['scheduled_at'] = admin_trans('content_error_schedule_invalid');
         } elseif (!validate_future_timestamp($scheduledAt)) {
-            $errors['scheduled_at'] = 'The publish date must be in the future.';
+            $errors['scheduled_at'] = admin_trans('content_error_schedule_past');
         }
     }
 }
@@ -152,7 +152,7 @@ if ($categoryId) {
     $catStmt->execute(['id' => $categoryId]);
 
     if (!$catStmt->fetchColumn()) {
-        $errors['category_id'] = 'That category no longer exists.';
+        $errors['category_id'] = admin_trans('content_error_category');
     }
 }
 
@@ -163,7 +163,7 @@ if ($tagIds) {
     $tagStmt->execute($tagIds);
 
     if ((int) $tagStmt->fetchColumn() !== count($tagIds)) {
-        $errors['tag_ids'] = 'One or more selected tags no longer exist.';
+        $errors['tag_ids'] = admin_trans('content_error_tags');
     }
 }
 
@@ -206,12 +206,12 @@ $contentData['meta'] = seo_collect_meta($_POST, $contentData['meta']);
 
 $canonical = (string) ($contentData['meta']['canonical'] ?? '');
 if ($canonical !== '' && !seo_validate_canonical($canonical)) {
-    $errors['meta_canonical'] = 'The canonical URL must be an absolute address on this site.';
+    $errors['meta_canonical'] = admin_trans('content_error_canonical');
 }
 
 $robotsExtra = (string) ($contentData['meta']['robots_extra'] ?? '');
 if ($robotsExtra !== '' && !preg_match('/^[a-z]+(,\s*[a-z]+)*$/', $robotsExtra)) {
-    $errors['meta_robots_extra'] = 'Robots override should look like "noindex, follow".';
+    $errors['meta_robots_extra'] = admin_trans('content_error_robots');
 }
 
 // Every field has now been read and validated; stop before writing anything.
@@ -280,7 +280,10 @@ try {
         redirect_with_toast(
             'content',
             'error',
-            "The slug \"{$slug}\" is already used by another " . strtolower($ctConfig['label'] ?? $contentType) . ' at this level.'
+            admin_trans('content_error_slug_taken', [
+                'slug' => $slug,
+                'type' => strtolower($ctConfig['label'] ?? $contentType),
+            ])
         );
     }
 
@@ -291,7 +294,7 @@ try {
 }
 
 if (!$id) {
-    redirect_with_toast("content", 'error', "Failed to save {$contentType}.");
+    redirect_with_toast("content", 'error', admin_trans('content_error_save', ['type' => $contentType]));
 }
 
 $pdo = db();
@@ -342,7 +345,7 @@ log_activity(
 redirect_with_toast(
     'content/edit',
     'success',
-    ucfirst($contentType) . ' saved successfully!',
+    admin_trans('content_saved', ['type' => ucfirst($contentType)]),
     [
         'id'    => $id,
         'type'  => $contentType,

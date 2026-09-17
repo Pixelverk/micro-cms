@@ -1,7 +1,7 @@
 <?php
 // admin/media.php
 
-$pageTitle = 'Media Manager';
+$pageTitle = admin_trans('media_title');
 $username  = current_username();
 
 $pdo = db();
@@ -183,39 +183,39 @@ items.forEach(item => {
                 <input type="hidden" name="replace_id" value="${data.id}">
 
                 <label>
-                    Alt text:
+                    <?= e(admin_trans('media_alt_label')) ?>
                     <input type="text" name="alt_text" value="${data.alt}">
                 </label>
 
                 <label>
-                    Description:
+                    <?= e(admin_trans('media_description_label')) ?>
                     <textarea name="description">${data.description}</textarea>
                 </label>
 
                 <label>
-                    Replace file:
+                    <?= e(admin_trans('media_replace_label')) ?>
                     <input type="file" name="file">
                 </label>
 
-                <button type="submit">Save Changes</button>
+                <button type="submit"><?= e(admin_trans('common_save')) ?></button>
                 
             </form>
 
             <label>
-                Choose size/format:
+                <?= e(admin_trans('media_size_label')) ?>
                 <div class="flex items-center gap-sm">
                     <select id="sizeSelect">${optionsHtml}</select>
-                    <button id="copyBtn" class="btn btn-primary nowrap" data-url="${firstUrl}">Copy URL</button>
+                    <button id="copyBtn" class="btn btn-primary nowrap" data-url="${firstUrl}"><?= e(admin_trans('media_copy_url')) ?></button>
                 </div>
             </label>
 
             <form method="post" action="<?= url('admin/media/remove') ?>" class="js-confirm-form"
-                data-confirm-title="Delete media"
-                data-confirm="Do you really want to delete ${data.name}?"
+                data-confirm-title="<?= e(admin_trans('media_delete')) ?>"
+                data-confirm="<?= e(admin_trans('media_delete_confirm', ['name' => '${data.name}'])) ?>"
                 style="margin-top:.5rem;">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="id" value="${data.id}">
-                <button class="btn btn-delete">Delete</button>
+                <button class="btn btn-delete"><?= e(admin_trans('common_delete')) ?></button>
             </form>
         `;
 

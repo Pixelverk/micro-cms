@@ -1,6 +1,6 @@
 <?php
 
-$pageTitle = 'Users';
+$pageTitle = admin_trans('nav_users');
 $username = current_username();
 $users = load_users();
 
@@ -9,7 +9,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('dashboard_manage_users')) ?></p>
     </div>
     <div class="page-actions">

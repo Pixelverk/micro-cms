@@ -1,7 +1,7 @@
 <?php
 // admin/tag-edit.php
 
-$pageTitle = 'Edit Tag';
+$pageTitle = admin_trans('tag_edit');
 
 $pdo = db();
 
@@ -35,7 +35,7 @@ if ($id) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) {
-        redirect_with_toast('tag', 'error', 'Tag not found.');
+        redirect_with_toast('tag', 'error', admin_trans('tag_error_not_found'));
     }
 
     $tag = $row;
@@ -134,12 +134,12 @@ $content = ob_get_clean();
 // ----------------------------
 ob_start();
 ?>
-<h3>Tag editor</h3>
-<p>Tags are flexible labels you can assign to many content items.</p>
+<h3><?= e(admin_trans('tag_help_title')) ?></h3>
+<p><?= e(admin_trans('tag_help')) ?></p>
 <ul>
-    <li>Multiple tags can be assigned to a single item</li>
-    <li>Great for filtering or grouping related content</li>
-    <li>Tags are specific to one content type</li>
+    <li><?= e(admin_trans('tag_help_many')) ?></li>
+    <li><?= e(admin_trans('tag_help_filter')) ?></li>
+    <li><?= e(admin_trans('tag_content_type_help')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

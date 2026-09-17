@@ -518,11 +518,11 @@ function content_statuses(): array
 }
 
 /**
- * Human label for a stored status.
+ * Human label for a stored status, in the admin language.
  */
 function content_status_label(string $status): string
 {
-    return ucfirst($status);
+    return admin_trans('status_' . $status);
 }
 
 /**

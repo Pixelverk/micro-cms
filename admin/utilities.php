@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$pageTitle = 'Utilities';
+$pageTitle = admin_trans('nav_utilities');
 $username = current_username();
 
 // ----------------------------
@@ -22,32 +22,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'clear_cache':
                 invalidate_cache();
-                log_activity('utility.cache_cleared', 'utility', null, 'Cleared all cached pages', []);
-                $message = "✅ Cache cleared successfully!";
+                log_activity('utility.cache_cleared', 'utility', null, admin_trans('utilities_log_cache_cleared'), []);
+                $message = admin_trans('utilities_success_cache');
                 break;
 
             case 'reset_analytics':
                 $removed = analytics_clear();
                 log_activity('utility.analytics_reset', 'utility', null, $removed . ' page view(s)', []);
-                $message = '✅ Analytics reset — ' . $removed . ' page view(s) removed.';
+                $message = admin_trans('utilities_success_analytics', ['count' => $removed]);
                 break;
 
             case 'clear_trash':
                 $purged = content_empty_trash();
                 log_activity('utility.trash_cleared', 'utility', null, $purged . ' item(s)', []);
                 $message = $purged
-                    ? '✅ Trash emptied — ' . $purged . ' item(s) deleted permanently.'
-                    : '✅ The trash was already empty.';
+                    ? admin_trans('utilities_success_trash', ['count' => $purged])
+                    : admin_trans('utilities_success_trash_empty');
                 break;
 
             case 'warm_cache':
                 $result = warm_cache();
                 log_activity('utility.cache_warmed', 'utility', null, $result['rendered'] . ' page(s)', $result);
-                $message = '✅ Warmed ' . $result['rendered'] . ' page(s).';
+                $message = admin_trans('utilities_success_warm', ['count' => $result['rendered']]);
 
                 if ($result['failed']) {
                     $toastType = 'error';
-                    $message  .= ' ⚠️ Could not render: ' . implode(', ', $result['failed']) . '.';
+                    $message  .= ' ' . admin_trans('utilities_warm_failed', ['list' => implode(', ', $result['failed'])]);
                 }
                 break;
 
@@ -87,16 +87,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'regenerate_sitemap':
                 save_sitemap();
-                log_activity('utility.sitemap', 'utility', null, 'Regenerated sitemap.xml', []);
-                $message = "✅ Sitemap regenerated successfully!";
+                log_activity('utility.sitemap', 'utility', null, admin_trans('utilities_log_sitemap'), []);
+                $message = admin_trans('utilities_success_sitemap');
                 break;
 
             case 'publish_due':
                 $published = publish_due_content();
                 log_activity('utility.published_due', 'utility', null, count($published) . ' item(s)', []);
                 $message = $published
-                    ? '✅ Published ' . count($published) . ' scheduled item(s).'
-                    : '✅ Nothing was due to publish.';
+                    ? admin_trans('utilities_success_published', ['count' => count($published)])
+                    : admin_trans('utilities_success_nothing_due');
                 break;
 
             case 'run_migrations':
@@ -104,13 +104,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ran = migrate_run();
                 log_activity('utility.migrations', 'utility', null, count($ran) . ' migration(s)', ['ran' => $ran]);
                 $message = $ran
-                    ? '✅ Applied ' . count($ran) . ' migration(s): ' . implode(', ', $ran)
-                    : '✅ Database is already up to date.';
+                    ? admin_trans('utilities_success_migrations', ['count' => count($ran), 'list' => implode(', ', $ran)])
+                    : admin_trans('utilities_success_up_to_date');
                 break;
         }
     } else {
         $toastType = 'error';
-        $message = "⚠️ Unknown action: " . $action;
+        $message = admin_trans('utilities_error_unknown', ['action' => $action]);
     }
 
     if (!empty($message)) {
@@ -126,8 +126,8 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Hello, <?= e($username) ?> 👋</h2>
-        <p>Run administrative utilities for your site. Use the buttons below to manage cache, sitemap and more.</p>
+        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <p><?= e(admin_trans('utilities_intro')) ?></p>
     </div>
     <div class="page-actions">
 
@@ -138,95 +138,95 @@ ob_start();
     <?= csrf_field() ?>
 
     <div class="utility-action">
-        <h3>Clear Cache</h3>
-        <p>Remove cached html files to ensure all changes on the site are reflected immediately. Use this if you notice outdated content.</p>
+        <h3><?= e(admin_trans('utilities_clear_cache')) ?></h3>
+        <p><?= e(admin_trans('utilities_clear_cache_help')) ?></p>
         <button type="button" data-action="clear_cache" class="btn btn-warning">
-            Clear Cache
+            <?= e(admin_trans('utilities_clear_cache')) ?>
         </button>
     </div>
 
     <div class="utility-action">
-        <h3>Reset Analytics</h3>
-        <p>Delete every recorded page view. Use this when you want the reports to start counting from now.</p>
+        <h3><?= e(admin_trans('utilities_reset_analytics')) ?></h3>
+        <p><?= e(admin_trans('utilities_reset_analytics_help')) ?></p>
         <button type="button" data-action="reset_analytics" class="btn btn-danger">
-            Reset Analytics
+            <?= e(admin_trans('utilities_reset_analytics')) ?>
         </button>
     </div>
 
     <div class="utility-action">
-        <h3>Clear Trash</h3>
+        <h3><?= e(admin_trans('utilities_clear_trash')) ?></h3>
         <?php if ($trashCount): ?>
-            <p>Permanently delete the <?= $trashCount ?> <?= $trashCount === 1 ? 'item' : 'items' ?> in the trash, including version history. This cannot be undone.</p>
+            <p><?= e(admin_trans('utilities_clear_trash_help', ['count' => $trashCount])) ?></p>
             <button type="button" data-action="clear_trash" class="btn btn-danger">
-                Clear Trash
+                <?= e(admin_trans('utilities_clear_trash')) ?>
             </button>
         <?php else: ?>
-            <p>The trash is empty. Deleted content waits here until you restore it or it is purged, so it can still be recovered.</p>
+            <p><?= e(admin_trans('utilities_clear_trash_empty')) ?></p>
             <button type="button" class="btn btn-muted" disabled>
-                Clear Trash
+                <?= e(admin_trans('utilities_clear_trash')) ?>
             </button>
         <?php endif; ?>
     </div>
 
     <div class="utility-action">
-        <h3>Warm Cache</h3>
-        <p>Render and cache every published page now, so the first visitor does not pay the render cost after a bulk edit.</p>
+        <h3><?= e(admin_trans('utilities_warm_cache')) ?></h3>
+        <p><?= e(admin_trans('utilities_warm_cache_help')) ?></p>
         <button type="button" data-action="warm_cache" class="btn btn-secondary">
-            Warm Cache
+            <?= e(admin_trans('utilities_warm_cache')) ?>
         </button>
     </div>
 
     <div class="utility-action">
-        <h3>Export Static Site</h3>
-        <p>Download a zip of the cached pages, the theme assets and the media library, with asset and media URLs rewritten relative so the pages need no PHP.</p>
+        <h3><?= e(admin_trans('utilities_export_static')) ?></h3>
+        <p><?= e(admin_trans('utilities_export_static_help')) ?></p>
         <?php if (zip_available()): ?>
             <button type="button" data-action="export_static" class="btn btn-info">
-                Export Static Site
+                <?= e(admin_trans('utilities_export_static')) ?>
             </button>
         <?php else: ?>
-            <p class="text-muted text-small">Requires the PHP zip or phar extension.</p>
+            <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
             <button type="button" class="btn btn-muted" disabled>
-                Export Static Site
+                <?= e(admin_trans('utilities_export_static')) ?>
             </button>
         <?php endif; ?>
     </div>
 
     <div class="utility-action">
-        <h3>Download Backup</h3>
-        <p>Download a zip of the database, the media library and the sitemap — the data, not the pages. Keep a copy somewhere safe before a host move. Restore is manual; see the documentation.</p>
+        <h3><?= e(admin_trans('utilities_backup')) ?></h3>
+        <p><?= e(admin_trans('utilities_backup_help')) ?></p>
         <?php if (zip_available()): ?>
             <button type="button" data-action="export_backup" class="btn btn-secondary">
-                Download Backup
+                <?= e(admin_trans('utilities_backup')) ?>
             </button>
         <?php else: ?>
-            <p class="text-muted text-small">Requires the PHP zip or phar extension.</p>
+            <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
             <button type="button" class="btn btn-muted" disabled>
-                Download Backup
+                <?= e(admin_trans('utilities_backup')) ?>
             </button>
         <?php endif; ?>
     </div>
 
     <div class="utility-action">
-        <h3>Regenerate Sitemap</h3>
-        <p>Rebuild the sitemap.xml file to ensure search engines have the latest URLs from your site.</p>
+        <h3><?= e(admin_trans('utilities_sitemap')) ?></h3>
+        <p><?= e(admin_trans('utilities_help_sitemap')) ?></p>
         <button type="button" data-action="regenerate_sitemap" class="btn btn-info">
-            Regenerate Sitemap
+            <?= e(admin_trans('utilities_sitemap')) ?>
         </button>
     </div>
 
     <div class="utility-action">
-        <h3>Publish Due Content</h3>
-        <p>Publish anything whose scheduled time has passed. The site also does this automatically after a visit, so this is for hosts with little traffic.</p>
+        <h3><?= e(admin_trans('utilities_publish_due')) ?></h3>
+        <p><?= e(admin_trans('utilities_publish_due_help')) ?></p>
         <button type="button" data-action="publish_due" class="btn btn-primary">
-            Publish Due Content Now
+            <?= e(admin_trans('utilities_publish_due_button')) ?>
         </button>
     </div>
 
     <div class="utility-action">
-        <h3>Run Database Migrations</h3>
-        <p>Apply any schema updates included in a newer version of the CMS. Safe to run more than once.</p>
+        <h3><?= e(admin_trans('utilities_migrations')) ?></h3>
+        <p><?= e(admin_trans('utilities_migrations_help')) ?></p>
         <button type="button" data-action="run_migrations" class="btn btn-info">
-            Run Migrations
+            <?= e(admin_trans('utilities_migrations_button')) ?>
         </button>
     </div>
 
@@ -238,17 +238,17 @@ ob_start();
 const form = document.getElementById('utilities-form');
 const actionInput = document.getElementById('utility-action-input');
 
-const confirmations = {
-    clear_cache: 'Are you sure you want to clear the cache?',
-    reset_analytics: 'Delete all recorded page views? This cannot be undone.',
-    clear_trash: 'Permanently delete everything in the trash? This cannot be undone.',
-    warm_cache: 'Render and cache every published page?',
-    export_static: 'Warm the cache and download a static copy of the site?',
-    export_backup: 'Download a backup of the database and media?',
-    regenerate_sitemap: 'Are you sure you want to regenerate the sitemap.xml?',
-    publish_due: 'Publish every scheduled item that is due?',
-    run_migrations: 'Apply any pending database migrations?'
-};
+const confirmations = <?= json_encode([
+    'clear_cache'        => admin_trans('utilities_clear_cache_confirm'),
+    'reset_analytics'    => admin_trans('utilities_confirm_reset_analytics'),
+    'clear_trash'        => admin_trans('utilities_confirm_clear_trash'),
+    'warm_cache'         => admin_trans('utilities_confirm_warm_cache'),
+    'export_static'      => admin_trans('utilities_confirm_export_static'),
+    'export_backup'      => admin_trans('utilities_confirm_backup'),
+    'regenerate_sitemap' => admin_trans('utilities_sitemap_confirm'),
+    'publish_due'        => admin_trans('utilities_confirm_publish_due'),
+    'run_migrations'     => admin_trans('utilities_confirm_migrations'),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
 // Attach click handlers to buttons
 form.querySelectorAll('button[data-action]').forEach(btn => {

@@ -6,7 +6,7 @@ declare(strict_types=1);
 // ----------------------------
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(admin_trans('error_method'));
 }
 
 // ----------------------------
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ----------------------------
 $menuSlug = trim($_POST['menu'] ?? '');
 if ($menuSlug === '') {
-    redirect_with_toast('menu/edit', 'error', 'Missing menu name.');
+    redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_missing'));
 }
 
 // ----------------------------
@@ -22,14 +22,14 @@ if ($menuSlug === '') {
 // ----------------------------
 $menu = get_menu($menuSlug);
 if (!$menu['label']) {
-    redirect_with_toast('menu/edit', 'error', 'Menu not found.');
+    redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_not_found'));
 }
 
 // ----------------------------
 // Delete menu
 // ----------------------------
 if (!delete_menu($menuSlug)) {
-    redirect_with_toast('menu/edit', 'error', "Failed to delete menu \"{$menu['label']}\".");
+    redirect_with_toast('menu/edit', 'error', admin_trans('menu_error_delete', ['name' => $menu['label']]));
 }
 
 // ----------------------------
@@ -40,5 +40,5 @@ log_activity('menu.deleted', 'menu', null, (string) $menu['label'], []);
 redirect_with_toast(
     'menu/edit',
     'success',
-    "Menu \"{$menu['label']}\" removed successfully."
+    admin_trans('menu_removed', ['name' => $menu['label']])
 );

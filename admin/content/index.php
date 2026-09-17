@@ -1,7 +1,7 @@
 <?php
 // admin/content/index.php
 
-$pageTitle = 'Content';
+$pageTitle = admin_trans('nav_content');
 
 // ----------------------------
 // Determine content type
@@ -136,7 +136,7 @@ ob_start();
 // Filter bar: status tabs + search
 // ----------------------------
 $total = count($liveItems);
-$tabs = ['' => ['label' => 'All', 'count' => $total]];
+$tabs = ['' => ['label' => admin_trans('content_status_all'), 'count' => $total]];
 
 foreach (content_statuses() as $status) {
     $tabs[$status] = ['label' => content_status_label($status), 'count' => $statusCounts[$status] ?? 0];
@@ -315,7 +315,7 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                         <a href="<?= e(preview_url($publicUrl)) ?>"
                             target="_blank"
                             class="btn-small btn-preview"
-                            title="Open a live, uncached preview">
+                            title="<?= e(admin_trans('content_preview_title')) ?>">
                             <?= e(admin_trans('common_preview')) ?>
                         </a>
 
@@ -421,9 +421,14 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
 
         const labelKey = action === 'delete' ? 'common_delete' : 'bulk_archive';
 
+        const actionLabel = window.adminTranslations?.[labelKey] || action;
+        const confirmMessage = (window.adminTranslations?.bulk_confirm_message || ':action: :count item(s)?')
+            .replace(':action', actionLabel)
+            .replace(':count', total);
+
         const ok = await confirmModal({
             title: window.adminTranslations?.common_confirm_action || 'Confirm',
-            message: `${window.adminTranslations?.[labelKey] || action}: ${total} item(s)?`
+            message: confirmMessage
         });
 
         if (ok) form.submit();
@@ -450,7 +455,7 @@ $content = ob_get_clean();
 // ----------------------------
 ob_start();
 ?>
-<h3><?= e($typeLabel) ?> list</h3>
+<h3><?= e(admin_trans('content_list_title', ['type' => $typeLabel])) ?></h3>
 <p><?= e(admin_trans('content_list_help', ['type' => $typeLabel])) ?></p>
 <ul>
     <li><?= e(admin_trans('content_status_help')) ?></li>

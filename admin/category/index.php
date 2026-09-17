@@ -1,7 +1,7 @@
 <?php
 // admin/category/index.php
 
-$pageTitle = 'Categories';
+$pageTitle = admin_trans('nav_categories');
 
 $pdo = db();
 
@@ -35,7 +35,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2>Categories</h2>
+        <h2><?= e(admin_trans('category_title')) ?></h2>
     </div>
 
     <div class="page-actions flex gap-md items-center">
