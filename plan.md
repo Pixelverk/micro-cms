@@ -1,5 +1,9 @@
 ### 1. Header/footer scripts in settings
 
+**Status: implemented.** Reuses `settings.manage` (already administrators only)
+rather than adding a separate capability. Snippets are injected after
+`minify_html()`.
+
 Your `README.md` lists this under "Planned" as *"Header/footer JS input in
 settings, for google analytics script"*.
 

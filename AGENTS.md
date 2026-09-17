@@ -97,6 +97,8 @@ Beyond what tests check:
   the `.off-screen` accessibility helper. These only render in their matching
   state, so a static grep finding no uses is not evidence that they are dead.
   Only prune structural utilities that duplicate another rule.
+* `theme/assets/favicon.png` is kept deliberately as an example asset, even
+  though the theme links `favicon.ico`. Do not prune it as unused.
 
 ## Common changes
 

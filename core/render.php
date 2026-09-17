@@ -78,11 +78,45 @@ function render_page(array $page): array
         $html = minify_html($html);
     }
 
+    // Administrator-supplied code goes in last so the minifier never rewrites
+    // it. It is raw, trusted input (settings.manage), not escaped output.
+    $html = inject_site_scripts($html);
+
     return [
         'status'  => ($page['status'] ?? '') === '404' ? 404 : 200,
         'headers' => ['Content-Type: text/html; charset=utf-8'],
         'body'    => $html,
     ];
+}
+
+/*
+|--------------------------------------------------------------------------
+| Inject site header/footer scripts
+|--------------------------------------------------------------------------
+| Two raw snippets from Settings, placed just before the closing head and
+| body tags. Called after minify_html() on purpose: the snippets are code,
+| and the HTML minifier has no business touching them.
+*/
+function inject_site_scripts(string $html): string
+{
+    $placements = [
+        '</head>' => (string) get_setting('header_scripts', ''),
+        '</body>' => (string) get_setting('footer_scripts', ''),
+    ];
+
+    foreach ($placements as $tag => $code) {
+        if (trim($code) === '') {
+            continue;
+        }
+
+        $position = strpos($html, $tag);
+
+        if ($position !== false) {
+            $html = substr($html, 0, $position) . $code . "\n" . substr($html, $position);
+        }
+    }
+
+    return $html;
 }
 
 /*

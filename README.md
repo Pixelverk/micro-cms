@@ -106,6 +106,7 @@ Demo account:
 * Menu CRUD with drag-and-drop items
 * Media manager: resized variants, WebP with JPEG/PNG fallback, LQIP placeholders, alt text
 * Site settings (homepage, per-type URL prefixes, image quality, admin language)
+* Header and footer script fields for analytics snippets (raw, administrators only)
 * Draft, scheduled, published and archived statuses
 * Token-based preview of unpublished content
 * Content version history with restore
@@ -124,7 +125,6 @@ Demo account:
 
 The backlog lives in [`plan.md`](plan.md). Current entries:
 
-* Header/footer scripts in settings (needs a security decision first)
 * Cache warm-up and static-site export
 * Built-in analytics — `admin/analytics.php` is a placeholder today
 * Multi-language front end (intended path documented, code deferred)

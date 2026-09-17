@@ -138,6 +138,23 @@ $settingFields = [
         'help'    => 'SVG files can contain scripts. Only enable this if you trust everyone who can upload media.',
         'default' => false,
     ],
+
+    // ----------------------------
+    // Header/footer code
+    // Written raw into every public page, so this is trusted-admin-only input
+    // (the page already requires settings.manage).
+    'header_scripts' => [
+        'type'    => 'textarea',
+        'label'   => 'Header scripts',
+        'help'    => 'Raw code inserted before </head> on every public page, for analytics snippets. Not sanitised — administrators only.',
+        'default' => '',
+    ],
+    'footer_scripts' => [
+        'type'    => 'textarea',
+        'label'   => 'Footer scripts',
+        'help'    => 'Raw code inserted before </body> on every public page, for analytics snippets. Not sanitised — administrators only.',
+        'default' => '',
+    ],
 ];
 
 // ----------------------------
@@ -358,6 +375,14 @@ ob_start();
                         <small><?= e(admin_trans($meta['help'])) ?></small>
                     <?php endif; ?>
                 </label>
+
+            <?php elseif ($meta['type'] === 'textarea'): ?>
+                <label>
+                    <textarea name="<?= e($key) ?>" rows="6"><?= e((string) $value) ?></textarea>
+                    <?php if (!empty($meta['help'])): ?>
+                        <small><?= e(admin_trans($meta['help'])) ?></small>
+                    <?php endif; ?>
+                </label>
             <?php endif; ?>
 
         </fieldset>
@@ -375,6 +400,7 @@ ob_start();
     <li><?= e(admin_trans('settings_site_help')) ?></li>
     <li><?= e(admin_trans('settings_media_help')) ?></li>
     <li><?= e(admin_trans('settings_seo_help')) ?></li>
+    <li><?= e(admin_trans('settings_code_help')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();
