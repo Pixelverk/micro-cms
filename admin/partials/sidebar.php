@@ -128,6 +128,11 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
             <?= e(admin_trans('media')) ?>
         </a>
 
+        <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= is_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('redirects')) ?>">
+            <span class="sidebar-icon"><?= icon('open-in-browser', 20) ?></span>
+            <?= e(admin_trans('redirects')) ?>
+        </a>
+
         <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= is_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('activity_log')) ?>">
             <span class="sidebar-icon"><?= icon('clock', 20) ?></span>
             <?= e(admin_trans('activity_log')) ?>

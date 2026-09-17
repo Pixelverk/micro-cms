@@ -112,6 +112,7 @@ CREATE TABLE page_views (
     visitor_hash TEXT NOT NULL,
     is_bot INTEGER NOT NULL DEFAULT 0,
     cache_hit INTEGER NOT NULL DEFAULT 0,
+    status INTEGER NOT NULL DEFAULT 200,
     viewed_at INTEGER NOT NULL
 );
 ");
@@ -119,6 +120,18 @@ CREATE TABLE page_views (
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_time ON page_views (viewed_at)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views (path, viewed_at)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_visitor ON page_views (visitor_hash, viewed_at)");
+
+// Old URLs that must keep working (see core/helpers/redirects.php).
+$pdo->exec("
+CREATE TABLE redirects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_path TEXT NOT NULL UNIQUE,
+    to_path TEXT NOT NULL,
+    status INTEGER NOT NULL DEFAULT 301,
+    hits INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+");
 
 $pdo->exec("
 CREATE TABLE users (

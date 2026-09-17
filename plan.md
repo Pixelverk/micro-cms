@@ -12,26 +12,7 @@ end stays as a deferred design.
 
 ## Next up
 
-### 1. Redirects and 404 tracking
-
-**Why:** renaming a slug strands the old URL as a 404. WordPress' most-installed
-SEO plugin is a redirect manager and Joomla ships one; a tiny table buys a lot
-of SEO.
-
-**Sketch:** `redirects` table (`from_path` unique, `to_path`, `status` 301/302,
-`hits`, `created_at`). The router consults it **before the HTML cache**, so a
-redirect always wins, and clearing the old cache file on save keeps it honest.
-Admin CRUD page, plus a "recent 404s" panel: extend `page_views` with a
-`status` column so misses are recorded (the dashboard keeps counting 200s) and
-feed them into new redirects. When an editor changes a slug, offer "create a
-redirect from the old URL".
-
-**Effort:** M.
-
-**Verify:** tests for the response code, the hit counter, 404 recording and the
-slug-change suggestion.
-
-### 2. Backup download
+### 1. Backup download
 
 **Why:** there is no way to take the content with you; the static export is
 pages, not data. Every WordPress and Joomla host offers a backup export, and it
@@ -47,7 +28,7 @@ like the static export. Exclude `config.php`, which holds the form secret.
 media; keep the existing `ZipArchive` guard test. Restore stays manual and
 documented — an admin-uploaded database can brick a live site.
 
-### 3. Trash (soft delete)
+### 2. Trash (soft delete)
 
 **Why:** deleting is permanent today and takes the version history with it.
 WordPress and Squarespace both keep a trash.
@@ -62,7 +43,7 @@ permanent delete; purge items older than N days from the existing shutdown hook
 **Verify:** trashed items leave the front end, cache and sitemap; restore brings
 them back; permanent delete removes the row and its versions.
 
-### 4. robots.txt
+### 3. robots.txt
 
 **Why:** there is no route for it, so crawlers never discover the sitemap.
 WordPress serves a virtual robots.txt.

@@ -176,6 +176,25 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'page_views', 'cache_hit', 'INTEGER NOT NULL DEFAULT 0');
         },
 
+        // Old URLs that must keep working (see core/helpers/redirects.php).
+        '2026_09_17_000012_redirects' => function (PDO $pdo): void {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS redirects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    from_path TEXT NOT NULL UNIQUE,
+                    to_path TEXT NOT NULL,
+                    status INTEGER NOT NULL DEFAULT 301,
+                    hits INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL
+                )
+            ");
+        },
+
+        // 404s are recorded too, so misses can feed the redirect manager.
+        '2026_09_17_000013_page_views_status' => function (PDO $pdo): void {
+            migrate_add_column($pdo, 'page_views', 'status', 'INTEGER NOT NULL DEFAULT 200');
+        },
+
     ];
 }
 

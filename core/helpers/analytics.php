@@ -98,9 +98,10 @@ function analytics_buffer_limit(): int
 /**
  * Record one page view by appending it to the buffer.
  *
- * $cacheHit is true when the view was served from the HTML cache.
+ * $cacheHit is true when the view was served from the HTML cache; $status is
+ * the HTTP status, so 404s can be recorded for the redirect manager.
  */
-function analytics_record_view(?int $contentId = null, bool $cacheHit = false): void
+function analytics_record_view(?int $contentId = null, bool $cacheHit = false, int $status = 200): void
 {
     $path = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     $path = '/' . ltrim($path, '/');
@@ -115,6 +116,7 @@ function analytics_record_view(?int $contentId = null, bool $cacheHit = false): 
         'visitor_hash'  => analytics_visitor_hash($userAgent),
         'is_bot'        => analytics_is_bot($userAgent) ? 1 : 0,
         'cache_hit'     => $cacheHit ? 1 : 0,
+        'status'        => $status === 404 ? 404 : 200,
         'viewed_at'     => time(),
     ];
 
@@ -179,8 +181,8 @@ function analytics_ingest_file(string $file): int
     try {
         $pdo  = db();
         $stmt = $pdo->prepare("
-            INSERT INTO page_views (path, content_id, referrer_host, ua_hash, visitor_hash, is_bot, cache_hit, viewed_at)
-            VALUES (:path, :content_id, :referrer_host, :ua_hash, :visitor_hash, :is_bot, :cache_hit, :viewed_at)
+            INSERT INTO page_views (path, content_id, referrer_host, ua_hash, visitor_hash, is_bot, cache_hit, status, viewed_at)
+            VALUES (:path, :content_id, :referrer_host, :ua_hash, :visitor_hash, :is_bot, :cache_hit, :status, :viewed_at)
         ");
 
         $pdo->beginTransaction();
@@ -201,6 +203,7 @@ function analytics_ingest_file(string $file): int
                 'visitor_hash'  => $view['visitor_hash'],
                 'is_bot'        => (int) ($view['is_bot'] ?? 0),
                 'cache_hit'     => (int) ($view['cache_hit'] ?? 0),
+                'status'        => (int) ($view['status'] ?? 200),
                 'viewed_at'     => (int) $view['viewed_at'],
             ]);
 
@@ -345,7 +348,7 @@ function analytics_views(int $days, int $offsetDays = 0): int
     $stmt = db()->prepare("
         SELECT COUNT(*)
         FROM page_views
-        WHERE is_bot = 0 AND viewed_at >= :from AND viewed_at < :to
+        WHERE is_bot = 0 AND status = 200 AND viewed_at >= :from AND viewed_at < :to
     ");
     $stmt->execute($window);
 
@@ -366,7 +369,7 @@ function analytics_unique_visitors(int $days, int $offsetDays = 0): int
     $stmt = db()->prepare("
         SELECT COUNT(DISTINCT visitor_hash)
         FROM page_views
-        WHERE is_bot = 0 AND viewed_at >= :from AND viewed_at < :to
+        WHERE is_bot = 0 AND status = 200 AND viewed_at >= :from AND viewed_at < :to
     ");
     $stmt->execute($window);
 
@@ -395,7 +398,7 @@ function analytics_daily_views(int $days): array
     $stmt = db()->prepare("
         SELECT strftime('%Y-%m-%d', viewed_at, 'unixepoch') AS day, COUNT(*) AS views
         FROM page_views
-        WHERE is_bot = 0 AND viewed_at >= :from AND viewed_at < :to
+        WHERE is_bot = 0 AND status = 200 AND viewed_at >= :from AND viewed_at < :to
         GROUP BY day
     ");
     $stmt->execute(analytics_window($days));
@@ -425,7 +428,7 @@ function analytics_top_pages(int $days, int $limit = 10): array
     $stmt = db()->prepare("
         SELECT path, COUNT(*) AS views
         FROM page_views
-        WHERE is_bot = 0 AND viewed_at >= :from AND viewed_at < :to
+        WHERE is_bot = 0 AND status = 200 AND viewed_at >= :from AND viewed_at < :to
         GROUP BY path
         ORDER BY views DESC, path ASC
         LIMIT {$limit}
@@ -452,12 +455,43 @@ function analytics_top_referrers(int $days, int $limit = 10): array
         SELECT referrer_host, COUNT(*) AS views
         FROM page_views
         WHERE is_bot = 0
+          AND status = 200
           AND viewed_at >= :from
           AND viewed_at < :to
           AND referrer_host IS NOT NULL
           AND referrer_host <> ''
         GROUP BY referrer_host
         ORDER BY views DESC, referrer_host ASC
+        LIMIT {$limit}
+    ");
+    $stmt->execute(analytics_window($days));
+
+    return $stmt->fetchAll() ?: [];
+}
+
+/**
+ * Paths that returned 404 in a window, most frequent first, so the redirect
+ * manager can offer to catch them.
+ *
+ * @return list<array{path: string, views: int, last_seen: int}>
+ */
+function analytics_recent_404s(int $days = 30, int $limit = 20): array
+{
+    if (!analytics_table_exists()) {
+        return [];
+    }
+
+    $limit = max(1, min($limit, 50));
+
+    $stmt = db()->prepare("
+        SELECT path, COUNT(*) AS views, MAX(viewed_at) AS last_seen
+        FROM page_views
+        WHERE is_bot = 0
+          AND status = 404
+          AND viewed_at >= :from
+          AND viewed_at < :to
+        GROUP BY path
+        ORDER BY views DESC, last_seen DESC
         LIMIT {$limit}
     ");
     $stmt->execute(analytics_window($days));
@@ -482,7 +516,7 @@ function analytics_cache_hit_ratio(int $days = 30, int $offsetDays = 0): ?array
     $stmt = db()->prepare("
         SELECT COUNT(*) AS total, COALESCE(SUM(cache_hit), 0) AS hits
         FROM page_views
-        WHERE is_bot = 0 AND viewed_at >= :from AND viewed_at < :to
+        WHERE is_bot = 0 AND status = 200 AND viewed_at >= :from AND viewed_at < :to
     ");
     $stmt->execute(analytics_window($days, $offsetDays));
 

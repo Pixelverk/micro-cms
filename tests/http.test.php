@@ -208,6 +208,45 @@ t('an anonymous cached page is served without starting a session', function () u
     assert_not_contains('Set-Cookie', $headers, 'anonymous visitors stay sessionless');
 });
 
+t('a redirect answers with 301 and its target', function () use ($base) {
+    test_clear_cache_files();
+
+    redirect_save('old-location', 'about', 301);
+
+    [$status, , $headers] = http('GET', $base . '/old-location/', false);
+
+    assert_eq(301, $status, 'a permanent redirect is sent');
+    assert_contains('Location: /about/', $headers, 'it points at the new path');
+
+    $hits = (int) db()->query("SELECT hits FROM redirects WHERE from_path = 'old-location'")->fetchColumn();
+    assert_eq(1, $hits, 'the hit is counted');
+
+    $id = (int) db()->query("SELECT id FROM redirects WHERE from_path = 'old-location'")->fetchColumn();
+    redirect_delete($id);
+});
+
+t('the analytics refresh ingests buffered views', function () use ($base) {
+    db()->exec("DELETE FROM page_views");
+    @unlink(analytics_buffer_path());
+    @unlink(STORAGE_PATH . '/.analytics-ingest');
+
+    // An anonymous visit buffers a view instead of writing it immediately.
+    http('GET', $base . '/about/', false);
+    assert_true(is_file(analytics_buffer_path()), 'a view is buffered');
+
+    http_login($base);
+    $token = http_csrf_token($base, '/admin/analytics');
+
+    [$status] = http('POST', $base . '/admin/analytics', true, ['_token' => $token]);
+
+    assert_eq(302, $status, 'the refresh redirects back with a toast');
+    assert_true((int) db()->query("SELECT COUNT(*) FROM page_views")->fetchColumn() > 0, 'the buffer reached the database');
+
+    db()->exec("DELETE FROM page_views");
+    @unlink(analytics_buffer_path());
+    @unlink(STORAGE_PATH . '/.analytics-ingest');
+});
+
 t('unknown admin pages require login', function () use ($base) {
     [$status] = http('GET', $base . '/admin/dashboard', false);
     assert_eq(302, $status, 'anonymous admin access must redirect');

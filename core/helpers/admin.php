@@ -58,6 +58,7 @@ function admin_page_capabilities(): array
         'utilities'   => 'settings.manage',
         'health'      => 'settings.manage',
         'menu'        => 'menu.manage',
+        'redirects'   => 'redirects.manage',
         'category'    => 'taxonomy.manage',
         'tag'         => 'taxonomy.manage',
         'media'       => 'media.manage',
@@ -93,6 +94,7 @@ function admin_capabilities(?string $role = null): array
         'media.manage'     => false,
         'taxonomy.manage'  => false,
         'menu.manage'      => false,
+        'redirects.manage' => false,
         'forms.view'       => false,
         'settings.manage'  => false,
         'users.manage'     => false,
@@ -115,6 +117,7 @@ function admin_capabilities(?string $role = null): array
             'media.manage'     => true,
             'taxonomy.manage'  => true,
             'menu.manage'      => true,
+            'redirects.manage' => true,
             'forms.view'       => true,
         ]),
 

@@ -595,6 +595,12 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
                 ? content_version_current_row((int) $existingId)
                 : null;
 
+            // The old slug/parent are needed to keep a redirect from the URL
+            // this edit is moving away from.
+            $oldRowStmt = $pdo->prepare("SELECT slug, parent_id FROM content WHERE id = :id LIMIT 1");
+            $oldRowStmt->execute(['id' => $existingId]);
+            $oldRow = $oldRowStmt->fetch() ?: null;
+
         $stmt = $pdo->prepare("
             UPDATE content SET
                 parent_id     = :parent_id,
@@ -648,6 +654,19 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
             }
 
             throw $exception;
+        }
+
+        // A published item that moved keeps its old URL alive with a 301, so a
+        // slug or parent change never strands a link.
+        $pathChanged = $oldRow
+            && ((string) $oldRow['slug'] !== $slug || (string) $oldRow['parent_id'] !== (string) $parentId);
+
+        if ($pathChanged && $status === 'published' && function_exists('redirect_record_slug_change')) {
+            redirect_record_slug_change(
+                $type,
+                ['id' => (int) $existingId, 'slug' => (string) $oldRow['slug'], 'parent_id' => $oldRow['parent_id']],
+                ['id' => (int) $existingId, 'slug' => $slug, 'parent_id' => $parentId]
+            );
         }
 
     } else {

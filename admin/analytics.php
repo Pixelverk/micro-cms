@@ -12,6 +12,14 @@ declare(strict_types=1);
 
 $pageTitle = admin_trans('analytics');
 
+// Views are buffered to a file and pulled into the database at most once a
+// minute. This button does that immediately, so the numbers below are current.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $ingested = analytics_ingest();
+
+    redirect_with_toast('analytics', 'success', admin_trans('analytics_refreshed', ['count' => $ingested]));
+}
+
 // Time horizon, and the window of the same length before it for comparison.
 $ranges = [
     30  => admin_trans('analytics_range_30'),
@@ -87,6 +95,11 @@ ob_start();
                 </a>
             <?php endforeach; ?>
         </div>
+
+        <form method="post" class="inline-form">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-small btn-secondary"><?= e(admin_trans('analytics_refresh')) ?></button>
+        </form>
     </div>
 </div>
 
@@ -174,6 +187,7 @@ ob_start();
 ?>
 <h3><?= e(admin_trans('analytics')) ?></h3>
 <p><?= e(admin_trans('analytics_help')) ?></p>
+<p><?= e(admin_trans('analytics_refresh_help')) ?></p>
 <?php
 $pageHelp = ob_get_clean();
 $docsLink = ['tab' => 'reference', 'section' => 'analytics'];

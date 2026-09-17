@@ -81,6 +81,16 @@ function serveFresh($request)
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
 
+    // A redirect wins before routing, so an old URL never falls through to a
+    // 404. Saving a redirect clears that path's cache file, so it also beats the
+    // firebreak in index.php without a database read on every cache hit.
+    $redirect = redirect_find($request);
+
+    if ($redirect) {
+        redirect_record_hit($redirect['from_path']);
+        redirect_send($redirect);
+    }
+
     // Resolve page and render
     $page = route_request($request);
     $response = render_page($page);
@@ -112,12 +122,15 @@ function serveFresh($request)
     }
 
     // Traffic counting is deferred to a shutdown write. Signed-in users and
-    // token previews are not visitor traffic.
+    // token previews are not visitor traffic, and 404s are kept so the
+    // redirects page can suggest catching them.
+    $status = (int) ($response['status'] ?? 200);
+
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
-        && ($response['status'] ?? 200) === 200
+        && in_array($status, [200, 404], true)
         && !is_logged_in()
         && !can_preview_content()
     ) {
-        analytics_record_view(isset($page['id']) ? (int) $page['id'] : null);
+        analytics_record_view(isset($page['id']) ? (int) $page['id'] : null, false, $status);
     }
 }

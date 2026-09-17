@@ -182,6 +182,9 @@ function docs_content(): array
                     ['p' => 'Switch the range between 30 days, 6 months and 1 year. The chart, top pages and top referrers all follow it.'],
                     ['p' => 'Bot traffic is not counted. No IP addresses are stored; visitors are only counted through a hash that changes every day.'],
                 ],
+                'Redirects' => [
+                    ['p' => 'Redirects keep old URLs working. Add one when a page moves, or use the recent-404s list to catch links that are already broken. Saving a redirect clears its cached page, so it applies immediately.'],
+                ],
                 'Site health' => [
                     ['p' => 'The health page checks PHP and its extensions, that storage is writable, that the schema is current and that production settings are safe. It only reads; fix what it flags before it turns into a blank page or a silently uncached site.'],
                 ],
