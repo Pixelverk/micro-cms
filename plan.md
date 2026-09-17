@@ -12,24 +12,7 @@ end stays as a deferred design.
 
 ## Next up
 
-### 1. Site health check
-
-**Why:** this failure mode has already bitten twice — `data.sqlite`,
-`storage/cache` and `storage/logs` were not writable by the web user, and every
-symptom was a blank 500 or a silently uncached page. WordPress Site Health and
-Joomla's System Information answer "is this install OK?" on one screen.
-
-**Sketch:** `admin/health.php` listing checks with pass/warn/fail and a one-line
-fix for each: PHP version; `pdo_sqlite`, `imagick`, `zip`; writable
-`storage/`, `cache/`, `media/`, `logs/`, `sitemap.xml`; migration marker
-current; `setup_completed`; `security.form_secret` set; `env`;
-`perf_logging` off in production; HTTPS; free disk. Reuse
-`database_is_writable()` and `admin_page_capabilities()` (`settings.manage`).
-
-**Verify:** a test that makes a temp storage directory read-only and asserts the
-check reports it, plus a manual pass on the live vhost.
-
-### 2. Redirects and 404 tracking
+### 1. Redirects and 404 tracking
 
 **Why:** renaming a slug strands the old URL as a 404. WordPress' most-installed
 SEO plugin is a redirect manager and Joomla ships one; a tiny table buys a lot
@@ -48,7 +31,7 @@ redirect from the old URL".
 **Verify:** tests for the response code, the hit counter, 404 recording and the
 slug-change suggestion.
 
-### 3. Backup download
+### 2. Backup download
 
 **Why:** there is no way to take the content with you; the static export is
 pages, not data. Every WordPress and Joomla host offers a backup export, and it
@@ -64,7 +47,7 @@ like the static export. Exclude `config.php`, which holds the form secret.
 media; keep the existing `ZipArchive` guard test. Restore stays manual and
 documented — an admin-uploaded database can brick a live site.
 
-### 4. Trash (soft delete)
+### 3. Trash (soft delete)
 
 **Why:** deleting is permanent today and takes the version history with it.
 WordPress and Squarespace both keep a trash.
@@ -79,7 +62,7 @@ permanent delete; purge items older than N days from the existing shutdown hook
 **Verify:** trashed items leave the front end, cache and sitemap; restore brings
 them back; permanent delete removes the row and its versions.
 
-### 5. robots.txt
+### 4. robots.txt
 
 **Why:** there is no route for it, so crawlers never discover the sitemap.
 WordPress serves a virtual robots.txt.

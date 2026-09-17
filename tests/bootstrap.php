@@ -64,6 +64,7 @@ require CORE_PATH . '/helpers/export.php';
 require CORE_PATH . '/helpers/migrate.php';
 require CORE_PATH . '/helpers/activity.php';
 require CORE_PATH . '/helpers/analytics.php';
+require CORE_PATH . '/helpers/health.php';
 require CORE_PATH . '/helpers/seo.php';
 require CORE_PATH . '/helpers/icons.php';
 require CORE_PATH . '/helpers/admin.php';

@@ -118,6 +118,7 @@ function bootstrap_core(bool $withContent = true): void
     require_once CORE_PATH . '/helpers/migrate.php';
     require_once CORE_PATH . '/helpers/activity.php';
     require_once CORE_PATH . '/helpers/analytics.php';
+    require_once CORE_PATH . '/helpers/health.php';
     require_once CORE_PATH . '/helpers/seo.php';
 
     if ($withContent) {

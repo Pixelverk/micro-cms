@@ -56,6 +56,7 @@ function admin_page_capabilities(): array
         'profile'     => 'profile.own',
         'activity'    => 'activity.view',
         'utilities'   => 'settings.manage',
+        'health'      => 'settings.manage',
         'menu'        => 'menu.manage',
         'category'    => 'taxonomy.manage',
         'tag'         => 'taxonomy.manage',

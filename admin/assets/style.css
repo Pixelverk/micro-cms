@@ -734,6 +734,11 @@ button:disabled {
     color: #b45309;
 }
 
+.status-failed {
+    background: #fdecea;
+    color: var(--danger);
+}
+
 .status-archived {
     background: #eceff1;
     color: #546e7a;

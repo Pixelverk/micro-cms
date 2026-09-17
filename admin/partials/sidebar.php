@@ -162,6 +162,11 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
             <span class="sidebar-icon"><?= icon('wrench', 20) ?></span>
             <?= e(admin_trans('utilities')) ?>
         </a>
+
+        <a href="<?= url('admin/health') ?>" class="sidebar-link <?= is_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('health')) ?>">
+            <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
+            <?= e(admin_trans('health')) ?>
+        </a>
     </div>
 
     <div class="sidebar-section sidebar-footer">
