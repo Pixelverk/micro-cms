@@ -381,6 +381,68 @@ function content_list_rows(string $type, array $filters, array $visible, bool $w
 }
 
 /**
+ * A page of published content of one type, with the totals a pager needs.
+ *
+ * Front-end visibility applies, so drafts and future items never appear. The
+ * type must be one the theme declares: unknown types return an empty page
+ * rather than leaking rows the theme knows nothing about.
+ *
+ * Ordering is by publish date then id: a total order, so LIMIT/OFFSET cannot
+ * duplicate or skip a row between pages.
+ *
+ * @param array{status?: string, q?: string} $filters
+ * @param string $baseUrl Url of the listing, for the pager and rel=prev/next.
+ * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
+ */
+function list_content_page(string $type, int $page = 1, int $perPage = 10, array $filters = [], string $baseUrl = ''): array
+{
+    $page    = max(1, $page);
+    $perPage = max(1, $perPage);
+
+    $theme = theme_config();
+    if (!isset($theme['content_types'][$type])) {
+        return pagination_result([], 0, $page, $perPage, $baseUrl);
+    }
+
+    $pdo     = db();
+    $visible = content_visibility_sql();
+
+    $where  = ' WHERE type = :type' . $visible['sql'];
+    $params = array_merge(['type' => $type], $visible['params']);
+
+    if (!empty($filters['status'])) {
+        $where .= ' AND status = :status';
+        $params['status'] = $filters['status'];
+    }
+
+    if (!empty($filters['q'])) {
+        $where .= ' AND (title LIKE :q OR search_text LIKE :q)';
+        $params['q'] = '%' . $filters['q'] . '%';
+    }
+
+    $count = $pdo->prepare("SELECT COUNT(*) FROM content{$where}");
+    $count->execute($params);
+    $total = (int) $count->fetchColumn();
+
+    $sql = "SELECT id, slug, title, type, meta, published_at, created_at, updated_at
+            FROM content{$where}
+            ORDER BY published_at DESC, id DESC
+            LIMIT {$perPage} OFFSET " . pagination_offset($page, $perPage);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    foreach ($items as &$item) {
+        $item['id']           = (int) $item['id'];
+        $item['published_at'] = $item['published_at'] !== null ? (int) $item['published_at'] : null;
+        $item['meta']         = $item['meta'] ? json_decode((string) $item['meta'], true) : [];
+    }
+    unset($item);
+
+    return pagination_result($items, $total, $page, $perPage, $baseUrl);
+}
+
+/**
  * Return recent published content with decoded metadata for theme loops.
  */
 function list_recent_content(string $type, int $limit = 3): array

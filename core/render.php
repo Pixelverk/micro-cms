@@ -32,6 +32,21 @@ function render_page(array $page): array
     $head .= seo_head_tags($page);
     $head .= seo_json_ld($page);
 
+    // rel=prev/next for a paged listing. The listing records itself while the
+    // body renders (pagination_result), which is the only way a component can
+    // reach the head: the page array is passed to components by value. The
+    // canonical above already carries the current page number.
+    $listing = $page['pagination'] ?? ($GLOBALS['cms_pagination'] ?? null);
+
+    if (is_array($listing) && (int) ($listing['pages'] ?? 1) > 1) {
+        $pagerBase = (string) ($listing['url'] ?? '');
+        if ($pagerBase === '') {
+            $pagerBase = url(trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/'));
+        }
+
+        $head .= pagination_link_tags($listing, $pagerBase);
+    }
+
     // Icons
     if (!empty($theme['icons']['favicon'])) {
         $head .= "<link rel='icon' href='" . asset($theme['icons']['favicon']) . "'>\n";

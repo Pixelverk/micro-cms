@@ -80,6 +80,17 @@ function db(): PDO
 }
 
 
+/**
+ * Items per page in a taxonomy archive.
+ *
+ * A fixed default rather than a query parameter, so `?per_page=1000` cannot be
+ * used to make the site render an unbounded listing.
+ */
+function taxonomy_per_page(): int
+{
+    return 10;
+}
+
 // load taxonomy archive data
 function load_taxonomy_archive(string $taxonomyType, string $slug): array
 {
@@ -108,8 +119,29 @@ function load_taxonomy_archive(string $taxonomyType, string $slug): array
     $contentType = $taxonomy['content_type'];
 
     // ----------------------------
-    // Load all content items linked to this taxonomy
+    // Load one page of the linked items
     // ----------------------------
+    // Front-end visibility applies, so a draft linked to this term stays hidden
+    // exactly as it is everywhere else. The ordering is a total order, so
+    // LIMIT/OFFSET cannot duplicate or skip a row between pages.
+    $pageNumber = pagination_current_page();
+    $perPage    = taxonomy_per_page();
+
+    $count = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM content c
+        INNER JOIN taxonomy_term_relationships ttr
+            ON ttr.content_id = c.id
+           AND ttr.content_type = c.type
+        WHERE ttr.taxonomy_id = :taxId
+          AND c.status = 'published'
+          AND c.published_at IS NOT NULL
+          AND c.published_at <= :now
+          AND c.deleted_at IS NULL
+    ");
+    $count->execute(['taxId' => $taxonomy['id'], 'now' => time()]);
+    $total = (int) $count->fetchColumn();
+
     $stmt = $pdo->prepare("
         SELECT c.*
         FROM content c
@@ -117,10 +149,14 @@ function load_taxonomy_archive(string $taxonomyType, string $slug): array
             ON ttr.content_id = c.id
            AND ttr.content_type = c.type
         WHERE ttr.taxonomy_id = :taxId
+          AND c.status = 'published'
+          AND c.published_at IS NOT NULL
+          AND c.published_at <= :now
           AND c.deleted_at IS NULL
-        ORDER BY c.created_at DESC
+        ORDER BY c.published_at DESC, c.id DESC
+        LIMIT {$perPage} OFFSET " . pagination_offset($pageNumber, $perPage) . "
     ");
-    $stmt->execute(['taxId' => $taxonomy['id']]);
+    $stmt->execute(['taxId' => $taxonomy['id'], 'now' => time()]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // decode JSON fields and attach taxonomies to each item
@@ -157,6 +193,7 @@ function load_taxonomy_archive(string $taxonomyType, string $slug): array
         'layout'     => $layout,
         'taxonomy'   => $taxonomy,
         'items'      => $items,
+        'pagination' => pagination_result($items, $total, $pageNumber, $perPage, url($taxonomyType . '/' . $slug)),
         'components' => [], // not used for archive layouts
         'updated_at' => time(),
     ];

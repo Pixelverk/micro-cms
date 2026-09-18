@@ -163,6 +163,27 @@ block before including the layout.
 * **`.htaccess` is the routing contract**: `core/` and `storage/` are blocked,
   direct files under `admin/`/`theme/` are blocked except `*/assets/`,
   everything else goes through `index.php`. `php -S` needs `tests/router.php`.
+* **A new file under the web root must be world-readable (`644`).** Apache runs
+  as `www-data`, which is not the developer's user, so a file created `600`
+  cannot be read and a request touching it dies with a *blank 500* — no message,
+  no stack trace. This has already cost two debugging sessions:
+  `admin/content/duplicate.php` (a new admin page) and
+  `core/helpers/pagination.php` (required by `bootstrap_core()` on every
+  request, so it took the whole site down, not just one page).
+  Editing an existing file preserves its mode, so this only bites files that are
+  **created**. Check before finishing a change:
+
+  ```bash
+  # Empty output means Apache can read everything it serves.
+  find admin core theme *.php -type f ! -perm -o=r
+  ```
+
+  Fix with `chmod 644 <file>`. Files under `tests/` are never served, so their
+  mode does not matter.
+* **`storage/` must be writable by the web server user.** SQLite refuses every
+  write with "attempt to write a readonly database" otherwise, which surfaces as
+  a failed login or a failed save rather than an obvious permissions error.
+  Admin → Health reports this class directly; run it before blaming code.
 * **HTML minification** only runs when `config('env') === 'production'`;
   component JS is collected and wrapped in a `DOMContentLoaded` handler.
 * `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session

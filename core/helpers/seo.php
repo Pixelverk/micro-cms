@@ -97,10 +97,24 @@ function seo_canonical_path(array $page): string
     }
 
     if (!empty($page['taxonomy']['slug']) && !empty($page['taxonomy']['taxonomy_type'])) {
-        return '/' . $page['taxonomy']['taxonomy_type'] . '/' . $page['taxonomy']['slug'];
+        return '/' . $page['taxonomy']['taxonomy_type'] . '/' . $page['taxonomy']['slug'] . seo_page_suffix();
     }
 
-    return '/' . trim((string) ($page['path'] ?? $page['slug'] ?? ''), '/');
+    return '/' . trim((string) ($page['path'] ?? $page['slug'] ?? ''), '/') . seo_page_suffix();
+}
+
+/**
+ * The `?page=N` part of a canonical URL, or '' on the first page.
+ *
+ * A paged listing is its own canonical URL: pointing pages 2+ at page 1 would
+ * tell search engines to drop them from the index. The first page keeps its
+ * clean URL.
+ */
+function seo_page_suffix(): string
+{
+    $current = pagination_current_page();
+
+    return $current > 1 ? '?page=' . $current : '';
 }
 
 /**

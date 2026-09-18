@@ -88,6 +88,13 @@ if (!$taxonomy) {
             echo '</li>';
         }
         echo '</ul>';
+
+        // Prev/next for this archive (only renders when there is more than one page).
+        // The partial reads $pagination; the layout holds it under $page.
+        $pagination = $page['pagination'] ?? null;
+        $pagerUrl   = url($page['path'] ?? '');
+        $pagerLabel = 'Blog archive pages';
+        require theme('partials/pager.php');
     }
 }
 echo '</div>';

@@ -45,10 +45,11 @@ three tracks above are thinner than the rest of the code:
 3. **Theme asset `?v=` counters are manual** (`theme.php` has `style.css?v=5`,
    `main.js?v=4`). Admin assets are already stamped automatically by `admin_asset()`.
 4. **Archives render everything.** Blog, portfolio and taxonomy archives have no
-   pagination (`plan.md` item 8) — fine for demo data, not for a real site.
-5. **Content cannot be duplicated.** Components can be cloned in the editor; a whole
-   page or post cannot. Reusing a structure is a normal editor task.
-6. **No maintenance mode** (`plan.md` item 11), which a real launch wants.
+   pagination (`plan.md` item 7) — fine for demo data, not for a real site.
+5. **No maintenance mode** (`plan.md` item 10), which a real launch wants.
+
+Done from this list: the dashboard at a glance and content duplication, both
+shipped and covered by tests.
 
 ## Non-goals
 
@@ -68,20 +69,23 @@ value early.
 | --- | --- | --- | --- | --- |
 | 1 | B | Theme integrity check + Health section | S–M | — |
 | 2 | C | Archive pagination | M | — |
-| 3 | C | Duplicate content | S | — |
-| 4 | C | Maintenance mode | S–M | — |
-| 5 | B | Starter theme | M | 1 |
-| 6 | B | Theme asset auto-versioning | S | — |
-| 7 | C | Form submissions CSV export | S | — |
-| 8 | C | RSS/Atom feed | S | — |
-| 9 | B | Live style switch in preview | S | 6 |
-| 10 | C | Publish webhook | S | — |
-| 11 | A | Content scheduling visibility | S | — |
-| 12 | A | Editor autosave | M | — |
+| 3 | C | Maintenance mode | S–M | — |
+| 4 | B | Starter theme | M | 1 |
+| 5 | B | Theme asset auto-versioning | S | — |
+| 6 | C | Form submissions CSV export | S | — |
+| 7 | C | RSS/Atom feed | S | — |
+| 8 | B | Live style switch in preview | S | 5 |
+| 9 | C | Publish webhook | S | — |
+| 10 | A | Content scheduling visibility | S | — |
+| 11 | A | Editor autosave | M | — |
+
+Shipped: dashboard at a glance and duplicate content, both removed from the order
+above. The table is renumbered, so an old phase number in the notes below may
+refer to the previous layout.
 
 Deferred: the multi-language front end, per `multilanguage-plan.md`.
-Later / opportunistic: version diff (`plan.md` 10), media usage before delete
-(item 9).
+Later / opportunistic: version diff (`plan.md` 9), media usage before delete
+(item 8).
 
 ---
 
@@ -214,7 +218,7 @@ responses and never in a cached anonymous response.
 
 ## Track C — running a site with the CMS
 
-### C1. Archive pagination (M, `plan.md` 8)
+### C1. Archive pagination (M, `plan.md` 7)
 
 **Why.** Blog, portfolio and taxonomy archives render every item. This is the
 first thing that breaks on a real site.
@@ -233,26 +237,33 @@ locally.
 
 **Reject if** page numbers change any existing URL or cache key for page 1.
 
-### C2. Duplicate content (S)
+### C2. Duplicate content — shipped
+
+**Status:** implemented. `admin/content/duplicate.php`, the row action in
+`admin/content/index.php`, and `tests/duplicate.test.php` (9 end-to-end tests).
 
 **Why.** Reusing a page structure is a normal editor task. The editor can clone a
 component; the content list cannot copy an item.
 
-**Work.**
-* A "duplicate" action on the content list, gated by the existing
-  `content.create` capability, producing a new **draft**.
-* Copy components, layout, header, footer, taxonomy and parent; the new item gets
-  its own slug and a title marked as a copy.
-* Reuse `save_content()` so validation, versions, activity log and
+**What shipped.**
+* A "Duplicate" action in the content row actions, gated by `content.create` and
+  shown only where Edit is shown.
+* Copies components, layout, header, footer, taxonomy and parent; the new item
+  gets `{slug}-copy` and `{title} (Copy)`, both with numeric suffixes when taken.
+* Always a **draft**, with the canonical dropped from the copied meta.
+* Reuses `save_content()` so validation, versions, activity log and
   `invalidate_cache()` all apply. No new storage.
 
-**Verification.** Extend `tests/content.test.php` / `tests/admin.test.php` for the
-copy result and its capability gate; manual round-trip in the admin.
+**Two things learned that the next phase should keep.**
+* The ownership check matters: authors hold `content.create`, so allowing
+  duplication on `content.create` alone let them copy an admin's draft. It now
+  requires `can_edit_content($source)`.
+* Every database call belongs inside the error guard. `load_content_by_id_admin()`
+  loads taxonomies too, and calling `admin_trans()` to build an error message can
+  itself reach the database — a handler that throws turns one failure into a
+  blank 500.
 
-**Reject if** it copies published status, lets a user without `content.create`
-duplicate, or bypasses `save_content()`.
-
-### C3. Maintenance mode (S–M, `plan.md` 11)
+### C3. Maintenance mode (S–M, `plan.md` 10)
 
 **Why.** A site launch or a migration needs a way to take the public site down
 without taking the admin down.
@@ -268,7 +279,7 @@ unaffected, nothing cached); manual check through the local server.
 
 **Reject if** it becomes a scheduling or "coming soon" page feature.
 
-### C4. Form submissions CSV export (S, `plan.md` 14)
+### C4. Form submissions CSV export (S, `plan.md` 13)
 
 **Why.** Submissions are already stored (`store_submission`). Getting them into a
 spreadsheet or a mailing list is the missing half.
@@ -281,7 +292,7 @@ spreadsheet or a mailing list is the missing half.
 **Verification.** Extend an existing admin/HTTP suite that the download requires
 the capability and that the CSV parses back into the same rows.
 
-### C5. RSS/Atom feed (S, `plan.md` 13)
+### C5. RSS/Atom feed (S, `plan.md` 14)
 
 **Why.** Cheap distribution for blog-driven sites, consumed by newsletter tools
 and aggregators.
@@ -297,7 +308,7 @@ only published items, correct absolute URLs.
 
 **Reject if** it hardcodes blog-only logic the manifest should own.
 
-### C6. Publish webhook (S, `plan.md` 12)
+### C6. Publish webhook (S, `plan.md` 11)
 
 **Why.** It is the distribution hook that matters most today: publishing anything
 should be able to trigger the existing static export rather than polling.
@@ -336,9 +347,11 @@ assert a save still succeeds when the webhook target is unreachable.
 
 * **C1:** items per page — a fixed constant, or a settings value? Prefer fixed
   until a second value is needed.
-* **C2:** copy title convention ("Copy of X") and slug suffix, so the user sees
-  exactly what duplication produced.
 * **B4:** is a preview-only token override genuinely useful enough to build, or
   is the browser's own element inspector enough? This is the first item to drop.
 * **A2:** autosave cadence and whether the offered restore is a version entry or a
   prompt; keep `versions.keep` from filling with autosaves.
+
+Settled: the C2 copy convention (`{slug}-copy`, `{title} (Copy)`, numeric suffix
+when taken) and the decision to make the menu-slot field a `select` whose options
+come from the manifest.

@@ -50,6 +50,7 @@ return [
             'default_footer' => 'site-footer',
             'available_components' => [
                 'blog-preview-section',
+                'blog-list-section',
                 'blog-card',
                 'testimonial-section',
                 'hero-section',

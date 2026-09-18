@@ -34,6 +34,12 @@ function checkCache($request, $config)
         return false;
     }
 
+    // Same reason for a paged listing: /blog/ and /blog/?page=2 share a cache
+    // key, so serving the cached first page for page 2 would be wrong.
+    if (pagination_is_paged_request()) {
+        return false;
+    }
+
     // Nothing cached may be served to anyone with an identity, and a preview
     // request must always be rendered live.
     if (!empty($_SESSION['user_id'])) {
@@ -110,8 +116,10 @@ function serveFresh($request)
     // Cache successful anonymous GETs only. Drafts, archives and anything
     // produced for a signed-in user stay out of the shared cache.
     $isArchivePage = isset($page['taxonomy']);
-    // Query-driven views (search) must never be written to the shared cache.
-    $isQueryView = !empty($page['no_cache']);
+    // Query-driven views (search, paged listings) must never be written to the
+    // shared cache: the page number lives in the query string, which is not
+    // part of the cache key.
+    $isQueryView = !empty($page['no_cache']) || pagination_is_paged_request();
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET'
         && ($response['status'] ?? 200) === 200

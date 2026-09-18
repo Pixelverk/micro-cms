@@ -88,6 +88,10 @@ if (!str_starts_with($path, '/admin')
     && empty($_COOKIE[session_name()])
     && !isset($_GET['preview'])
     && !str_starts_with(ltrim($path, '/'), 'search')
+    // A paged listing carries its page in the query string, which the cache key
+    // does not include, so it must render live. Checked inline rather than with
+    // pagination_is_paged_request() to keep this branch free of the helper set.
+    && (int) ($_GET['page'] ?? 1) <= 1
     && !$publishCheckDue
 ) {
     require_once CORE_PATH . '/helpers/cache.php';

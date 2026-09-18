@@ -218,6 +218,15 @@ foreach ($componentFiles as $file) {
         $schema['menu']['options'] = $theme['menu_locations'] ?? [];
     }
 
+    // A "content_type" field lets a listing choose which content type it
+    // renders. Same rule: the theme manifest decides what can be listed.
+    if (isset($schema['content_type']) && ($schema['content_type']['type'] ?? '') === 'select') {
+        $schema['content_type']['options'] = array_map(
+            static fn(array $config) => $config['label'] ?? 'Unnamed',
+            $theme['content_types'] ?? []
+        );
+    }
+
     $availableComponents[$name] = [
         'label'            => $component['label'] ?? $name,
         'schema'           => $schema,

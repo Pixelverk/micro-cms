@@ -108,6 +108,7 @@ function bootstrap_core(bool $withContent = true): void
     $GLOBALS['cms_boot_started'] = true;
 
     require_once CORE_PATH . '/helpers/cache.php';
+    require_once CORE_PATH . '/helpers/pagination.php';
     require_once CORE_PATH . '/helpers/settings.php';
     require_once CORE_PATH . '/helpers/admin.php';
     require_once CORE_PATH . '/helpers/icons.php';
