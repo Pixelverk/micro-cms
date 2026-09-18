@@ -122,70 +122,68 @@ ob_start();
             <input type="search" name="q" value="<?= e($filters['search']) ?>" placeholder="<?= e(admin_trans('activity_search')) ?>">
         </label>
 
-        <button type="submit" class="btn-small"><?= e(admin_trans('activity_filter')) ?></button>
+        <button type="submit" class="btn"><?= e(admin_trans('activity_filter')) ?></button>
     </div>
 </form>
 
 <?php if (empty($items)): ?>
     <p class="empty-state"><?= e(admin_trans('activity_empty')) ?></p>
 <?php else: ?>
-    <div class="card">
-        <table class="content-table">
-            <thead>
-                <tr>
-                    <th class="col-when"><?= e(admin_trans('activity_when')) ?></th>
-                    <th class="col-author"><?= e(admin_trans('common_author')) ?></th>
-                    <th><?= e(admin_trans('activity_action')) ?></th>
-                    <th><?= e(admin_trans('activity_subject')) ?></th>
-                    <th><?= e(admin_trans('activity_details')) ?></th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($items as $entry): ?>
-                <?php $meta = json_decode((string) ($entry['meta'] ?? ''), true); ?>
-                <tr>
-                    <td>
-                        <?= e(format_local_datetime((int) $entry['created_at'], 'Y-m-d H:i')) ?>
-                    </td>
-                    <td>
-                        <?php if (!empty($entry['username'])): ?>
-                            <?= e((string) $entry['username']) ?>
-                        <?php else: ?>
-                            <span class="text-muted"><?= e(admin_trans('activity_system')) ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <span class="badge"><?= e(activity_action_label((string) $entry['action'])) ?></span>
-                        <small class="text-muted"><code><?= e((string) $entry['action']) ?></code></small>
-                    </td>
-                    <td>
-                        <?php if (!empty($entry['summary'])): ?>
-                            <?= e((string) $entry['summary']) ?>
-                        <?php endif; ?>
-                        <?php if (!empty($entry['object_type'])): ?>
-                            <small class="text-muted">
-                                <?= e((string) $entry['object_type']) ?><?= $entry['object_id'] ? ' #' . (int) $entry['object_id'] : '' ?>
-                            </small>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if (is_array($meta) && $meta): ?>
-                            <small class="text-muted">
-                                <?= e(implode(' · ', array_map(
-                                    fn($key, $value) => $key . ': ' . (is_scalar($value) ? (string) $value : json_encode($value)),
-                                    array_keys($meta),
-                                    $meta
-                                ))) ?>
-                            </small>
-                        <?php else: ?>
-                            <span class="text-muted">—</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th class="col-when"><?= e(admin_trans('activity_when')) ?></th>
+                <th class="col-author"><?= e(admin_trans('common_author')) ?></th>
+                <th><?= e(admin_trans('activity_action')) ?></th>
+                <th><?= e(admin_trans('activity_subject')) ?></th>
+                <th><?= e(admin_trans('activity_details')) ?></th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($items as $entry): ?>
+            <?php $meta = json_decode((string) ($entry['meta'] ?? ''), true); ?>
+            <tr>
+                <td>
+                    <?= e(format_local_datetime((int) $entry['created_at'], 'Y-m-d H:i')) ?>
+                </td>
+                <td>
+                    <?php if (!empty($entry['username'])): ?>
+                        <?= e((string) $entry['username']) ?>
+                    <?php else: ?>
+                        <span class="text-muted"><?= e(admin_trans('activity_system')) ?></span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <span class="badge"><?= e(activity_action_label((string) $entry['action'])) ?></span>
+                    <small class="text-muted"><code><?= e((string) $entry['action']) ?></code></small>
+                </td>
+                <td>
+                    <?php if (!empty($entry['summary'])): ?>
+                        <?= e((string) $entry['summary']) ?>
+                    <?php endif; ?>
+                    <?php if (!empty($entry['object_type'])): ?>
+                        <small class="text-muted">
+                            <?= e((string) $entry['object_type']) ?><?= $entry['object_id'] ? ' #' . (int) $entry['object_id'] : '' ?>
+                        </small>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if (is_array($meta) && $meta): ?>
+                        <small class="text-muted">
+                            <?= e(implode(' · ', array_map(
+                                fn($key, $value) => $key . ': ' . (is_scalar($value) ? (string) $value : json_encode($value)),
+                                array_keys($meta),
+                                $meta
+                            ))) ?>
+                        </small>
+                    <?php else: ?>
+                        <span class="text-muted">—</span>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
 
     <?php if ($pages > 1): ?>
         <nav class="pagination" aria-label="<?= e(admin_trans('common_pagination')) ?>">

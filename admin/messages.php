@@ -97,233 +97,227 @@ ob_start();
     </div>
 </div>
 
-<div class="form-card">
+<form method="get" class="messages-filter">
+    <label>
+        <strong><?= e(admin_trans('forms_type')) ?></strong>
+        <select name="form" onchange="this.form.submit()">
+            <option value=""><?= e(admin_trans('forms_all')) ?></option>
+            <?php foreach ($formTypes as $key => $meta): ?>
+                <option value="<?= e($key) ?>" <?= $key === $activeForm ? 'selected' : '' ?>>
+                    <?= e($meta['label'] ?? ucfirst($key)) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </label>
 
-    <form method="get" class="messages-filter">
-        <label>
-            <strong><?= e(admin_trans('forms_type')) ?></strong>
-            <select name="form" onchange="this.form.submit()">
-                <option value=""><?= e(admin_trans('forms_all')) ?></option>
-                <?php foreach ($formTypes as $key => $meta): ?>
-                    <option value="<?= e($key) ?>" <?= $key === $activeForm ? 'selected' : '' ?>>
-                        <?= e($meta['label'] ?? ucfirst($key)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+    <label>
+        <strong><?= e(admin_trans('common_status')) ?></strong>
+        <select name="status" onchange="this.form.submit()">
+            <option value=""><?= e(admin_trans('forms_status_any')) ?></option>
+            <?php foreach (form_submission_statuses() as $status): ?>
+                <option value="<?= e($status) ?>" <?= $status === $activeStatus ? 'selected' : '' ?>>
+                    <?= e(form_submission_status_label($status)) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+</form>
 
-        <label>
-            <strong><?= e(admin_trans('common_status')) ?></strong>
-            <select name="status" onchange="this.form.submit()">
-                <option value=""><?= e(admin_trans('forms_status_any')) ?></option>
-                <?php foreach (form_submission_statuses() as $status): ?>
-                    <option value="<?= e($status) ?>" <?= $status === $activeStatus ? 'selected' : '' ?>>
-                        <?= e(form_submission_status_label($status)) ?>
-                    </option>
-                <?php endforeach; ?>
+<?php if (!$result['items']): ?>
+    <div class="empty-state">
+        <span class="empty-state-icon" aria-hidden="true"><?= icon('mail-in', 24) ?></span>
+        <p class="empty-state-title"><?= e(admin_trans('forms_empty')) ?></p>
+    </div>
+<?php else: ?>
+
+    <form method="post" action="<?= url('admin/messages/update') ?>" id="messages-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
+        <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
+        <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
+
+        <div class="messages-toolbar">
+            <select name="action" aria-label="<?= e(admin_trans('forms_bulk_label')) ?>">
+                <option value=""><?= e(admin_trans('forms_bulk_choose')) ?></option>
+                <optgroup label="<?= e(admin_trans('forms_bulk_set_status')) ?>">
+                    <?php foreach (form_submission_statuses() as $status): ?>
+                        <option value="<?= e($status) ?>"><?= e(form_submission_status_label($status)) ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <optgroup label="<?= e(admin_trans('forms_bulk_other')) ?>">
+                    <option value="export"><?= e(admin_trans('forms_export_selected')) ?></option>
+                    <option value="delete"><?= e(admin_trans('common_delete')) ?></option>
+                </optgroup>
             </select>
-        </label>
+            <button type="submit" class="btn-small btn-secondary"><?= e(admin_trans('forms_bulk_apply')) ?></button>
+            <span class="text-muted"><?= e(admin_trans('forms_bulk_help')) ?></span>
+        </div>
+        <table class="admin-table messages-table">
+            <thead>
+                <tr>
+                    <th class="col-select">
+                        <input type="checkbox" id="messages-select-all"
+                               aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
+                    </th>
+                    <th><?= e(admin_trans('forms_submission')) ?></th>
+                    <th class="col-status"><?= e(admin_trans('common_status')) ?></th>
+                    <th class="col-status-control"><?= e(admin_trans('forms_set_status')) ?></th>
+                    <th><?= e(admin_trans('forms_submitted_at')) ?></th>
+                    <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($result['items'] as $row): ?>
+                    <?php
+                    $rowId    = (int) $row['id'];
+                    $data     = $row['data'];
+                    $status   = (string) $row['status'];
+                    $summary  = $headline($data);
+                    $formName = $formTypes[$row['form_type']]['label'] ?? ucfirst((string) $row['form_type']);
+                    ?>
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="messages-row" name="ids[]"
+                                   value="<?= $rowId ?>" form="messages-form"
+                                   aria-label="<?= e($formName) ?>">
+                        </td>
+
+                        <?php /* The summary itself opens the same modal as the view button. */ ?>
+                        <td>
+                            <button type="button" class="btn-text js-submission-view"
+                                    data-modal="submission-view-<?= $rowId ?>"
+                                    aria-haspopup="dialog">
+                                <strong><?= e($formName) ?></strong>
+                                <?php if ($summary !== ''): ?>
+                                    <span class="text-muted">— <?= e($summary) ?></span>
+                                <?php endif; ?>
+                            </button>
+                        </td>
+
+                        <td class="col-status">
+                            <span class="status status-<?= e($status) ?>">
+                                <?= e(form_submission_status_label($status)) ?>
+                            </span>
+                        </td>
+
+                        <?php /* Its own form, so changing one row does not submit the others. */ ?>
+                        <td class="col-status-control">
+                            <form method="post" action="<?= url('admin/messages/update') ?>" class="inline-form js-row-status">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
+                                <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
+                                <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
+                                <input type="hidden" name="row_id" value="<?= $rowId ?>">
+
+                                <select name="row_status" class="field-input"
+                                        onchange="this.form.submit()"
+                                        aria-label="<?= e(admin_trans('forms_set_status')) ?>">
+                                    <?php foreach (form_submission_statuses() as $option): ?>
+                                        <option value="<?= e($option) ?>" <?= $option === $status ? 'selected' : '' ?>>
+                                            <?= e(form_submission_status_label($option)) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </form>
+                        </td>
+
+                        <td><?= e(format_local_datetime($row['created_at'], 'Y-m-d H:i')) ?></td>
+
+                        <td class="actions col-actions">
+                            <button type="button" class="btn-secondary btn-small js-submission-view"
+                                    data-modal="submission-view-<?= $rowId ?>"
+                                    aria-haspopup="dialog">
+                                <?= icon('search', 16) ?><?= e(admin_trans('common_view')) ?>
+                            </button>
+
+                            <form method="post" action="<?= url('admin/messages/update') ?>"
+                                  class="inline-form js-confirm-form"
+                                  data-confirm="<?= e(admin_trans('forms_delete_confirm', ['name' => $formName])) ?>"
+                                  data-confirm-title="<?= e(admin_trans('common_delete')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
+                                <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
+                                <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="ids[]" value="<?= $rowId ?>">
+                                <button type="submit" class="btn-delete btn-small btn-icon"
+                                        title="<?= e(admin_trans('common_delete')) ?>"
+                                        aria-label="<?= e(admin_trans('common_delete')) ?>">
+                                    <?= icon('trash', 16) ?>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </form>
 
-    <?php if (!$result['items']): ?>
-        <div class="empty-state">
-            <span class="empty-state-icon" aria-hidden="true"><?= icon('mail-in', 24) ?></span>
-            <p class="empty-state-title"><?= e(admin_trans('forms_empty')) ?></p>
-        </div>
-    <?php else: ?>
+    <?php /* One modal per submission, opened by that row's view button.
+               Kept outside the table so the rows keep their column count. */ ?>
+    <?php foreach ($result['items'] as $row): ?>
+        <?php $rowId = (int) $row['id']; ?>
+        <div id="submission-view-<?= $rowId ?>" class="modal-backdrop" hidden>
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>
+                        <?= e($formTypes[$row['form_type']]['label'] ?? ucfirst((string) $row['form_type'])) ?>
+                        <span class="text-muted"><?= e(format_local_datetime($row['created_at'], 'Y-m-d H:i')) ?></span>
+                    </h3>
+                    <button type="button" class="close-modal js-submission-close"
+                            aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
+                </div>
 
-        <form method="post" action="<?= url('admin/messages/update') ?>" id="messages-form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
-            <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
-            <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
-
-            <div class="messages-toolbar">
-                <select name="action" aria-label="<?= e(admin_trans('forms_bulk_label')) ?>">
-                    <option value=""><?= e(admin_trans('forms_bulk_choose')) ?></option>
-                    <optgroup label="<?= e(admin_trans('forms_bulk_set_status')) ?>">
-                        <?php foreach (form_submission_statuses() as $status): ?>
-                            <option value="<?= e($status) ?>"><?= e(form_submission_status_label($status)) ?></option>
+                <div class="modal-body">
+                    <ul class="messages-data">
+                        <?php foreach ($row['data'] as $key => $value): ?>
+                            <li>
+                                <strong><?= e(form_submission_field_label((string) $key)) ?>:</strong>
+                                <?php if (is_array($value)): ?>
+                                    <?= e(implode(', ', array_map('strval', $value))) ?>
+                                <?php else: ?>
+                                    <?= nl2br(e((string) $value)) ?>
+                                <?php endif; ?>
+                            </li>
                         <?php endforeach; ?>
-                    </optgroup>
-                    <optgroup label="<?= e(admin_trans('forms_bulk_other')) ?>">
-                        <option value="export"><?= e(admin_trans('forms_export_selected')) ?></option>
-                        <option value="delete"><?= e(admin_trans('common_delete')) ?></option>
-                    </optgroup>
-                </select>
-                <button type="submit" class="btn-small btn-secondary"><?= e(admin_trans('forms_bulk_apply')) ?></button>
-                <span class="text-muted"><?= e(admin_trans('forms_bulk_help')) ?></span>
-            </div>
-            <div class="card">
-                <table class="admin-table messages-table">
-                    <thead>
-                        <tr>
-                            <th class="col-select">
-                                <input type="checkbox" id="messages-select-all"
-                                       aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
-                            </th>
-                            <th><?= e(admin_trans('forms_submission')) ?></th>
-                            <th class="col-status"><?= e(admin_trans('common_status')) ?></th>
-                            <th class="col-status-control"><?= e(admin_trans('forms_set_status')) ?></th>
-                            <th><?= e(admin_trans('forms_submitted_at')) ?></th>
-                            <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($result['items'] as $row): ?>
-                            <?php
-                            $rowId    = (int) $row['id'];
-                            $data     = $row['data'];
-                            $status   = (string) $row['status'];
-                            $summary  = $headline($data);
-                            $formName = $formTypes[$row['form_type']]['label'] ?? ucfirst((string) $row['form_type']);
-                            ?>
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="messages-row" name="ids[]"
-                                           value="<?= $rowId ?>" form="messages-form"
-                                           aria-label="<?= e($formName) ?>">
-                                </td>
+                    </ul>
 
-                                <?php /* The summary itself opens the same modal as the view button. */ ?>
-                                <td>
-                                    <button type="button" class="btn-text js-submission-view"
-                                            data-modal="submission-view-<?= $rowId ?>"
-                                            aria-haspopup="dialog">
-                                        <strong><?= e($formName) ?></strong>
-                                        <?php if ($summary !== ''): ?>
-                                            <span class="text-muted">— <?= e($summary) ?></span>
-                                        <?php endif; ?>
-                                    </button>
-                                </td>
+                    <?php if (!$row['data']): ?>
+                        <p class="text-muted"><?= e(admin_trans('forms_no_data')) ?></p>
+                    <?php endif; ?>
+                </div>
 
-                                <td class="col-status">
-                                    <span class="status status-<?= e($status) ?>">
-                                        <?= e(form_submission_status_label($status)) ?>
-                                    </span>
-                                </td>
-
-                                <?php /* Its own form, so changing one row does not submit the others. */ ?>
-                                <td class="col-status-control">
-                                    <form method="post" action="<?= url('admin/messages/update') ?>" class="inline-form js-row-status">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
-                                        <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
-                                        <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
-                                        <input type="hidden" name="row_id" value="<?= $rowId ?>">
-
-                                        <select name="row_status" class="field-input"
-                                                onchange="this.form.submit()"
-                                                aria-label="<?= e(admin_trans('forms_set_status')) ?>">
-                                            <?php foreach (form_submission_statuses() as $option): ?>
-                                                <option value="<?= e($option) ?>" <?= $option === $status ? 'selected' : '' ?>>
-                                                    <?= e(form_submission_status_label($option)) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </form>
-                                </td>
-
-                                <td><?= e(format_local_datetime($row['created_at'], 'Y-m-d H:i')) ?></td>
-
-                                <td class="actions col-actions">
-                                    <button type="button" class="btn-secondary btn-small js-submission-view"
-                                            data-modal="submission-view-<?= $rowId ?>"
-                                            aria-haspopup="dialog">
-                                        <?= icon('search', 16) ?><?= e(admin_trans('common_view')) ?>
-                                    </button>
-
-                                    <form method="post" action="<?= url('admin/messages/update') ?>"
-                                          class="inline-form js-confirm-form"
-                                          data-confirm="<?= e(admin_trans('forms_delete_confirm', ['name' => $formName])) ?>"
-                                          data-confirm-title="<?= e(admin_trans('common_delete')) ?>">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="return_form" value="<?= e($activeForm) ?>">
-                                        <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
-                                        <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="ids[]" value="<?= $rowId ?>">
-                                        <button type="submit" class="btn-delete btn-small btn-icon"
-                                                title="<?= e(admin_trans('common_delete')) ?>"
-                                                aria-label="<?= e(admin_trans('common_delete')) ?>">
-                                            <?= icon('trash', 16) ?>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </form>
-
-        <?php /* One modal per submission, opened by that row's view button.
-                   Kept outside the table so the rows keep their column count. */ ?>
-        <?php foreach ($result['items'] as $row): ?>
-            <?php $rowId = (int) $row['id']; ?>
-            <div id="submission-view-<?= $rowId ?>" class="modal-backdrop" hidden>
-                <div class="modal">
-                    <div class="modal-header">
-                        <h3>
-                            <?= e($formTypes[$row['form_type']]['label'] ?? ucfirst((string) $row['form_type'])) ?>
-                            <span class="text-muted"><?= e(format_local_datetime($row['created_at'], 'Y-m-d H:i')) ?></span>
-                        </h3>
-                        <button type="button" class="close-modal js-submission-close"
-                                aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
-                    </div>
-
-                    <div class="modal-body">
-                        <ul class="messages-data">
-                            <?php foreach ($row['data'] as $key => $value): ?>
-                                <li>
-                                    <strong><?= e(form_submission_field_label((string) $key)) ?>:</strong>
-                                    <?php if (is_array($value)): ?>
-                                        <?= e(implode(', ', array_map('strval', $value))) ?>
-                                    <?php else: ?>
-                                        <?= nl2br(e((string) $value)) ?>
-                                    <?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-
-                        <?php if (!$row['data']): ?>
-                            <p class="text-muted"><?= e(admin_trans('forms_no_data')) ?></p>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="modal-actions">
-                        <span class="status status-<?= e((string) $row['status']) ?>">
-                            <?= e(form_submission_status_label((string) $row['status'])) ?>
-                        </span>
-                        <button type="button" class="btn-secondary btn-small js-submission-close">
-                            <?= e(admin_trans('common_close')) ?>
-                        </button>
-                    </div>
+                <div class="modal-actions">
+                    <span class="status status-<?= e((string) $row['status']) ?>">
+                        <?= e(form_submission_status_label((string) $row['status'])) ?>
+                    </span>
+                    <button type="button" class="btn-secondary btn-small js-submission-close">
+                        <?= e(admin_trans('common_close')) ?>
+                    </button>
                 </div>
             </div>
-        <?php endforeach; ?>
+        </div>
+    <?php endforeach; ?>
 
-        <?php
-        if ((int) $result['pages'] > 1) {
-            ?>
-            <nav class="pagination" aria-label="<?= e(admin_trans('forms_pages')) ?>">
-                <?php if ((int) $result['page'] > 1): ?>
-                    <a class="btn-secondary btn-small" href="<?= e($viewUrl(['page' => (int) $result['page'] - 1])) ?>">&larr; Previous</a>
-                <?php endif; ?>
-                <span class="text-muted">
-                    Page <?= (int) $result['page'] ?> of <?= (int) $result['pages'] ?>
-                </span>
-                <?php if ((int) $result['page'] < (int) $result['pages']): ?>
-                    <a class="btn-secondary btn-small" href="<?= e($viewUrl(['page' => (int) $result['page'] + 1])) ?>">Next &rarr;</a>
-                <?php endif; ?>
-            </nav>
-            <?php
-        }
+    <?php
+    if ((int) $result['pages'] > 1) {
         ?>
+        <nav class="pagination" aria-label="<?= e(admin_trans('forms_pages')) ?>">
+            <?php if ((int) $result['page'] > 1): ?>
+                <a class="btn-secondary btn-small" href="<?= e($viewUrl(['page' => (int) $result['page'] - 1])) ?>">&larr; Previous</a>
+            <?php endif; ?>
+            <span class="text-muted">
+                Page <?= (int) $result['page'] ?> of <?= (int) $result['pages'] ?>
+            </span>
+            <?php if ((int) $result['page'] < (int) $result['pages']): ?>
+                <a class="btn-secondary btn-small" href="<?= e($viewUrl(['page' => (int) $result['page'] + 1])) ?>">Next &rarr;</a>
+            <?php endif; ?>
+        </nav>
+        <?php
+    }
+    ?>
 
-    <?php endif; ?>
-
-</div>
+<?php endif; ?>
 
 <script>
 /* Select-all for the inbox, mirroring the content list. */

@@ -148,7 +148,7 @@ ob_start();
 
     <!-- Inspector panel -->
     <div class="media-inspector" id="inspector">
-        <p><?= e(admin_trans('media_select_file')) ?></p>
+        <p class="media-inspector-empty"><?= e(admin_trans('media_select_file')) ?></p>
     </div>
 
 </div>

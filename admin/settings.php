@@ -416,7 +416,7 @@ ob_start();
     </div>
 </div>
 
-<form id="settings" method="post" class="form-card">
+<form id="settings" method="post">
     <?= csrf_field() ?>
     <?php foreach ($settingGroups as $groupKey => $group): ?>
         <?php

@@ -97,67 +97,65 @@ ob_start();
     <p><?= e(admin_trans('tag_empty')) ?></p>
 <?php else: ?>
 
-<div class="card">
-    <table class="content-table">
-        <thead>
-            <tr>
-                <th><?= e(admin_trans('common_name')) ?></th>
-                <th><?= e(admin_trans('common_slug')) ?></th>
-                <th><?= e(admin_trans('content_type')) ?></th>
-                <th><?= e(admin_trans('common_updated')) ?></th>
-                <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
-            </tr>
-        </thead>
+<table class="content-table">
+    <thead>
+        <tr>
+            <th><?= e(admin_trans('common_name')) ?></th>
+            <th><?= e(admin_trans('common_slug')) ?></th>
+            <th><?= e(admin_trans('content_type')) ?></th>
+            <th><?= e(admin_trans('common_updated')) ?></th>
+            <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
+        </tr>
+    </thead>
 
-        <tbody>
-        <?php foreach ($tags as $tag): ?>
-            <tr>
-                <td><?= e($tag['name']) ?></td>
+    <tbody>
+    <?php foreach ($tags as $tag): ?>
+        <tr>
+            <td><?= e($tag['name']) ?></td>
 
-                <td>
-                    <code><?= e($tag['slug']) ?></code>
-                </td>
+            <td>
+                <code><?= e($tag['slug']) ?></code>
+            </td>
 
-                <td>
-                    <?= e($contentTypes[$tag['content_type']]['label']
-                        ?? ucfirst($tag['content_type'])) ?>
-                </td>
+            <td>
+                <?= e($contentTypes[$tag['content_type']]['label']
+                    ?? ucfirst($tag['content_type'])) ?>
+            </td>
 
-                <td>
-                    <?= format_local_datetime($tag['updated_at'], 'Y-m-d') ?>
-                </td>
+            <td>
+                <?= format_local_datetime($tag['updated_at'], 'Y-m-d') ?>
+            </td>
 
-                <td class="actions col-actions-icons">
+            <td class="actions col-actions-icons">
 
-                    <a href="<?= url('admin/tag/edit') ?>?id=<?= (int)$tag['id'] ?>"
-                       class="btn-small btn-icon"
-                       title="<?= e(admin_trans('common_edit')) ?>"
-                       aria-label="<?= e(admin_trans('common_edit')) ?>">
-                        <?= icon('edit', 16) ?>
-                    </a>
+                <a href="<?= url('admin/tag/edit') ?>?id=<?= (int)$tag['id'] ?>"
+                   class="btn-small btn-icon"
+                   title="<?= e(admin_trans('common_edit')) ?>"
+                   aria-label="<?= e(admin_trans('common_edit')) ?>">
+                    <?= icon('edit', 16) ?>
+                </a>
 
-                    <form
-                        action="<?= url('admin/tag/remove') ?>"
-                        method="post"
-                        class="inline-form js-confirm-form"
-                        data-confirm-title="<?= e(admin_trans('tag_delete')) ?>"
-                        data-confirm="<?= e(admin_trans('tag_delete_confirm', ['name' => $tag['name']])) ?>"
-                    >
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">
-                        <button type="submit" class="btn-delete btn-small btn-icon"
-                                title="<?= e(admin_trans('common_delete')) ?>"
-                                aria-label="<?= e(admin_trans('common_delete')) ?>">
-                            <?= icon('trash', 16) ?>
-                        </button>
-                    </form>
+                <form
+                    action="<?= url('admin/tag/remove') ?>"
+                    method="post"
+                    class="inline-form js-confirm-form"
+                    data-confirm-title="<?= e(admin_trans('tag_delete')) ?>"
+                    data-confirm="<?= e(admin_trans('tag_delete_confirm', ['name' => $tag['name']])) ?>"
+                >
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">
+                    <button type="submit" class="btn-delete btn-small btn-icon"
+                            title="<?= e(admin_trans('common_delete')) ?>"
+                            aria-label="<?= e(admin_trans('common_delete')) ?>">
+                        <?= icon('trash', 16) ?>
+                    </button>
+                </form>
 
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>
 
 <?php endif; ?>
 

@@ -981,6 +981,12 @@ html.dark .menu-item .remove {
     font-weight: 500;
 }
 
+/* Compact controls inside a card take their spacing from `.actions`; the prose
+   gap above would otherwise drop the first icon below the button beside it. */
+.card a.btn-small {
+    margin-top: 0;
+}
+
 /* Analytics: metric tiles and the inline SVG sparkline. */
 .stat-card h2 {
     margin: 0;
@@ -1325,9 +1331,9 @@ html.dark .menu-item .remove {
     margin: 0 0 2rem;
 }
 
-/* A form card spaces its own children, so the last group need not. */
-.form-card > .settings-group:last-child,
-.settings-group:last-child {
+/* A form card spaces its own children, so the last group need not. Groups
+   sitting directly on the page keep their margin as bottom breathing room. */
+.form-card > .settings-group:last-child {
     margin-bottom: 0;
 }
 
@@ -2508,9 +2514,6 @@ button.sidebar-link {
 .activity-filters select,
 .activity-filters input { min-width: 9rem; }
 
-/* Sit the submit on the same baseline as the 36px controls beside it. */
-.activity-filters button { font-size: 0.9rem; }
-
 .pagination {
     display: flex;
     align-items: center;
@@ -2539,13 +2542,20 @@ button.sidebar-link {
 .media-item {
     cursor: pointer;
     height: fit-content;
-    padding: 0.35rem;
-    border: 2px solid transparent;
-    border-radius: var(--radius-sm);
+    padding: 0.4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-fast) var(--ease),
+                box-shadow var(--transition-fast) var(--ease);
 }
 
-.media-item:hover { border-color: var(--border); }
-.media-item.selected { border-color: var(--link); }
+.media-item:hover { border-color: var(--border-strong); }
+.media-item.selected {
+    border-color: var(--link);
+    box-shadow: 0 0 0 1px var(--link);
+}
 
 .media-item img,
 .media-file {
@@ -2565,8 +2575,11 @@ button.sidebar-link {
 .media-inspector {
     width: 340px;
     flex-shrink: 0;
-    padding-left: 1.25rem;
-    border-left: 1px solid var(--border);
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Below the tablet breakpoint the grid and the inspector stack: side by side
@@ -2575,16 +2588,22 @@ button.sidebar-link {
 @media (max-width: 900px) {
     .media-layout {
         flex-direction: column;
+        /* The row layout aligns to the top so the panel keeps its own height;
+           stacked, both children have to stretch to the full width. */
+        align-items: stretch;
         gap: 1.5rem;
     }
 
     .media-inspector {
         width: auto;
-        padding-left: 0;
-        padding-top: 1.25rem;
-        border-left: 0;
-        border-top: 1px solid var(--border);
     }
+}
+
+/* The panel holds nothing until a file is picked; keep the hint quiet. */
+.media-inspector-empty {
+    margin: 0;
+    color: var(--text-muted);
+    text-align: center;
 }
 
 /* The inspector is a stack of blocks: the file, its fields, its URLs and the
@@ -2632,6 +2651,13 @@ button.sidebar-link {
 .media-inspector textarea,
 .media-inspector select {
     width: 100%;
+}
+
+/* The replace-file control carries browser chrome, so it is sized like the
+   other file inputs in the admin rather than as a full field. */
+.media-inspector input[type="file"] {
+    padding: 0.3rem;
+    font-size: 0.85rem;
 }
 
 /* The panel is narrow, so its actions are a column of full-width buttons. */

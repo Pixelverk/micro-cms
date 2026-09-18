@@ -187,67 +187,65 @@ ob_start();
 <?php if (empty($versions)): ?>
     <p class="empty-state"><?= e(admin_trans('versions_empty')) ?></p>
 <?php else: ?>
-    <div class="card">
-        <table class="content-table">
-            <thead>
-                <tr>
-                    <th><?= e(admin_trans('versions_version')) ?></th>
-                    <th><?= e(admin_trans('content_title')) ?></th>
-                    <th><?= e(admin_trans('common_status')) ?></th>
-                    <th><?= e(admin_trans('versions_changed')) ?></th>
-                    <th><?= e(admin_trans('common_author')) ?></th>
-                    <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($versions as $index => $version): ?>
-                <?php
-                $payload = content_version_payload($version);
-                $changes = content_version_changes($payload, $currentPayload);
-                $isNewest = $index === 0;
-                ?>
-                <tr>
-                    <td>
-                        <strong>#<?= (int) $version['version'] ?></strong>
-                        <?php if ($isNewest): ?>
-                            <span class="badge"><?= e(admin_trans('versions_latest')) ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?= e($version['title']) ?></td>
-                    <td>
-                        <span class="status status-<?= e($version['status']) ?>">
-                            <?= e(content_status_label((string) $version['status'])) ?>
-                        </span>
-                    </td>
-                    <td>
-                        <?= e(content_version_reason_label((string) $version['reason'])) ?>
-                        <?php if ($changes): ?>
-                            <small class="text-muted">(<?= e(implode(', ', $changes)) ?>)</small>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?= e($version['username'] ?? '—') ?>
-                        <small class="text-muted"><?= e(format_local_datetime((int) $version['created_at'], 'Y-m-d H:i')) ?></small>
-                    </td>
-                    <td class="actions">
-                        <a class="btn-small"
-                           href="<?= e($historyUrl . '&version=' . (int) $version['id']) ?>">
-                            <?= e(admin_trans('common_view')) ?>
-                        </a>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th><?= e(admin_trans('versions_version')) ?></th>
+                <th><?= e(admin_trans('content_title')) ?></th>
+                <th><?= e(admin_trans('common_status')) ?></th>
+                <th><?= e(admin_trans('versions_changed')) ?></th>
+                <th><?= e(admin_trans('common_author')) ?></th>
+                <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($versions as $index => $version): ?>
+            <?php
+            $payload = content_version_payload($version);
+            $changes = content_version_changes($payload, $currentPayload);
+            $isNewest = $index === 0;
+            ?>
+            <tr>
+                <td>
+                    <strong>#<?= (int) $version['version'] ?></strong>
+                    <?php if ($isNewest): ?>
+                        <span class="badge"><?= e(admin_trans('versions_latest')) ?></span>
+                    <?php endif; ?>
+                </td>
+                <td><?= e($version['title']) ?></td>
+                <td>
+                    <span class="status status-<?= e($version['status']) ?>">
+                        <?= e(content_status_label((string) $version['status'])) ?>
+                    </span>
+                </td>
+                <td>
+                    <?= e(content_version_reason_label((string) $version['reason'])) ?>
+                    <?php if ($changes): ?>
+                        <small class="text-muted">(<?= e(implode(', ', $changes)) ?>)</small>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?= e($version['username'] ?? '—') ?>
+                    <small class="text-muted"><?= e(format_local_datetime((int) $version['created_at'], 'Y-m-d H:i')) ?></small>
+                </td>
+                <td class="actions">
+                    <a class="btn-small"
+                       href="<?= e($historyUrl . '&version=' . (int) $version['id']) ?>">
+                        <?= e(admin_trans('common_view')) ?>
+                    </a>
 
-                        <form method="post" class="inline-form js-confirm-form"
-                              data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
-                              data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $version['version']])) ?>">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="version_id" value="<?= (int) $version['id'] ?>">
-                            <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('common_restore')) ?></button>
-                        </form>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+                    <form method="post" class="inline-form js-confirm-form"
+                          data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
+                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $version['version']])) ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="version_id" value="<?= (int) $version['id'] ?>">
+                        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('common_restore')) ?></button>
+                    </form>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
 <?php endif; ?>
 
 <?php
