@@ -128,16 +128,15 @@ Demo account:
 
 ### Planned
 
-The backlog lives in [`plan.md`](plan.md). Near-term entry: robots.txt. The
-multi-language front end is designed in
-[`multilanguage-plan.md`](multilanguage-plan.md) and deferred.
+The phased plan of record is [`plan.md`](plan.md): three waves, starting with six
+correctness fixes and then the missing main features (password reset, editor
+autosave, pre-publish checks, maintenance mode, security headers, media wiring
+and form-model completion). The multi-language front end is a deferred track in
+the same file.
 
 ### Maybe
 
-* Live preview inside the content editor (an iframe over the existing preview URL)
-* A richer default demo site and admin theme
-* A theme developer guide published outside the app
-* More admin languages
+Smaller opportunities are tracked in Wave 3 of [`plan.md`](plan.md).
 
 ---
 

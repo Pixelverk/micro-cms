@@ -1,78 +1,543 @@
 # Micro CMS — plan
 
-A living backlog for a CMS that stays procedural PHP over SQLite with no build
-step and no packages. See [`continuing-plan.md`](continuing-plan.md) for the
-phased programme across the CMS, theme building and running a site; this file
-remains the item-by-item backlog. Each idea is judged on two questions: does it
-solve a problem that exists today, and can it be done with what is already here
-(PDO/SQLite, Imagick, plain PHP)? The inspiration comes from WordPress, Joomla
-and Squarespace, but their weight does not.
+One ordered programme for a CMS that stays procedural PHP over SQLite with no
+build step, no composer, no framework and no plugins. This file is the **single
+plan of record**. It consolidates the former backlog, phased programme, advice
+inventory and gap analysis, all of which have been removed.
 
-Completed work (header/footer scripts, cache warm-up + static export, built-in
-analytics, multi-language admin, redirects, trash, site health, virtual
-robots.txt, the dashboard at a glance, content duplication, pagination, and the
-form-submission inbox with statuses and CSV export) has been removed. The
-multi-language front end stays as a deferred design.
+## Document map
 
-## Next up
+| File | Role |
+| --- | --- |
+| `plan.md` | This file. The single plan of record for scope, order and verification. |
+| `README.md` | Product description, requirements and the shipped-feature list. |
+| `AGENTS.md` | The constraints and conventions every phase must respect. |
 
-Nothing is queued here. The Later list below is the backlog, roughly in value
-order; theme asset auto-versioning (item 13) is the smallest worthwhile next
-step, and the publish webhook (item 9) is the one most likely to matter next
-for a real deployment.
+Do not add another plan document. Extend this file, and update it when a phase
+ships.
 
-## Later
+## Fixed constraints
 
-7. **Media usage before delete** — scan content bodies for a media id and show
-   where it is used, the way Joomla warns before removing a file. (M)
-8. **Version diff** — show what changed between two versions. Plain PHP, no
-   diff library. (M)
-9. **Maintenance mode** — a Settings toggle and message; visitors get 503 +
-   `Retry-After`, while signed-in admins and previews keep working. (S–M)
-10. **Publish webhook** — a Settings URL that receives a small JSON POST on
-    publish/unpublish, so a static rebuild (the export workflow) can be
-    triggered without polling. This is the distribution hook that matters most
-    today. (S)
-11. **Editor autosave** — a draft version every ~60s through the existing
-    `content_versions` store (reason `autosave`), offered back on reload. Reuses
-    what is there instead of new storage. (M)
-12. **RSS/Atom feed** — `/feed/` for the content types the theme marks as feed
-    sources, cached like a page, with a `<link rel="alternate">` in `<head>`.
-    Cheap and still consumed by newsletter tools, automation and aggregators,
-    but low urgency for a site without a news habit. (S)
-13. **Theme asset auto-versioning** — `theme.php`'s `?v=` counters are manual
-    and easy to forget; stamp them by modification time like `admin_asset()`. (S)
+These are not up for renegotiation inside a phase:
 
-## Deferred
+* Procedural PHP 8.0+, SQLite, Apache, one theme at `theme/`, Imagick; `zip`
+  optional with a Phar fallback.
+* No composer, framework, ORM, build step, bundler, CDN dependency or test
+  framework.
+* One install per client site. No multisite, no theme switching.
+* Developers own structure and design in `theme/`; editors own content.
+* Install is hosted on cheap shared hosting and delivered by `git pull` plus
+  `php tests/run.php`.
 
-* **Multi-language front end** — design agreed in
-  [`multilanguage-plan.md`](multilanguage-plan.md); code deferred until the
-  phases are scheduled.
+## Tracks
 
-## Considered and not planned
+* **A — the CMS core** (data model, admin, helpers).
+* **B — building themes** (the developer-facing side).
+* **C — running a site** (the editor/operator side).
+* **D — multi-language front end** (deferred; design already agreed).
 
-* **Comments** — moderation and spam need either a lot of code or an external
-  service; the CMS targets sites that do not need them.
-* **Front-end accounts and membership** — a second auth system, roles and
-  password flows for a benefit most small sites do not need.
-* **Visual page/theme builder** — developers own the theme; the component
-  editor already covers content structure.
-* **REST/JSON API and headless mode** — a whole public surface to secure and
-  version. Revisit only if a headless use case appears.
-* **E-commerce, external captcha, offsite/scheduled backups** — each needs a
-  payment, spam or storage dependency that breaks the no-dependency rule.
+## Rules every phase follows
 
-## Notes
+1. **One phase at a time.** Implement, verify, report, stop. Do not start the
+   next phase speculatively. A phase ships alone.
+2. **Verification bar at the end of every phase:**
+   * `php tests/run.php` passes. Extend the existing suite nearest the change;
+     add no new harness. Suites must call `test_fresh_database()` because
+     `tests/admin.test.php` mutates the shared user table.
+   * Anything the suite cannot see (theme CSS/JS, admin layout, rendered markup)
+     is checked through the local server:
+     `CMS_CONFIG_FILE="$PWD/tests/config.server.php" php -S 127.0.0.1:8080 tests/router.php`.
+   * Any new admin page gets a capability in `admin_page_capabilities()`,
+     sidebar entry, both language keys and a `$pageHelp` block.
+   * Any write path that changes public output calls `invalidate_cache()`.
+   * **New file under the web root must be world-readable:** `find admin core
+     theme *.php -type f ! -perm -o=r` must print nothing (`chmod 644`). A file
+     created `600` returns a blank 500.
+   * `storage/` must be writable by the web server user.
+   * Schema changes go in **both** `core/helpers/setup.php` (fresh installs) and
+     `migrate_registry()` (upgrades), and migrations are idempotent.
+   * Removing a component from `available_components` is a content-affecting
+     change: check existing content first (an unknown type becomes an HTML
+     comment and is dropped on the next save).
+3. **Admin UI may assume JavaScript. The public front end may not.** Public
+   navigation, menus and forms must render and work without script.
+4. No phase may introduce a new concept unless its Why below says why.
 
-* Every test suite must call `test_fresh_database()` (or seed its own database)
-  because `tests/admin.test.php` mutates the shared user table.
-* New files under `core/` must be readable by the web server user; the health
-  check (item 1) exists to make that class of failure visible.
-* Two permission traps have already cost real debugging time:
-  * A **new file under the web root must be readable by the web server user**
-    (`chmod 644`). A file created `600` returns a blank 500 when Apache tries to
-    load it — this is what broke `admin/content/duplicate.php`.
-  * **`storage/` must be writable by the web server user** (`www-data` under
-    Apache), or SQLite refuses every write with "readonly database". If the
-    runtime files are owned by a different account, fix the ownership.
-  Admin → Health reports the second class directly; run it before blaming code.
+## Phase table
+
+Wave 1 makes the CMS complete for its actual job. Wave 2 adds depth and polish.
+Wave 3 is opportunistic and can be dropped.
+
+| # | Wave | Track | Phase | Size | Depends on |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1 | A | Correctness fixes | S | — |
+| 2 | 1 | A | Test-suite reliability | S–M | — |
+| 3 | 1 | A | Password reset | M | — |
+| 4 | 1 | A | Editor autosave + unsaved-changes warning | M | — |
+| 5 | 1 | A | Pre-publish checklist | M | — |
+| 6 | 1 | C | Security headers | S | — |
+| 7 | 1 | C | Maintenance mode | S–M | — |
+| 8 | 1 | C | Form model completion | S–M | — |
+| 9 | 1 | C | Settings gaps | S | — |
+| 10 | 1 | A/C | Scheduling, expiry and visibility | S–M | — |
+| 11 | 1 | A/B | Media pipeline into the theme + `og_image` picker | M | 1 |
+| 12 | 2 | A | Media library UX + media usage before delete | S–M | 11 |
+| 13 | 2 | B | Theme integrity check + Health | S–M | — |
+| 14 | 2 | B | Theme asset auto-versioning | S | — |
+| 15 | 2 | B | Starter theme | M | 13 |
+| 16 | 2 | C | Navigation: content-id links, hide, active state, preview | S–M | — |
+| 17 | 2 | C | Redirect search + conflict detection | S | — |
+| 18 | 2 | C | SEO output polish | S | 1 |
+| 19 | 2 | B/C | Accessibility pass | S | — |
+| 20 | 2 | A | Search hardening | S–M | 1 |
+| 21 | 2 | A | Version diff and compare | M | — |
+| 22 | 2 | C | Publish webhook | S | — |
+| 23 | 2 | C | RSS/Atom feed | S | — |
+| 24 | 2 | C | Backup retention, orphaned media, broken links | M | — |
+| 25 | 3 | A | Rich-text editor completion | S–M | — |
+| 26 | 3 | B | Live style switch in preview | S | 14 |
+| 27 | 3 | C | SMTP delivery | M | 3 |
+| 28 | 3 | A | Reusable/global content | M | — |
+| 29 | 3 | A | Content import/export | M | — |
+| D1–D6 | — | D | Multi-language front end | per plan | Wave 1 done |
+
+Already shipped and therefore absent from the list: content CRUD and nesting,
+taxonomy/archives, component editor, users/roles, menus, media variants, SEO and
+redirects, revisions and trash, scheduled publishing, forms inbox with CSV,
+pagination, duplication, robots.txt, sitemap, page cache, static export, backup
+download, health, migrations, admin i18n. See `README.md` for the full list.
+
+---
+
+# Wave 1 — CMS completeness
+
+## 1. Correctness fixes (A, S)
+
+**Why.** Six latent defects make existing features wrong, and each is cheap to
+fix. Correct them before adding more features.
+
+**Work.**
+* 404: ship `core/components/404.php` so the no-content fallback renders, and
+  make the 404 response emit `noindex` (`seo_robots()` returns `index, follow`
+  for status `404` today).
+* JSON-LD: either set `'schema' => true` in `theme/theme.php` so the helper
+  actually emits, or delete the dead gate. Prefer enabling it (add Organization
+  for a brochure site).
+* Search index: rebuild the index after first setup and expose a Utilities
+  "Rebuild search index" action; `search_reindex_all()` currently has no
+  production caller and seeded content has no `search_text`.
+* Media replace: include `sizes_json` in the UPDATE so replaced files do not keep
+  stale dimensions.
+* `<html lang>` must fall back to the default when `site_language` is unset.
+* Sitemap: skip published items whose per-page robots override is `noindex`.
+
+**Verify.** Extend `tests/seo.test.php`, `tests/search.test.php`,
+`tests/media.test.php`, `tests/http.test.php`; render the no-content 404 through
+the local server.
+
+**Reject if** it grows into an SEO audit; this is six small fixes.
+
+## 2. Test-suite reliability (A, S–M)
+
+**Why.** The verification bar for every later phase depends on a clean run, and
+the HTTP suites are flaky under load here: two runs gave 271/292 and 283/292,
+failing with transient SQLite `database is locked` / `attempt to write a
+readonly database`, while the suites pass individually.
+
+**Work.** Reproduce, then make the harness robust: give each HTTP suite its own
+database, retry or serialise on SQLite lock, or ensure `tests/.tmp` is reset
+per suite. If the cause is the sandbox rather than the harness, record the
+environment caveat in `tests/README.md` instead of changing product code.
+
+**Verify.** `php tests/run.php` three times, green each time.
+
+**Reject if** it touches product behaviour or introduces a test framework.
+
+## 3. Password reset (A, M)
+
+**Why.** There is no recovery path: a client who forgets a password is locked
+out and needs a manual database edit. This is the most conspicuous missing
+mainstream CMS feature.
+
+**Work.**
+* A `password_resets` table (schema + migration): hashed token, user id, expiry,
+  single use.
+* A rate-limited "forgot password" page and a reset page, both in the admin's
+  own look; both language files.
+* Send the link through the same `mail()` path the forms use; in non-production,
+  log it the way `core/form-submit.php` logs instead of sending.
+* Log the request and the reset to the activity log; never reveal whether an
+  address exists.
+
+**Verify.** New tests in `tests/auth.test.php`: token expiry, single use, bad
+token, rate limit, and that a successful reset invalidates old sessions.
+Manual round trip through the local server with `forms.log`.
+
+**Reject if** it needs an email service dependency (SMTP is phase 27) or a
+second auth system.
+
+## 4. Editor autosave + unsaved-changes warning (A, M)
+
+**Why.** A crashed or navigated-away tab loses work that `content_versions` can
+already hold. This is the top editor-safety gap.
+
+**Work.**
+* A draft version every ~60s through the existing versions helper, reason
+  `autosave`; offer the most recent autosave back on reload through the existing
+  restore path.
+* `beforeunload` warning while there are unsaved edits.
+* Do **not** add tables or a separate store. Keep autosaves from filling
+  `versions.keep`.
+
+**Verify.** Extend `tests/versions.test.php` for the reason and the retention
+interaction; manual round trip in the editor.
+
+**Reject if** it needs an AJAX endpoint that bypasses `save_content()`'s
+validation, capability checks or cache invalidation.
+
+## 5. Pre-publish checklist (A, M)
+
+**Why.** Editors can publish a page with no H1, images with no alt text, empty
+links or a missing description. The per-block `required` schema flag is a UI hint
+today and is not re-checked on save.
+
+**Work.**
+* Server-side, on a save that transitions to `published` (and in bulk publish):
+  required component fields, image alt text, empty links, missing title and
+  missing meta description.
+* Present as a checklist in the editor; decide per rule whether it blocks or
+  warns (see open decisions). Drafts are never blocked.
+
+**Verify.** Extend `tests/validate.test.php` and `tests/content.test.php` for
+each rule; manual editor check.
+
+**Reject if** it becomes an SEO audit tool or blocks saving a draft.
+
+## 6. Security headers (C, S)
+
+**Why.** No CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`
+or HSTS is sent anywhere.
+
+**Work.** One helper sets the safe baseline on front and admin responses:
+`X-Content-Type-Options: nosniff`, a frame policy, `Referrer-Policy`, and HSTS on
+HTTPS. Add a CSP once the admin's vendored Quill and the raw header/footer
+snippet settings are accounted for; a report-only CSP first is acceptable.
+
+**Verify.** Extend `tests/http.test.php` for the headers; confirm the editor and
+the public front end still work through the local server.
+
+**Reject if** CSP requires a nonce plumbing exercise or breaks the admin editor;
+ship the non-CSP headers and defer the rest.
+
+## 7. Maintenance mode (C, S–M)
+
+**Why.** A launch, migration or host move needs the public site taken down while
+the admin keeps working.
+
+**Work.** A Settings toggle and message. Visitors get `503` with `Retry-After`;
+signed-in admins and token previews keep working; the response is never cached.
+
+**Verify.** Extend `tests/http.test.php`: anonymous 503, admin unaffected,
+nothing written to the cache.
+
+**Reject if** it becomes a scheduling or "coming soon" page feature.
+
+## 8. Form model completion (C, S–M)
+
+**Why.** Forms are a main CMS feature and the model is thin: a `select` or
+`radio` field declared in `theme.php` renders as invalid markup, labels are
+auto-derived from keys, only required+email are validated, there is one
+notification address, and the inbox cannot be searched.
+
+**Work.**
+* Render `select` and `radio` correctly in `theme/components/contact-section.php`;
+  accept an optional `label` in the field definition.
+* Server-side validation by declared type (length bound for text, tel/url
+  sanity) in addition to required.
+* Multiple notification recipients (validated comma list) instead of one.
+* Submission search in the inbox over the JSON data (`LIKE` is fine).
+* Keep forms developer-defined in `theme.php`; no builder UI.
+
+**Verify.** Extend `tests/forms.test.php` and `tests/forms-http.test.php`;
+manual contact and newsletter forms.
+
+**Reject if** it grows into a drag-and-drop form builder or adds a CAPTCHA
+service.
+
+## 9. Settings gaps (C, S)
+
+**Why.** Several things operators expect are hardcoded or absent: timezone
+(`SITE_TIMEZONE` is a constant), date format, site description, logo, favicon
+and custom CSS.
+
+**Work.** Add settings with validation and both language files: timezone
+(default stays `Europe/Stockholm`), date format, site description (default meta
+description), logo, favicon, custom CSS. Keep the theme manifest as the fallback
+for logo/favicon.
+
+**Verify.** Extend `tests/settings.test.php`; check each value's effect through
+the local server.
+
+**Reject if** it becomes a theme/design editor.
+
+## 10. Scheduling, expiry and visibility (A/C, S–M)
+
+**Why.** Scheduled publishing works but is invisible unless you open each item;
+there is no scheduled unpublish; and the dashboard does not surface the form
+inbox that exists.
+
+**Work.**
+* Content list: show the scheduled date and allow sorting/filtering by publish
+  date.
+* `expires_at` plus a branch in the existing `publishing_check()` that unpublishes
+  or archives when due.
+* Dashboard tiles for scheduled items and new form submissions (reuse
+  `forms.view`).
+
+**Verify.** Extend `tests/content.test.php`, `tests/forms.test.php` and
+`tests/http.test.php`; manual list and dashboard check.
+
+**Reject if** it becomes a calendar UI.
+
+## 11. Media pipeline into the theme + `og_image` picker (A/B, M)
+
+**Why.** The media pipeline is built but unreachable: `picture()`/`media_url()`
+have no caller in `theme/`, so uploaded media never renders as WebP/srcset/LQIP.
+The trap is that a media filename in `meta.thumbnail` resolves as a theme asset
+and 404s. The SEO `og_image` field is declared `media` but rendered as a text
+input.
+
+**Work.**
+* Let listing components and layouts resolve media ids through `picture()` /
+  `media_url()`, and expose the presentation meta that drives them (thumbnail,
+  gallery) as editor fields for the content types that use them — or document a
+  deliberate per-theme decision either way.
+* Wire the SEO panel's `og_image` to the existing image picker.
+* Keep theme-asset filenames (`img()`) valid where they are intended.
+
+**Verify.** Extend `tests/media.test.php`, `tests/seo.test.php` and
+`tests/theme.test.php`; confirm rendered WebP/`srcset` on a real page through the
+local server.
+
+**Reject if** it forces media ids into every theme or changes the content model
+for all types.
+
+---
+
+# Wave 2 — depth and polish
+
+Each phase below is still independently shippable; detail is deliberately
+shorter.
+
+## 12. Media library UX + media usage before delete (A, S–M)
+
+Add a caption (or drop the dormant `title` column), a type filter and user sort,
+drag-and-drop upload, multi-select with bulk delete, AVIF generation when
+Imagick supports it, and the "where is this file used?" warning before delete.
+No crop unless a concrete client asks. Verify with
+`tests/media.test.php` and manual library use.
+
+## 13. Theme integrity check + Health (B, S–M)
+
+Validate the manifest before it reaches a visitor:
+every layout/header/footer has a file (respecting the `core/components/`
+fallback), every `available_components` and `allowed_children` name resolves,
+every `styles`/`scripts` entry exists (strip `?v=`), and the default
+layout/header/footer still resolve. Surface it in `admin/health.php`. Extend
+`tests/theme.test.php` with a deliberately broken fixture. Reject if it becomes a
+general theme linter.
+
+## 14. Theme asset auto-versioning (B, S)
+
+Stamp theme CSS/JS URLs with file
+modification time the way `admin_asset()` already does, then drop the manual
+`?v=` counters. Verify in `tests/theme.test.php` and by editing `style.css`.
+
+## 15. Starter theme (B, M)
+
+A minimal working theme (manifest, one layout, header,
+footer, one component, one stylesheet, README) excluded from runtime and export,
+referenced from the developer guide. Verify it passes the phase-13 check and the
+component contract. Reject if it needs runtime selection code.
+
+## 16. Navigation: content-id links, hide, active state, preview (C, S–M)
+
+Menu items store slugs, so renaming a page silently breaks its menu link; there
+is no hidden flag; active state is JS-only; and the editor has no rendered menu
+preview. Store the content id alongside the slug (resolve at render, fall back to
+slug for existing items), add hide, add a server-side active state with
+`aria-current`, and show a simple preview. Verify with `tests/menus.test.php` and
+`tests/http.test.php`.
+
+## 17. Redirect search + conflict detection (C, S)
+
+Add a search/filter to the redirects list and reject loops, self-targets,
+duplicates that shadow real content, and chains. Verify with
+`tests/redirects.test.php`.
+
+## 18. SEO output polish (C, S)
+
+Web manifest, `theme-color`, `apple-touch-icon`, a social-sharing preview in the
+editor, `article:published_time` and `twitter:creator`. Depends on phase 1 for
+404/JSON-LD/sitemap correctness. Verify with `tests/seo.test.php`.
+
+## 19. Accessibility pass (B/C, S)
+
+Skip link in theme and admin; one `h1` per page (several section components
+hardcode one); `role="dialog"`/`aria-modal`/focus handling in the confirm modal;
+accessible names on the editor's glyph-only buttons; arrow-key navigation in
+menus. Verify manually and through `tests/design.test.php` where it can.
+
+## 20. Search hardening (A, S–M)
+
+Admin search over users and form submissions, and a cross-type admin search;
+index meta `author` and taxonomy names. Decide whether to move the front end to
+SQLite FTS5 (see open decisions). Verify with `tests/search.test.php`.
+
+## 21. Version diff and compare (A, M)
+
+A plain-PHP textual diff of the body and a two-version compare; the
+field-name badges stay for the list. No diff library. Verify with
+`tests/versions.test.php`.
+
+## 22. Publish webhook (C, S)
+
+A Settings URL that receives a small JSON
+POST on publish/unpublish so the static export can be triggered without polling.
+Fire-and-forget; a failed webhook never blocks a save. Verify with
+`tests/settings.test.php`.
+
+## 23. RSS/Atom feed (C, S)
+
+`/feed/` for the content types the theme
+marks as feed sources, cached like a page, with `<link rel="alternate">`. Reuse
+the sitemap helper's XML style. Reject hardcoded blog-only logic.
+
+## 24. Backup retention, orphaned media, broken links (C, M)
+
+Keep the last N backup archives locally instead of deleting after download; add
+Utilities scans for media files with no database row and for content links that
+no longer resolve. Verify with `tests/backup.test.php` and `tests/health.test.php`.
+
+---
+
+# Wave 3 — opportunistic
+
+Drop any of these without affecting the rest of the plan. Each needs its own
+"does this solve a problem that exists today?" answer before starting.
+
+* **25. Rich-text editor completion** — blockquote/table/HR buttons, a
+  media-library insert for rich text (images currently only by paste/drop),
+  new-tab links and an internal page picker.
+* **26. Live style switch in preview** — the first item to drop if the browser
+  inspector is enough.
+* **27. SMTP delivery** — replace bare `mail()` with a small dependency-free SMTP
+  client or document the host relay; needed before password reset is reliable on
+  strict hosts.
+* **28. Reusable/global content** — a blocks or globals table for a shared CTA,
+  banner, testimonials or FAQs. A real content-model addition; only if clients
+  ask.
+* **29. Content import/export** — JSON/CSV content export and import. There is
+  deliberately no importer today; revisit only if the delivery workflow changes.
+* **Editor extras from the old README "Maybe" list** — live preview inside the
+  content editor (an iframe over the existing preview URL), a richer demo site
+  and admin theme, a theme developer guide published outside the app, and more
+  admin languages.
+
+---
+
+# Track D — multi-language front end (deferred)
+
+**Status:** design agreed, code deferred. Do not start until Wave 1 is complete
+and a real client needs a second locale. Each phase ships alone.
+
+**Decisions.**
+* The default locale keeps its current URLs; only non-default locales get a
+  prefix (`/sv/about/`), so no existing URL changes and no redirect layer is
+  needed.
+* `content` stays the default-locale record and owns status, layout,
+  header/footer, parent nesting, taxonomy and authorship. A new
+  `content_translations` table holds the translatable fields.
+* Slugs are localized. Untranslated pages fall back to the default locale and
+  are served `noindex, follow` with a canonical to the default URL.
+* Menus stay shared in v1; per-locale menu labels and term names come last.
+
+**Data model.** `content_translations(id, content_id, locale, title, slug,
+meta JSON, body JSON, created_at, updated_at, UNIQUE(content_id, locale))`, added
+to both `setup.php` and `migrate_registry()`. A `locales` setting holds the
+ordered enabled codes; the first is the default and must agree with
+`site_language`.
+
+**Phases.**
+1. Foundation: table + migration, `locales` setting, `current_locale()`, router
+   prefix stripping, `<html lang>`. Default-locale HTML must stay unchanged.
+2. Locale-aware loading and URLs (`content_url()`, `content_page_url()`), theme
+   link updates, translation cache invalidation, the `noindex` fallback.
+3. SEO: `hreflang` alternates, canonical, `og:locale`, sitemap alternates.
+4. Admin editing: locale tabs, settings UI, save path, completeness count.
+5. Theme UI strings: `theme/lang/<locale>.php` plus a front-end `t()` helper.
+6. Menus and taxonomy per locale.
+
+**Not yet scoped:** localized media metadata, locale date formatting and locale
+number formatting. Decide at phase-start whether they belong in phase 3 or a
+phase 7.
+
+---
+
+# Considered and not planned
+
+* **Plugin/theme marketplace, visual builder, multisite, theme switching** — the
+  product is one install, one theme; the starter theme and integrity check cover
+  the developer need.
+* **REST/JSON API, headless, GraphQL, SDKs, CLI** — a whole public surface to
+  secure and version; static export covers simple static hosting. No CLI by
+  design; migrations run on request and from Utilities.
+* **E-commerce, membership, comments, front-end accounts** — a different product.
+* **External CAPTCHA** — honeypot, signed token and per-IP rate limit are the
+  dependency-free answer.
+* **2FA, per-resource ACLs, GDPR/consent suite** — effort out of proportion to
+  the threat model of a small brochure site; the existing roles and audit log are
+  the bar.
+* **S3/CDN/file-storage adapters, offsite/scheduled backups** — hosting choices,
+  not CMS features. Local backup retention is in phase 24.
+* **Marketing/CRM integrations, maps, oEmbed, mega menus, custom taxonomies,
+  FTS5** — raw header/footer scripts are the integration point; the rest waits
+  for a concrete requirement.
+* **Download-and-restore backup button** — deliberately absent; a wrong database
+  bricks the site. Restore stays a documented manual step.
+
+---
+
+# Open decisions
+
+Settle each at the start of its phase, not now.
+
+* **Phase 5:** which checklist rules block publishing and which only warn?
+* **Phase 6:** how far the CSP goes given vendored Quill and raw snippet
+  settings.
+* **Phase 9:** custom CSS — a raw setting, or explicitly out (theme owns design)?
+* **Phase 11:** media ids or theme-asset filenames for featured images? A
+  per-theme decision that must be consistent across layouts, archives and
+  previews.
+* **Phase 15:** starter theme at `theme-starter/` or `examples/theme-starter/`?
+* **Phase 20:** FTS5 now, or only when a client reports search quality problems?
+* **Phase 27:** hand-rolled SMTP client or documented host relay?
+* **Track D:** when to schedule, and whether per-locale menu labels are needed in
+  v1.
+
+# Notes
+
+* Query-driven views and the page cache: the cache key is the path, so every
+  cache decision point must know about query parameters (`index.php` firebreak,
+  `checkCache()`, the write path). Pagination needed two guards, not one.
+* Scheduled publishing is request-triggered (at most once a minute via
+  `storage/.publish-check`); there is no cron.
+* `theme/theme.php` decides the component palette per content type; `setup.php`
+  is the schema source of truth for fresh installs.
+* Two permission traps have already cost debugging time: a new web-root file
+  created `600` (blank 500) and a `storage/` directory the web user cannot write
+  ("readonly database"). Admin → Health reports the second; the `find` command in
+  the phase rules catches the first.
+* Keep conditional state and feedback CSS (error/success colours, `.status-*`,
+  empty states, `.field-error`, `.notice*`, `.off-screen`); a static grep finding
+  no uses is not evidence they are dead.

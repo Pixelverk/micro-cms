@@ -14,7 +14,9 @@ Editors manage content. Design and structure live in `theme/`.
 
 ## Plan of record
 
-Current ideas for tasks and phases are listed in `plan.md`. Other variations containing the word 'plan' may also appear in the root folder.
+`plan.md` is the single plan of record: scope, phase order, the verification bar
+and the non-goals. Keep it the only plan document — extend it rather than adding
+another `*plan*.md`, and update it when a phase ships.
 
 ## Commands
 
