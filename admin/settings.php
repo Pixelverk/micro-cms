@@ -440,7 +440,7 @@ ob_start();
             // needed; the stylesheet owns the widths.
             $gridClass = 'field-grid' . ($groupColumns === 2 ? '' : ' field-grid-' . $groupColumns);
             ?>
-            <div class="<?= e($gridClass) ?>">
+            <div class="<?= e($gridClass) ?> card">
                 <?php foreach ($groupFields as [$key, $meta]): ?>
                     <?php
                     if ($key === 'homepage_id') {

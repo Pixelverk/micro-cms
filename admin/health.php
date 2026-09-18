@@ -51,32 +51,30 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="card">
-    <table class="admin-table">
-        <thead>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th><?= e(admin_trans('health_check')) ?></th>
+            <th><?= e(admin_trans('health_status')) ?></th>
+            <th><?= e(admin_trans('health_detail')) ?></th>
+            <th><?= e(admin_trans('health_fix')) ?></th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($checks as $check): ?>
             <tr>
-                <th><?= e(admin_trans('health_check')) ?></th>
-                <th><?= e(admin_trans('health_status')) ?></th>
-                <th><?= e(admin_trans('health_detail')) ?></th>
-                <th><?= e(admin_trans('health_fix')) ?></th>
+                <td><?= e($check['label']) ?></td>
+                <td>
+                    <span class="status <?= e($statusClasses[$check['status']] ?? 'status-draft') ?>">
+                        <?= e($statusLabels[$check['status']] ?? $check['status']) ?>
+                    </span>
+                </td>
+                <td><?= e($check['detail']) ?></td>
+                <td><?= e($check['fix']) ?></td>
             </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($checks as $check): ?>
-                <tr>
-                    <td><?= e($check['label']) ?></td>
-                    <td>
-                        <span class="status <?= e($statusClasses[$check['status']] ?? 'status-draft') ?>">
-                            <?= e($statusLabels[$check['status']] ?? $check['status']) ?>
-                        </span>
-                    </td>
-                    <td><?= e($check['detail']) ?></td>
-                    <td><?= e($check['fix']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
 <?php
 $content = ob_get_clean();

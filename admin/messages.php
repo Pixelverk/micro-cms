@@ -291,9 +291,6 @@ ob_start();
                     <span class="status status-<?= e((string) $row['status']) ?>">
                         <?= e(form_submission_status_label((string) $row['status'])) ?>
                     </span>
-                    <button type="button" class="btn-secondary btn-small js-submission-close">
-                        <?= e(admin_trans('common_close')) ?>
-                    </button>
                 </div>
             </div>
         </div>

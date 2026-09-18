@@ -94,7 +94,10 @@ ob_start();
 </div>
 
 <?php if (!$tags): ?>
-    <p><?= e(admin_trans('tag_empty')) ?></p>
+    <div class="empty-state">
+        <span class="empty-state-icon" aria-hidden="true"><?= icon('label', 24) ?></span>
+        <p class="empty-state-title"><?= e(admin_trans('tag_empty')) ?></p>
+    </div>
 <?php else: ?>
 
 <table class="content-table">

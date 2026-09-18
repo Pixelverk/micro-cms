@@ -49,61 +49,71 @@ ob_start();
     </div>
 </div>
 
-<form method="post" action="<?= url('admin/category/save') ?>" class="form-card">
+<form method="post" action="<?= url('admin/category/save') ?>">
     <?= csrf_field() ?>
 
     <?php if ($id): ?>
         <input type="hidden" name="id" value="<?= (int)$id ?>">
     <?php endif; ?>
 
-    <div class="field">
-        <label class="field-label" for="name"><?= e(admin_trans('common_name')) ?></label>
-        <input
-            class="field-input"
-            type="text"
-            id="name"
-            name="name"
-            required
-            value="<?= e($category['name']) ?>"
-            placeholder="News, Tutorials, Updates…"
-        >
-    </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('bookmark-book', 18) ?>
+            <?= e(admin_trans('common_details')) ?>
+        </legend>
 
-    <div class="field">
-        <label class="field-label" for="slug"><?= e(admin_trans('common_slug')) ?></label>
-        <input
-            class="field-input"
-            type="text"
-            id="slug"
-            name="slug"
-            value="<?= e($category['slug']) ?>"
-            placeholder="news"
-        >
-        <small><?= e(admin_trans('common_used_in_urls')) ?></small>
-    </div>
+        <div class="field-grid field-grid-3 card">
+            <div class="field">
+                <label class="field-label" for="name"><?= e(admin_trans('common_name')) ?></label>
+                <input
+                    class="field-input"
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    value="<?= e($category['name']) ?>"
+                    placeholder="News, Tutorials, Updates…"
+                >
+            </div>
 
-    <div class="field">
-        <label class="field-label" for="content_type"><?= e(admin_trans('content_type')) ?></label>
-        <select class="field-input" id="content_type" name="content_type" required>
-            <?php foreach ($contentTypes as $key => $config): ?>
-                <option value="<?= e($key) ?>"
-                    <?= ($category['content_type'] ?? '') === $key ? 'selected' : '' ?>>
-                    <?= e($config['label'] ?? ucfirst($key)) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+            <div class="field">
+                <label class="field-label" for="slug"><?= e(admin_trans('common_slug')) ?></label>
+                <input
+                    class="field-input"
+                    type="text"
+                    id="slug"
+                    name="slug"
+                    value="<?= e($category['slug']) ?>"
+                    placeholder="news"
+                >
+                <small><?= e(admin_trans('common_used_in_urls')) ?></small>
+            </div>
 
-    <div class="field">
-        <label class="field-label" for="description"><?= e(admin_trans('common_description')) ?></label>
-        <textarea
-            class="field-input"
-            id="description"
-            name="description"
-            rows="4"
-            placeholder="<?= e(admin_trans('common_optional_description')) ?>"
-        ><?= e($category['description']) ?></textarea>
-    </div>
+            <div class="field">
+                <label class="field-label" for="content_type"><?= e(admin_trans('content_type')) ?></label>
+                <select class="field-input" id="content_type" name="content_type" required>
+                    <?php foreach ($contentTypes as $key => $config): ?>
+                        <option value="<?= e($key) ?>"
+                            <?= ($category['content_type'] ?? '') === $key ? 'selected' : '' ?>>
+                            <?= e($config['label'] ?? ucfirst($key)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="field field-span">
+                <label class="field-label" for="description"><?= e(admin_trans('common_description')) ?></label>
+                <textarea
+                    class="field-input"
+                    id="description"
+                    name="description"
+                    rows="4"
+                    placeholder="<?= e(admin_trans('common_optional_description')) ?>"
+                ><?= e($category['description']) ?></textarea>
+            </div>
+
+        </div>
+    </fieldset>
 
     <div class="form-actions">
         <button class="btn-primary">

@@ -413,6 +413,34 @@ textarea {
     min-height: 60px
 }
 
+/* A file input draws its own browser chrome ("Choose file" plus the filename).
+   The button is restyled as one of the admin's secondary buttons and the
+   filename as muted text, so the control belongs to the same system. */
+input[type="file"] {
+    padding: 0.2rem 0.3rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    margin-right: 0.6rem;
+    padding: 0.3rem 0.65rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--text);
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast) var(--ease);
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: var(--surface-sunken);
+}
+
 button {
     padding: .45rem 1rem;
     font-size: 0.95rem;
@@ -973,18 +1001,14 @@ html.dark .menu-item .remove {
 
 .card-title { margin-bottom: 1rem; }
 
-.card a {
+/* Prose links inside a card. Button-styled anchors already carry their own
+   box, colour and spacing, so they are left alone. */
+.card a:not([class*="btn"]) {
     display: inline-block;
     margin-top: 0.75rem;
     text-decoration: none;
     color: var(--link);
     font-weight: 500;
-}
-
-/* Compact controls inside a card take their spacing from `.actions`; the prose
-   gap above would otherwise drop the first icon below the button beside it. */
-.card a.btn-small {
-    margin-top: 0;
 }
 
 /* Analytics: metric tiles and the inline SVG sparkline. */
@@ -1734,8 +1758,6 @@ button.header-icon:hover { background: transparent; }
 .page-actions-inline input[type="file"] {
     width: auto;
     max-width: 18rem;
-    padding: 0.3rem;
-    font-size: 0.85rem;
 }
 
 /* Below the tablet breakpoint the toolbar stacks and every control shrinks to
@@ -2053,29 +2075,46 @@ button.sidebar-link {
     margin-top: 1.5rem;
 }
 
+/* The submission modal has no bottom close button, so its lone status badge
+   sits at the start of the footer instead of hugging the right edge. */
+.modal-actions .status {
+    margin-right: auto;
+}
+
 .modal-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
 }
 
 .modal-header h3 { margin: 0; }
 
-.modal-body { color: var(--text); }
+.modal-body {
+    color: var(--text);
+    line-height: 1.6;
+}
 
 .close-modal {
     padding: 0.15rem 0.5rem;
     font-size: 1.25rem;
     line-height: 1;
     color: var(--text-muted);
-    background: transparent;
-    border: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: background-color var(--transition-fast) var(--ease),
+                border-color var(--transition-fast) var(--ease),
+                color var(--transition-fast) var(--ease);
 }
 
-.close-modal:hover { color: var(--text); background: transparent; }
+.close-modal:hover {
+    color: var(--text);
+    background: var(--surface-muted);
+    border-color: var(--border-strong);
+}
 
 /* 7. Page-Specific Styles */
 
@@ -2653,13 +2692,6 @@ button.sidebar-link {
     width: 100%;
 }
 
-/* The replace-file control carries browser chrome, so it is sized like the
-   other file inputs in the admin rather than as a full field. */
-.media-inspector input[type="file"] {
-    padding: 0.3rem;
-    font-size: 0.85rem;
-}
-
 /* The panel is narrow, so its actions are a column of full-width buttons. */
 .media-inspector .form-actions {
     margin-top: 0;
@@ -2846,14 +2878,14 @@ button.sidebar-link {
 
 /* The submitted values, revealed by the row's <details>. */
 .messages-data {
-    margin: 0.5rem 0 0;
-    padding-left: 1.1rem;
+    margin: 0.75rem 0 0;
+    padding-left: 1.2rem;
     list-style: disc;
 }
 
 .messages-data li {
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
 }
 
 .messages-data li:last-child {

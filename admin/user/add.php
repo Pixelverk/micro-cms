@@ -16,14 +16,17 @@ ob_start();
     </div>
 </div>
 
-<form id="create-user" method="post" action="<?= url('admin/user/save') ?>" class="form-card">
+<form id="create-user" method="post" action="<?= url('admin/user/save') ?>">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="create">
 
     <fieldset class="settings-group">
-        <legend><?= e(admin_trans('user_details')) ?></legend>
+        <legend>
+            <?= icon('profile-circle', 18) ?>
+            <?= e(admin_trans('user_details')) ?>
+        </legend>
 
-        <div class="field-grid">
+        <div class="field-grid card">
             <div class="field">
                 <label class="field-label" for="new-user-username"><?= e(admin_trans('user_username')) ?></label>
                 <input class="field-input" type="text" id="new-user-username" name="username" required autocomplete="off" placeholder="<?= e(admin_trans('user_username_placeholder')) ?>">
@@ -56,6 +59,16 @@ ob_start();
                 <input class="field-input" type="email" id="new-user-email" name="email" placeholder="<?= e(admin_trans('common_optional')) ?>">
             </div>
 
+        </div>
+    </fieldset>
+
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('settings', 18) ?>
+            <?= e(admin_trans('user_password')) ?>
+        </legend>
+
+        <div class="field-grid card">
             <div class="field">
                 <label class="field-label" for="new-user-password"><?= e(admin_trans('user_password')) ?></label>
                 <input class="field-input" type="password" id="new-user-password" name="password" required placeholder="<?= e(admin_trans('user_password_placeholder')) ?>">

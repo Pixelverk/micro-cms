@@ -70,6 +70,7 @@ return [
     'common_name' => 'Namn',
     'common_slug' => 'Slug',
     'common_description' => 'Beskrivning',
+    'common_details' => 'Detaljer',
     'common_created' => 'Skapad',
     'common_updated' => 'Uppdaterad',
     'common_actions' => 'Åtgärder',

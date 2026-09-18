@@ -70,6 +70,7 @@ return [
     'common_name' => 'Name',
     'common_slug' => 'Slug',
     'common_description' => 'Description',
+    'common_details' => 'Details',
     'common_created' => 'Created',
     'common_updated' => 'Updated',
     'common_actions' => 'Actions',

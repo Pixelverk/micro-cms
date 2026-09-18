@@ -54,7 +54,7 @@ ob_start();
     </div>
 </div>
 
-<form method="post" action="<?= url('admin/tag/save') ?>" class="form-card">
+<form method="post" action="<?= url('admin/tag/save') ?>">
     <?= csrf_field() ?>
 
     <?php if ($id): ?>
@@ -62,61 +62,71 @@ ob_start();
     <?php endif; ?>
 
     <!-- Name -->
-    <div class="field">
-        <label class="field-label" for="name"><?= e(admin_trans('common_name')) ?></label>
-        <input
-            class="field-input"
-            type="text"
-            id="name"
-            name="name"
-            required
-            value="<?= e($tag['name']) ?>"
-            placeholder="featured, design, tips…"
-        >
-    </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('label', 18) ?>
+            <?= e(admin_trans('common_details')) ?>
+        </legend>
 
-    <!-- Slug -->
-    <div class="field">
-        <label class="field-label" for="slug"><?= e(admin_trans('common_slug')) ?></label>
-        <input
-            class="field-input"
-            type="text"
-            id="slug"
-            name="slug"
-            value="<?= e($tag['slug']) ?>"
-            placeholder="featured"
-        >
-        <small><?= e(admin_trans('common_used_in_urls')) ?></small>
-    </div>
+        <div class="field-grid field-grid-3 card">
+            <div class="field">
+                <label class="field-label" for="name"><?= e(admin_trans('common_name')) ?></label>
+                <input
+                    class="field-input"
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    value="<?= e($tag['name']) ?>"
+                    placeholder="featured, design, tips…"
+                >
+            </div>
 
-    <!-- Content type -->
-    <div class="field">
-        <label class="field-label" for="content_type"><?= e(admin_trans('content_type')) ?></label>
-        <select class="field-input" id="content_type" name="content_type" required>
-            <?php foreach ($contentTypes as $key => $config): ?>
-                <option
-                    value="<?= e($key) ?>"
-                    <?= ($tag['content_type'] ?? '') === $key ? 'selected' : '' ?>>
-                    <?= e($config['label'] ?? ucfirst($key)) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <small><?= e(admin_trans('tag_content_type_help')) ?></small>
-    </div>
+            <!-- Slug -->
+            <div class="field">
+                <label class="field-label" for="slug"><?= e(admin_trans('common_slug')) ?></label>
+                <input
+                    class="field-input"
+                    type="text"
+                    id="slug"
+                    name="slug"
+                    value="<?= e($tag['slug']) ?>"
+                    placeholder="featured"
+                >
+                <small><?= e(admin_trans('common_used_in_urls')) ?></small>
+            </div>
 
-    <!-- Description -->
-    <div class="field">
-        <label class="field-label" for="description"><?= e(admin_trans('common_description')) ?></label>
-        <textarea
-            class="field-input"
-            id="description"
-            name="description"
-            rows="4"
-            placeholder="<?= e(admin_trans('common_optional_description')) ?>"
-        ><?= e($tag['description']) ?></textarea>
-    </div>
+            <!-- Content type -->
+            <div class="field">
+                <label class="field-label" for="content_type"><?= e(admin_trans('content_type')) ?></label>
+                <select class="field-input" id="content_type" name="content_type" required>
+                    <?php foreach ($contentTypes as $key => $config): ?>
+                        <option
+                            value="<?= e($key) ?>"
+                            <?= ($tag['content_type'] ?? '') === $key ? 'selected' : '' ?>>
+                            <?= e($config['label'] ?? ucfirst($key)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small><?= e(admin_trans('tag_content_type_help')) ?></small>
+            </div>
 
-    <!-- Actions -->
+            <!-- Description -->
+            <div class="field field-span">
+                <label class="field-label" for="description"><?= e(admin_trans('common_description')) ?></label>
+                <textarea
+                    class="field-input"
+                    id="description"
+                    name="description"
+                    rows="4"
+                    placeholder="<?= e(admin_trans('common_optional_description')) ?>"
+                ><?= e($tag['description']) ?></textarea>
+            </div>
+
+            <!-- Actions -->
+        </div>
+    </fieldset>
+
     <div class="form-actions">
         <button class="btn-primary">
             <?= e($id ? admin_trans('common_save') : admin_trans('tag_create')) ?>

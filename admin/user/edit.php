@@ -47,8 +47,7 @@ ob_start();
     </div>
 </div>
 
-<div class="page-sections">
-<form id="edit-user" method="post" action="<?= url('admin/user/save') ?>" class="form-card">
+<form id="edit-user" method="post" action="<?= url('admin/user/save') ?>">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="update">
     <input type="hidden" name="original_username" value="<?= e($editUsername) ?>">
@@ -59,7 +58,7 @@ ob_start();
             <?= e(admin_trans('user_info')) ?>
         </legend>
 
-        <div class="field-grid">
+        <div class="field-grid card">
             <div class="field">
                 <label class="field-label" for="user-username"><?= e(admin_trans('user_username')) ?></label>
                 <input class="field-input" type="text" id="user-username" name="username" value="<?= e($user['username'] ?? '') ?>" readonly>
@@ -116,7 +115,7 @@ ob_start();
             <?= e(admin_trans('user_password_update')) ?>
         </legend>
 
-        <div class="field-grid">
+        <div class="field-grid card">
             <div class="field">
                 <label class="field-label" for="user-password"><?= e(admin_trans('user_password')) ?></label>
                 <input class="field-input" type="password" id="user-password" name="password" autocomplete="new-password" placeholder="<?= e(admin_trans('user_password_keep')) ?>">
@@ -132,17 +131,22 @@ ob_start();
     </fieldset>
 </form>
 
-<div class="card">
-    <h2 class="card-title"><?= e(admin_trans('user_account_meta')) ?></h2>
-    <dl class="meta-list">
-        <dt><?= e(admin_trans('common_created')) ?></dt>
-        <dd><?= isset($user['created_at']) ? e(date('Y-m-d H:i', (int) $user['created_at'])) : '—' ?></dd>
+<fieldset class="settings-group">
+    <legend>
+        <?= icon('clock', 18) ?>
+        <?= e(admin_trans('user_account_meta')) ?>
+    </legend>
 
-        <dt><?= e(admin_trans('user_last_login')) ?></dt>
-        <dd><?= isset($user['last_login']) ? e(date('Y-m-d H:i', (int) $user['last_login'])) : '—' ?></dd>
-    </dl>
-</div>
-</div>
+    <div class="card">
+        <dl class="meta-list">
+            <dt><?= e(admin_trans('common_created')) ?></dt>
+            <dd><?= isset($user['created_at']) ? e(date('Y-m-d H:i', (int) $user['created_at'])) : '—' ?></dd>
+
+            <dt><?= e(admin_trans('user_last_login')) ?></dt>
+            <dd><?= isset($user['last_login']) ? e(date('Y-m-d H:i', (int) $user['last_login'])) : '—' ?></dd>
+        </dl>
+    </div>
+</fieldset>
 
 <?php
 $content = ob_get_clean();

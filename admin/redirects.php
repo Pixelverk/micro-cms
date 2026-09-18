@@ -92,7 +92,7 @@ ob_start();
     </div>
 </div>
 
-<form method="post" class="form-card">
+<form method="post">
     <?= csrf_field() ?>
     <input type="hidden" name="redirect_action" value="save">
 
@@ -102,7 +102,7 @@ ob_start();
             <?= e($editId ? admin_trans('redirects_edit') : admin_trans('redirects_add')) ?>
         </legend>
 
-        <div class="field-grid field-grid-inline">
+        <div class="field-grid field-grid-inline card">
             <div class="field">
                 <label class="field-label" for="redirect-from"><?= e(admin_trans('redirects_from')) ?></label>
                 <input class="field-input" type="text" id="redirect-from" name="from_path" value="<?= e($fromValue) ?>"
@@ -128,7 +128,7 @@ ob_start();
 
             <div class="field field-btn">
                 <div class="form-actions">
-                    <button type="submit"><?= e(admin_trans('redirects_save')) ?></button>
+                    <button type="submit" class="btn"><?= e(admin_trans('redirects_save')) ?></button>
                     <?php if ($editId): ?>
                         <a class="btn-muted" href="<?= e(url('admin/redirects')) ?>"><?= e(admin_trans('common_cancel')) ?></a>
                     <?php endif; ?>
@@ -138,8 +138,11 @@ ob_start();
     </fieldset>
 </form>
 
-<div class="card">
-    <h2 class="card-title"><?= e(admin_trans('redirects_title')) ?></h2>
+<fieldset class="settings-group">
+    <legend>
+        <?= icon('open-in-browser', 18) ?>
+        <?= e(admin_trans('redirects_title')) ?>
+    </legend>
 
     <?php if (!$redirects): ?>
         <div class="empty-state">
@@ -154,7 +157,7 @@ ob_start();
                     <th><?= e(admin_trans('redirects_to')) ?></th>
                     <th><?= e(admin_trans('redirects_type')) ?></th>
                     <th><?= e(admin_trans('redirects_hits')) ?></th>
-                    <th class="col-actions"></th>
+                    <th class="col-actions col-actions-icons"></th>
                 </tr>
             </thead>
             <tbody>
@@ -166,9 +169,12 @@ ob_start();
                             <span class="badge"><?= (int) $row['status'] ?></span>
                         </td>
                         <td><?= (int) $row['hits'] ?></td>
-                        <td class="actions">
-                            <a class="btn-small" href="<?= e(url('admin/redirects') . '?edit=' . (int) $row['id']) ?>">
-                                <?= e(admin_trans('redirects_edit')) ?>
+                        <td class="actions col-actions-icons">
+                            <a href="<?= e(url('admin/redirects') . '?edit=' . (int) $row['id']) ?>"
+                               class="btn-small btn-icon"
+                               title="<?= e(admin_trans('redirects_edit')) ?>"
+                               aria-label="<?= e(admin_trans('redirects_edit')) ?>">
+                                <?= icon('edit', 16) ?>
                             </a>
 
                             <form method="post" class="inline-form js-confirm-form"
@@ -177,7 +183,11 @@ ob_start();
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="redirect_action" value="delete">
                                 <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                <button type="submit" class="btn-small btn-delete"><?= e(admin_trans('redirects_delete')) ?></button>
+                                <button type="submit" class="btn-delete btn-small btn-icon"
+                                        title="<?= e(admin_trans('redirects_delete')) ?>"
+                                        aria-label="<?= e(admin_trans('redirects_delete')) ?>">
+                                    <?= icon('trash', 16) ?>
+                                </button>
                             </form>
                         </td>
                     </tr>
@@ -185,10 +195,13 @@ ob_start();
             </tbody>
         </table>
     <?php endif; ?>
-</div>
+</fieldset>
 
-<div class="card">
-    <h2 class="card-title"><?= e(admin_trans('redirects_404_title')) ?></h2>
+<fieldset class="settings-group">
+    <legend>
+        <?= icon('clock', 18) ?>
+        <?= e(admin_trans('redirects_404_title')) ?>
+    </legend>
 
     <?php if (!$misses): ?>
         <p class="empty-state"><?= e(admin_trans('redirects_404_empty')) ?></p>
@@ -199,7 +212,7 @@ ob_start();
                     <th><?= e(admin_trans('redirects_from')) ?></th>
                     <th><?= e(admin_trans('redirects_hits')) ?></th>
                     <th><?= e(admin_trans('redirects_last_seen')) ?></th>
-                    <th></th>
+                    <th class="col-actions col-actions-icons"></th>
                 </tr>
             </thead>
             <tbody>
@@ -208,9 +221,12 @@ ob_start();
                         <td><code><?= e($miss['path']) ?></code></td>
                         <td><?= (int) $miss['views'] ?></td>
                         <td><?= e(date('Y-m-d H:i', (int) $miss['last_seen'])) ?></td>
-                        <td class="actions">
-                            <a class="btn-small" href="<?= e(url('admin/redirects') . '?from=' . urlencode((string) $miss['path'])) ?>">
-                                <?= e(admin_trans('redirects_use_404')) ?>
+                        <td class="actions col-actions-icons">
+                            <a href="<?= e(url('admin/redirects') . '?from=' . urlencode((string) $miss['path'])) ?>"
+                               class="btn-small btn-icon"
+                               title="<?= e(admin_trans('redirects_use_404')) ?>"
+                               aria-label="<?= e(admin_trans('redirects_use_404')) ?>">
+                                <?= icon('corner-down-right', 16) ?>
                             </a>
                         </td>
                     </tr>
@@ -218,7 +234,7 @@ ob_start();
             </tbody>
         </table>
     <?php endif; ?>
-</div>
+</fieldset>
 
 <?php
 $content = ob_get_clean();
