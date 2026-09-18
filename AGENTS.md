@@ -186,6 +186,11 @@ block before including the layout.
   Admin → Health reports this class directly; run it before blaming code.
 * **HTML minification** only runs when `config('env') === 'production'`;
   component JS is collected and wrapped in a `DOMContentLoaded` handler.
+* **The admin UI may assume JavaScript. The public front end may not.** In the
+  admin, a control that saves when it changes can use an inline
+  `onchange="this.form.submit()"` (the form inbox's status select does) and needs
+  no submit-button fallback. Keep the public theme rendering without script:
+  navigation, menus and forms there must not depend on JS.
 * `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session
   timeout, security policy, `cache_lifetime`, activity-log retention, and
   version retention (`versions.keep`).

@@ -127,6 +127,7 @@ function bootstrap_core(bool $withContent = true): void
 
     if ($withContent) {
         require_once CORE_PATH . '/helpers/content.php';
+        require_once CORE_PATH . '/helpers/forms.php';
         require_once CORE_PATH . '/helpers/menus.php';
         require_once CORE_PATH . '/helpers/publishing.php';
         require_once CORE_PATH . '/helpers/versions.php';

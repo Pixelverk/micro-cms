@@ -44,12 +44,10 @@ three tracks above are thinner than the rest of the code:
    documents *a component*; nothing documents or ships a minimal *theme*.
 3. **Theme asset `?v=` counters are manual** (`theme.php` has `style.css?v=5`,
    `main.js?v=4`). Admin assets are already stamped automatically by `admin_asset()`.
-4. **Archives render everything.** Blog, portfolio and taxonomy archives have no
-   pagination (`plan.md` item 7) — fine for demo data, not for a real site.
-5. **No maintenance mode** (`plan.md` item 10), which a real launch wants.
+4. **No maintenance mode** (`plan.md` item 9), which a real launch wants.
 
-Done from this list: the dashboard at a glance and content duplication, both
-shipped and covered by tests.
+Done from this list: the dashboard at a glance, content duplication, archive
+pagination and the form-submission inbox, all shipped and covered by tests.
 
 ## Non-goals
 
@@ -68,24 +66,23 @@ value early.
 | # | Track | Phase | Size | Depends on |
 | --- | --- | --- | --- | --- |
 | 1 | B | Theme integrity check + Health section | S–M | — |
-| 2 | C | Archive pagination | M | — |
-| 3 | C | Maintenance mode | S–M | — |
-| 4 | B | Starter theme | M | 1 |
-| 5 | B | Theme asset auto-versioning | S | — |
-| 6 | C | Form submissions CSV export | S | — |
-| 7 | C | RSS/Atom feed | S | — |
-| 8 | B | Live style switch in preview | S | 5 |
-| 9 | C | Publish webhook | S | — |
-| 10 | A | Content scheduling visibility | S | — |
-| 11 | A | Editor autosave | M | — |
+| 2 | C | Maintenance mode | S–M | — |
+| 3 | B | Starter theme | M | 1 |
+| 4 | B | Theme asset auto-versioning | S | — |
+| 5 | C | RSS/Atom feed | S | — |
+| 6 | B | Live style switch in preview | S | 4 |
+| 7 | C | Publish webhook | S | — |
+| 8 | A | Content scheduling visibility | S | — |
+| 9 | A | Editor autosave | M | — |
 
-Shipped: dashboard at a glance and duplicate content, both removed from the order
-above. The table is renumbered, so an old phase number in the notes below may
-refer to the previous layout.
+Shipped: dashboard at a glance, duplicate content, archive pagination and the
+form-submission inbox, all
+removed from the order above. The table is renumbered, so an old phase number in
+the notes below may refer to the previous layout.
 
 Deferred: the multi-language front end, per `multilanguage-plan.md`.
-Later / opportunistic: version diff (`plan.md` 9), media usage before delete
-(item 8).
+Later / opportunistic: version diff (`plan.md` 8), media usage before delete
+(item 7).
 
 ---
 
@@ -114,7 +111,7 @@ check the list rendering manually through the local server.
 ### A2. Editor autosave (M)
 
 **Why.** `content_versions` already stores revisions with a `reason`; a crashed
-tab loses work that the storage layer can already hold. This was `plan.md` item 7.
+tab loses work that the storage layer can already hold. This is `plan.md` item 11.
 
 **Work.**
 * A draft version every ~60s through the existing versions helper, reason `autosave`.
@@ -218,24 +215,32 @@ responses and never in a cached anonymous response.
 
 ## Track C — running a site with the CMS
 
-### C1. Archive pagination (M, `plan.md` 7)
+### C1. Archive pagination — shipped
 
-**Why.** Blog, portfolio and taxonomy archives render every item. This is the
-first thing that breaks on a real site.
+**Status:** implemented. `core/helpers/pagination.php`,
+`list_content_page()` in `core/helpers/content.php`, the pager in
+`theme/partials/pager.php`, `theme/components/blog-list-section.php`, and
+`tests/pagination.test.php` + `tests/pagination-http.test.php` (21 tests).
 
-**Work.**
-* `?page=N` for blog, portfolio and taxonomy archives, with `rel=prev`/`rel=next`.
-* Treat paged views like search: mark the page `no_cache` so the write path skips
-  them, and make the read path refuse to serve them (`core/bootstrap/front.php`
-  already has both hooks for query-driven views).
-* Share one paging helper between the archive layouts; do not add a pagination
-  abstraction beyond what blog, portfolio and taxonomy share.
+**Why.** Blog, portfolio and taxonomy archives rendered every item.
 
-**Verification.** Extend `tests/content.test.php` for the offset/limit and
-`tests/http.test.php` for paged responses never being cached; render `/blog/?page=2`
-locally.
+**What shipped.**
+* `?page=N` for listings, with `rel=prev`/`rel=next` in the head and a
+  self-canonical per page (pointing pages 2+ at page 1 would drop them from the
+  index).
+* Paged requests are never read from or written to the page cache. Note this
+  needed **two** guards, not one: the firebreak in `index.php` decides from the
+  path alone before any helper loads, and `checkCache()`/the write path decide
+  after boot. Search is excluded the same way.
+* Taxonomy archives load one page and now apply front-end visibility, which they
+  previously did not: a draft linked to a term could be listed to visitors.
+* One shared helper set, used by both the archives and a component, so a theme
+  author gets pagination for any content type by choosing it in the editor.
 
-**Reject if** page numbers change any existing URL or cache key for page 1.
+**Lesson for the next phase.** The page number lives in the query string while
+the cache key is the path, so *every* cache decision point has to know about it.
+When adding another query-driven view, check `index.php` first — it is easy to
+guard the obvious place and miss the fast path.
 
 ### C2. Duplicate content — shipped
 
@@ -263,7 +268,7 @@ component; the content list cannot copy an item.
   itself reach the database — a handler that throws turns one failure into a
   blank 500.
 
-### C3. Maintenance mode (S–M, `plan.md` 10)
+### C3. Maintenance mode (S–M, `plan.md` 9)
 
 **Why.** A site launch or a migration needs a way to take the public site down
 without taking the admin down.
@@ -279,20 +284,33 @@ unaffected, nothing cached); manual check through the local server.
 
 **Reject if** it becomes a scheduling or "coming soon" page feature.
 
-### C4. Form submissions CSV export (S, `plan.md` 13)
+### C4. Form submissions inbox — shipped
 
-**Why.** Submissions are already stored (`store_submission`). Getting them into a
-spreadsheet or a mailing list is the missing half.
+**Status:** implemented, and larger than the original "CSV export" sketch: the
+inbox gained a workflow as well as an export. `core/helpers/forms.php`,
+`admin/messages.php`, `admin/messages/update.php`, the `status` column (schema +
+migration), and `tests/forms.test.php` + `tests/forms-http.test.php` (21 tests).
 
-**Work.**
-* A CSV download on `admin/messages.php`, gated by the existing `forms.view`
-  capability, honouring the current filter.
-* Fputcsv plus correct headers; no library.
+**Why.** Submissions were write-only: a list you could read but not work
+through, and no way to get them into a spreadsheet.
 
-**Verification.** Extend an existing admin/HTTP suite that the download requires
-the capability and that the CSV parses back into the same rows.
+**What shipped.**
+* A four-state workflow — `new`, `waiting`, `handled`, `spam` — with a filter, a
+  per-row control that saves on change, and a bulk action for a backlog.
+* Delete, per row and in bulk, with confirmation and an activity entry.
+* CSV export: everything from the header link, or a selected subset from the
+  bulk actions. Columns are discovered from the data, so forms with different
+  fields export into one sheet.
+* Pagination, because an inbox grows without bound.
 
-### C5. RSS/Atom feed (S, `plan.md` 14)
+**Lessons for the next phase.**
+* A status change is a small write; it belongs on the control that makes it, not
+  behind a Save button. The bulk path keeps its Apply button because it acts on a
+  selection rather than on the thing you just touched.
+* The admin assumes JavaScript. Inline handlers are acceptable and are the
+  reason the per-row control cannot silently stop working.
+
+### C5. RSS/Atom feed (S, `plan.md` 12)
 
 **Why.** Cheap distribution for blog-driven sites, consumed by newsletter tools
 and aggregators.
@@ -308,7 +326,7 @@ only published items, correct absolute URLs.
 
 **Reject if** it hardcodes blog-only logic the manifest should own.
 
-### C6. Publish webhook (S, `plan.md` 11)
+### C6. Publish webhook (S, `plan.md` 10)
 
 **Why.** It is the distribution hook that matters most today: publishing anything
 should be able to trigger the existing static export rather than polling.
@@ -325,7 +343,7 @@ assert a save still succeeds when the webhook target is unreachable.
 
 ## Verification bar for every phase
 
-1. `php tests/run.php` passes (currently 229 tests). Extend the **existing**
+1. `php tests/run.php` passes (currently 292 tests). Extend the **existing**
    suite nearest the change; no new test framework or harness.
 2. Anything the suite cannot see (theme CSS/JS, admin layout, rendered markup)
    is checked through the local server:
@@ -334,6 +352,12 @@ assert a save still succeeds when the webhook target is unreachable.
    phases are not started speculatively.
 4. Any write path that changes public output calls `invalidate_cache()`; any new
    admin page adds both language keys, `$pageHelp`, a capability and navigation.
+5. Any **new file under the web root** is readable by the web server user:
+   `find admin core theme *.php -type f ! -perm -o=r` must print nothing. A file
+   created `600` returns a blank 500. See the permissions gotcha in `AGENTS.md`.
+6. The **admin UI may assume JavaScript**: a control that saves on change can use
+   an inline handler, and needs no no-JS fallback. The **public front end** is not
+   covered by this — it still has to render without script.
 
 ## Considered and not planned here
 
@@ -345,13 +369,15 @@ assert a save still succeeds when the webhook target is unreachable.
 
 ## Open decisions to settle at each phase start
 
-* **C1:** items per page — a fixed constant, or a settings value? Prefer fixed
-  until a second value is needed.
+* **B1:** should the integrity check also report files under the web root that
+  the web server cannot read? Three separate 500s have come from a new file
+  created `600`, and this check is the natural place to catch it.
 * **B4:** is a preview-only token override genuinely useful enough to build, or
   is the browser's own element inspector enough? This is the first item to drop.
 * **A2:** autosave cadence and whether the offered restore is a version entry or a
   prompt; keep `versions.keep` from filling with autosaves.
 
 Settled: the C2 copy convention (`{slug}-copy`, `{title} (Copy)`, numeric suffix
-when taken) and the decision to make the menu-slot field a `select` whose options
-come from the manifest.
+when taken); the menu-slot field is a `select` whose options come from the
+manifest; pagination uses a fixed per-page count (10 for archives, a component
+field for a listing) rather than a global setting or a `?per_page` parameter.

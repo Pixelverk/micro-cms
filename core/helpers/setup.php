@@ -174,6 +174,7 @@ CREATE TABLE form_submissions (
     form_type TEXT NOT NULL,
     page_id INTEGER NULL,
     data TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new',
     ip_address TEXT NULL,
     user_agent TEXT NULL,
     created_at INTEGER NOT NULL,

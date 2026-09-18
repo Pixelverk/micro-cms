@@ -60,7 +60,7 @@ t('every class used in admin markup is defined in the design system', function (
     $defined = array_flip(preg_match_all('/\.([a-zA-Z][\w-]*)/', $css, $m) ? $m[1] : []);
 
     // Behavioural hooks carry no styling on purpose.
-    $hooks = ['js-confirm-form'];
+    $hooks = ['js-confirm-form', 'messages-row', 'js-row-status', 'js-submission-view', 'js-submission-close'];
 
     $undefined = [];
     foreach (admin_markup_classes() as $class => $files) {

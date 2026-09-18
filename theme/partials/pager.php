@@ -29,7 +29,7 @@ $pagerLabel = $pagerLabel ?? 'Listing pages';
 $current    = (int) $pager['page'];
 $last       = (int) $pager['pages'];
 ?>
-<nav class="search-pagination" aria-label="<?= e($pagerLabel) ?>">
+<nav class="pagination search-pagination" aria-label="<?= e($pagerLabel) ?>">
     <?php if ($current > 1): ?>
         <a class="btn btn-outline-primary" href="<?= e(pagination_url($pagerUrl, $current - 1)) ?>">&larr; Previous</a>
     <?php endif; ?>

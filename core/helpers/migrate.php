@@ -200,6 +200,12 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'content', 'deleted_at', 'INTEGER NULL');
         },
 
+        // Form submissions get a workflow status, so an inbox can be worked
+        // through rather than only read.
+        '2026_09_18_000015_form_submission_status' => function (PDO $pdo): void {
+            migrate_add_column($pdo, 'form_submissions', 'status', "TEXT NOT NULL DEFAULT 'new'");
+        },
+
     ];
 }
 

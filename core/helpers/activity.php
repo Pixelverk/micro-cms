@@ -88,7 +88,7 @@ function log_activity(
  */
 function activity_groups(): array
 {
-    return ['user', 'content', 'media', 'taxonomy', 'menu', 'settings', 'security', 'utility'];
+    return ['user', 'content', 'media', 'taxonomy', 'menu', 'form', 'settings', 'security', 'utility'];
 }
 
 /**
@@ -110,6 +110,8 @@ function activity_action_label(string $action): string
         'content.purged'      => 'Deleted permanently',
         'content.restored'    => 'Restored a version',
         'media.uploaded'      => 'Uploaded media',
+        'form.status'         => 'Changed a submission status',
+        'form.deleted'        => 'Deleted form submissions',
         'media.replaced'      => 'Replaced media',
         'media.deleted'       => 'Deleted media',
         'user.created'        => 'Created a user',

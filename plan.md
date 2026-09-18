@@ -10,39 +10,37 @@ and Squarespace, but their weight does not.
 
 Completed work (header/footer scripts, cache warm-up + static export, built-in
 analytics, multi-language admin, redirects, trash, site health, virtual
-robots.txt, the dashboard at a glance, content duplication) has been removed. The
+robots.txt, the dashboard at a glance, content duplication, pagination, and the
+form-submission inbox with statuses and CSV export) has been removed. The
 multi-language front end stays as a deferred design.
 
 ## Next up
 
 Nothing is queued here. The Later list below is the backlog, roughly in value
-order; front-end pagination (item 7) is the one most likely to matter next — it
-is the first thing that breaks on a real site.
+order; theme asset auto-versioning (item 13) is the smallest worthwhile next
+step, and the publish webhook (item 9) is the one most likely to matter next
+for a real deployment.
 
 ## Later
 
-7. **Front-end pagination** — blog, portfolio and taxonomy archives render
-   everything today. Add `?page=N` and `rel=prev/next`, and treat paged views
-   like search so they are never written to the path-only cache key. (M)
-8. **Media usage before delete** — scan content bodies for a media id and show
+7. **Media usage before delete** — scan content bodies for a media id and show
    where it is used, the way Joomla warns before removing a file. (M)
-9. **Version diff** — show what changed between two versions. Plain PHP, no
+8. **Version diff** — show what changed between two versions. Plain PHP, no
    diff library. (M)
-10. **Maintenance mode** — a Settings toggle and message; visitors get 503 +
-    `Retry-After`, while signed-in admins and previews keep working. (S–M)
-11. **Publish webhook** — a Settings URL that receives a small JSON POST on
+9. **Maintenance mode** — a Settings toggle and message; visitors get 503 +
+   `Retry-After`, while signed-in admins and previews keep working. (S–M)
+10. **Publish webhook** — a Settings URL that receives a small JSON POST on
     publish/unpublish, so a static rebuild (the export workflow) can be
     triggered without polling. This is the distribution hook that matters most
     today. (S)
-12. **Editor autosave** — a draft version every ~60s through the existing
+11. **Editor autosave** — a draft version every ~60s through the existing
     `content_versions` store (reason `autosave`), offered back on reload. Reuses
     what is there instead of new storage. (M)
-13. **Form submissions CSV export** — export the inbox for mailing lists. (S)
-14. **RSS/Atom feed** — `/feed/` for the content types the theme marks as feed
+12. **RSS/Atom feed** — `/feed/` for the content types the theme marks as feed
     sources, cached like a page, with a `<link rel="alternate">` in `<head>`.
     Cheap and still consumed by newsletter tools, automation and aggregators,
     but low urgency for a site without a news habit. (S)
-15. **Theme asset auto-versioning** — `theme.php`'s `?v=` counters are manual
+13. **Theme asset auto-versioning** — `theme.php`'s `?v=` counters are manual
     and easy to forget; stamp them by modification time like `admin_asset()`. (S)
 
 ## Deferred

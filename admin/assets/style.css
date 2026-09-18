@@ -884,6 +884,33 @@ header {
     gap: 0.3rem;
 }
 
+/* An icon-only action button, sized so a row of them stays even. */
+.btn-icon {
+    padding: 0.3rem;
+    line-height: 0;
+}
+
+/* A button that reads as text, used where a whole cell is the control (the
+   submission summary opens the same modal as the View button).
+   The plain `button` rules are element selectors, so they still set the accent
+   background and its hover; .btn-text has to reset both states explicitly. */
+.btn-text,
+.btn-text:hover,
+.btn-text:focus,
+.btn-text:active {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.btn-text:hover span { text-decoration: underline; }
+
 .btn:disabled,
 .btn-primary:disabled,
 .btn-secondary:disabled,
@@ -1441,6 +1468,27 @@ html.dark .menu-item .remove {
     color: var(--text-muted);
 }
 
+/* Form submission inbox: a status per stage of the workflow. */
+.status-new {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.status-waiting {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.status-handled {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.status-spam {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
 /*   Content list: status tabs, search, preview action */
 
 .content-filters {
@@ -1970,6 +2018,11 @@ button.sidebar-link {
 /* Markup uses the `hidden` attribute; JS shows it by setting display:flex. */
 .modal-backdrop[hidden] { display: none; }
 .modal.hidden { display: none; }
+
+/* A dialog rendered inside the backdrop starts hidden and is revealed with
+   display:flex on the backdrop, so the attribute has to win over .modal's own
+   display. The image picker uses the class instead; both still work. */
+.modal[hidden] { display: none; }
 
 .modal {
     background: var(--surface);
@@ -2663,6 +2716,9 @@ button.sidebar-link {
 
 /* One filter above the table rather than a full card of its own. */
 .messages-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
     margin-bottom: 1rem;
 }
 
@@ -2677,6 +2733,71 @@ button.sidebar-link {
 .messages-filter strong {
     font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
+}
+
+/* Bulk status row above and below the submissions table. */
+.messages-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.messages-toolbar:last-child {
+    margin: 1rem 0 0;
+}
+
+.messages-toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+/* The bulk select sizes to its own options rather than filling the row. */
+.messages-toolbar select {
+    width: max-content;
+}
+
+/* Inbox columns.
+   The status badge, the status control and the actions each hold a different
+   kind of element, so their widths are set here rather than left to the table
+   algorithm: fixed for the two small columns, and the status control takes a
+   share of what is left, so every row lines up down the table. The class also
+   resets the 180px `.col-actions` width from the report tables. */
+.messages-table .col-status { width: 7rem; }
+.messages-table .col-status-control { width: 30%; }
+.messages-table .col-actions { width: 7.5rem; text-align: right; }
+
+/* The view and delete buttons sit side by side. `.actions` wraps by default,
+   which stacked these two in a column narrow enough for each to wrap. */
+.messages-table .col-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+/* The submission cell is a button; keep it on the cell's own text baseline. */
+.messages-table .btn-text {
+    line-height: 1.4;
+}
+
+/* A select inside a table cell is a control, not a full-width form field:
+   matching its height to the small buttons keeps the row on one line. */
+.messages-table select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* Prev/next under the inbox. The public theme has its own rule for
+   .search-pagination; this keeps the admin pager laid out too. */
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
 }
 
 /* The submitted values, revealed by the row's <details>. */
