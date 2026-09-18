@@ -244,6 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors      = [];
     $newValues   = [];
     $newPrefixes = [];
+    $oldValues   = $settings;
 
     foreach ($settingFields as $key => $meta) {
         $raw = $_POST[$key] ?? null;
@@ -355,7 +356,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         validate_throw($errors, 'settings');
     }
 
-    $changedKeys = implode(', ', array_keys($newValues));
+    // The form posts every field, so compare against the stored values and
+    // record only what actually changed. A setting with no row yet is compared
+    // against the field's default, or an untouched checkbox would look edited.
+    $changedLabels = [];
+
+    foreach ($newValues as $key => $value) {
+        $before = array_key_exists($key, $oldValues)
+            ? $oldValues[$key]
+            : ($settingFields[$key]['default'] ?? null);
+
+        if (setting_value_changed($before, $value)) {
+            $changedLabels[] = admin_trans((string) ($settingFields[$key]['label'] ?? $key), $settingFields[$key]['label_replace'] ?? []);
+        }
+    }
+
+    // Prefix fields are collected separately, so compare each against the
+    // stored content_prefixes entry and log it under its own label.
+    foreach ($newPrefixes as $type => $prefix) {
+        $key = "prefix_$type";
+
+        if (setting_value_changed($oldValues['content_prefixes'][$type] ?? null, $prefix)) {
+            $changedLabels[] = admin_trans((string) ($settingFields[$key]['label'] ?? $key), $settingFields[$key]['label_replace'] ?? []);
+        }
+    }
+
+    $changedKeys = implode(', ', $changedLabels);
 
     if ($newPrefixes) {
         $newValues['content_prefixes'] = $newPrefixes;
@@ -364,7 +390,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         save_settings($newValues);
 
-        log_activity('settings.updated', 'settings', null, $changedKeys, []);
+        if ($changedKeys !== '') {
+            log_activity('settings.updated', 'settings', null, $changedKeys, []);
+        }
 
         redirect_with_toast('settings', 'success', admin_trans('settings_saved'));
     } catch (Throwable $e) {

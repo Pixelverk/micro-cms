@@ -114,6 +114,34 @@ function get_setting(string $key, mixed $default = null): mixed
     return array_key_exists($key, $settings) ? $settings[$key] : $default;
 }
 
+/**
+ * Is a submitted setting value different from the stored one?
+ *
+ * Stored values keep their type (booleans, integers, arrays) while a form
+ * submits strings, so the comparison normalises both sides per type before
+ * comparing. Keep this in step with the normalisation in admin/settings.php.
+ */
+function setting_value_changed(mixed $old, mixed $new): bool
+{
+    if (is_array($old) || is_array($new)) {
+        return (array) $old != (array) $new;
+    }
+
+    if (is_bool($old)) {
+        return (bool) $old !== (bool) (int) $new;
+    }
+
+    if (is_int($old) || is_float($old)) {
+        return $old != $new;
+    }
+
+    if ($old === null) {
+        return $new !== null && $new !== '';
+    }
+
+    return (string) $old !== (string) $new;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Set a single setting

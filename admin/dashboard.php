@@ -16,8 +16,32 @@ foreach ($rows as $row) {
     $statusCounts[$key] = ($statusCounts[$key] ?? 0) + (int) $row['total'];
 }
 
-$trashCount = content_trash_count();
 $totalCount = array_sum($statusCounts) - $statusCounts['trash'];
+
+// The five most recently edited items across every content type, trashed
+// excluded. A cross-type query for the dashboard only, so it stays here rather
+// than becoming a helper with one caller.
+$recentContent = db()->query(
+    "SELECT id, type, title, status, updated_at
+     FROM content
+     WHERE deleted_at IS NULL
+     ORDER BY updated_at DESC, id DESC
+     LIMIT 5"
+)->fetchAll();
+
+// Labels for the type names shown beside each recently edited item.
+$contentTypes = theme_config()['content_types'] ?? [];
+
+// Recent activity, for the roles allowed to read the log.
+$recentActivity = admin_can('activity.view') ? list_activity([], 5)['items'] : [];
+
+// Last seven days against the seven before it. The comparison is null when
+// there is no baseline, which is what analytics_change() already reports.
+// Analytics has no capability of its own; every signed-in user can open it,
+// so the dashboard reports the same thing.
+$weekViews    = analytics_views(7);
+$weekVisitors = analytics_unique_visitors(7);
+$viewsChange  = analytics_change($weekViews, analytics_views(7, 7));
 
 // page content
 ob_start();
@@ -103,25 +127,69 @@ ob_start();
     </a>
 </div>
 
-<div class="dashboard-strip">
-    <span class="dashboard-strip-item">
-        <span class="status status-published"><?= (int) $statusCounts['published'] ?></span>
-        <?= e(admin_trans('status_published')) ?>
-    </span>
-    <span class="dashboard-strip-item">
-        <span class="status status-draft"><?= (int) $statusCounts['draft'] ?></span>
-        <?= e(admin_trans('status_draft')) ?>
-    </span>
-    <span class="dashboard-strip-item">
-        <span class="status status-scheduled"><?= (int) $statusCounts['scheduled'] ?></span>
-        <?= e(admin_trans('status_scheduled')) ?>
-    </span>
-    <?php if ($trashCount > 0): ?>
-        <a class="dashboard-strip-item dashboard-strip-link" href="<?= url('admin/content') . '?status=trash' ?>">
-            <?= icon('wrench', 16) ?>
-            <?= e(admin_trans('trash_title')) ?>: <?= (int) $trashCount ?>
-        </a>
-    <?php endif; ?>
+<div class="page-sections dashboard-panels">
+
+    <div class="dashboard-columns">
+
+        <div class="card">
+            <h3 class="card-title"><?= e(admin_trans('dashboard_recent_content')) ?></h3>
+            <?php if (!$recentContent): ?>
+                <p class="text-muted"><?= e(admin_trans('dashboard_no_content')) ?></p>
+            <?php else: ?>
+                <ul class="dashboard-list">
+                    <?php foreach ($recentContent as $item): ?>
+                        <?php
+                        $itemType  = (string) $item['type'];
+                        $typeLabel = $contentTypes[$itemType]['label'] ?? ucfirst(str_replace('_', ' ', $itemType));
+                        $editUrl   = url('admin/content/edit') . '?type=' . urlencode($itemType) . '&id=' . (int) $item['id'];
+                        ?>
+                        <li class="dashboard-list-item">
+                            <a class="dashboard-list-link" href="<?= e($editUrl) ?>"><?= e($item['title']) ?></a>
+                            <span class="dashboard-list-meta">
+                                <?= e($typeLabel) ?>
+                                <span class="status status-<?= e((string) $item['status']) ?>"><?= e(content_status_label((string) $item['status'])) ?></span>
+                                <?= e(format_local_datetime((int) $item['updated_at'], 'Y-m-d H:i')) ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title"><?= e(admin_trans('dashboard_traffic')) ?></h3>
+            <p class="dashboard-metric"><?= $weekViews ?></p>
+            <p class="dashboard-metric-label">
+                <?= e(admin_trans('dashboard_stat_views')) ?>
+                <?php if ($viewsChange !== null): ?>
+                    <span class="<?= $viewsChange >= 0 ? 'delta-up' : 'delta-down' ?>"><?= e(sprintf('%+d%%', (int) round($viewsChange))) ?></span>
+                <?php endif; ?>
+            </p>
+            <p class="dashboard-metric-secondary"><?= e(admin_trans('dashboard_stat_visitors', ['count' => $weekVisitors])) ?></p>
+        </div>
+
+        <?php if (admin_can('activity.view')): ?>
+            <div class="card">
+                <h3 class="card-title"><?= e(admin_trans('dashboard_recent_activity')) ?></h3>
+                <?php if (!$recentActivity): ?>
+                    <p class="text-muted"><?= e(admin_trans('dashboard_no_activity')) ?></p>
+                <?php else: ?>
+                    <ul class="dashboard-list">
+                        <?php foreach ($recentActivity as $entry): ?>
+                            <li class="dashboard-list-item">
+                                <span class="dashboard-list-link"><?= e(activity_action_label((string) $entry['action'])) ?></span>
+                                <span class="dashboard-list-meta">
+                                    <?php if (!empty($entry['summary'])): ?><?= e((string) $entry['summary']) ?><?php endif; ?>
+                                    <?= e(format_local_datetime((int) $entry['created_at'], 'Y-m-d H:i')) ?>
+                                </span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+    </div>
 </div>
 
 <?php

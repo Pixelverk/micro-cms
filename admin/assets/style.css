@@ -618,7 +618,8 @@ header {
    own internal spacing and drop their trailing margin inside a stack. */
 
 .analytics-sections,
-.page-sections {
+.page-sections,
+.dashboard-panels {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -628,6 +629,7 @@ header {
 .analytics-sections > .form-card,
 .page-sections > .card,
 .page-sections > .form-card,
+.dashboard-panels > .card,
 .stack > .card {
     margin-bottom: 0;
 }
@@ -695,32 +697,92 @@ header {
     line-height: 1.4;
 }
 
-/* Status summary under the tiles. */
-.dashboard-strip {
+/* Recent-edit, traffic and activity panels.
+   Three equal columns, so no panel dominates. Collapses to one column at the
+   admin's usual 900px breakpoint. */
+.dashboard-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+/* Separates the data panels from the destination tiles above them; they are
+   siblings, so the dashboard's own column gap does not reach. */
+.dashboard-panels {
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .dashboard-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Traffic figures. Deliberately the same weight as a card title rather than a
+   display number, so the traffic card does not outweigh its neighbours. */
+.dashboard-metric {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
+}
+
+.dashboard-metric-label {
+    margin: 0.3rem 0 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem 1.5rem;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border);
+    gap: 0.5rem;
     color: var(--text-muted);
     font-size: 0.85rem;
 }
 
-.dashboard-strip-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
+.dashboard-metric-secondary {
+    margin: 0.15rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
-.dashboard-strip-link {
-    margin-left: auto;
-    color: var(--text-muted);
+/* Recent-edit and recent-activity lists. Scoped so they override the generic
+   .card a rule, which would otherwise space out every row as if it were a
+   standalone link. */
+.dashboard-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.dashboard-list-item:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.dashboard-list-link {
+    color: var(--text);
+    font-weight: var(--font-weight-semibold);
     text-decoration: none;
 }
 
-.dashboard-strip-link:hover { color: var(--text); text-decoration: none; }
+.dashboard-list-link:hover { color: var(--link); text-decoration: none; }
+
+.dashboard-list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
 
 /* 6. Components */
 

@@ -94,4 +94,42 @@ t('theme_config() is parsed once per request', function () {
     assert_true(isset($first['content_types']['page']), 'theme manifest is loaded');
 });
 
+t('setting_value_changed() ignores type-only differences', function () {
+    // The settings form submits strings, but stored values keep their type
+    // (booleans, integers, arrays). Only a real change should count.
+    $unchanged = [
+        [true, true], [true, '1'], [false, false], [false, ''], [false, '0'],
+        [10, '10'], [0, '0'], [1.5, '1.5'],
+        ['en', 'en'], ['', ''],
+        [null, null], [null, ''],
+        [[400, 800], [400, 800]],
+        [['page' => ''], ['page' => '']],
+    ];
+
+    foreach ($unchanged as $pair) {
+        assert_false(
+            setting_value_changed($pair[0], $pair[1]),
+            var_export($pair[0], true) . ' vs ' . var_export($pair[1], true) . ' should read as unchanged'
+        );
+    }
+});
+
+t('setting_value_changed() detects real changes', function () {
+    $changed = [
+        [true, false], [true, '0'], [false, true], [false, '1'],
+        [10, '20'], [0, 1],
+        ['en', 'sv'], ['site', 'Site'], ['', 'value'],
+        [null, 'value'],
+        [[400, 800], [400, 1200]],
+        [['page' => ''], ['page' => 'pages']],
+    ];
+
+    foreach ($changed as $pair) {
+        assert_true(
+            setting_value_changed($pair[0], $pair[1]),
+            var_export($pair[0], true) . ' vs ' . var_export($pair[1], true) . ' should read as a change'
+        );
+    }
+});
+
 exit(test_summary());
