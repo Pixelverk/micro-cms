@@ -105,7 +105,7 @@ ob_start();
                 <th><?= e(admin_trans('common_slug')) ?></th>
                 <th><?= e(admin_trans('content_type')) ?></th>
                 <th><?= e(admin_trans('common_updated')) ?></th>
-                <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+                <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
 
@@ -127,11 +127,13 @@ ob_start();
                     <?= format_local_datetime($tag['updated_at'], 'Y-m-d') ?>
                 </td>
 
-                <td class="actions">
+                <td class="actions col-actions-icons">
 
                     <a href="<?= url('admin/tag/edit') ?>?id=<?= (int)$tag['id'] ?>"
-                       class="btn-small">
-                        <?= e(admin_trans('common_edit')) ?>
+                       class="btn-small btn-icon"
+                       title="<?= e(admin_trans('common_edit')) ?>"
+                       aria-label="<?= e(admin_trans('common_edit')) ?>">
+                        <?= icon('edit', 16) ?>
                     </a>
 
                     <form
@@ -143,8 +145,10 @@ ob_start();
                     >
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= (int)$tag['id'] ?>">
-                        <button type="submit" class="btn-delete btn-small">
-                            <?= e(admin_trans('common_delete')) ?>
+                        <button type="submit" class="btn-delete btn-small btn-icon"
+                                title="<?= e(admin_trans('common_delete')) ?>"
+                                aria-label="<?= e(admin_trans('common_delete')) ?>">
+                            <?= icon('trash', 16) ?>
                         </button>
                     </form>
 

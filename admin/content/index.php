@@ -234,7 +234,7 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                 <th><?= e(admin_trans('status_published')) ?></th>
                 <th><?= e(admin_trans('status_scheduled')) ?></th>
                 <th><?= e(admin_trans('common_updated')) ?></th>
-                <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+                <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
         <tbody>
@@ -244,6 +244,11 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
             $isHomepage = $item['slug'] === $homepageSlug;
             $publicUrl = url($isHomepage ? '' : $url);
             $itemStatus = (string) ($item['status'] ?? 'draft');
+            $canEditThis = can_edit_content($item);
+            $editUrl = url('admin/content/edit') . '?type=' . urlencode($type) . '&id=' . (int) $item['id'];
+            $isLive = $itemStatus === 'published'
+                && !empty($item['published_at'])
+                && (int) $item['published_at'] <= time();
         ?>
             <tr data-content-id="<?= (int) $item['id'] ?>">
                 <?php if (admin_can('content.bulk')): ?>
@@ -253,14 +258,19 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                     </td>
                 <?php endif; ?>
                 <td>
-                    <a href="<?= e($publicUrl) ?>"
-                    target="_blank"
-                    class="no-underline">
+                    <?php if (!$isTrashView && $canEditThis): ?>
+                        <a href="<?= e($editUrl) ?>" class="no-underline">
+                            <?= e($item['title']) ?>
+                            <?php if ($isHomepage): ?>
+                                <span class="badge badge-home"><?= e(admin_trans('content_home_badge')) ?></span>
+                            <?php endif; ?>
+                        </a>
+                    <?php else: ?>
                         <?= e($item['title']) ?>
                         <?php if ($isHomepage): ?>
                             <span class="badge badge-home"><?= e(admin_trans('content_home_badge')) ?></span>
                         <?php endif; ?>
-                    </a>
+                    <?php endif; ?>
                 </td>
 
                 <td><code><?= e($fullSlug) ?></code></td>
@@ -283,14 +293,16 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                     <?= format_local_datetime($item['updated_at'], 'Y-m-d') ?>
                 </td>
 
-                <td class="actions">
+                <td class="actions col-actions-icons">
                     <?php if ($isTrashView): ?>
                         <form method="post" action="<?= url('admin/content/restore') ?>" class="inline-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
-                            <button type="submit" class="btn-small btn-secondary">
-                                <?= e(admin_trans('common_restore')) ?>
+                            <button type="submit" class="btn-small btn-secondary btn-icon"
+                                    title="<?= e(admin_trans('common_restore')) ?>"
+                                    aria-label="<?= e(admin_trans('common_restore')) ?>">
+                                <?= icon('restore', 16) ?>
                             </button>
                         </form>
 
@@ -304,25 +316,40 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
                             <input type="hidden" name="purge" value="1">
-                            <button type="submit" class="btn-delete btn-small">
-                                <?= e(admin_trans('trash_delete_permanently')) ?>
+                            <button type="submit" class="btn-delete btn-small btn-icon"
+                                    title="<?= e(admin_trans('trash_delete_permanently')) ?>"
+                                    aria-label="<?= e(admin_trans('trash_delete_permanently')) ?>">
+                                <?= icon('trash', 16) ?>
                             </button>
                         </form>
                         <?php endif; ?>
                     <?php else: ?>
-                        <?php $canEditThis = can_edit_content($item); ?>
-
-                        <a href="<?= e(preview_url($publicUrl)) ?>"
-                            target="_blank"
-                            class="btn-small btn-preview"
-                            title="<?= e(admin_trans('content_preview_title')) ?>">
-                            <?= e(admin_trans('common_preview')) ?>
-                        </a>
-
                         <?php if ($canEditThis): ?>
-                            <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>&id=<?= (int)$item['id'] ?>"
-                                class="btn-small">
-                                <?= e(admin_trans('common_edit')) ?>
+                            <a href="<?= e($editUrl) ?>"
+                                class="btn-small btn-icon"
+                                title="<?= e(admin_trans('common_edit')) ?>"
+                                aria-label="<?= e(admin_trans('common_edit')) ?>">
+                                <?= icon('edit', 16) ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if ($isLive): ?>
+                            <a href="<?= e($publicUrl) ?>"
+                                target="_blank"
+                                rel="noopener"
+                                class="btn-small btn-preview btn-icon"
+                                title="<?= e(admin_trans('common_view')) ?>"
+                                aria-label="<?= e(admin_trans('common_view')) ?>">
+                                <?= icon('open-in-browser', 16) ?>
+                            </a>
+                        <?php else: ?>
+                            <a href="<?= e(preview_url($publicUrl)) ?>"
+                                target="_blank"
+                                rel="noopener"
+                                class="btn-small btn-preview btn-icon"
+                                title="<?= e(admin_trans('content_preview_title')) ?>"
+                                aria-label="<?= e(admin_trans('common_preview')) ?>">
+                                <?= icon('preview', 16) ?>
                             </a>
                         <?php endif; ?>
 
@@ -331,8 +358,10 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int) $item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
-                            <button type="submit" class="btn-small btn-secondary">
-                                <?= e(admin_trans('content_duplicate')) ?>
+                            <button type="submit" class="btn-small btn-secondary btn-icon"
+                                    title="<?= e(admin_trans('content_duplicate')) ?>"
+                                    aria-label="<?= e(admin_trans('content_duplicate')) ?>">
+                                <?= icon('copy', 16) ?>
                             </button>
                         </form>
                         <?php endif; ?>
@@ -346,8 +375,10 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                             <input type="hidden" name="type" value="<?= e($type) ?>">
-                            <button type="submit" class="btn-delete btn-small">
-                                <?= e(admin_trans('trash_move')) ?>
+                            <button type="submit" class="btn-delete btn-small btn-icon"
+                                    title="<?= e(admin_trans('trash_move')) ?>"
+                                    aria-label="<?= e(admin_trans('trash_move')) ?>">
+                                <?= icon('trash', 16) ?>
                             </button>
                         </form>
                         <?php endif; ?>

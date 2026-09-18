@@ -100,6 +100,39 @@ t('the design system defines a complete button set', function () {
     }
 });
 
+t('every icon named in admin markup exists in the icon set', function () {
+    // icon() returns an HTML comment when the file is missing, which leaves an
+    // icon-only button blank with no error. Only literal names are checkable at
+    // source level; icon($var) calls are skipped.
+    $missing = [];
+
+    $files = array_merge(
+        glob(CMS_PATH . '/admin/*.php') ?: [],
+        glob(CMS_PATH . '/admin/*/*.php') ?: [],
+        glob(CMS_PATH . '/admin/partials/*.php') ?: []
+    );
+
+    foreach ($files as $file) {
+        $contents = (string) file_get_contents($file);
+
+        if (preg_match_all('/icon\(\s*[\x27"]([a-z0-9-]+)[\x27"]/', $contents, $matches)) {
+            foreach ($matches[1] as $name) {
+                if (!is_file(CMS_PATH . "/admin/assets/icons/{$name}.svg")) {
+                    $missing[$name] = basename($file);
+                }
+            }
+        }
+    }
+
+    $summary = implode(', ', array_map(
+        static fn($name, $file) => "{$name} ({$file})",
+        array_keys($missing),
+        $missing
+    ));
+
+    assert_count(0, $missing, 'icons missing from admin/assets/icons: ' . $summary);
+});
+
 t('the design system defines the shared page furniture', function () {
     $css = admin_css();
 

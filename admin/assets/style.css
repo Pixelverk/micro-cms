@@ -2123,6 +2123,24 @@ button.sidebar-link {
 .col-when,
 .col-author { width: 170px; }
 
+/* Icon-only row actions (content and taxonomy index tables) need far less room
+   than the text buttons `.col-actions` is sized for. The column shrinks to its
+   buttons and they sit flush with the table's right edge. */
+.col-actions-icons {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* The header drives the width; the cell must stay `auto` or its own flex
+   container is clamped to 1% and the buttons overflow into the previous
+   column. */
+.actions.col-actions-icons {
+    width: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
 .content-table tr:last-child td,
 .admin-table tr:last-child td { border-bottom: 0; }
 

@@ -391,6 +391,59 @@ t('destructive endpoints trash, restore and purge', function () use ($base, $coo
     assert_eq(0, (int) $exists->fetchColumn(), 'purge removes the row');
 });
 
+t('the content list links live items out and drafts to a preview', function () use ($base, $cookieJar) {
+    http_login($base);
+
+    $pdo = db();
+    $now = time();
+
+    // Unique slugs so each row can be picked out of the list by id.
+    $insert = $pdo->prepare("
+        INSERT INTO content (type, slug, title, status, body, created_at, updated_at, published_at)
+        VALUES ('page', :slug, :title, :status, '[]', :now, :now, :published)
+    ");
+
+    $insert->execute(['slug' => 'list-live', 'title' => 'List Live', 'status' => 'published', 'now' => $now, 'published' => $now]);
+    $liveId = (int) $pdo->lastInsertId();
+
+    $insert->execute(['slug' => 'list-draft', 'title' => 'List Draft', 'status' => 'draft', 'now' => $now, 'published' => null]);
+    $draftId = (int) $pdo->lastInsertId();
+
+    [, $page] = http('GET', $base . '/admin/content?type=page&q=list-');
+
+    $rowFor = function (int $id) use ($page): string {
+        if (!preg_match('#<tr data-content-id="' . $id . '">(.*?)</tr>#s', $page, $matches)) {
+            throw new RuntimeException("row {$id} not found in the content list");
+        }
+
+        return $matches[1];
+    };
+
+    $liveRow  = $rowFor($liveId);
+    $draftRow = $rowFor($draftId);
+
+    // A published item opens the front end; an unpublished one needs the token.
+    preg_match('#<a href="([^"]+)"[^>]*aria-label="View"#s', $liveRow, $viewMatch);
+    assert_true(isset($viewMatch[1]), 'the published row has a view link');
+    assert_false(str_contains($viewMatch[1], 'preview='), 'the live view link has no preview token');
+
+    preg_match('#<a href="([^"]+)"[^>]*aria-label="Preview"#s', $draftRow, $previewMatch);
+    assert_true(isset($previewMatch[1]), 'the draft row has a preview link');
+    assert_true(str_contains($previewMatch[1], 'preview='), 'the preview link carries a token');
+
+    // Actions run edit, view, duplicate, delete.
+    $positions = array_map(
+        static fn(string $needle) => strpos($liveRow, $needle),
+        ['aria-label="Edit"', 'aria-label="View"', 'aria-label="Duplicate"', 'aria-label="Move to trash"']
+    );
+
+    assert_true(!in_array(false, $positions, true), 'an editable published row shows all four actions');
+    assert_true(
+        $positions[0] < $positions[1] && $positions[1] < $positions[2] && $positions[2] < $positions[3],
+        'the actions are ordered edit, view, duplicate, delete'
+    );
+});
+
 t('public forms require a signed token', function () use ($base) {
     [$status, $body] = http('POST', $base . '/form-submit', false, ['form_type' => 'contact']);
 

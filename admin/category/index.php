@@ -65,7 +65,7 @@ ob_start();
                     <th><?= e(admin_trans('common_description')) ?></th>
                     <th><?= e(admin_trans('common_created')) ?></th>
                     <th><?= e(admin_trans('common_updated')) ?></th>
-                    <th class="col-actions"><?= e(admin_trans('common_actions')) ?></th>
+                    <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -76,8 +76,13 @@ ob_start();
                     <td><?= e($cat['description']) ?></td>
                     <td><?= format_local_datetime($cat['created_at'], 'Y-m-d') ?></td>
                     <td><?= format_local_datetime($cat['updated_at'], 'Y-m-d') ?></td>
-                    <td class="actions">
-                        <a href="<?= url('admin/category/edit') ?>?id=<?= (int)$cat['id'] ?>" class="btn-small"><?= e(admin_trans('common_edit')) ?></a>
+                    <td class="actions col-actions-icons">
+                        <a href="<?= url('admin/category/edit') ?>?id=<?= (int)$cat['id'] ?>"
+                           class="btn-small btn-icon"
+                           title="<?= e(admin_trans('common_edit')) ?>"
+                           aria-label="<?= e(admin_trans('common_edit')) ?>">
+                            <?= icon('edit', 16) ?>
+                        </a>
 
                         <form method="post" action="<?= url('admin/category/remove') ?>"
                             data-confirm-title="<?= e(admin_trans('category_delete')) ?>"
@@ -85,7 +90,11 @@ ob_start();
                             class="inline-form-block js-confirm-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
-                            <button type="submit" class="btn-delete btn-small"><?= e(admin_trans('common_delete')) ?></button>
+                            <button type="submit" class="btn-delete btn-small btn-icon"
+                                    title="<?= e(admin_trans('common_delete')) ?>"
+                                    aria-label="<?= e(admin_trans('common_delete')) ?>">
+                                <?= icon('trash', 16) ?>
+                            </button>
                         </form>
                     </td>
                 </tr>
