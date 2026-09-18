@@ -209,9 +209,18 @@ foreach ($componentFiles as $file) {
 
     $component = require $file;
 
+    $schema = $component['schema'] ?? [];
+
+    // A component's "menu" field points at one of the slots declared in
+    // theme.php's menu_locations. The options are filled in here so the
+    // manifest stays the single source of truth for what slots exist.
+    if (isset($schema['menu']) && ($schema['menu']['type'] ?? '') === 'select') {
+        $schema['menu']['options'] = $theme['menu_locations'] ?? [];
+    }
+
     $availableComponents[$name] = [
         'label'            => $component['label'] ?? $name,
-        'schema'           => $component['schema'] ?? [],
+        'schema'           => $schema,
         'children'         => $component['children'] ?? 'any',
         'allowed_children' => $component['allowed_children'] ?? [],
     ];

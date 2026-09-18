@@ -1,8 +1,10 @@
 # Micro CMS — plan
 
 A living backlog for a CMS that stays procedural PHP over SQLite with no build
-step and no packages. Each idea is judged on two questions: does it solve a
-problem that exists today, and can it be done with what is already here
+step and no packages. See [`continuing-plan.md`](continuing-plan.md) for the
+phased programme across the CMS, theme building and running a site; this file
+remains the item-by-item backlog. Each idea is judged on two questions: does it
+solve a problem that exists today, and can it be done with what is already here
 (PDO/SQLite, Imagick, plain PHP)? The inspiration comes from WordPress, Joomla
 and Squarespace, but their weight does not.
 

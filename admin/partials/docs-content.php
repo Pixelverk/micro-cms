@@ -118,7 +118,7 @@ function docs_content(): array
                 ],
                 'The theme manifest' => [
                     ['p' => 'theme/theme.php returns an array declaring what the theme supports:'],
-                    ['code' => "return [\n    'name' => 'My Theme',\n    'layouts' => ['default' => 'Default', 'blog' => 'Blog Post'],\n    'headers' => ['site-header' => 'Default Header'],\n    'footers' => ['site-footer' => 'Default Footer'],\n    'content_types' => [\n        'page' => [\n            'label' => 'Page',\n            'default_layout' => 'default',\n            'available_components' => ['hero-section', 'cta-section'],\n            'url_prefix' => '',\n        ],\n    ],\n    'form_types' => [ /* contact, newsletter … */ ],\n    'styles' => ['utilities.css', 'style.css'],\n    'scripts' => [['src' => 'main.js', 'defer' => true]],\n    'icons' => ['favicon' => 'favicon.ico'],\n];"],
+                    ['code' => "return [\n    'name' => 'My Theme',\n    'layouts' => ['default' => 'Default', 'blog' => 'Blog Post'],\n    'headers' => ['site-header' => 'Default Header'],\n    'footers' => ['site-footer' => 'Default Footer'],\n    'menu_locations' => ['main' => 'Main Menu', 'footer' => 'Footer Menu'],\n    'content_types' => [\n        'page' => [\n            'label' => 'Page',\n            'default_layout' => 'default',\n            'available_components' => ['hero-section', 'cta-section'],\n            'url_prefix' => '',\n        ],\n    ],\n    'form_types' => [ /* contact, newsletter … */ ],\n    'styles' => ['utilities.css', 'style.css'],\n    'scripts' => [['src' => 'main.js', 'defer' => true]],\n    'icons' => ['favicon' => 'favicon.ico'],\n];"],
                     ['p' => 'Content types drive the admin: the sidebar, the component palette and URL prefixes all come from here.'],
                 ],
                 'Writing a component' => [
@@ -126,6 +126,7 @@ function docs_content(): array
                     ['code' => "<?php\nreturn [\n    'label' => 'Call To Action',\n    'schema' => [\n        'title' => ['type' => 'text', 'label' => 'Title', 'default' => 'Hello'],\n        'body'  => ['type' => 'quill', 'label' => 'Body'],\n    ],\n    'children' => 'none',\n    'allowed_children' => [],\n    'css' => <<<CSS\n.cta { padding: 3rem 2rem; text-align: center; }\nCSS,\n    'js' => <<<JS\n// runs after DOMContentLoaded\nJS,\n    'render' => function (array \$props, array \$page, array &\$collectedJs = [], array &\$collectedCss = []) {\n        \$title = \$props['title'] ?? '';\n        ?>\\n        <section class=\"cta\"><h2><?= e(\$title) ?></h2></section>\n        <?php\n    },\n];"],
                     ['ul' => [
                         "schema field types: text, textarea, number, color, checkbox, url, email, select, quill, image",
+                        "a field named 'menu' is filled with the theme's menu_locations, so the editor picks a menu slot (see Menus below)",
                         "children: 'none', 'any', or 'some' with allowed_children listing permitted types",
                         "css and js ship only on pages that use the component",
                         'always escape output with e()',
@@ -150,6 +151,12 @@ function docs_content(): array
                 'Layouts' => [
                     ['p' => 'A layout receives $page, $headerComponent, $footerComponent and the CSS/JS arrays by reference. It renders the header, the main content, then the footer:'],
                     ['code' => "<?php\ncomponent(\$headerComponent, [], \$page, \$collectedJs, \$collectedCss);\n\necho '<main>';\nrender_components(\$page['components'], \$page, \$collectedJs, \$collectedCss);\necho '</main>';\n\ncomponent(\$footerComponent, [], \$page, \$collectedJs, \$collectedCss);\n\n// Add layout-specific CSS (shipped only on pages using this layout):\nrequire theme('partials/taxonomy-archive.css.php');"],
+                ],
+                'Menus' => [
+                    ['p' => 'menu_locations in the manifest declares every place a menu can appear. It is the single source of truth: the admin menu page lists these slots, and a component references one of them.'],
+                    ['p' => 'A component declares a menu slot with a field named menu. The editor fills its options from menu_locations, so the theme author keeps only the default:'],
+                    ['code' => "// theme/components/site-header.php\n'schema' => [\n    'menu' => ['type' => 'select', 'label' => 'Menu slot', 'default' => 'main'],\n],\n\n// in the render function\n\$menu = get_menu_for_location((string) (\$props['menu'] ?? 'main'));\nforeach (\$menu['items'] as \$item) { /* … */ }"],
+                    ['p' => 'The editor can then point the component at any declared slot, and a slot nobody assigned renders nothing. Assign menus to slots under Menus in the admin.'],
                 ],
                 'Styling' => [
                     ['ul' => [

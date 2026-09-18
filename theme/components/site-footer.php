@@ -12,10 +12,12 @@ return [
  * CMS-Editable Schema
  * -------------------------------------------- */
 'schema' => [
+    // The slot is one of the menu_locations declared in theme.php; the editor
+    // lists them, so a theme author can point this footer at any slot.
     'menu' => [
-        'type' => 'menu',
-        'label' => 'Menu slot: site-footer',
-        'default' => 'main'
+        'type' => 'select',
+        'label' => 'Menu slot',
+        'default' => 'footer',
     ]
 ],
 
@@ -78,8 +80,8 @@ CSS,
 'render' => function (array $props, $page) {
     $id = 'footer-' . uniqid();
     $year = date('Y');
-    $menu = get_menu_for_location('footer');
     extract($props, EXTR_SKIP);
+    $menu = get_menu_for_location((string) ($props['menu'] ?? 'footer'));
 
     ?>
     <footer id="<?= $id ?>" class="bg-dark py-4 mt-auto">

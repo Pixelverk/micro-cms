@@ -12,10 +12,12 @@ return [
  * CMS-Editable Schema
  * -------------------------------------------- */
 'schema' => [
+    // The slot is one of the menu_locations declared in theme.php; the editor
+    // lists them, so a theme author can point this header at any slot.
     'menu' => [
-        'type' => 'menu',
-        'label' => 'Menu slot: site-header',
-        'default' => 'main'
+        'type' => 'select',
+        'label' => 'Menu slot',
+        'default' => 'main',
     ]
 ],
 
@@ -78,7 +80,7 @@ JS,
     $id = 'header-' . uniqid();
     extract($props, EXTR_SKIP);
 
-    $menu = get_menu_for_location('main');
+    $menu = get_menu_for_location((string) ($props['menu'] ?? 'main'));
 
     $renderItems = function (array $items, bool $nested = false) use (&$renderItems): void {
         foreach ($items as $index => $item) {

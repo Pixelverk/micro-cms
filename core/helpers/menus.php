@@ -54,6 +54,12 @@ function get_menu(string $slug): array
 
 /**
  * Get the menu assigned to a theme location.
+ *
+ * The location is one of the menu_locations declared in theme.php. The admin's
+ * assignment wins; with no assignment the slot falls back to a menu whose slug
+ * matches the location, which is how the seeded main/footer menus work. A
+ * location the theme does not declare, or one with neither an assignment nor a
+ * same-named menu, resolves to an empty menu so the component renders nothing.
  */
 function get_menu_for_location(string $location): array
 {
@@ -65,12 +71,8 @@ function get_menu_for_location(string $location): array
 
     $assignments = get_setting('menu_locations', []);
     $menuSlug = is_array($assignments) ? ($assignments[$location] ?? $location) : $location;
-    $menu = get_menu((string) $menuSlug);
-    if (empty($menu['items']) && $location === 'main' && $menuSlug !== 'header1') {
-        return get_menu('header1');
-    }
 
-    return $menu;
+    return get_menu((string) $menuSlug);
 }
 
 /**
