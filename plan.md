@@ -43,8 +43,6 @@ order; the publish webhook (12) is the one most likely to matter next.
 14. **Form submissions CSV export** — export the inbox for mailing lists. (S)
 15. **Theme asset auto-versioning** — `theme.php`'s `?v=` counters are manual
     and easy to forget; stamp them by modification time like `admin_asset()`. (S)
-16. **Dashboard at a glance** — recent content, activity and analytics totals on
-    the landing page. (S)
 
 ## Deferred
 

@@ -326,6 +326,17 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                             </a>
                         <?php endif; ?>
 
+                        <?php if (admin_can('content.create') && $canEditThis): ?>
+                        <form method="post" action="<?= url('admin/content/duplicate') ?>" class="inline-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int) $item['id'] ?>">
+                            <input type="hidden" name="type" value="<?= e($type) ?>">
+                            <button type="submit" class="btn-small btn-secondary">
+                                <?= e(admin_trans('content_duplicate')) ?>
+                            </button>
+                        </form>
+                        <?php endif; ?>
+
                         <?php if (admin_can('content.delete') && $canEditThis): ?>
                         <form method="post"
                             action="<?= url('admin/content/remove') ?>"

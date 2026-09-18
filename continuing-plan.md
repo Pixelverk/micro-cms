@@ -81,7 +81,7 @@ value early.
 
 Deferred: the multi-language front end, per `multilanguage-plan.md`.
 Later / opportunistic: version diff (`plan.md` 10), media usage before delete
-(item 9), dashboard at a glance (item 16).
+(item 9).
 
 ---
 

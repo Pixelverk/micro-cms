@@ -98,6 +98,7 @@ function activity_action_label(string $action): string
 {
     static $labels = [
         'content.created'     => 'Created content',
+        'content.duplicated'  => 'Duplicated content',
         'content.updated'     => 'Updated content',
         'content.published'   => 'Published content',
         'content.scheduled'   => 'Scheduled content',
