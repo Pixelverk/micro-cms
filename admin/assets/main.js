@@ -52,6 +52,20 @@ const sideBarTitle = document.querySelector('.sidebar-header h1 a');
 
 const SIDEBAR_KEY = 'adminSidebarCollapsed';
 
+const sideBar = document.querySelector('.sidebar');
+
+// The collapsed rail hides the labels, so a hovered link shows its label in a
+// floating tooltip. It cannot be a child of the link: the rail scrolls, and a
+// scroll container clips anything outside its own box.
+const railTooltip = document.createElement('div');
+railTooltip.className = 'sidebar-tooltip';
+railTooltip.hidden = true;
+document.body.appendChild(railTooltip);
+
+function hideRailTooltip() {
+    railTooltip.hidden = true;
+}
+
 function setSidebar(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
 
@@ -60,6 +74,7 @@ function setSidebar(collapsed) {
     if (sideBarTitle) sideBarTitle.textContent = collapsed ? 'CMS' : 'Micro CMS';
 
     localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
+    hideRailTooltip();
 }
 
 // Restore state
@@ -69,6 +84,29 @@ setSidebar(saved);
 // Click handlers
 shrinkBtn.addEventListener('click', () => setSidebar(true));
 growBtn.addEventListener('click',   () => setSidebar(false));
+
+// Show the hovered link's label while the rail is collapsed. On a phone the
+// rail is not collapsed, so the labels are already visible.
+if (sideBar) {
+    sideBar.addEventListener('mouseover', event => {
+        const link = event.target.closest('.sidebar-link');
+
+        if (!link
+            || !document.body.classList.contains('sidebar-collapsed')
+            || window.matchMedia('(max-width: 900px)').matches) {
+            hideRailTooltip();
+            return;
+        }
+
+        const rect = link.getBoundingClientRect();
+
+        railTooltip.textContent = link.dataset.label || '';
+        railTooltip.style.top = `${rect.top + rect.height / 2}px`;
+        railTooltip.hidden = false;
+    });
+
+    sideBar.addEventListener('mouseleave', hideRailTooltip);
+}
 
 /* mobile off-canvas navigation */
 

@@ -31,9 +31,55 @@ $editorInitial = $editorName !== '' ? mb_strtoupper(mb_substr($editorName, 0, 1)
             <?= e(admin_trans('nav_view_site')) ?>
         </a>
 
-        <a class="header-account" href="<?= url('admin/profile') ?>" aria-label="<?= e(admin_trans('nav_profile')) ?>">
-            <span id="user-blob" class="header-avatar" aria-hidden="true"><?= e($editorInitial) ?></span>
-            <span class="header-account-name"><?= e($editorName) ?></span>
-        </a>
+        <div class="account-wrap">
+            <button type="button" id="account-toggle" class="header-account"
+                    aria-expanded="false" aria-controls="account-menu"
+                    aria-label="<?= e(admin_trans('nav_profile')) ?>">
+                <span id="user-blob" class="header-avatar" aria-hidden="true"><?= e($editorInitial) ?></span>
+                <span class="header-account-name"><?= e($editorName) ?></span>
+            </button>
+
+            <div id="account-menu" class="account-menu" hidden>
+                <a class="account-menu-item" href="<?= url('admin/profile') ?>">
+                    <?= icon('profile-circle', 16) ?><?= e(admin_trans('nav_profile')) ?>
+                </a>
+
+                <form method="post" action="<?= url('admin/auth/logout') ?>">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="account-menu-item account-menu-item-danger">
+                        <?= icon('log-out', 16) ?><?= e(admin_trans('nav_logout')) ?>
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </header>
+
+<script>
+(() => {
+    const toggle = document.getElementById('account-toggle');
+    const menu = document.getElementById('account-menu');
+
+    if (!toggle || !menu) return;
+
+    const setOpen = open => {
+        menu.hidden = !open;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    toggle.addEventListener('click', () => setOpen(menu.hidden));
+
+    // A click anywhere else, or Escape, closes it.
+    document.addEventListener('click', e => {
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+            setOpen(false);
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            setOpen(false);
+        }
+    });
+})();
+</script>
