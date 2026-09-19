@@ -39,6 +39,57 @@ function config(string $key, mixed $default = null): mixed
 
 /*
 |--------------------------------------------------------------------------
+| Security headers
+|--------------------------------------------------------------------------
+|
+| A conservative baseline sent with every response. No Content-Security-Policy
+| is set here on purpose: the admin boots from inline scripts and the Settings
+| screen deliberately allows raw header/footer snippets, so a useful policy
+| would need either nonce plumbing or 'unsafe-inline'. See plan.md phase 6.
+*/
+
+/**
+ * The security headers for this request, name => value.
+ *
+ * Split from the sending so the HTTPS-only HSTS rule can be tested without a
+ * TLS server.
+ *
+ * @return array<string, string>
+ */
+function security_headers(): array
+{
+    $headers = [
+        'X-Content-Type-Options' => 'nosniff',
+        'X-Frame-Options'        => 'SAMEORIGIN',
+        'Referrer-Policy'        => 'strict-origin-when-cross-origin',
+    ];
+
+    // HSTS is a one-year commitment for this host, so it is only sent over TLS.
+    // includeSubDomains is deliberately omitted: a sibling host still on plain
+    // HTTP would be broken by it.
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    if ($https) {
+        $headers['Strict-Transport-Security'] = 'max-age=31536000';
+    }
+
+    return $headers;
+}
+
+/**
+ * Send the baseline. Called from the entry point so every response (front,
+ * admin, media, redirects, error pages) carries it.
+ */
+function send_security_headers(): void
+{
+    foreach (security_headers() as $name => $value) {
+        header($name . ': ' . $value);
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
 | Session boot
 |--------------------------------------------------------------------------
 */

@@ -196,6 +196,52 @@ t('a public page renders', function () use ($base) {
     assert_contains('<html', $body);
 });
 
+t('every response carries the security baseline', function () use ($base) {
+    foreach (['/' => 'front page', '/admin/login' => 'admin page'] as $path => $label) {
+        [, , $headers] = http('GET', $base . $path, false);
+
+        assert_contains('X-Content-Type-Options: nosniff', $headers, $label);
+        assert_contains('X-Frame-Options: SAMEORIGIN', $headers, $label);
+        assert_contains('Referrer-Policy: strict-origin-when-cross-origin', $headers, $label);
+    }
+});
+
+t('the security baseline survives a cache hit', function () use ($base) {
+    test_clear_cache_files();
+
+    http('GET', $base . '/about/', false);
+    [, , $headers] = http('GET', $base . '/about/', false);
+
+    assert_contains('X-Cache: HIT', $headers, 'precondition: the page is cached');
+    assert_contains('X-Content-Type-Options: nosniff', $headers, 'the firebreak carries the headers');
+});
+
+t('uploaded media is served nosniff', function () use ($base) {
+    $file = STORAGE_PATH . '/media/header-check.txt';
+    file_put_contents($file, 'plain text, not a sniffable image');
+
+    [$status, , $headers] = http('GET', $base . '/media/header-check.txt', false);
+
+    assert_eq(200, $status);
+    assert_contains('X-Content-Type-Options: nosniff', $headers);
+
+    @unlink($file);
+});
+
+t('HSTS is sent only over HTTPS', function () {
+    unset($_SERVER['HTTPS'], $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    assert_false(array_key_exists('Strict-Transport-Security', security_headers()), 'plain HTTP gets no HSTS');
+
+    $_SERVER['HTTPS'] = 'on';
+    assert_contains('max-age=', security_headers()['Strict-Transport-Security'] ?? '', 'HTTPS gets HSTS');
+    unset($_SERVER['HTTPS']);
+
+    // A proxy that terminates TLS forwards the original scheme.
+    $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+    assert_true(array_key_exists('Strict-Transport-Security', security_headers()), 'a TLS-terminating proxy counts');
+    unset($_SERVER['HTTP_X_FORWARDED_PROTO']);
+});
+
 t('an anonymous cached page is served without starting a session', function () use ($base) {
     test_clear_cache_files();
 

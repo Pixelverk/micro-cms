@@ -17,6 +17,13 @@ $config = require $configFile;
 
 define('STORAGE_PATH', $config['storage_path'] ?? CMS_PATH . '/storage');
 
+// The security baseline goes out before anything can echo. common.php is
+// loaded here because it is required on every response path already; doing it
+// now means the cache firebreak, media, redirects and error pages carry the
+// headers too, not just the fully booted front end and admin.
+require_once CORE_PATH . '/helpers/common.php';
+send_security_headers();
+
 $logging = ($config['perf_logging'] ?? false) === true;
 $dbPath = STORAGE_PATH . '/data.sqlite';
 

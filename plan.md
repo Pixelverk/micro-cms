@@ -253,6 +253,17 @@ each rule; manual editor check.
 
 ## 6. Security headers (C, S)
 
+**Shipped.** `security_headers()` in `core/helpers/common.php` returns the
+baseline and `send_security_headers()` is called once from `index.php`, so every
+response — front, admin, media, redirects, 404s and the cache firebreak — carries
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN` and
+`Referrer-Policy: strict-origin-when-cross-origin`, plus
+`Strict-Transport-Security: max-age=31536000` over HTTPS only (no
+`includeSubDomains`). Settled decision: **no CSP in this phase.** The admin boots
+from inline scripts and Settings deliberately allows raw header/footer snippets,
+so a useful policy needs nonce plumbing or `'unsafe-inline'`; the phase's own
+Reject clause says to ship the non-CSP headers and defer the rest.
+
 **Why.** No CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`
 or HSTS is sent anywhere.
 
