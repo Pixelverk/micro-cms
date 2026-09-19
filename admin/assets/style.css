@@ -894,6 +894,19 @@ header {
     font-size: 0.8rem;
 }
 
+/* The dashboard's pointer to the docs. It closes the page rather than following
+   a panel, so it takes more room above it than the help panel's version. */
+.dashboard-docs {
+    margin: 2rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.dashboard-docs a {
+    color: var(--link);
+    font-weight: var(--font-weight-medium);
+}
+
 
 /* 6. Components */
 
@@ -2486,7 +2499,7 @@ button.sidebar-link {
     flex: 1 1 32rem;
     min-width: 0;
     /* Comfortable measure: full width at this size runs to ~110 characters. */
-    max-width: 44rem;
+    /* max-width: 44rem; */
     color: var(--text);
     font-size: 0.95rem;
     line-height: 1.7;

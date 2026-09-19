@@ -1,22 +1,86 @@
 <?php
 
 $pageTitle = admin_trans('nav_dashboard');
-$username = current_username();
+$username  = current_username();
 
-// A per-status tally, computed in one pass over the content table.
-$statusCounts = array_fill_keys(content_statuses(), 0);
-$statusCounts['trash'] = 0;
+$theme        = theme_config();
+$contentTypes = $theme['content_types'] ?? [];
+$formTypes    = $theme['form_types'] ?? [];
+
+// A per-type, per-status tally, computed in one pass over the content table.
+$counts = [];
 
 $rows = db()->query(
-    'SELECT status, deleted_at, COUNT(*) AS total FROM content GROUP BY status, deleted_at'
+    'SELECT type, status, deleted_at, COUNT(*) AS total FROM content GROUP BY type, status, deleted_at'
 )->fetchAll();
 
 foreach ($rows as $row) {
     $key = $row['deleted_at'] !== null ? 'trash' : (string) $row['status'];
-    $statusCounts[$key] = ($statusCounts[$key] ?? 0) + (int) $row['total'];
+
+    $counts[$row['type']][$key] = ($counts[$row['type']][$key] ?? 0) + (int) $row['total'];
 }
 
-$totalCount = array_sum($statusCounts) - $statusCounts['trash'];
+// What is still outstanding, per content type. A type with nothing to do drops
+// out entirely, so this stays a shortlist of work rather than another menu.
+$contentAttention = [];
+
+foreach ($contentTypes as $type => $config) {
+    $work  = [];
+    $first = '';
+
+    foreach ([
+        'draft'     => 'dashboard_attention_drafts',
+        'scheduled' => 'dashboard_attention_scheduled',
+        'trash'     => 'dashboard_attention_trash',
+    ] as $status => $key) {
+        $count = $counts[$type][$status] ?? 0;
+
+        if ($count > 0) {
+            $work[] = admin_trans($key, ['count' => $count]);
+            $first  = $first === '' ? $status : $first;
+        }
+    }
+
+    if (!$work) {
+        continue;
+    }
+
+    $contentAttention[] = [
+        'label' => (string) ($config['label'] ?? ucfirst((string) $type)) . 's',
+        'text'  => implode(' · ', $work),
+        'url'   => url('admin/content') . '?type=' . urlencode((string) $type) . '&status=' . $first,
+    ];
+}
+
+// Submissions that still want an answer.
+$newMessages     = $formTypes ? form_submission_count(['status' => 'new']) : 0;
+$waitingMessages = $formTypes ? form_submission_count(['status' => 'waiting']) : 0;
+
+$messageWork = [];
+
+if ($newMessages > 0) {
+    $messageWork[] = admin_trans('dashboard_attention_new', ['count' => $newMessages]);
+}
+if ($waitingMessages > 0) {
+    $messageWork[] = admin_trans('dashboard_attention_waiting', ['count' => $waitingMessages]);
+}
+
+// A health problem is only actionable for the roles that can change settings.
+$health          = admin_can('settings.manage') ? health_summary(health_checks()) : null;
+$healthNeedsWork = $health !== null && ($health['fail'] > 0 || $health['warn'] > 0);
+
+$healthWork = [];
+
+if ($healthNeedsWork) {
+    if ($health['fail'] > 0) {
+        $healthWork[] = admin_trans('dashboard_attention_problems', ['count' => $health['fail']]);
+    }
+    if ($health['warn'] > 0) {
+        $healthWork[] = admin_trans('dashboard_attention_warnings', ['count' => $health['warn']]);
+    }
+}
+
+$hasAttention = $contentAttention || $messageWork || $healthNeedsWork;
 
 // The five most recently edited items across every content type, trashed
 // excluded. A cross-type query for the dashboard only, so it stays here rather
@@ -28,9 +92,6 @@ $recentContent = db()->query(
      ORDER BY updated_at DESC, id DESC
      LIMIT 5"
 )->fetchAll();
-
-// Labels for the type names shown beside each recently edited item.
-$contentTypes = theme_config()['content_types'] ?? [];
 
 // Recent activity, for the roles allowed to read the log.
 $recentActivity = admin_can('activity.view') ? list_activity([], 5)['items'] : [];
@@ -51,81 +112,47 @@ ob_start();
         <h2><?= e(admin_trans('dashboard_welcome', ['name' => $username])) ?></h2>
         <p><?= e(admin_trans('dashboard_intro')) ?></p>
     </div>
-    <div class="page-actions">
-        <a class="btn-primary" href="<?= url('admin/content') ?>"><?= icon('post', 16) ?><?= e(admin_trans('nav_content')) ?></a>
-        <a class="btn-secondary" href="<?= url('admin/content/edit') . '?type=' . urlencode((string) (array_key_first(theme_config()['content_types'] ?? []) ?: 'page')) ?>"><?= icon('book', 16) ?><?= e(admin_trans('common_add')) ?></a>
+</div>
+
+<?php
+// Only work that exists is listed: a type with nothing outstanding, an empty
+// inbox or a clean health check add no rows at all.
+?>
+<?php if ($hasAttention): ?>
+    <div class="card-grid">
+        <?php foreach ($contentAttention as $card): ?>
+            <a class="tile" href="<?= e($card['url']) ?>">
+                <span class="tile-icon"><?= icon('post', 20) ?></span>
+                <span class="tile-body">
+                    <span class="tile-title"><?= e($card['label']) ?></span>
+                    <span class="tile-meta"><?= e($card['text']) ?></span>
+                </span>
+            </a>
+        <?php endforeach; ?>
+
+        <?php if ($messageWork): ?>
+            <a class="tile" href="<?= url('admin/messages') ?>">
+                <span class="tile-icon"><?= icon('mail-in', 20) ?></span>
+                <span class="tile-body">
+                    <span class="tile-title"><?= e(admin_trans('forms_title')) ?></span>
+                    <span class="tile-meta"><?= e(implode(' · ', $messageWork)) ?></span>
+                </span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($healthNeedsWork): ?>
+            <a class="tile" href="<?= url('admin/health') ?>">
+                <span class="tile-icon"><?= icon('heart-pulse', 20) ?></span>
+                <span class="tile-body">
+                    <span class="tile-title"><?= e(admin_trans('nav_health')) ?></span>
+                    <span class="tile-meta"><?= e(implode(' · ', $healthWork)) ?></span>
+                </span>
+            </a>
+        <?php endif; ?>
     </div>
-</div>
-
-<div class="card-grid">
-    <a class="tile" href="<?= url('admin/content') ?>">
-        <span class="tile-icon"><?= icon('post', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_content')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('dashboard_content_summary', [
-                'total'     => $totalCount,
-                'published' => $statusCounts['published'],
-                'draft'     => $statusCounts['draft'],
-            ])) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/media') ?>">
-        <span class="tile-icon"><?= icon('media-image', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_media')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('media_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/user') ?>">
-        <span class="tile-icon"><?= icon('group', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_users')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('user_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/menu/edit') ?>">
-        <span class="tile-icon"><?= icon('menu', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_menus')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('menu_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/settings') ?>">
-        <span class="tile-icon"><?= icon('settings', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_settings')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('settings_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/analytics') ?>">
-        <span class="tile-icon"><?= icon('clipboard-check', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_analytics')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('analytics_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url('admin/activity') ?>">
-        <span class="tile-icon"><?= icon('clock', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('nav_activity')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('activity_intro')) ?></span>
-        </span>
-    </a>
-
-    <a class="tile" href="<?= url() ?>" target="_blank" rel="noopener">
-        <span class="tile-icon"><?= icon('open-in-browser', 20) ?></span>
-        <span class="tile-body">
-            <span class="tile-title"><?= e(admin_trans('dashboard_site_preview')) ?></span>
-            <span class="tile-meta"><?= e(admin_trans('dashboard_site_preview_help')) ?></span>
-        </span>
-    </a>
-</div>
+<?php else: ?>
+    <p class="text-muted"><?= e(admin_trans('dashboard_attention_none')) ?></p>
+<?php endif; ?>
 
 <div class="page-sections dashboard-panels">
 
@@ -191,6 +218,11 @@ ob_start();
 
     </div>
 </div>
+
+<p class="dashboard-docs">
+    <?= e(admin_trans('dashboard_docs_hint')) ?>
+    <a href="<?= url('admin/docs') ?>"><?= e(admin_trans('help_read_docs')) ?> &rarr;</a>
+</p>
 
 <?php
 $content = ob_get_clean();
