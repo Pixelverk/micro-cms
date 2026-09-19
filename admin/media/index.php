@@ -65,6 +65,13 @@ $mediaFiles = [];
 
 foreach ($rows as $row) {
     $formats = json_decode($row['formats_json'], true) ?? [];
+
+    // Webp uploads made before the ladder stopped repeating its own format can
+    // list the same variant twice; the file table only needs it once.
+    foreach ($formats as $format => $paths) {
+        $formats[$format] = array_values(array_unique((array) $paths));
+    }
+
     $isImage = str_starts_with((string) $row['mime_type'], 'image/');
 
     // The webp variant is the lightest to load; otherwise the first format.

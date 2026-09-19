@@ -220,6 +220,10 @@ if ($hasNewUpload) {
         $sizes = [];
         $formatsToGenerate = $generateWebp ? ['webp', $extension] : [$extension];
 
+        // A webp upload is already in the generated format: listing it twice
+        // would write the whole ladder twice and encode every variant again.
+        $formatsToGenerate = array_values(array_unique($formatsToGenerate));
+
         foreach ($formatsToGenerate as $fmt) {
             // Always create at least one file for this format
             $dest = "{$targetDir}/{$baseName}.{$fmt}";
