@@ -52,7 +52,7 @@ function form_submission_status_valid(?string $status): ?string
  * Shared by listing, counting and export so they can never disagree. An unknown
  * form type is treated as "no filter", matching what the admin offers.
  *
- * @param array{form?: ?string, status?: ?string} $filters
+ * @param array{form?: ?string, status?: ?string, q?: ?string} $filters
  * @return array{sql: string, params: array<string, mixed>}
  */
 function form_submission_filter(array $filters): array
@@ -75,6 +75,14 @@ function form_submission_filter(array $filters): array
         $params['status'] = $status;
     }
 
+    // Submitted values live in the JSON blob, so a LIKE over it searches every
+    // field without knowing the form's shape.
+    $search = trim((string) ($filters['q'] ?? ''));
+    if ($search !== '') {
+        $where[] = 'data LIKE :search';
+        $params['search'] = '%' . $search . '%';
+    }
+
     return [
         'sql'    => $where ? ' WHERE ' . implode(' AND ', $where) : '',
         'params' => $params,
@@ -84,7 +92,7 @@ function form_submission_filter(array $filters): array
 /**
  * How many submissions match a filter.
  *
- * @param array{form?: ?string, status?: ?string} $filters
+ * @param array{form?: ?string, status?: ?string, q?: ?string} $filters
  */
 function form_submission_count(array $filters = []): int
 {
@@ -99,7 +107,7 @@ function form_submission_count(array $filters = []): int
 /**
  * One page of submissions, newest first, with `data` decoded.
  *
- * @param array{form?: ?string, status?: ?string} $filters
+ * @param array{form?: ?string, status?: ?string, q?: ?string} $filters
  * @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}
  */
 function form_submission_page(array $filters = [], int $page = 1, int $perPage = 20): array
@@ -126,7 +134,7 @@ function form_submission_page(array $filters = [], int $page = 1, int $perPage =
 /**
  * Every submission matching a filter, for export. Not paginated on purpose.
  *
- * @param array{form?: ?string, status?: ?string} $filters
+ * @param array{form?: ?string, status?: ?string, q?: ?string} $filters
  * @return list<array<string, mixed>>
  */
 function form_submission_all(array $filters = []): array

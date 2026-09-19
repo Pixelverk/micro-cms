@@ -110,11 +110,12 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2><?= e($typeLabel) ?>s</h2>
+        <p><?= e(admin_trans('content_intro')) ?></p>
     </div>
 
     <div class="page-actions flex gap-md items-center">
         <label class="flex items-center gap-sm mb-0">
-            <span><?= e(admin_trans('common_type')) ?>:</span>
+            <span class="nowrap"><?= e(admin_trans('content_type')) ?>:</span>
             <select id="content-type-select">
                 <?php foreach ($contentTypes as $key => $config): ?>
                     <option value="<?= e($key) ?>" <?= $key === $type ? 'selected' : '' ?>>
@@ -126,7 +127,7 @@ ob_start();
 
         <a href="<?= url('admin/content/edit') ?>?type=<?= urlencode($type) ?>"
            class="btn-primary">
-            + <?= e(admin_trans('common_add')) ?> <?= e($typeLabel) ?>
+            <?= icon('plus', 16) ?><?= e(admin_trans('common_add')) ?> <?= e($typeLabel) ?>
         </a>
     </div>
 </div>

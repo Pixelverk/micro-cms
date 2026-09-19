@@ -2,7 +2,6 @@
 // admin/tag/index.php
 
 $pageTitle = admin_trans('nav_tags');
-$username  = current_username();
 
 $pdo = db();
 
@@ -13,7 +12,7 @@ $theme = theme_config();
 $contentTypes = $theme['content_types'] ?? [];
 
 // filter by content type (optional)
-$type = $_GET['type'] ?? '';
+$type = isset($contentTypes[$_GET['type'] ?? '']) ? (string) $_GET['type'] : '';
 
 // search
 $search = trim($_GET['q'] ?? '');
@@ -46,6 +45,28 @@ $stmt->execute($params);
 
 $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Counts for the type tabs, taken before the type/search filters so each tab
+// shows its own total.
+$typeCounts = [];
+$countStmt  = $pdo->prepare("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'tag' AND content_type = ?");
+
+foreach (array_keys($contentTypes) as $key) {
+    $countStmt->execute([$key]);
+    $typeCounts[$key] = (int) $countStmt->fetchColumn();
+}
+
+$totalCount = (int) $pdo->query("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'tag'")->fetchColumn();
+
+// URL that preserves the current filters while changing one of them.
+$filterUrl = function (array $overrides = []) use ($type, $search): string {
+    $query = array_filter(array_merge([
+        'type' => $type,
+        'q'    => $search,
+    ], $overrides), fn($value) => $value !== '' && $value !== null);
+
+    return url('admin/tag') . ($query ? '?' . http_build_query($query) : '');
+};
+
 // ----------------------------
 // Render
 // ----------------------------
@@ -55,42 +76,44 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2><?= e(admin_trans('tag_title')) ?></h2>
-        <p><?= e(admin_trans('common_hello', ['name' => $username])) ?></p>
+        <p><?= e(admin_trans('tag_intro')) ?></p>
     </div>
 
     <div class="page-actions flex gap-md items-center">
 
-        <!-- Content type filter -->
-        <form method="get">
-            <select name="type" onchange="this.form.submit()">
-                <option value=""><?= e(admin_trans('content_type_all')) ?></option>
-                <?php foreach ($contentTypes as $key => $config): ?>
-                    <option value="<?= e($key) ?>"
-                        <?= $type === $key ? 'selected' : '' ?>>
-                        <?= e($config['label'] ?? ucfirst($key)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-
-        <!-- Search -->
-        <form method="get">
-            <?php if ($type): ?>
-                <input type="hidden" name="type" value="<?= e($type) ?>">
-            <?php endif; ?>
-            <input
-                type="text"
-                name="q"
-                value="<?= e($search) ?>"
-                placeholder="<?= e(admin_trans('tag_search')) ?>"
-            >
-        </form>
-
         <!-- Add -->
         <a href="<?= url('admin/tag/edit') ?>" class="btn-primary">
-            <?= e(admin_trans('tag_add')) ?>
+            <?= icon('plus', 16) ?><?= e(admin_trans('tag_add')) ?>
         </a>
     </div>
+</div>
+
+<div class="content-filters">
+    <div class="status-tabs">
+        <a href="<?= e($filterUrl(['type' => ''])) ?>"
+           class="status-tab <?= $type === '' ? 'active' : '' ?>">
+            <?= e(admin_trans('content_type_all')) ?>
+            <span class="status-tab-count"><?= (int) $totalCount ?></span>
+        </a>
+        <?php foreach ($contentTypes as $key => $config): ?>
+            <a href="<?= e($filterUrl(['type' => $key])) ?>"
+               class="status-tab <?= $type === $key ? 'active' : '' ?>">
+                <?= e($config['label'] ?? ucfirst($key)) ?>
+                <span class="status-tab-count"><?= (int) ($typeCounts[$key] ?? 0) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <form method="get" class="content-search">
+        <?php if ($type !== ''): ?>
+            <input type="hidden" name="type" value="<?= e($type) ?>">
+        <?php endif; ?>
+        <input type="search" name="q" value="<?= e($search) ?>"
+               placeholder="<?= e(admin_trans('tag_search')) ?>" aria-label="<?= e(admin_trans('tag_search')) ?>">
+        <?php if ($search !== ''): ?>
+            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('common_clear')) ?></a>
+        <?php endif; ?>
+    </form>
 </div>
 
 <?php if (!$tags): ?>

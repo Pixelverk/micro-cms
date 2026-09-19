@@ -362,7 +362,7 @@ input,
 textarea,
 select {
     width: 100%;
-    padding: .5rem .65rem;
+    padding: .45rem .65rem;
     box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -370,6 +370,10 @@ select {
     color: var(--text);
     font-family: inherit;
     font-size: 0.95rem;
+    /* A fixed line box gives inputs the same height as the buttons they share a
+       row with. A select keeps its own UA height (Chrome ignores line-height
+       there), which lands within a pixel of it. */
+    line-height: 1.4;
     transition: border-color var(--transition-fast) var(--ease),
                 background-color var(--transition-fast) var(--ease);
 }
@@ -442,11 +446,15 @@ input[type="file"]::file-selector-button:hover {
 }
 
 button {
-    padding: .45rem 1rem;
+    padding: .45rem .9rem;
+    font-family: inherit;
     font-size: 0.95rem;
-    background: var(--primary);
-    color: var(--primary-contrast);
-    border: 1px solid var(--primary);
+    line-height: 1.4;
+    text-align: center;
+    white-space: nowrap;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
     cursor: pointer;
@@ -455,8 +463,7 @@ button {
 }
 
 button:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background: var(--surface-muted);
 }
 
 button:disabled {
@@ -849,20 +856,22 @@ header {
                 color var(--transition-fast) var(--ease);
 }
 
-/* Filled accent is the default, so a variant only has to describe what makes
-   it different. */
+/* The primary action sits on the page's surface: filled and slightly raised.
+   A variant only has to describe what makes it different. */
 .btn,
 .btn-primary {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--primary-contrast);
-}
-.btn:hover,
-.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
-
-.btn-secondary {
     background: var(--surface);
     color: var(--text);
+}
+.btn:hover,
+.btn-primary:hover { background: var(--surface-muted); }
+
+/* An alternative action is a flat outline: the same shape and border, but no
+   surface of its own, so it reads as secondary beside the primary. */
+.btn-secondary {
+    background: transparent;
+    color: var(--text);
+    box-shadow: none;
 }
 .btn-secondary:hover { background: var(--surface-muted); }
 
@@ -1053,6 +1062,20 @@ html.dark .menu-item .remove {
     border-radius: var(--radius-md);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    /* Cards in a row stretch to the same height, so the action button is
+       pushed to the bottom and stays level across the row. */
+    display: flex;
+    flex-direction: column;
+}
+.utility-action > button {
+    align-self: flex-start;
+    margin-top: auto;
+}
+
+/* An enabled destructive action tints its warning icon; the disabled variant
+   keeps the muted icon colour. */
+.icon-danger {
+    color: var(--danger);
 }
 
 /* Cards placed directly on a page get one consistent section gap. Grid and
@@ -1233,6 +1256,7 @@ html.dark .menu-item .remove {
     margin-bottom: 0.4rem;
     font-size: 0.9rem;
     font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
 }
 
 .field-input {
@@ -1303,14 +1327,13 @@ html.dark .menu-item .remove {
 
 .field-grid-inline > .field-btn {
     flex: 0 0 auto;
-    /* Anchored to the top of the row, then offset by a label's height (a
-       0.9rem line box at the normal line height, plus its bottom margin), so
-       the button sits on the input line and a taller neighbour cannot drag it
-       down. */
+    /* Anchored to the top of the row, then offset by a label's height (its
+       0.9rem line box plus its bottom margin), so the button sits on the input
+       line and a taller neighbour cannot drag it down. */
     align-self: flex-start;
     display: flex;
     align-items: flex-start;
-    padding-top: calc(0.9rem * 1.2 + 0.4rem);
+    padding-top: calc(0.9rem * 1.4 + 0.4rem);
 }
 
 /* The button lines up with the inputs, not with their labels. */
@@ -2789,52 +2812,6 @@ button.sidebar-link {
 }
 
 /*   7.14 Form submissions (admin/messages.php) */
-
-/* One filter above the table rather than a full card of its own. */
-.messages-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.messages-filter label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    margin: 0;
-    max-width: 20rem;
-}
-
-.messages-filter strong {
-    font-size: 0.9rem;
-    font-weight: var(--font-weight-medium);
-}
-
-/* Bulk status row above and below the submissions table. */
-.messages-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.messages-toolbar:last-child {
-    margin: 1rem 0 0;
-}
-
-.messages-toolbar label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-}
-
-/* The bulk select sizes to its own options rather than filling the row. */
-.messages-toolbar select {
-    width: max-content;
-}
 
 /* Inbox columns.
    The status badge, the status control and the actions each hold a different

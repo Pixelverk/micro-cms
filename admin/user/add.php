@@ -1,15 +1,14 @@
 <?php
 
 $pageTitle = admin_trans('user_add_title');
-$username = current_username();
 
 ob_start();
 ?>
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
-        <p><?= e(admin_trans('user_create')) ?></p>
+        <h2><?= e(admin_trans('user_add_title')) ?></h2>
+        <p><?= e(admin_trans('user_intro')) ?></p>
     </div>
     <div class="page-actions">
         <button type="submit" form="create-user"><?= e(admin_trans('user_create')) ?></button>

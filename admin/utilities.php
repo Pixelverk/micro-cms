@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 $pageTitle = admin_trans('nav_utilities');
-$username = current_username();
 
 // ----------------------------
 // Handle POST actions
@@ -126,7 +125,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <h2><?= e(admin_trans('nav_utilities')) ?></h2>
         <p><?= e(admin_trans('utilities_intro')) ?></p>
     </div>
     <div class="page-actions">
@@ -150,8 +149,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_clear_cache')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_clear_cache_help')) ?></p>
-                <button type="button" data-action="clear_cache" class="btn btn-secondary">
-                    <?= e(admin_trans('utilities_clear_cache')) ?>
+                <button type="button" data-action="clear_cache" class="btn">
+                    <?= icon('trash', 16) ?><?= e(admin_trans('utilities_clear_cache')) ?>
                 </button>
             </div>
 
@@ -161,8 +160,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_warm_cache')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_warm_cache_help')) ?></p>
-                <button type="button" data-action="warm_cache" class="btn btn-secondary">
-                    <?= e(admin_trans('utilities_warm_cache')) ?>
+                <button type="button" data-action="warm_cache" class="btn">
+                    <?= icon('magic-wand', 16) ?><?= e(admin_trans('utilities_warm_cache')) ?>
                 </button>
             </div>
 
@@ -172,8 +171,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_sitemap')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_help_sitemap')) ?></p>
-                <button type="button" data-action="regenerate_sitemap" class="btn btn-info">
-                    <?= e(admin_trans('utilities_sitemap')) ?>
+                <button type="button" data-action="regenerate_sitemap" class="btn">
+                    <?= icon('page-star', 16) ?><?= e(admin_trans('utilities_sitemap')) ?>
                 </button>
             </div>
         </div>
@@ -192,8 +191,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_publish_due')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_publish_due_help')) ?></p>
-                <button type="button" data-action="publish_due" class="btn btn-primary">
-                    <?= e(admin_trans('utilities_publish_due_button')) ?>
+                <button type="button" data-action="publish_due" class="btn">
+                    <?= icon('post', 16) ?><?= e(admin_trans('utilities_publish_due_button')) ?>
                 </button>
             </div>
 
@@ -204,13 +203,13 @@ ob_start();
                 </div>
                 <?php if ($trashCount): ?>
                     <p><?= e(admin_trans('utilities_clear_trash_help', ['count' => $trashCount])) ?></p>
-                    <button type="button" data-action="clear_trash" class="btn btn-danger">
-                        <?= e(admin_trans('utilities_clear_trash')) ?>
+                    <button type="button" data-action="clear_trash" class="btn">
+                        <?= icon('warning-triangle', 16, 'icon-danger') ?><?= e(admin_trans('utilities_clear_trash')) ?>
                     </button>
                 <?php else: ?>
                     <p><?= e(admin_trans('utilities_clear_trash_empty')) ?></p>
                     <button type="button" class="btn btn-muted" disabled>
-                        <?= e(admin_trans('utilities_clear_trash')) ?>
+                        <?= icon('warning-triangle', 16) ?><?= e(admin_trans('utilities_clear_trash')) ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -221,8 +220,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_reset_analytics')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_reset_analytics_help')) ?></p>
-                <button type="button" data-action="reset_analytics" class="btn btn-danger">
-                    <?= e(admin_trans('utilities_reset_analytics')) ?>
+                <button type="button" data-action="reset_analytics" class="btn">
+                    <?= icon('warning-triangle', 16, 'icon-danger') ?><?= e(admin_trans('utilities_reset_analytics')) ?>
                 </button>
             </div>
         </div>
@@ -242,13 +241,13 @@ ob_start();
                 </div>
                 <p><?= e(admin_trans('utilities_export_static_help')) ?></p>
                 <?php if (zip_available()): ?>
-                    <button type="button" data-action="export_static" class="btn btn-info">
-                        <?= e(admin_trans('utilities_export_static')) ?>
+                    <button type="button" data-action="export_static" class="btn">
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_export_static')) ?>
                     </button>
                 <?php else: ?>
                     <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
                     <button type="button" class="btn btn-muted" disabled>
-                        <?= e(admin_trans('utilities_export_static')) ?>
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_export_static')) ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -260,13 +259,13 @@ ob_start();
                 </div>
                 <p><?= e(admin_trans('utilities_backup_help')) ?></p>
                 <?php if (zip_available()): ?>
-                    <button type="button" data-action="export_backup" class="btn btn-secondary">
-                        <?= e(admin_trans('utilities_backup')) ?>
+                    <button type="button" data-action="export_backup" class="btn">
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_backup')) ?>
                     </button>
                 <?php else: ?>
                     <p class="text-muted text-small"><?= e(admin_trans('utilities_zip_required')) ?></p>
                     <button type="button" class="btn btn-muted" disabled>
-                        <?= e(admin_trans('utilities_backup')) ?>
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_backup')) ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -277,8 +276,8 @@ ob_start();
                     <h3><?= e(admin_trans('utilities_migrations')) ?></h3>
                 </div>
                 <p><?= e(admin_trans('utilities_migrations_help')) ?></p>
-                <button type="button" data-action="run_migrations" class="btn btn-info">
-                    <?= e(admin_trans('utilities_migrations_button')) ?>
+                <button type="button" data-action="run_migrations" class="btn">
+                    <?= icon('wrench', 16) ?><?= e(admin_trans('utilities_migrations_button')) ?>
                 </button>
             </div>
         </div>

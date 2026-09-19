@@ -23,13 +23,18 @@ $formTypes = $theme['form_types'] ?? [];
 // ----------------------------
 $activeForm   = isset($formTypes[(string) ($_GET['form'] ?? '')]) ? (string) $_GET['form'] : '';
 $activeStatus = form_submission_status_valid($_GET['status'] ?? null) ?? '';
+$search       = trim((string) ($_GET['q'] ?? ''));
 
 $filters = ['form' => $activeForm, 'status' => $activeStatus];
+if ($search !== '') {
+    $filters['q'] = $search;
+}
 
 // Carried by every link and form, so an action returns to the same view.
 $keepQuery = array_filter([
     'form'   => $activeForm,
     'status' => $activeStatus,
+    'q'      => $search,
 ], static fn($value) => $value !== '');
 
 $viewUrl = function (array $overrides = []) use ($keepQuery): string {
@@ -62,6 +67,13 @@ if (($_GET['export'] ?? '') === 'csv') {
 $page   = pagination_current_page();
 $result = form_submission_page($filters, $page, 20);
 
+// Counts are computed before filtering so every tab shows its own total.
+$totalCount = form_submission_count(['form' => $activeForm]);
+$statusCounts = [];
+foreach (form_submission_statuses() as $status) {
+    $statusCounts[$status] = form_submission_count(['form' => $activeForm, 'status' => $status]);
+}
+
 // A headline per row: something recognisable before opening the details.
 $headline = function (array $data): string {
     foreach (['name', 'email', 'subject'] as $key) {
@@ -90,38 +102,55 @@ ob_start();
         <h2><?= e(admin_trans('forms_title')) ?></h2>
         <p><?= e(admin_trans('forms_intro')) ?></p>
     </div>
-    <div class="page-actions">
-        <a class="btn-secondary" href="<?= e(url('admin/messages') . '?export=csv') ?>">
+    <div class="page-actions flex gap-md items-center">
+        <label class="flex items-center gap-sm mb-0">
+            <span class="nowrap"><?= e(admin_trans('forms_type')) ?></span>
+            <select id="messages-type-select">
+                <option value=""><?= e(admin_trans('forms_all')) ?></option>
+                <?php foreach ($formTypes as $key => $meta): ?>
+                    <option value="<?= e($key) ?>" <?= $key === $activeForm ? 'selected' : '' ?>>
+                        <?= e($meta['label'] ?? ucfirst($key)) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <a class="btn-primary" href="<?= e(url('admin/messages') . '?export=csv') ?>">
             <?= icon('clipboard-check', 16) ?><?= e(admin_trans('forms_export_all')) ?>
         </a>
     </div>
 </div>
 
-<form method="get" class="messages-filter">
-    <label>
-        <strong><?= e(admin_trans('forms_type')) ?></strong>
-        <select name="form" onchange="this.form.submit()">
-            <option value=""><?= e(admin_trans('forms_all')) ?></option>
-            <?php foreach ($formTypes as $key => $meta): ?>
-                <option value="<?= e($key) ?>" <?= $key === $activeForm ? 'selected' : '' ?>>
-                    <?= e($meta['label'] ?? ucfirst($key)) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+<div class="content-filters">
+    <div class="status-tabs">
+        <a href="<?= e($viewUrl(['status' => ''])) ?>"
+           class="status-tab <?= $activeStatus === '' ? 'active' : '' ?>">
+            <?= e(admin_trans('forms_status_any')) ?>
+            <span class="status-tab-count"><?= (int) $totalCount ?></span>
+        </a>
+        <?php foreach (form_submission_statuses() as $status): ?>
+            <a href="<?= e($viewUrl(['status' => $status])) ?>"
+               class="status-tab <?= $activeStatus === $status ? 'active' : '' ?>">
+                <?= e(form_submission_status_label($status)) ?>
+                <span class="status-tab-count"><?= (int) ($statusCounts[$status] ?? 0) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
 
-    <label>
-        <strong><?= e(admin_trans('common_status')) ?></strong>
-        <select name="status" onchange="this.form.submit()">
-            <option value=""><?= e(admin_trans('forms_status_any')) ?></option>
-            <?php foreach (form_submission_statuses() as $status): ?>
-                <option value="<?= e($status) ?>" <?= $status === $activeStatus ? 'selected' : '' ?>>
-                    <?= e(form_submission_status_label($status)) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
-</form>
+    <form method="get" class="content-search">
+        <?php if ($activeForm !== ''): ?>
+            <input type="hidden" name="form" value="<?= e($activeForm) ?>">
+        <?php endif; ?>
+        <?php if ($activeStatus !== ''): ?>
+            <input type="hidden" name="status" value="<?= e($activeStatus) ?>">
+        <?php endif; ?>
+        <input type="search" name="q" value="<?= e($search) ?>"
+               placeholder="<?= e(admin_trans('forms_search')) ?>" aria-label="<?= e(admin_trans('forms_search')) ?>">
+        <?php if ($search !== ''): ?>
+            <a href="<?= e($viewUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('common_clear')) ?></a>
+        <?php endif; ?>
+    </form>
+</div>
 
 <?php if (!$result['items']): ?>
     <div class="empty-state">
@@ -136,21 +165,27 @@ ob_start();
         <input type="hidden" name="return_status" value="<?= e($activeStatus) ?>">
         <input type="hidden" name="return_page" value="<?= (int) $result['page'] ?>">
 
-        <div class="messages-toolbar">
-            <select name="action" aria-label="<?= e(admin_trans('forms_bulk_label')) ?>">
-                <option value=""><?= e(admin_trans('forms_bulk_choose')) ?></option>
-                <optgroup label="<?= e(admin_trans('forms_bulk_set_status')) ?>">
-                    <?php foreach (form_submission_statuses() as $status): ?>
-                        <option value="<?= e($status) ?>"><?= e(form_submission_status_label($status)) ?></option>
-                    <?php endforeach; ?>
-                </optgroup>
-                <optgroup label="<?= e(admin_trans('forms_bulk_other')) ?>">
-                    <option value="export"><?= e(admin_trans('forms_export_selected')) ?></option>
-                    <option value="delete"><?= e(admin_trans('common_delete')) ?></option>
-                </optgroup>
-            </select>
-            <button type="submit" class="btn-small btn-secondary"><?= e(admin_trans('forms_bulk_apply')) ?></button>
-            <span class="text-muted"><?= e(admin_trans('forms_bulk_help')) ?></span>
+        <div class="bulk-toolbar" id="messages-bulk-toolbar" hidden>
+            <span class="bulk-count"><strong id="messages-bulk-count">0</strong> <?= e(admin_trans('bulk_selected')) ?></span>
+
+            <label>
+                <span class="visually-hidden"><?= e(admin_trans('forms_bulk_label')) ?></span>
+                <select name="action" class="field-input">
+                    <option value=""><?= e(admin_trans('forms_bulk_choose')) ?></option>
+                    <optgroup label="<?= e(admin_trans('forms_bulk_set_status')) ?>">
+                        <?php foreach (form_submission_statuses() as $status): ?>
+                            <option value="<?= e($status) ?>"><?= e(form_submission_status_label($status)) ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                    <optgroup label="<?= e(admin_trans('forms_bulk_other')) ?>">
+                        <option value="export"><?= e(admin_trans('forms_export_selected')) ?></option>
+                        <option value="delete"><?= e(admin_trans('common_delete')) ?></option>
+                    </optgroup>
+                </select>
+            </label>
+
+            <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('forms_bulk_apply')) ?></button>
+            <button type="button" class="btn-small btn-muted" id="messages-bulk-clear"><?= e(admin_trans('bulk_clear_selection')) ?></button>
         </div>
         <table class="admin-table messages-table">
             <thead>
@@ -317,14 +352,62 @@ ob_start();
 <?php endif; ?>
 
 <script>
-/* Select-all for the inbox, mirroring the content list. */
+/* Select-all and the bulk toolbar, mirroring the content list. */
 (() => {
     const all = document.getElementById('messages-select-all');
     if (!all) return;
 
     const boxes = Array.from(document.querySelectorAll('.messages-row'));
-    all.addEventListener('change', () => boxes.forEach(b => { b.checked = all.checked; }));
+    const toolbar = document.getElementById('messages-bulk-toolbar');
+    const countEl = document.getElementById('messages-bulk-count');
+    const clearBtn = document.getElementById('messages-bulk-clear');
+
+    const selected = () => boxes.filter(box => box.checked);
+
+    function sync() {
+        const chosen = selected();
+
+        if (toolbar) toolbar.hidden = chosen.length === 0;
+        if (countEl) countEl.textContent = chosen.length;
+
+        all.checked = chosen.length > 0 && chosen.length === boxes.length;
+        all.indeterminate = chosen.length > 0 && chosen.length < boxes.length;
+    }
+
+    boxes.forEach(box => box.addEventListener('change', sync));
+
+    all.addEventListener('change', () => {
+        boxes.forEach(box => { box.checked = all.checked; });
+        sync();
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            boxes.forEach(box => { box.checked = false; });
+            all.checked = false;
+            sync();
+        });
+    }
+
+    sync();
 })();
+
+/* The form-type select sits in the page header, so it navigates on change. */
+const messagesTypeSelect = document.getElementById('messages-type-select');
+if (messagesTypeSelect) {
+    messagesTypeSelect.addEventListener('change', () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('page');
+
+        if (messagesTypeSelect.value === '') {
+            url.searchParams.delete('form');
+        } else {
+            url.searchParams.set('form', messagesTypeSelect.value);
+        }
+
+        window.location.href = url.toString();
+    });
+}
 
 /* Submission details, in the shared modal style used elsewhere in the admin. */
 (() => {

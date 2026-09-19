@@ -3,11 +3,15 @@
 
 $pageTitle = admin_trans('nav_categories');
 
+$theme = theme_config();
+$contentTypes = $theme['content_types'] ?? [];
+
 $pdo = db();
 
 // ----------------------------
-// Search
+// Filters
 // ----------------------------
+$type   = isset($contentTypes[$_GET['type'] ?? '']) ? (string) $_GET['type'] : '';
 $search = trim($_GET['q'] ?? '');
 
 // ----------------------------
@@ -15,6 +19,11 @@ $search = trim($_GET['q'] ?? '');
 // ----------------------------
 $sql = "SELECT * FROM taxonomy WHERE taxonomy_type = 'category'";
 $params = [];
+
+if ($type !== '') {
+    $sql .= " AND content_type = :type";
+    $params['type'] = $type;
+}
 
 if ($search !== '') {
     $sql .= " AND name LIKE :q";
@@ -27,6 +36,28 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Counts for the type tabs, taken before the type/search filters so each tab
+// shows its own total.
+$typeCounts = [];
+$countStmt  = $pdo->prepare("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'category' AND content_type = ?");
+
+foreach (array_keys($contentTypes) as $key) {
+    $countStmt->execute([$key]);
+    $typeCounts[$key] = (int) $countStmt->fetchColumn();
+}
+
+$totalCount = (int) $pdo->query("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'category'")->fetchColumn();
+
+// URL that preserves the current filters while changing one of them.
+$filterUrl = function (array $overrides = []) use ($type, $search): string {
+    $query = array_filter(array_merge([
+        'type' => $type,
+        'q'    => $search,
+    ], $overrides), fn($value) => $value !== '' && $value !== null);
+
+    return url('admin/category') . ($query ? '?' . http_build_query($query) : '');
+};
+
 // ----------------------------
 // Render
 // ----------------------------
@@ -36,21 +67,45 @@ ob_start();
 <div class="page-header">
     <div class="page-title">
         <h2><?= e(admin_trans('category_title')) ?></h2>
+        <p><?= e(admin_trans('category_intro')) ?></p>
     </div>
 
     <div class="page-actions flex gap-md items-center">
 
-        <!-- Search -->
-        <form method="get" class="mr-md">
-            <input type="text" name="q" value="<?= e($search) ?>" placeholder="<?= e(admin_trans('category_search')) ?>">
-        </form>
-
         <!-- Add New -->
         <a href="<?= url('admin/category/edit') ?>" class="btn-primary">
-            <?= e(admin_trans('category_add')) ?>
+            <?= icon('plus', 16) ?><?= e(admin_trans('category_add')) ?>
         </a>
 
     </div>
+</div>
+
+<div class="content-filters">
+    <div class="status-tabs">
+        <a href="<?= e($filterUrl(['type' => ''])) ?>"
+           class="status-tab <?= $type === '' ? 'active' : '' ?>">
+            <?= e(admin_trans('content_type_all')) ?>
+            <span class="status-tab-count"><?= (int) $totalCount ?></span>
+        </a>
+        <?php foreach ($contentTypes as $key => $config): ?>
+            <a href="<?= e($filterUrl(['type' => $key])) ?>"
+               class="status-tab <?= $type === $key ? 'active' : '' ?>">
+                <?= e($config['label'] ?? ucfirst($key)) ?>
+                <span class="status-tab-count"><?= (int) ($typeCounts[$key] ?? 0) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <form method="get" class="content-search">
+        <?php if ($type !== ''): ?>
+            <input type="hidden" name="type" value="<?= e($type) ?>">
+        <?php endif; ?>
+        <input type="search" name="q" value="<?= e($search) ?>"
+               placeholder="<?= e(admin_trans('category_search')) ?>" aria-label="<?= e(admin_trans('category_search')) ?>">
+        <?php if ($search !== ''): ?>
+            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('common_clear')) ?></a>
+        <?php endif; ?>
+    </form>
 </div>
 
 <?php if (empty($categories)): ?>

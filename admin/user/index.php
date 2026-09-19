@@ -9,11 +9,11 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
-        <p><?= e(admin_trans('dashboard_manage_users')) ?></p>
+        <h2><?= e(admin_trans('nav_users')) ?></h2>
+        <p><?= e(admin_trans('user_intro')) ?></p>
     </div>
     <div class="page-actions">
-        <a href="<?= url('admin/user/add') ?>" class="btn-primary"><?= e(admin_trans('user_add')) ?></a>
+        <a href="<?= url('admin/user/add') ?>" class="btn-primary"><?= icon('plus', 16) ?><?= e(admin_trans('user_add')) ?></a>
     </div>
 </div>
 

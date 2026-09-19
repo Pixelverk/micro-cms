@@ -4,7 +4,6 @@
 declare(strict_types=1);
 
 $pageTitle = admin_trans('nav_settings');
-$username  = current_username();
 
 $pdo = db();
 
@@ -408,7 +407,7 @@ ob_start();
 
 <div class="page-header">
     <div class="page-title">
-        <h2><?= e(admin_trans('common_hello', ['name' => $username])) ?></h2>
+        <h2><?= e(admin_trans('nav_settings')) ?></h2>
         <p><?= e(admin_trans('settings_intro')) ?></p>
     </div>
     <div class="page-actions">
