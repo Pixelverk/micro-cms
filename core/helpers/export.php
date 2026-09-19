@@ -72,6 +72,12 @@ function published_content_paths(): array
  */
 function warm_cache(): array
 {
+    // Maintenance mode closes the public site. Warming it would recreate the
+    // cache files that the 503 path relies on not existing.
+    if (maintenance_mode_enabled()) {
+        return ['rendered' => 0, 'failed' => []];
+    }
+
     require_once CORE_PATH . '/render.php';
 
     $homepageId = (int) (load_settings()['homepage_id'] ?? 0);

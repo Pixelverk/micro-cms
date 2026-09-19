@@ -1223,6 +1223,46 @@ t('bulk publish skips items that are missing required fields', function () use (
     db()->prepare("DELETE FROM content WHERE id IN (?, ?)")->execute([$complete, $incomplete]);
 });
 
+t('maintenance mode closes the public site but not the editor', function () use ($base) {
+    try {
+        save_settings(['maintenance_mode' => true, 'maintenance_message' => 'Back after lunch.']);
+        test_clear_cache_files();
+
+        // Visitors get a 503 with a retry hint, and nothing is cached.
+        [$status, $body, $headers] = http('GET', $base . '/about/', false);
+
+        assert_eq(503, $status, 'the public site is closed');
+        assert_contains('Retry-After:', $headers);
+        assert_contains('Back after lunch.', $body, 'the configured message is shown');
+        assert_not_contains('Set-Cookie', $headers, 'visitors still get no session');
+        assert_count(0, glob(STORAGE_PATH . '/cache/about*.html') ?: [], 'a 503 is never cached');
+
+        // Warming the cache would recreate the files the 503 path avoids.
+        assert_eq(0, warm_cache()['rendered'], 'cache warming is skipped while closed');
+
+        // A signed-in editor keeps working, so the site can be finished.
+        http_login($base);
+
+        [$status] = http('GET', $base . '/about/');
+        assert_eq(200, $status, 'a signed-in editor is not blocked');
+
+        [$status] = http('GET', $base . '/admin/content?type=page');
+        assert_eq(200, $status, 'the admin keeps working');
+
+        // The dashboard reminds whoever is signed in that the site is closed.
+        [, $dashboard] = http('GET', $base . '/admin/dashboard');
+        assert_contains('notice-warning', $dashboard, 'the dashboard shows a maintenance reminder');
+
+        // A token preview is signed in, so it gets through too.
+        [$status, $preview] = http('GET', $base . '/about/?preview=' . http_preview_token());
+        assert_eq(200, $status, 'a token preview is not blocked');
+        assert_contains('cms-preview-bar', $preview);
+    } finally {
+        save_settings(['maintenance_mode' => false]);
+        test_clear_cache_files();
+    }
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

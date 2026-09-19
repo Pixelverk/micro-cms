@@ -114,6 +114,18 @@ ob_start();
     </div>
 </div>
 
+<?php if (maintenance_mode_enabled()): ?>
+    <div class="notice notice-warning">
+        <p>
+            <strong><?= e(admin_trans('dashboard_maintenance_title')) ?></strong>
+            <?= e(admin_trans('dashboard_maintenance_body')) ?>
+            <?php if (admin_can('settings.manage')): ?>
+                <a href="<?= e(url('admin/settings')) ?>"><?= e(admin_trans('dashboard_maintenance_link')) ?></a>
+            <?php endif; ?>
+        </p>
+    </div>
+<?php endif; ?>
+
 <?php
 // Only work that exists is listed: a type with nothing outstanding, an empty
 // inbox or a clean health check add no rows at all.

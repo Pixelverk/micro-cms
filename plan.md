@@ -280,6 +280,14 @@ ship the non-CSP headers and defer the rest.
 
 ## 7. Maintenance mode (C, S–M)
 
+**Shipped.** Settings gained a "Maintenance" group with a toggle and a message.
+With it on, the front path answers `503` with `Retry-After: 3600`, `no-store`
+and the unthemed message; any signed-in user (and therefore token previews)
+keeps working, and the admin is untouched. Enabling clears the page cache,
+nothing writes to it while the site is closed, and `warm_cache()` refuses to run,
+so the cookie-less cache firebreak cannot serve a stale page. A dashboard notice
+reminds signed-in editors while it is on.
+
 **Why.** A launch, migration or host move needs the public site taken down while
 the admin keeps working.
 

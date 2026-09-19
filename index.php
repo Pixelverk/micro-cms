@@ -182,6 +182,15 @@ migrate_before_read();
 // Move any views buffered since the last full-path request into the database.
 analytics_maybe_ingest();
 
+// 4.0 Maintenance mode
+// The public site is closed, but signed-in editors (and therefore token
+// previews) stay in so the site can be finished or fixed while it is down.
+// Enabling maintenance clears the page cache and nothing writes to it while it
+// is on, so the cookie-less firebreak above cannot serve a stale page.
+if (maintenance_mode_enabled() && !is_logged_in()) {
+    serve_maintenance_response();
+}
+
 // 4.1 Cached HTML
 if ($file = checkCache($request, $config)) {
     serveCached($file, $config);

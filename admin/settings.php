@@ -160,6 +160,21 @@ $settingFields = [
         'help'    => 'settings_footer_scripts_help',
         'default' => '',
     ],
+
+    // ----------------------------
+    // Maintenance
+    'maintenance_mode' => [
+        'type'    => 'checkbox',
+        'label'   => 'settings_maintenance_mode',
+        'help'    => 'settings_maintenance_mode_help',
+        'default' => false,
+    ],
+    'maintenance_message' => [
+        'type'    => 'textarea',
+        'label'   => 'settings_maintenance_message',
+        'help'    => 'settings_maintenance_message_help',
+        'default' => 'We are doing a bit of maintenance and will be back shortly.',
+    ],
 ];
 
 // ----------------------------
@@ -205,6 +220,12 @@ $settingGroups = [
         'columns' => 2,
         'fields'  => ['header_scripts', 'footer_scripts'],
     ],
+    'maintenance' => [
+        'label'   => 'settings_group_maintenance',
+        'icon'    => 'warning-triangle',
+        'columns' => 2,
+        'fields'  => ['maintenance_mode', 'maintenance_message'],
+    ],
     'urls' => [
         'label'   => 'settings_group_urls',
         'icon'    => 'label',
@@ -215,7 +236,7 @@ $settingGroups = [
 
 // Fields that take the whole row rather than one track: the long ones, and the
 // comma list that would otherwise sit under a checkbox column.
-$settingSpanFields = ['media_sizes', 'robots_extra'];
+$settingSpanFields = ['media_sizes', 'robots_extra', 'maintenance_message'];
 
 // ----------------------------
 // Dynamic prefix fields
@@ -531,6 +552,7 @@ ob_start();
     <li><?= e(admin_trans('settings_help_media')) ?></li>
     <li><?= e(admin_trans('settings_help_seo')) ?></li>
     <li><?= e(admin_trans('settings_help_code')) ?></li>
+    <li><?= e(admin_trans('settings_help_maintenance')) ?></li>
 </ul>
 <?php
 $pageHelp = ob_get_clean();

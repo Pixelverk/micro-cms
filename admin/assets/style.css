@@ -2466,6 +2466,7 @@ button.sidebar-link {
 .notice-error { border-left-color: var(--danger); color: var(--danger); }
 .notice-success { border-left-color: var(--success); }
 .notice-info { border-left-color: var(--info); }
+.notice-warning { border-left-color: var(--warning); }
 
 /* A notice with a text column and an action column, used for the pending
    autosave offer. */
