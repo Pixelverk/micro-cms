@@ -106,6 +106,8 @@ Demo account:
 * Login/logout, password reset by emailed link, login throttling, CSRF protection on every admin POST
 * Menu CRUD with drag-and-drop items
 * Media manager: resized variants, WebP with JPEG/PNG fallback, LQIP placeholders, alt text
+* Theme image rendering (`render_image()`): media ids become responsive `<picture>` elements, while theme filenames and URLs stay plain images
+* Featured image and ordered gallery fields on the content types that render them, plus a media picker for the social image
 * Site settings (homepage, per-type URL prefixes, timezone, date format, site description, logo, favicon, custom CSS, image quality, admin language)
 * Header and footer script fields and custom CSS (raw, administrators only)
 * Maintenance mode: a 503 for visitors while the admin keeps working
@@ -133,7 +135,7 @@ Demo account:
 ### Planned
 
 The phased plan of record is [`plan.md`](plan.md): Wave 1 is nearly shipped —
-scheduling/expiry and wiring media into the theme remain — then Wave 2 adds depth
+expiry is deliberately not a feature, and Wave 2 adds depth
 and Wave 3 is opportunistic. The multi-language front end is a deferred track in
 the same file.
 

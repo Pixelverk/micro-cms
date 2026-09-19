@@ -27,7 +27,7 @@ $images = array_values(array_unique(array_filter($images)));
             <?php if ($images): ?>
                 <div class="row gx-5">
                     <?php foreach ($images as $index => $image): ?>
-                        <div class="<?= $index === 0 ? 'col-12' : 'col-lg-6' ?>"><img class="img-fluid rounded-3 mb-5" src="<?= e(preg_match('#^https?://#i', $image) ? $image : img($image)) ?>" alt="<?= e($page['title'] ?? '') ?>" /></div>
+                        <div class="<?= $index === 0 ? 'col-12' : 'col-lg-6' ?>"><?= render_image($image, ['class' => 'img-fluid rounded-3 mb-5', 'alt' => $page['title'] ?? '']) ?></div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>

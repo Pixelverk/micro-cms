@@ -25,7 +25,7 @@ return [
         'default' => 'Default Text'
     ],
     'image' => [
-        'type' => 'text',
+        'type' => 'image',
         'label' => 'Hero Image',
         'required' => false,
         'default' => '600x400.png'
@@ -136,7 +136,7 @@ CSS,
                     </div>
                 </div>
                 <?php if ($image !== ''): ?>
-                    <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center"><img class="img-fluid rounded-3 my-5" src="<?= img($image) ?>" alt="<?= e($title) ?>" /></div>
+                    <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center"><?= render_image($image, ['class' => 'img-fluid rounded-3 my-5', 'alt' => $title]) ?></div>
                 <?php endif; ?>
             </div>
         </div>

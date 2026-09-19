@@ -21,7 +21,7 @@ return [
             <div class="row gx-5">
                 <?php foreach ($posts as $post): ?>
                     <?php $meta = $post['meta'] ?? []; $image = $meta['thumbnail'] ?? $meta['image'] ?? '600x350.png'; $excerpt = $meta['excerpt'] ?? ''; ?>
-                    <div class="col-lg-4 mb-5"><div class="card h-100 shadow border-0"><img class="card-img-top" src="<?= e(img($image)) ?>" alt="<?= e($post['title']) ?>" /><div class="card-body p-4"><div class="badge bg-primary bg-gradient rounded-pill mb-2">News</div><a class="text-decoration-none link-dark stretched-link" href="<?= e(url('blog/' . $post['slug'])) ?>"><div class="h5 card-title mb-3"><?= e($post['title']) ?></div></a><p class="card-text mb-0"><?= e($excerpt) ?></p></div><div class="card-footer p-4 pt-0 bg-transparent border-top-0"><div class="small text-muted"><?= e(format_date((int) $post['published_at'])) ?></div></div></div></div>
+                    <div class="col-lg-4 mb-5"><div class="card h-100 shadow border-0"><?= render_image($image, ['class' => 'card-img-top', 'alt' => $post['title']]) ?><div class="card-body p-4"><div class="badge bg-primary bg-gradient rounded-pill mb-2">News</div><a class="text-decoration-none link-dark stretched-link" href="<?= e(url('blog/' . $post['slug'])) ?>"><div class="h5 card-title mb-3"><?= e($post['title']) ?></div></a><p class="card-text mb-0"><?= e($excerpt) ?></p></div><div class="card-footer p-4 pt-0 bg-transparent border-top-0"><div class="small text-muted"><?= e(format_date((int) $post['published_at'])) ?></div></div></div></div>
                 <?php endforeach; ?>
             </div>
         </div>

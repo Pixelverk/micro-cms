@@ -120,33 +120,13 @@ function createComponent(type, data = {}) {
 
         // image picker
         if (fieldType === 'image') {
-            const preview = fieldNode.querySelector('.image-preview');
-            const btn = fieldNode.querySelector('.select-image-btn');
-
             input.name = `components[][props][${name}]`;
             input.value = value || '';
 
-            // find preview url from id
-            if (value) {
-                const media = (window.mediaImages || []).find(m => String(m.id) === String(value));
+            showImagePickerPreview(input);
 
-                if (media) {
-                    let url = '';
-
-                    if (media.formats?.webp?.length) url = '/media/' + media.formats.webp[0];
-                    else {
-                        const first = Object.values(media.formats || {})[0];
-                        if (first?.length) url = '/media/' + first[0];
-                    }
-
-                    preview.src = url;
-                    preview.alt = media.original_name;
-                }
-            }
-
-            btn.addEventListener('click', () => {
-                openImagePicker(input);
-            });
+            fieldNode.querySelector('.select-image-btn').addEventListener('click', () => openImagePicker(input));
+            fieldNode.querySelector('.clear-image-btn').addEventListener('click', () => clearImagePicker(input));
 
             fieldsContainer.appendChild(fieldNode);
             continue;
@@ -493,10 +473,7 @@ let currentImageField = null;
 
 // Open modal for a given input
 function openImagePicker(fieldInput) {
-    currentImageField = {
-        hiddenInput: fieldInput,
-        preview: fieldInput.closest('.image-picker-wrapper')?.querySelector('.image-preview')
-    };
+    currentImageField = fieldInput;
     renderImageGrid(window.mediaImages || []);
     imagePickerModal.classList.remove('hidden');
     imageSearch.value = '';
@@ -530,9 +507,8 @@ function renderImageGrid(images) {
         el.addEventListener('click', () => {
             if (!currentImageField) return;
 
-            currentImageField.hiddenInput.value = img.id; // save DB id
-            currentImageField.preview.src = url;         // show preview
-            currentImageField.preview.alt = img.original_name;
+            currentImageField.value = img.id; // save DB id
+            showImagePickerPreview(currentImageField);
 
             closeImagePicker();
         });       
@@ -554,29 +530,47 @@ imageSearch.addEventListener('input', () => {
 imagePickerModal.querySelector('.close-modal').addEventListener('click', closeImagePicker);
 
 // ----------------------------
-// Attach picker to 'image' fields
+// Attach the picker to image fields that ship their own markup
 // ----------------------------
+// The component image template and the meta image fields render their own
+// buttons, so this only wires them up and shows the current value. A gallery
+// row added later re-runs it, so the binding is tracked on the input.
 function attachImagePicker() {
     document.querySelectorAll('.field-input[type="text"][data-image-picker]').forEach(input => {
-        // add a button next to input
-        if (input.nextSibling?.classList?.contains('image-picker-btn')) return;
+        if (input.dataset.imagePickerBound) return;
+        input.dataset.imagePickerBound = '1';
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = t('media_pick_image', 'Pick Image');
-        btn.className = 'image-picker-btn';
-        btn.style.marginLeft = '0.5rem';
-        input.insertAdjacentElement('afterend', btn);
+        const wrapper = input.closest('.image-picker-wrapper');
 
-        btn.addEventListener('click', () => openImagePicker(input));
+        wrapper?.querySelector('.select-image-btn')?.addEventListener('click', () => openImagePicker(input));
+        wrapper?.querySelector('.clear-image-btn')?.addEventListener('click', () => clearImagePicker(input));
 
-        // initialize preview if value exists
-        const mediaId = input.value;
-        if (mediaId && window.mediaImages[mediaId]) {
-            const preview = input.closest('.image-picker-wrapper')?.querySelector('.image-preview');
-            if (preview) preview.src = getPreviewUrl(window.mediaImages[mediaId]);
-        }
+        showImagePickerPreview(input);
     });
+}
+
+// Show the value's media in the preview, or the empty state when cleared.
+// Clearing drops src entirely so the alt text is what shows.
+function showImagePickerPreview(input) {
+    const preview = input.closest('.image-picker-wrapper')?.querySelector('.image-preview');
+    if (!preview) return;
+
+    const media = (window.mediaImages || []).find(m => String(m.id) === String(input.value));
+
+    if (media) {
+        preview.src = getPreviewUrl(media);
+        preview.alt = media.original_name;
+    } else {
+        preview.removeAttribute('src');
+        // No library match: name whatever the field holds (a theme filename or a
+        // URL), so a filled input is not labelled "No image selected".
+        preview.alt = input.value || t('media_no_image', 'No image selected');
+    }
+}
+
+function clearImagePicker(input) {
+    input.value = '';
+    showImagePickerPreview(input);
 }
 
 // helper to get preview URL
@@ -592,6 +586,40 @@ function getPreviewUrl(img) {
 
 // initial attach
 attachImagePicker();
+
+// ----------------------------
+// Repeatable gallery meta fields
+// ----------------------------
+// The rows live in the page markup (they carry the field name), so removing
+// one and binding its picker is all this needs to do. Removing every row still
+// sends the empty sentinel the markup renders, which clears the field.
+function attachGalleryFields() {
+    document.querySelectorAll('.add-gallery-image').forEach(btn => {
+        if (btn.dataset.galleryBound) return;
+        btn.dataset.galleryBound = '1';
+
+        btn.addEventListener('click', () => {
+            const rows = document.getElementById(btn.dataset.gallery);
+            const template = document.getElementById('gallery-row-template');
+
+            if (!rows || !template) return;
+
+            const row = template.content.firstElementChild.cloneNode(true);
+            row.querySelector('input[data-image-picker]').name = rows.dataset.galleryName || '';
+
+            rows.appendChild(row);
+            attachImagePicker();
+        });
+    });
+}
+
+document.addEventListener('click', event => {
+    const remove = event.target.closest('.remove-gallery-image');
+
+    if (remove) remove.closest('.gallery-row')?.remove();
+});
+
+attachGalleryFields();
 
 // ----------------------------
 // Autosave and unsaved-changes warning

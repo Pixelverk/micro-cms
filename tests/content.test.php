@@ -349,4 +349,81 @@ t('a missing meta description warns', function () {
     assert_count(0, content_checklist_blockers($items));
 });
 
+// ---------------------------------------------------------------------------
+// Presentation images (theme-declared content meta)
+// ---------------------------------------------------------------------------
+
+/** Insert a media row and return its id. */
+function checklist_seed_media(string $altText = 'A library image'): int
+{
+    $now = time();
+
+    $stmt = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, title, alt_text, description,
+                           created_at, updated_at)
+        VALUES ('photo.jpg', '2026/03/checklist', 'image/jpeg', 1000, 800, 600,
+                '{}', '{}', NULL, NULL, ?, NULL, ?, ?)
+    ");
+    $stmt->execute([$altText, $now, $now]);
+
+    return (int) db()->lastInsertId();
+}
+
+t('a media library image carries its own description', function () {
+    $described = checklist_seed_media('Sunset over water');
+
+    $withAlt = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('team-member', [
+            'name' => 'Ada', 'role' => 'Engineer', 'image' => (string) $described, 'image_alt' => '',
+        ]),
+    ]);
+
+    assert_true(checklist_item($withAlt, 'image_alt')['ok'], 'the media row supplies the alt text');
+
+    // The same shape with no alt anywhere is still a warning.
+    $bare = checklist_seed_media('');
+
+    $withoutAlt = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('team-member', [
+            'name' => 'Ada', 'role' => 'Engineer', 'image' => (string) $bare, 'image_alt' => '',
+        ]),
+    ]);
+
+    assert_false(checklist_item($withoutAlt, 'image_alt')['ok']);
+});
+
+t('content_collect_images() keeps, clears and reindexes image meta', function () {
+    $fields = [
+        'thumbnail' => ['label' => 'Featured image'],
+        'gallery'   => ['label' => 'Gallery', 'multiple' => true],
+    ];
+
+    // A field the form did not submit is left untouched (partial saves).
+    assert_eq(['thumbnail' => '7'], content_collect_images([], ['thumbnail' => '7'], $fields));
+
+    $collected = content_collect_images(
+        ['meta_thumbnail' => ' 12 ', 'meta_gallery' => ['', '5', ' 6 ', '']],
+        [],
+        $fields
+    );
+
+    assert_eq('12', $collected['thumbnail'], 'the single value is trimmed');
+    assert_eq(['5', '6'], $collected['gallery'], 'blank sentinel rows are dropped and the list reindexed');
+
+    // The editor always posts the gallery, even when every row was removed.
+    $cleared = content_collect_images(
+        ['meta_thumbnail' => '', 'meta_gallery' => ['']],
+        ['thumbnail' => '12', 'gallery' => ['5']],
+        $fields
+    );
+
+    assert_false(array_key_exists('thumbnail', $cleared), 'a cleared thumbnail is removed');
+    assert_false(array_key_exists('gallery', $cleared), 'an emptied gallery is removed');
+});
+
 exit(test_summary());

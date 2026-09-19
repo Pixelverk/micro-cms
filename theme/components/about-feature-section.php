@@ -27,7 +27,7 @@ return [
         'default' => 'Tell visitors how your organization got started and what continues to guide its work.'
     ],
     'image' => [
-        'type' => 'text',
+        'type' => 'image',
         'label' => 'Section Image',
         'required' => true,
         'default' => '600x400.png'
@@ -83,7 +83,19 @@ return [
     $title = $props['title'] ?? '';
     $text = $props['text'] ?? '';
     $image = $props['image'] ?? '';
-    $imageAlt = $props['image_alt'] ?? $title;
+    $imageAlt = trim((string) ($props['image_alt'] ?? ''));
+
+    // A library image carries its own alt text; a theme filename has none, so
+    // fall back to the section title.
+    if ($imageAlt === '' && !ctype_digit((string) $image)) {
+        $imageAlt = (string) $title;
+    }
+
+    $imageAttrs = ['class' => 'img-fluid rounded mb-5 mb-lg-0'];
+
+    if ($imageAlt !== '') {
+        $imageAttrs['alt'] = $imageAlt;
+    }
     $imagePosition = ($props['image_position'] ?? 'left') === 'right' ? 'right' : 'left';
     $background = ($props['background'] ?? 'white') === 'light' ? 'bg-light' : '';
     $imageColumnClass = $imagePosition === 'right' ? 'order-first order-lg-last' : '';
@@ -92,7 +104,7 @@ return [
         <div class="container px-5 my-5">
             <div class="row gx-5 align-items-center">
                 <div class="col-lg-6 <?= e($imageColumnClass) ?>">
-                    <img class="img-fluid rounded mb-5 mb-lg-0" src="<?= e(img($image)) ?>" alt="<?= e($imageAlt) ?>" />
+                    <?= render_image($image, $imageAttrs) ?>
                 </div>
                 <div class="col-lg-6">
                     <h2 class="fw-bolder"><?= e($title) ?></h2>

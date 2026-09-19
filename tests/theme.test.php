@@ -136,4 +136,70 @@ t('collect_css() de-duplicates by key', function () {
     assert_eq('.a { color: red; }', $collected[0]['content']);
 });
 
+t('theme images resolve through render_image(), not img() directly', function () {
+    // A meta value (meta.thumbnail, gallery rows) can be a media id, which
+    // img() would resolve as a theme asset and 404. render_image() picks
+    // picture() for media ids and a bare <img> for filenames and URLs.
+    $offenders = [];
+
+    $files = array_merge(
+        glob(CMS_PATH . '/theme/components/*.php') ?: [],
+        glob(CMS_PATH . '/theme/layouts/*.php') ?: []
+    );
+
+    foreach ($files as $file) {
+        if (str_contains((string) file_get_contents($file), 'img($')) {
+            $offenders[] = str_replace(CMS_PATH . '/', '', $file);
+        }
+    }
+
+    assert_count(0, $offenders, 'img() used directly in: ' . implode(', ', $offenders));
+});
+
+t('the content types that render a thumbnail expose it to the editor', function () {
+    $types = theme_config()['content_types'] ?? [];
+
+    foreach (['blog_post', 'portfolio_item'] as $type) {
+        assert_true(isset($types[$type]['images']['thumbnail']), "{$type} declares a thumbnail field");
+    }
+
+    assert_true(!empty($types['portfolio_item']['images']['gallery']['multiple']), 'portfolio galleries are repeatable');
+});
+
+t('a cleared image prop falls back to the theme placeholder', function () {
+    $page = ['title' => 'Test', 'type' => 'page'];
+
+    $render = function (string $name, array $props) use ($page): string {
+        $js = [];
+        $css = [];
+
+        ob_start();
+        component($name, $props, $page, $js, $css);
+
+        return (string) ob_get_clean();
+    };
+
+    // hero-section declares `600x400.png` as its image placeholder.
+    $cleared = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There', 'image' => '']);
+    assert_contains('theme/assets/img/600x400.png', $cleared, 'the placeholder comes back when the field is cleared');
+
+    $missing = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There']);
+    assert_contains('theme/assets/img/600x400.png', $missing, 'and when the prop was never set');
+
+    // A value the editor did choose wins over the placeholder.
+    $chosen = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There', 'image' => 'https://example.test/pick.jpg']);
+    assert_contains('https://example.test/pick.jpg', $chosen);
+    assert_not_contains('600x400.png', $chosen);
+
+    // Only image fields are filled: a cleared text field stays empty.
+    $text = $render('hero-section', ['title' => '', 'subtitle' => 'There', 'image' => '']);
+    assert_not_contains('Default Title', $text, 'a cleared text field is not restored to its schema default');
+
+    // An image field with no declared default stays empty.
+    assert_eq(
+        ['image' => ''],
+        component_image_defaults(['image' => ''], ['image' => ['type' => 'image', 'default' => '']])
+    );
+});
+
 exit(test_summary());

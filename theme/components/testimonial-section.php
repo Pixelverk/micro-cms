@@ -31,7 +31,7 @@ return [
         'default' => 'Good guy'
     ],
     'img' => [
-        'type' => 'text',
+        'type' => 'image',
         'label' => 'Quote Image',
         'required' => false,
         'default' => '40x40.png'
@@ -65,7 +65,7 @@ return [
                     <div class="text-center">
                         <div class="fs-4 mb-4 fst-italic">"<?= e($quote)?>"</div>
                         <div class="d-flex align-items-center justify-content-center">
-                            <img class="rounded-circle me-3" src="<?= img($img) ?>" alt="<?= e($name)?>" />
+                            <?= render_image($img ?? '', ['class' => 'rounded-circle me-3', 'alt' => $name ?? '']) ?>
                             <div class="fw-bold">
                                 <?= e($name)?>
                                 <span class="fw-bold text-primary mx-1">/</span>

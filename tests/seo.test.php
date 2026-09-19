@@ -422,4 +422,15 @@ t('a saved SEO field survives a reload and renders', function () {
     assert_contains("href='https://example.com/about'", $html);
 });
 
+t('the social image field is wired to the media picker', function () {
+    assert_eq('media', seo_editable_fields()['og_image']['type']);
+
+    // The SEO loop renders that type as a picker field, not a plain text input.
+    $editor = (string) file_get_contents(CMS_PATH . '/admin/content/edit.php');
+
+    assert_contains("=== 'media'", $editor, 'edit.php branches on the media field type');
+    assert_contains("admin_trans('media_no_image')", $editor, 'the field renders a preview');
+    assert_contains('data-image-picker', $editor, 'the field gets the picker behaviour hook');
+});
+
 exit(test_summary());

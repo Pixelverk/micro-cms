@@ -349,7 +349,7 @@ function img(string $path): string
  * The shape every image setting accepts. Callers that need an absolute URL
  * (Open Graph, JSON-LD) pass the result through seo_absolute_url().
  */
-function resolve_image_value(string $value): string
+function resolve_image_value(string $value, ?int $width = null): string
 {
     $value = trim($value);
 
@@ -358,7 +358,7 @@ function resolve_image_value(string $value): string
     }
 
     if (ctype_digit($value)) {
-        return media_url((int) $value);
+        return media_url((int) $value, $width);
     }
 
     if (preg_match('#^https?://#i', $value)) {
@@ -366,6 +366,59 @@ function resolve_image_value(string $value): string
     }
 
     return img($value);
+}
+
+/**
+ * Render an image value in a template.
+ *
+ * An image value is a media id, an absolute URL, or a theme filename. A media
+ * id gets the responsive picture() block (WebP srcset, LQIP, alt from the media
+ * row). A filename or URL gets a plain <img>, exactly the markup the theme used
+ * before, so it is never wrapped in picture()'s LQIP wrapper — main.js only
+ * un-blurs `.image-wrapper picture img`, and a bare <img> there would stay
+ * invisible.
+ */
+function render_image(mixed $value, array $attrs = []): string
+{
+    $value = is_scalar($value) ? trim((string) $value) : '';
+
+    if ($value === '') {
+        return '';
+    }
+
+    if (ctype_digit($value)) {
+        $picture = picture((int) $value, $attrs);
+
+        if ($picture !== '') {
+            return $picture;
+        }
+
+        // picture() needs recorded variants. A row without them (an upload the
+        // generator could not encode, or an older import) still has its original
+        // file, and an editor who chose that image should not get nothing.
+        $media = media_by_id((int) $value);
+
+        if ($media === null || !media_is_image($media)) {
+            return '';
+        }
+
+        $url = media_url((int) $value);
+    } else {
+        $url = resolve_image_value($value);
+    }
+
+    if ($url === '') {
+        return '';
+    }
+
+    $attrs['src'] = $url;
+
+    $attrString = '';
+    foreach ($attrs as $name => $attrValue) {
+        $attrString .= ' ' . e($name) . '="' . e((string) $attrValue) . '"';
+    }
+
+    return '<img' . $attrString . '>';
 }
 
 /**
@@ -675,7 +728,9 @@ function picture(int $id, array $attrs = []): string
         return $items;
     };
 
-    // Fallback format: the first non-webp entry.
+    // Fallback format: the first non-webp entry. An upload that was already
+    // webp has no other format, so its webp set is the fallback too — otherwise
+    // a webp-only image would render nothing.
     $fallbackFormat = null;
     foreach (array_keys($formats) as $format) {
         if ($format !== 'webp') {
@@ -684,9 +739,7 @@ function picture(int $id, array $attrs = []): string
         }
     }
 
-    if ($fallbackFormat === null) {
-        return '';
-    }
+    $fallbackFormat ??= 'webp';
 
     $fallbackSet = $buildSrcset($formats[$fallbackFormat] ?? []);
 
@@ -701,7 +754,8 @@ function picture(int $id, array $attrs = []): string
         array_keys($fallbackSet)
     ));
 
-    $webpSet    = !empty($formats['webp']) ? $buildSrcset($formats['webp']) : [];
+    // The webp source only adds a choice when the fallback is another format.
+    $webpSet    = ($fallbackFormat === 'webp' || empty($formats['webp'])) ? [] : $buildSrcset($formats['webp']);
     $webpSrcset = implode(', ', array_map(
         fn($src, $w) => "{$src} {$w}w",
         $webpSet,

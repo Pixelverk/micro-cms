@@ -110,11 +110,28 @@
             <!-- Hidden input stores the DB ID of the selected media -->
             <input type="hidden" class="field-input" data-image-picker>
 
-            <!-- Preview image -->
-            <img class="image-preview" src="" alt="<?= e(admin_trans('media_no_image')) ?>">
+            <!-- Preview; without a src the alt text is the empty state -->
+            <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
 
-            <!-- Button to open modal -->
-            <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+            <div class="image-picker-actions">
+                <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
+            </div>
         </div>
     </label>
+</template>
+
+<!-- One row of a repeatable gallery meta field; the name is set when it is added -->
+<template id="gallery-row-template">
+    <div class="gallery-row">
+        <div class="image-picker-wrapper">
+            <input class="field-input" type="text" data-image-picker>
+            <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+            <div class="image-picker-actions">
+                <!-- The row's own Remove control is this image's clear action. -->
+                <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+            </div>
+        </div>
+        <button type="button" class="btn btn-small btn-muted remove-gallery-image"><?= e(admin_trans('editor_gallery_remove')) ?></button>
+    </div>
 </template>

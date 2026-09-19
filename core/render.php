@@ -318,6 +318,38 @@ function render_components(array $components, array $page, array &$collectedJs =
 
 /*
 |--------------------------------------------------------------------------
+| Fill an empty image prop with its declared placeholder
+|--------------------------------------------------------------------------
+|
+| A schema image field's `default` is the theme's placeholder image: it fills a
+| new component in the editor, and it comes back when an editor clears the
+| field. Only image fields are filled — a cleared text field stays empty. A
+| theme that wants "no image" on an empty value declares no default.
+|
+*/
+function component_image_defaults(array $props, array $schema): array
+{
+    foreach ($schema as $field => $rules) {
+        if (!is_array($rules) || ($rules['type'] ?? '') !== 'image') {
+            continue;
+        }
+
+        if (trim((string) ($props[$field] ?? '')) !== '') {
+            continue;
+        }
+
+        $default = (string) ($rules['default'] ?? '');
+
+        if ($default !== '') {
+            $props[$field] = $default;
+        }
+    }
+
+    return $props;
+}
+
+/*
+|--------------------------------------------------------------------------
 | Render a Single Component
 |--------------------------------------------------------------------------
 */
@@ -362,6 +394,9 @@ function component(string $name, array $props, array $page, array &$collectedJs 
         trigger_error("Component '{$name}' has no render function.", E_USER_WARNING);
         return;
     }
+
+    // An image the editor cleared falls back to the theme's placeholder.
+    $props = component_image_defaults($props, (array) ($component['schema'] ?? []));
 
     // render component html
     $component['render']($props, $page, $collectedJs, $collectedCss);

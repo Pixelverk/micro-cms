@@ -9,10 +9,6 @@ $meta = $page['meta'] ?? [];
 $author = $meta['author'] ?? '';
 $authorImage = $meta['author_image'] ?? '';
 $thumbnail = $meta['thumbnail'] ?? $meta['image'] ?? '';
-$thumbnailUrl = '';
-if ($thumbnail !== '') {
-    $thumbnailUrl = preg_match('#^https?://#i', $thumbnail) ? $thumbnail : img($thumbnail);
-}
 ?>
 <main>
     <section class="py-5">
@@ -22,7 +18,7 @@ if ($thumbnail !== '') {
                     <div class="col-lg-3">
                         <div class="d-flex align-items-center mt-lg-5 mb-4">
                             <?php if ($authorImage): ?>
-                                <img class="img-fluid rounded-circle" src="<?= e(preg_match('#^https?://#i', $authorImage) ? $authorImage : img($authorImage)) ?>" alt="<?= e($author) ?>" />
+                                <?= render_image($authorImage, ['class' => 'img-fluid rounded-circle', 'alt' => $author]) ?>
                             <?php endif; ?>
                             <div class="ms-3">
                                 <div class="fw-bold"><?= e($author) ?></div>
@@ -39,7 +35,7 @@ if ($thumbnail !== '') {
                             <?php foreach (($page['categories'] ?? []) as $category): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('category/' . $category['slug'])) ?>"><?= e($category['name']) ?></a><?php endforeach; ?>
                             <?php foreach (($page['tags'] ?? []) as $tag): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('tag/' . $tag['slug'])) ?>"><?= e($tag['name']) ?></a><?php endforeach; ?>
                         </header>
-                        <?php if ($thumbnailUrl): ?><figure class="mb-4"><img class="img-fluid rounded" src="<?= e($thumbnailUrl) ?>" alt="<?= e($page['title'] ?? '') ?>" /></figure><?php endif; ?>
+                        <?php if ($thumbnail !== ''): ?><figure class="mb-4"><?= render_image($thumbnail, ['class' => 'img-fluid rounded', 'alt' => $page['title'] ?? '']) ?></figure><?php endif; ?>
                         <section class="mb-5">
                             <?php render_components($page['components'] ?? [], $page, $collectedJs, $collectedCss); ?>
                         </section>

@@ -1367,6 +1367,58 @@ function content_component_definition(string $name): array
 }
 
 /**
+ * Collect the presentation-image meta a content type declares.
+ *
+ * The theme lists them under the content type's `images` key (for example a
+ * `thumbnail`, or a `gallery` with `multiple => true`). Values are media ids,
+ * theme filenames or absolute URLs, exactly like resolve_image_value().
+ *
+ * A field the form did not submit is left untouched, so partial saves keep it.
+ * A `multiple` field submits an array; the empty sentinel row the editor
+ * renders means "remove them all" reaches this function as an array of blanks.
+ *
+ * @param array<string, mixed> $post
+ * @param array<string, mixed> $meta
+ * @param array<string, array<string, mixed>> $fields
+ * @return array<string, mixed>
+ */
+function content_collect_images(array $post, array $meta, array $fields): array
+{
+    foreach ($fields as $key => $field) {
+        $value = $post['meta_' . $key] ?? null;
+
+        if ($value === null) {
+            continue;
+        }
+
+        if (!empty($field['multiple'])) {
+            $values = array_values(array_filter(array_map(
+                static fn($item): string => is_string($item) ? trim($item) : '',
+                is_array($value) ? $value : []
+            ), static fn(string $item): bool => $item !== ''));
+
+            if ($values === []) {
+                unset($meta[$key]);
+            } else {
+                $meta[$key] = $values;
+            }
+
+            continue;
+        }
+
+        $value = is_string($value) ? trim($value) : '';
+
+        if ($value === '') {
+            unset($meta[$key]);
+        } else {
+            $meta[$key] = $value;
+        }
+    }
+
+    return $meta;
+}
+
+/**
  * Evaluate the pre-publish checklist for an item.
  *
  * `meta` and `body` may be decoded arrays or their JSON column strings, so the
@@ -1485,15 +1537,28 @@ function content_checklist_walk(array $components, array &$required, array &$alt
 
             // An image the theme gives a description field must describe itself.
             foreach (['image', 'img'] as $imageField) {
-                if (empty($props[$imageField])) {
+                $imageValue = (string) ($props[$imageField] ?? '');
+
+                if ($imageValue === '') {
                     continue;
                 }
 
                 $altField = content_checklist_alt_field($schema, $imageField);
 
-                if ($altField !== null && trim((string) ($props[$altField] ?? '')) === '') {
-                    $altText[] = $label . ': ' . (string) ($schema[$altField]['label'] ?? $altField);
+                if ($altField === null) {
+                    continue;
                 }
+
+                if (trim((string) ($props[$altField] ?? '')) !== '') {
+                    continue;
+                }
+
+                // A media library image already carries its own alt text.
+                if (ctype_digit($imageValue) && trim((string) (media_by_id((int) $imageValue)['alt_text'] ?? '')) !== '') {
+                    continue;
+                }
+
+                $altText[] = $label . ': ' . (string) ($schema[$altField]['label'] ?? $altField);
             }
 
             // A link label with no target renders a dead link.

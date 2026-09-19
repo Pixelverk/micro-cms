@@ -55,8 +55,7 @@ if (!$taxonomy) {
 
             // Optional thumbnail
             if (!empty($item['meta']['thumbnail'])) {
-                $thumb = htmlspecialchars($item['meta']['thumbnail'], ENT_QUOTES, 'UTF-8');
-                echo "<a href=\"{$url}\"><img class=\"taxonomy-item-thumb\" src=\"{$thumb}\" alt=\"{$title}\"></a>";
+                echo "<a href=\"{$url}\">" . render_image($item['meta']['thumbnail'], ['class' => 'taxonomy-item-thumb', 'alt' => $item['title'] ?? 'Untitled']) . '</a>';
             }
 
             // Title

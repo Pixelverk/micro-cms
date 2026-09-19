@@ -180,4 +180,104 @@ t('picture() returns empty for non-images and missing variants', function () {
     assert_eq('', picture(999999), 'missing row');
 });
 
+t('resolve_image_value() picks a media variant width', function () {
+    $base = '2026/03/riv00001';
+    $id = seed_media([
+        'base_path'    => $base,
+        'formats_json' => json_encode([
+            'webp' => ["{$base}/photo-320.webp", "{$base}/photo-1280.webp"],
+        ]),
+    ]);
+
+    assert_contains('photo-1280.webp', resolve_image_value((string) $id, 1200), 'closest variant to the requested width');
+    assert_eq(img('logo.png'), resolve_image_value('logo.png'), 'theme filenames still resolve through img()');
+    assert_eq('https://example.test/x.jpg', resolve_image_value('https://example.test/x.jpg'));
+    assert_eq('', resolve_image_value(''));
+});
+
+t('render_image() uses picture() for media ids and a bare img otherwise', function () {
+    $base = '2026/03/rim00001';
+    $id = seed_media([
+        'base_path'    => $base,
+        'alt_text'     => 'From the library',
+        'formats_json' => json_encode([
+            'webp' => ["{$base}/photo-640.webp"],
+            'jpg'  => ["{$base}/photo-640.jpg"],
+        ]),
+    ]);
+
+    $media = render_image((string) $id, ['class' => 'card-img-top']);
+
+    assert_contains('<picture>', $media);
+    assert_contains('image-wrapper', $media);
+    assert_contains('photo-640.webp 640w', $media);
+    assert_contains('class="card-img-top"', $media);
+    assert_contains('alt="From the library"', $media, 'the media row supplies the alt');
+
+    // A theme asset must stay a bare <img>. main.js only reveals images inside
+    // .image-wrapper picture, so wrapping one would leave it invisible.
+    $asset = render_image('600x400.png', ['class' => 'img-fluid', 'alt' => 'Placeholder']);
+
+    assert_contains('<img', $asset);
+    assert_contains('class="img-fluid"', $asset);
+    assert_contains('alt="Placeholder"', $asset);
+    assert_not_contains('image-wrapper', $asset);
+    assert_not_contains('<picture>', $asset);
+
+    assert_eq('', render_image(''));
+    assert_eq('', render_image(null));
+});
+
+t('picture() renders an upload that was already webp', function () {
+    // The uploader generates the webp ladder plus the source format; for a webp
+    // source those are the same, so formats_json holds webp alone. It must still
+    // render rather than returning nothing.
+    $base = '2026/03/webponly';
+    $id = seed_media([
+        'original_name' => 'photo.webp',
+        'base_path'     => $base,
+        'mime_type'     => 'image/webp',
+        'formats_json'  => json_encode([
+            'webp' => ["{$base}/photo-320.webp", "{$base}/photo-640.webp"],
+        ]),
+    ]);
+
+    $html = picture($id);
+
+    assert_contains('<picture>', $html);
+    assert_contains('src="/media/' . $base . '/photo-320.webp"', $html, 'the img falls back to a webp variant');
+    assert_contains('photo-640.webp 640w', $html);
+    assert_not_contains('type="image/webp"', $html, 'a webp source would repeat the same srcset');
+
+    assert_contains('<picture>', render_image((string) $id), 'and it renders through the theme helper');
+});
+
+t('render_image() falls back to the original file when there are no variants', function () {
+    // An image the generator could not encode keeps its original, and an editor
+    // who chose it should still get an <img>.
+    $base = '2026/03/origonly';
+    $id = seed_media([
+        'original_name' => 'My Photo.JPG',
+        'base_path'     => $base,
+        'formats_json'  => '{}',
+    ]);
+
+    assert_eq('', picture($id), 'picture() has nothing to build a srcset from');
+
+    $html = render_image((string) $id, ['class' => 'img-fluid']);
+
+    assert_contains('<img', $html);
+    assert_contains('src="' . url("media/{$base}/my-photo.jpg") . '"', $html);
+    assert_contains('class="img-fluid"', $html);
+
+    // A non-image id is not an image, even with a fallback available.
+    $pdf = seed_media([
+        'original_name' => 'doc.pdf',
+        'mime_type'     => 'application/pdf',
+        'formats_json'  => json_encode(['pdf' => ['2026/03/x/doc.pdf']]),
+    ]);
+
+    assert_eq('', render_image((string) $pdf));
+});
+
 exit(test_summary());

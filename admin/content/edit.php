@@ -568,6 +568,69 @@ ob_start();
             </label>
         </fieldset>
 
+        <!-- Presentation images declared by the content type -->
+        <?php $ctImageFields = is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []; ?>
+        <?php if ($ctImageFields): ?>
+            <fieldset class="card">
+                <legend><?= e(admin_trans('editor_images')) ?></legend>
+
+                <div class="seo-fields">
+                    <?php foreach ($ctImageFields as $imageKey => $imageField): ?>
+                        <?php
+                        $imageLabel = (string) ($imageField['label'] ?? $imageKey);
+                        $imageValue = $meta[$imageKey] ?? '';
+
+                        if (!empty($imageField['multiple'])) {
+                            $imageValues = array_values(array_filter(
+                                is_array($imageValue) ? $imageValue : [$imageValue],
+                                static fn($item): bool => (string) $item !== ''
+                            ));
+                            $imageInputName = 'meta_' . $imageKey . '[]';
+                        }
+                        ?>
+
+                        <?php if (empty($imageField['multiple'])): ?>
+                            <label class="field" for="meta-<?= e($imageKey) ?>">
+                                <span class="field-label"><?= e($imageLabel) ?></span>
+                                <div class="image-picker-wrapper">
+                                    <input class="field-input" type="text" id="meta-<?= e($imageKey) ?>"
+                                        name="meta_<?= e($imageKey) ?>" value="<?= e((string) $imageValue) ?>" data-image-picker>
+                                    <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                    <div class="image-picker-actions">
+                                        <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                        <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
+                                    </div>
+                                </div>
+                            </label>
+                        <?php else: ?>
+                            <div class="field">
+                                <span class="field-label"><?= e($imageLabel) ?></span>
+                                <div class="gallery-rows" id="gallery-<?= e($imageKey) ?>" data-gallery-name="<?= e($imageInputName) ?>">
+                                    <!-- Sentinel row: removing every image still submits the field, so it can be cleared. -->
+                                    <input type="hidden" name="<?= e($imageInputName) ?>" value="">
+                                    <?php foreach ($imageValues as $imageRow): ?>
+                                        <div class="gallery-row">
+                                            <div class="image-picker-wrapper">
+                                                <input class="field-input" type="text"
+                                                    name="<?= e($imageInputName) ?>" value="<?= e((string) $imageRow) ?>" data-image-picker>
+                                                <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                                <div class="image-picker-actions">
+                                                    <!-- This row's Remove control is the image's clear action. -->
+                                                    <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-small btn-muted remove-gallery-image"><?= e(admin_trans('editor_gallery_remove')) ?></button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="button" class="btn btn-small btn-secondary add-gallery-image" data-gallery="gallery-<?= e($imageKey) ?>"><?= e(admin_trans('editor_gallery_add')) ?></button>
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            </fieldset>
+        <?php endif; ?>
+
         <!-- SEO & social -->
         <fieldset class="card">
             <legend><?= e(admin_trans('editor_seo')) ?></legend>
@@ -589,6 +652,16 @@ ob_start();
                                 <textarea class="field-input" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
                                     rows="2" <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>
                                 ><?= e($fieldValue) ?></textarea>
+                            <?php elseif (($field['type'] ?? 'text') === 'media'): ?>
+                                <div class="image-picker-wrapper">
+                                    <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                        value="<?= e($fieldValue) ?>" data-image-picker>
+                                    <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                    <div class="image-picker-actions">
+                                        <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                        <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
+                                    </div>
+                                </div>
                             <?php else: ?>
                                 <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
                                     value="<?= e($fieldValue) ?>"

@@ -61,13 +61,66 @@ several layouts. See `theme/partials/taxonomy-archive.css.php`.
 
 ## Images
 
-`picture($mediaId, $attrs)` renders a responsive `<picture>` with a WebP
-source, `srcset`/`sizes`, a LQIP background and `alt` text from the media
-record. `media_url($id, $width, $format)` returns a plain URL and works for
-non-image media (PDF, MP4) too.
+Render a theme image with `render_image($value, $attrs)`:
+
+```php
+<?= render_image($meta['thumbnail'] ?? '', ['class' => 'card-img-top', 'alt' => $post['title']]) ?>
+```
+
+`$value` may be a **media id**, a **theme filename**, or an **absolute URL**:
+
+* a media id renders `picture()` — a responsive `<picture>` with a WebP source,
+  `srcset`/`sizes`, a LQIP background and `alt` text from the media record;
+* a filename (`600x400.png`, resolved through `img()`) or an absolute URL
+  renders a plain `<img>`.
+
+Do not call `img()` on a value that may hold a media id — `img()` treats its
+argument as a theme filename, so a media id would resolve to a 404. Use
+`render_image()` for anything an editor can set, and `img()` only for a file you
+know ships with the theme.
+
+`picture($mediaId, $attrs)` and `media_url($id, $width, $format)` are also
+available. Use `media_url()` when an image becomes a URL rather than an element
+(a CSS `background-image`, an `og:image`); it works for non-image media (PDF,
+MP4) too. `resolve_image_value($value, $width)` converts any of the three value
+shapes to a URL, and `$width` picks the nearest variant of a media row.
 
 Images smaller than the configured target widths simply have fewer variants;
-`picture()` renders whatever exists.
+`picture()` renders whatever exists. An upload that was already WebP has only
+WebP variants, which `picture()` uses for the fallback `<img>` too. If a row has
+no recorded variants at all, `render_image()` falls back to the original file
+rather than rendering nothing.
+
+Declare the images an editor can set on a content type in `theme/theme.php`,
+under the type's `images` key:
+
+```php
+'images' => [
+    'thumbnail' => ['label' => 'Featured image'],
+    'gallery'   => ['label' => 'Gallery', 'multiple' => true],
+],
+```
+
+Each key becomes a field in the editor's Images panel and is stored in the
+item's `meta` array, so a layout reads it back as `$page['meta']['thumbnail']`.
+Without a declaration the meta value still renders, but only from seeded data:
+there is no editor field for it.
+
+For a component prop, use the `image` schema type and `render_image()`:
+
+```php
+'schema' => [
+    'image' => ['type' => 'image', 'label' => 'Section Image', 'required' => false, 'default' => '600x400.png'],
+],
+'render' => function (array $props, array $page) {
+    echo render_image($props['image'] ?? '', ['class' => 'img-fluid']);
+},
+```
+
+The `image` type gives the field the media-library picker. Its `default` is the
+theme's placeholder image: it fills a new component, and it comes back when an
+editor clears the field. Only image fields are filled this way, so a cleared text
+field stays empty; declare no default if an empty image should render nothing.
 
 ## Vendored third-party code
 

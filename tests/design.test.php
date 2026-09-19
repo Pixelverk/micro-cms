@@ -149,6 +149,18 @@ t('the design system defines the shared page furniture', function () {
     }
 });
 
+t('the image picker ships both a select and a clear control', function () {
+    // content-editor.js binds both by class on the cloned component template, so
+    // losing one is a runtime error, not just a missing button.
+    $template = (string) file_get_contents(CMS_PATH . '/admin/partials/content-editor-templates.php');
+    $js       = (string) file_get_contents(CMS_PATH . '/admin/assets/content-editor.js');
+
+    foreach (['select-image-btn', 'clear-image-btn'] as $class) {
+        assert_contains($class, $template, "{$class} belongs in the picker template");
+        assert_contains($class, $js, "{$class} is bound in content-editor.js");
+    }
+});
+
 t('dark mode overrides the core surface tokens', function () {
     $css = admin_css();
 

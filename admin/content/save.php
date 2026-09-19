@@ -204,6 +204,13 @@ $contentData['meta']['description'] = trim($_POST['meta_description'] ?? $conten
 // SEO & social fields: trimmed, length-capped and validated.
 $contentData['meta'] = seo_collect_meta($_POST, $contentData['meta']);
 
+// Presentation images (thumbnail, gallery) the content type declares.
+$contentData['meta'] = content_collect_images(
+    $_POST,
+    $contentData['meta'],
+    is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []
+);
+
 $canonical = (string) ($contentData['meta']['canonical'] ?? '');
 if ($canonical !== '' && !seo_validate_canonical($canonical)) {
     $errors['meta_canonical'] = admin_trans('content_error_canonical');

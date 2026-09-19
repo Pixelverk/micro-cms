@@ -1821,7 +1821,15 @@ button.header-icon:hover { background: transparent; }
     gap: 0.5rem;
 }
 
-.select-image-btn {
+.image-picker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.select-image-btn,
+.clear-image-btn {
     padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
     background: var(--surface-muted);
@@ -1829,7 +1837,32 @@ button.header-icon:hover { background: transparent; }
     border: 1px solid var(--border);
 }
 
-.select-image-btn:hover { background: var(--surface-sunken); }
+.select-image-btn:hover,
+.clear-image-btn:hover { background: var(--surface-sunken); }
+
+/* Repeatable image rows (a content type's gallery meta field) */
+.gallery-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.gallery-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.gallery-row .image-picker-wrapper { flex: 1; }
+
+.gallery-row .image-preview { max-height: 80px; }
+
+.remove-gallery-image,
+.add-gallery-image { align-self: flex-start; flex-shrink: 0; }
 
 /* Small layout helpers used by page markup */
 

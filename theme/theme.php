@@ -96,6 +96,12 @@ return [
             ],
             'url_prefix' => 'blog',
             'taxonomy_layout' => 'blog-archive',
+            // Presentation images the layout renders. Keys are stored in the
+            // item's meta JSON and get a matching image field in the editor;
+            // values may be media ids, theme filenames or absolute URLs.
+            'images' => [
+                'thumbnail' => ['label' => 'Featured image'],
+            ],
         ],
         'portfolio_item' => [
             'label' => 'Portfolio Item',
@@ -105,7 +111,11 @@ return [
             'available_components' => [
                 'quill-editor',
             ],
-            'url_prefix' => 'portfolio'
+            'url_prefix' => 'portfolio',
+            'images' => [
+                'thumbnail' => ['label' => 'Featured image'],
+                'gallery'   => ['label' => 'Gallery', 'multiple' => true],
+            ],
         ],
     ],
 

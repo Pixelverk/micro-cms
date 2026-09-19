@@ -79,7 +79,7 @@ Wave 3 is opportunistic and can be dropped.
 | 7 | 1 | C | Maintenance mode | S–M | — |
 | 8 | 1 | C | Form model completion | S–M | — |
 | 9 | 1 | C | Settings gaps | S | — |
-| 10 | 1 | A/C | Scheduling, expiry and visibility | S–M | — |
+| 10 | 1 | A/C | Scheduling and visibility | S–M | — |
 | 11 | 1 | A/B | Media pipeline into the theme + `og_image` picker | M | 1 |
 | 12 | 2 | A | Media library UX + media usage before delete | S–M | 11 |
 | 13 | 2 | B | Theme integrity check + Health | S–M | — |
@@ -356,19 +356,27 @@ the local server.
 
 **Reject if** it becomes a theme/design editor.
 
-## 10. Scheduling, expiry and visibility (A/C, S–M)
+## 10. Scheduling and visibility (A/C, S–M)
 
-**Why.** Scheduled publishing works but is invisible unless you open each item;
-there is no scheduled unpublish; and the dashboard does not surface the form
-inbox that exists.
+**Partly shipped.** The content list already has a Scheduled column showing the
+date, with a Scheduled status tab that filters to it, and the dashboard already
+surfaces scheduled items and new/waiting form submissions as attention tiles.
+What remains is sorting or filtering the content list by publish date, and
+gating the dashboard's submissions tile (and its counts) behind `forms.view` — an
+author currently sees counts and a link to an inbox that 403s.
+
+**Decision: no expiry feature.** Content is taken down by changing its status,
+not by a timer, so there is deliberately no `expires_at` and no expiry branch in
+`publishing_check()`. Scheduling still publishes.
+
+**Why.** Scheduled publishing works, but the list cannot be sorted or filtered by
+publish date, so seeing what goes live when means scanning it, and the dashboard
+offers submissions to roles that cannot open them.
 
 **Work.**
-* Content list: show the scheduled date and allow sorting/filtering by publish
-  date.
-* `expires_at` plus a branch in the existing `publishing_check()` that unpublishes
-  or archives when due.
-* Dashboard tiles for scheduled items and new form submissions (reuse
-  `forms.view`).
+* Content list: allow sorting/filtering by publish date (the scheduled date is
+  already shown).
+* Dashboard: reuse `forms.view` for the submissions tile.
 
 **Verify.** Extend `tests/content.test.php`, `tests/forms.test.php` and
 `tests/http.test.php`; manual list and dashboard check.
@@ -397,6 +405,33 @@ local server.
 
 **Reject if** it forces media ids into every theme or changes the content model
 for all types.
+
+**Shipped.** Settled decision: **a media id is the primary stored value**, with a
+theme filename or absolute URL accepted as a placeholder/fallback, so no theme is
+forced onto the media library and seeded content keeps rendering. New
+`render_image()` is the one call a theme uses for an editor-settable image: a
+media id becomes `picture()` (WebP `srcset`, LQIP, `alt` from the media row), a
+filename or URL becomes a plain `<img>` — deliberately *not* wrapped in
+`.image-wrapper`, which `main.js` only reveals for `picture()`. Every
+editor-settable image in `theme/components/` and `theme/layouts/` now goes
+through it (the header brand keeps `site_logo_url()`, which resolves the same
+value shapes); that also fixed `blog-archive.php`/`taxonomy.php` emitting a bare
+relative `src="900x400.png"` — a guaranteed 404 — and gave
+`blog-featured-section.php` a `media_url()` variant for its CSS background.
+`resolve_image_value()` gained an optional `$width`. Schema `image` props use the
+media picker, an empty image prop falls back to its schema `default` at render
+time (so clearing a section image brings the theme's placeholder back, while a
+cleared text field stays empty), and the pre-publish alt rule accepts a library
+image's own `alt_text`.
+
+Presentation meta is declared per content type in the manifest — `blog_post` and
+`portfolio_item` get a `thumbnail`, `portfolio_item` also a repeatable `gallery`
+— and saved from a matching Images panel (`content_collect_images()`). The SEO
+panel's `og_image` is now a real picker field. Verified through the local server:
+a media id in `meta.thumbnail`, a component image prop, a portfolio gallery and
+a taxonomy archive all render `<picture>` with WebP `srcset`, the media file
+serves 200, and a theme filename in the same slot stays a plain absolute `<img>`;
+an editor save round-trips `meta_gallery[]` and clears it when emptied.
 
 ---
 
@@ -571,6 +606,8 @@ phase 7.
 * **E-commerce, membership, comments, front-end accounts** — a different product.
 * **External CAPTCHA** — honeypot, signed token and per-IP rate limit are the
   dependency-free answer.
+* **Scheduled expiry / auto-unpublish** — scheduling publishes; taking content
+  down is a deliberate status change, not a timer (see phase 10).
 * **2FA, per-resource ACLs, GDPR/consent suite** — effort out of proportion to
   the threat model of a small brochure site; the existing roles and audit log are
   the bar.
@@ -592,9 +629,6 @@ Settle each at the start of its phase, not now.
 * **Phase 6:** how far the CSP goes given vendored Quill and raw snippet
   settings.
 * **Phase 9:** custom CSS — a raw setting, or explicitly out (theme owns design)?
-* **Phase 11:** media ids or theme-asset filenames for featured images? A
-  per-theme decision that must be consistent across layouts, archives and
-  previews.
 * **Phase 15:** starter theme at `theme-starter/` or `examples/theme-starter/`?
 * **Phase 20:** FTS5 now, or only when a client reports search quality problems?
 * **Phase 27:** hand-rolled SMTP client or documented host relay?
@@ -606,6 +640,11 @@ Settle each at the start of its phase, not now.
 * Query-driven views and the page cache: the cache key is the path, so every
   cache decision point must know about query parameters (`index.php` firebreak,
   `checkCache()`, the write path). Pagination needed two guards, not one.
+* Two kinds of image, two owners: **images** are theme files under
+  `theme/assets/img/` (developer-owned, `img()`), while **media** are editor
+  uploads in the `media` table (editor-owned, addressed by id). They do not share
+  a filename space, so a media id handed to `img()` 404s; `render_image()` and
+  `resolve_image_value()` accept either and pick the right pipeline.
 * Scheduled publishing is request-triggered (at most once a minute via
   `storage/.publish-check`); there is no cron.
 * `theme/theme.php` decides the component palette per content type; `setup.php`

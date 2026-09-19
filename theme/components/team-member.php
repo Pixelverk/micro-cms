@@ -19,7 +19,7 @@ return [
         'default' => 'Role'
     ],
     'image' => [
-        'type' => 'text',
+        'type' => 'image',
         'label' => 'Portrait',
         'required' => true,
         'default' => '150x150.png'
@@ -37,11 +37,24 @@ return [
 'css' => '',
 
 'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
-    $imageAlt = $props['image_alt'] ?? $props['name'] ?? '';
+    $imageValue = (string) ($props['image'] ?? '');
+    $imageAlt = trim((string) ($props['image_alt'] ?? ''));
+
+    // A library image carries its own alt text; a theme filename has none, so
+    // fall back to the visible name.
+    if ($imageAlt === '' && !ctype_digit($imageValue)) {
+        $imageAlt = (string) ($props['name'] ?? '');
+    }
+
+    $imageAttrs = ['class' => 'img-fluid rounded-circle mb-4 px-4'];
+
+    if ($imageAlt !== '') {
+        $imageAttrs['alt'] = $imageAlt;
+    }
     ?>
     <div class="col mb-5 mb-xl-0">
         <div class="text-center">
-            <img class="img-fluid rounded-circle mb-4 px-4" src="<?= e(img($props['image'] ?? '')) ?>" alt="<?= e($imageAlt) ?>" />
+            <?= render_image($imageValue, $imageAttrs) ?>
             <h5 class="fw-bolder"><?= e($props['name'] ?? '') ?></h5>
             <div class="fst-italic text-muted"><?= e($props['role'] ?? '') ?></div>
         </div>

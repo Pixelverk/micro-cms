@@ -38,7 +38,7 @@ CSS,
                                 <a class="stretched-link text-decoration-none" href="<?= e(url('blog/' . $slug)) ?>">Read more <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
-                        <div class="col-lg-6 col-xl-7"><div class="bg-featured-blog" style="background-image: url('<?= e(img($image)) ?>')"></div></div>
+                        <div class="col-lg-6 col-xl-7"><div class="bg-featured-blog" style="background-image: url('<?= e(resolve_image_value((string) $image, 1200)) ?>')"></div></div>
                     </div>
                 </div>
             </div>
