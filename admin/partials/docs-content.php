@@ -27,7 +27,7 @@ function docs_content(): array
             'sections' => [
                 'Getting around' => [
                     ['p' => 'The sidebar is the map of the admin: Welcome, Content, Collections (categories and tags), Forms, More (menus, media, redirects, activity, documentation, analytics) and System (users, settings, utilities, health). Anything your role cannot use is hidden.'],
-                    ['p' => 'The top bar names the page you are on. On the right are a link to the live site, the help button, the light/dark switch, a full-screen toggle, and your account. Each page carries its own working buttons at the top right of the content area.'],
+                    ['p' => 'The top bar names the page you are on. On the right are a link to the live site, the help button, the light/dark switch, and your account. Each page carries its own working buttons at the top right of the content area.'],
                     ['p' => 'On a narrow screen the sidebar becomes a drawer and the top bar keeps only the menu and account controls.'],
                 ],
                 'Creating and editing content' => [

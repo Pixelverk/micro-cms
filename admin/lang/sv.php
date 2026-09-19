@@ -34,8 +34,6 @@ return [
     'nav_aria_breadcrumb' => 'Brödsmulor',
     'nav_aria_light' => 'Ljust läge',
     'nav_aria_dark' => 'Mörkt läge',
-    'nav_aria_fullscreen' => 'Helskärm',
-    'nav_aria_exit_fullscreen' => 'Lämna helskärm',
     // Dashboard
     'dashboard_intro' => 'Använd verktygen nedan för att hantera webbplatsen.',
     'dashboard_content_summary' => ':total poster, :published publicerade, :draft utkast.',

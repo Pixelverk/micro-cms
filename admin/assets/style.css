@@ -466,11 +466,6 @@ button:hover {
     background: var(--surface-muted);
 }
 
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* 4.5 Tables
    Table styling itself lives with `.content-table` / `.admin-table` (7.1);
    every table in the admin carries one of those classes. */
@@ -962,18 +957,7 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Inline action cluster in table cells. */
-.actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-}
-
 .actions form { margin: 0; }
-
-/* Disabled destructive action in the user list (own account). */
-.delete-user-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* The dark theme's amber, blue and red fills are light colours, so the white
    text the base variants set would only reach 1.7:1, 2.6:1 and 3.9:1. Darker
@@ -1246,21 +1230,12 @@ html.dark .menu-item .remove {
     margin-bottom: 1.25rem;
 }
 
-/* Inside a grid the gap supplies the spacing. */
-.field-grid > .field {
-    margin-bottom: 0;
-}
-
 .field-label {
     display: block;
     margin-bottom: 0.4rem;
     font-size: 0.9rem;
     font-weight: var(--font-weight-semibold);
     line-height: 1.4;
-}
-
-.field-input {
-    width: 100%;
 }
 
 /* The settings form lays each group out in a grid of equal tracks, so a field
@@ -1282,9 +1257,10 @@ html.dark .menu-item .remove {
     grid-column: 1 / -1;
 }
 
-/* Grid items default to min-width: auto, which lets a wide child push the
-   track open. */
+/* Inside a grid the gap supplies the spacing, and a grid item defaults to
+   min-width: auto, which lets a wide child push the track open. */
 .field-grid > .field {
+    margin-bottom: 0;
     min-width: 0;
 }
 
@@ -1673,12 +1649,6 @@ button.header-icon:hover { background: transparent; }
    than renaming them in the markup. */
 
 .component-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--border);
 }
@@ -1756,7 +1726,6 @@ button.header-icon:hover { background: transparent; }
 .inline-form { display: inline; }
 .inline-form-block { display: inline-block; margin: 0; }
 .no-underline { text-decoration: none; color: inherit; }
-.gap-sm { gap: 0.5rem; }
 
 /* A toolbar of controls beside a page title: the search box and the upload
    form line up on one baseline rather than wrapping mid-row. */
@@ -1804,7 +1773,6 @@ button.header-icon:hover { background: transparent; }
     }
 }
 
-.mr-sm { margin-right: 0.5rem; }
 .mr-md { margin-right: 1rem; }
 
 .sidebar-footer { margin-top: auto; }
@@ -1882,13 +1850,8 @@ button.header-icon:hover { background: transparent; }
 }
 
 .menu-field-narrow .field-input {
-    width: 100%;
     min-width: 6.5rem;
     field-sizing: content;
-}
-
-.menu-fields .field-input {
-    width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -2066,13 +2029,12 @@ button.sidebar-link {
     z-index: 9999;
 }
 
-/* Markup uses the `hidden` attribute; JS shows it by setting display:flex. */
-.modal-backdrop[hidden] { display: none; }
-.modal.hidden { display: none; }
-
-/* A dialog rendered inside the backdrop starts hidden and is revealed with
-   display:flex on the backdrop, so the attribute has to win over .modal's own
+/* Markup uses the `hidden` attribute; JS shows it by setting display:flex. A
+   dialog rendered inside the backdrop starts hidden and is revealed with
+   display:flex on the backdrop, so the attribute has to win over `.modal`'s own
    display. The image picker uses the class instead; both still work. */
+.modal-backdrop[hidden],
+.modal.hidden,
 .modal[hidden] { display: none; }
 
 .modal {
@@ -2267,11 +2229,6 @@ button.sidebar-link {
 
 .component-actions .actions {
     justify-content: flex-end;
-}
-
-.actions-left {
-    display:flex;
-    align-items:center;
 }
 
 .sortable-ghost {
@@ -2576,14 +2533,6 @@ button.sidebar-link {
 .activity-filters select,
 .activity-filters input { min-width: 9rem; }
 
-.pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-top: 1rem;
-}
-
 .pagination-status { color: var(--text-muted); font-size: 0.85rem; }
 
 /*   7.9 Media manager (moved out of an inline <style> block in admin/media/index.php) */
@@ -2733,10 +2682,7 @@ button.sidebar-link {
     gap: 0.5rem;
 }
 
-.media-url-row select {
-    width: 100%;
-}
-
+.media-url-row select,
 .media-url-row button {
     width: 100%;
 }
@@ -2821,11 +2767,11 @@ button.sidebar-link {
    resets the 180px `.col-actions` width from the report tables. */
 .messages-table .col-status { width: 7rem; }
 .messages-table .col-status-control { width: 30%; }
-.messages-table .col-actions { width: 7.5rem; text-align: right; }
-
 /* The view and delete buttons sit side by side. `.actions` wraps by default,
    which stacked these two in a column narrow enough for each to wrap. */
 .messages-table .col-actions {
+    width: 7.5rem;
+    text-align: right;
     flex-wrap: nowrap;
     justify-content: flex-end;
 }

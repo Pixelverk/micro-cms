@@ -71,7 +71,7 @@ ob_start();
                     <?php else: ?>
                         <button
                             type="button"
-                            class="btn-delete btn-small btn-icon delete-user-btn"
+                            class="btn-delete btn-small btn-icon"
                             title="<?= e(admin_trans('user_own_account_help')) ?>"
                             aria-label="<?= e(admin_trans('common_delete')) ?>"
                             disabled>

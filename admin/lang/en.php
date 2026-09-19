@@ -34,8 +34,6 @@ return [
     'nav_aria_breadcrumb' => 'Breadcrumb',
     'nav_aria_light' => 'Light mode',
     'nav_aria_dark' => 'Dark mode',
-    'nav_aria_fullscreen' => 'Full screen',
-    'nav_aria_exit_fullscreen' => 'Exit full screen',
     // Dashboard
     'dashboard_intro' => 'Use the tools below to manage your site.',
     'dashboard_content_summary' => ':total entries, :published published, :draft drafts.',
