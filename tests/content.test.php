@@ -219,4 +219,134 @@ t('publishing_check() respects its once-a-minute marker', function () {
     @unlink($marker);
 });
 
+// ---------------------------------------------------------------------------
+// Pre-publish checklist
+// ---------------------------------------------------------------------------
+
+/**
+ * One checklist rule's result, or a failure if the rule is missing.
+ */
+function checklist_item(array $items, string $rule): array
+{
+    foreach ($items as $item) {
+        if (($item['rule'] ?? '') === $rule) {
+            return $item;
+        }
+    }
+
+    throw new RuntimeException("checklist rule '{$rule}' is missing");
+}
+
+/** A page body with a single component. */
+function checklist_body(string $type, array $props, array $children = []): array
+{
+    return [['type' => $type, 'props' => $props, 'children' => $children]];
+}
+
+t('the pre-publish checklist passes a complete item', function () {
+    $items = content_publish_checklist([
+        'title' => 'Complete',
+        'meta'  => ['description' => 'A description'],
+        'body'  => checklist_body('team-member', [
+            'name' => 'Ada', 'role' => 'Engineer', 'image' => 'ada.png', 'image_alt' => 'Ada at a desk',
+        ]),
+    ]);
+
+    assert_count(0, content_checklist_blockers($items), 'nothing blocks');
+    assert_true(checklist_item($items, 'image_alt')['ok'], 'the image is described');
+    assert_true(checklist_item($items, 'links')['ok'], 'there are no dead links');
+    assert_true(checklist_item($items, 'description')['ok'], 'the description is present');
+});
+
+t('an empty title blocks publishing', function () {
+    $items = content_publish_checklist([
+        'title' => '   ',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('hero-section', ['title' => 'T', 'subtitle' => 'S']),
+    ]);
+
+    assert_false(checklist_item($items, 'title')['ok']);
+    assert_count(1, content_checklist_blockers($items), 'the title is the only blocker');
+});
+
+t('an empty required component field blocks publishing', function () {
+    $items = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('team-member', ['name' => '', 'role' => 'Engineer', 'image' => 'ada.png', 'image_alt' => 'Alt']),
+    ]);
+
+    $required = checklist_item($items, 'required');
+    assert_false($required['ok']);
+    assert_contains('Name', $required['detail'], 'the missing field is named');
+    assert_count(1, content_checklist_blockers($items));
+});
+
+t('the checklist walks nested components', function () {
+    $items = content_publish_checklist([
+        'title' => 'Nested',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body(
+            'cta-section',
+            ['title' => 'T', 'text' => 'X', 'url' => '#', 'linktext' => 'Go'],
+            checklist_body('team-member', ['name' => '', 'role' => 'R', 'image' => 'i.png', 'image_alt' => 'Alt'])
+        ),
+    ]);
+
+    assert_false(checklist_item($items, 'required')['ok'], 'a nested required field is found');
+    assert_contains('Name', checklist_item($items, 'required')['detail']);
+});
+
+t('an image without a description warns but does not block', function () {
+    $items = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('team-member', ['name' => 'Ada', 'role' => 'Engineer', 'image' => 'ada.png', 'image_alt' => '']),
+    ]);
+
+    $alt = checklist_item($items, 'image_alt');
+    assert_false($alt['ok']);
+    assert_eq('warn', $alt['level']);
+    assert_count(0, content_checklist_blockers($items), 'a warning never blocks');
+});
+
+t('a link label with no target warns', function () {
+    $items = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('hero-section', [
+            'title' => 'T', 'subtitle' => 'S',
+            'btn1_url' => '', 'btn1_text' => 'Go',
+            'btn2_url' => '', 'btn2_text' => '',
+        ]),
+    ]);
+
+    $links = checklist_item($items, 'links');
+    assert_false($links['ok']);
+    assert_contains('Btn 1 url', $links['detail']);
+    assert_count(0, content_checklist_blockers($items));
+
+    // An optional URL with no label is not a visible link, so it is ignored.
+    $ignored = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => ['description' => 'Desc'],
+        'body'  => checklist_body('contact-section', ['form_type' => 'contact', 'redirect_url' => '']),
+    ]);
+
+    assert_true(checklist_item($ignored, 'links')['ok'], 'a URL with no label is not a dead link');
+});
+
+t('a missing meta description warns', function () {
+    $items = content_publish_checklist([
+        'title' => 'Page',
+        'meta'  => [],
+        'body'  => checklist_body('hero-section', ['title' => 'T', 'subtitle' => 'S']),
+    ]);
+
+    $description = checklist_item($items, 'description');
+    assert_false($description['ok']);
+    assert_eq('warn', $description['level']);
+    assert_count(0, content_checklist_blockers($items));
+});
+
 exit(test_summary());

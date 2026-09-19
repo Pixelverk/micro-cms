@@ -284,6 +284,37 @@ if (!empty($_POST['autosave']) && $id !== null) {
 }
 
 // ----------------------------
+// Pre-publish checklist
+// ----------------------------
+// Blocking rules keep half-finished content off the live site. The save still
+// goes ahead as a draft, so the editor's work is kept and it can show exactly
+// what is missing when it reloads.
+$blockedPublish = null;
+
+$storedStatus = (string) ($existingForPermission['status'] ?? 'draft');
+
+if ($status === 'published' && $storedStatus !== 'published') {
+    $blockers = content_checklist_blockers(content_publish_checklist($contentData));
+
+    if ($blockers) {
+        $reasons = array_map(
+            static fn(array $item): string => admin_trans('checklist_rule_' . $item['rule'])
+                . ($item['detail'] !== '' ? ' (' . $item['detail'] . ')' : ''),
+            $blockers
+        );
+
+        $blockedPublish = admin_trans('editor_publish_blocked', [
+            'list' => implode('; ', array_slice($reasons, 0, 5)),
+        ]);
+
+        $status                      = 'draft';
+        $contentData['status']       = 'draft';
+        $contentData['published_at'] = null;
+        $contentData['scheduled_at'] = null;
+    }
+}
+
+// ----------------------------
 // Save content
 // ----------------------------
 $isNew = empty($id);
@@ -363,8 +394,8 @@ log_activity(
 
 redirect_with_toast(
     'content/edit',
-    'success',
-    admin_trans('content_saved', ['type' => ucfirst($contentType)]),
+    $blockedPublish !== null ? 'error' : 'success',
+    $blockedPublish ?? admin_trans('content_saved', ['type' => ucfirst($contentType)]),
     [
         'id'    => $id,
         'type'  => $contentType,

@@ -111,6 +111,10 @@ if ($pendingAutosave && (int) ($_GET['restore_version'] ?? 0) === (int) $pending
     $contentData['scheduled_at'] = $restoringAutosave['scheduled_at'];
 }
 
+// Pre-publish checklist for whatever the editor is currently showing, so a
+// loaded draft is checked as well as the saved row.
+$publishChecklist = $isEdit ? content_publish_checklist($contentData) : [];
+
 // ----------------------------
 // Content values
 // ----------------------------
@@ -611,6 +615,30 @@ ob_start();
             <?php endforeach; ?>
             </div>
         </fieldset>
+
+        <?php if ($publishChecklist): ?>
+            <!-- Pre-publish checklist -->
+            <fieldset class="card">
+                <legend><?= e(admin_trans('checklist_title')) ?></legend>
+                <ul class="checklist">
+                    <?php foreach ($publishChecklist as $item): ?>
+                        <?php $state = $item['ok'] ? 'ok' : ($item['level'] === 'block' ? 'block' : 'warn'); ?>
+                        <li class="checklist-item" data-state="<?= e($state) ?>">
+                            <span class="checklist-mark" aria-hidden="true"><?= $item['ok'] ? '&#10003;' : '!' ?></span>
+                            <span>
+                                <?= e(admin_trans('checklist_rule_' . $item['rule'])) ?>
+                                <?php if (!$item['ok'] && $item['detail'] !== ''): ?>
+                                    <small><?= e($item['detail']) ?></small>
+                                <?php endif; ?>
+                                <?php if (!$item['ok'] && $item['level'] === 'block'): ?>
+                                    <small><?= e(admin_trans('checklist_blocks')) ?></small>
+                                <?php endif; ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </fieldset>
+        <?php endif; ?>
 
     </div>
 

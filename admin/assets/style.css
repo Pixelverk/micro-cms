@@ -2480,6 +2480,15 @@ button.sidebar-link {
 .autosave-notice-text { flex: 1 1 24rem; }
 .autosave-notice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 
+/* Pre-publish checklist */
+.checklist { list-style: none; margin: 0; padding: 0; }
+.checklist-item { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.3rem 0; font-size: 0.85rem; line-height: 1.4; }
+.checklist-item small { display: block; color: var(--text-muted); }
+.checklist-mark { flex: 0 0 auto; width: 1rem; font-weight: 700; }
+.checklist-item[data-state="ok"] .checklist-mark { color: var(--success); }
+.checklist-item[data-state="block"] .checklist-mark { color: var(--danger); }
+.checklist-item[data-state="warn"] .checklist-mark { color: var(--warning); }
+
 /*   7.6 Documentation
    Long-form prose, so it gets its own reading rhythm: a bounded line length,
    generous line height, and real space between blocks. Without this the

@@ -227,6 +227,14 @@ validation, capability checks or cache invalidation.
 
 ## 5. Pre-publish checklist (A, M)
 
+**Shipped.** `content_publish_checklist()` walks the body against each
+component's own schema. Settled decision: an empty title and empty `required`
+component fields **block**; image descriptions, dead links (a label with no
+target) and a missing meta description only **warn**. A blocked publish is saved
+as a draft instead, so nothing goes live and the editor's work is kept; the
+editor then reloads with the checklist and an explanation. Bulk publish skips
+blocked items and reports the count. Drafts are never checked.
+
 **Why.** Editors can publish a page with no H1, images with no alt text, empty
 links or a missing description. The per-block `required` schema flag is a UI hint
 today and is not re-checked on save.

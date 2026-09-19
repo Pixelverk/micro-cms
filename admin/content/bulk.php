@@ -126,6 +126,7 @@ if (!$selected) {
 // Apply
 // ----------------------------
 $changed = 0;
+$blocked = 0;
 $now = time();
 
 $pdo->beginTransaction();
@@ -133,6 +134,21 @@ $pdo->beginTransaction();
 try {
     foreach ($selected as $row) {
         $id = (int) $row['id'];
+
+        // Publishing a draft that is missing required fields is skipped rather
+        // than force-published: the same blocking rules the editor enforces.
+        if ($action === 'publish' && (string) $row['status'] !== 'published') {
+            $checklist = content_publish_checklist([
+                'title' => $row['title'],
+                'meta'  => $row['meta'],
+                'body'  => $row['body'],
+            ]);
+
+            if (content_checklist_blockers($checklist)) {
+                $blocked++;
+                continue;
+            }
+        }
 
         // Capture the outgoing state before changing it, so a bulk edit can be
         // undone from the history page. Previously this ran after the UPDATE
@@ -240,6 +256,10 @@ log_activity('content.bulk_' . $action, 'content', null, $changed . ' item(s)', 
 ]);
 
 $summary = admin_trans('bulk_summary_updated', ['count' => $changed]);
+
+if ($blocked > 0) {
+    $summary .= ' ' . admin_trans('bulk_summary_blocked', ['count' => $blocked]);
+}
 
 if ($skipped > 0) {
     $summary .= ' ' . admin_trans('bulk_summary_skipped', ['count' => $skipped]);

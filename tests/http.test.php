@@ -1105,6 +1105,78 @@ t('the history restore for an autosave opens the editor instead of publishing', 
     db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
 });
 
+t('a blocked publish is saved as a draft and returns to the editor', function () use ($base) {
+    http_login($base);
+
+    $id = seed_content([
+        'type'         => 'page',
+        'slug'         => 'blocked-publish',
+        'title'        => 'Blocked publish',
+        'status'       => 'draft',
+        'published_at' => null,
+    ]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=page');
+
+    [$status] = http('POST', $base . '/admin/content/save', true, [
+        '_token'     => $token,
+        'id'         => $id,
+        'type'       => 'page',
+        'title'      => 'Blocked publish',
+        'slug'       => 'blocked-publish',
+        'status'     => 'published',
+        'components' => [
+            ['type' => 'hero-section', 'props' => ['title' => '', 'subtitle' => 'Sub']],
+        ],
+    ]);
+
+    assert_eq(302, $status, 'the save redirects back to the editor');
+
+    $row = db()->prepare("SELECT status, published_at FROM content WHERE id = :id");
+    $row->execute(['id' => $id]);
+    $saved = $row->fetch(PDO::FETCH_ASSOC);
+
+    assert_eq('draft', $saved['status'], 'a blocked publish does not go live');
+    assert_eq(null, $saved['published_at']);
+
+    [, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
+    assert_contains('checklist-item', $editor, 'the checklist is shown in the editor');
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
+t('bulk publish skips items that are missing required fields', function () use ($base) {
+    http_login($base);
+
+    $complete = seed_content([
+        'type' => 'page', 'slug' => 'bulk-complete', 'title' => 'Complete', 'status' => 'draft',
+        'published_at' => null,
+        'body' => [['type' => 'hero-section', 'props' => ['title' => 'T', 'subtitle' => 'S'], 'children' => []]],
+    ]);
+
+    $incomplete = seed_content([
+        'type' => 'page', 'slug' => 'bulk-incomplete', 'title' => 'Incomplete', 'status' => 'draft',
+        'published_at' => null,
+        'body' => [['type' => 'hero-section', 'props' => ['title' => '', 'subtitle' => 'S'], 'children' => []]],
+    ]);
+
+    [$status] = http('POST', $base . '/admin/content/bulk', true, [
+        '_token'      => http_csrf_token($base),
+        'bulk_action' => 'publish',
+        'type'        => 'page',
+        'ids'         => [$complete, $incomplete],
+    ]);
+
+    assert_eq(302, $status);
+    assert_eq('published', http_content_status($complete), 'the complete item publishes');
+    assert_eq('draft', http_content_status($incomplete), 'the incomplete item is skipped');
+
+    delete_content_versions($complete);
+    delete_content_versions($incomplete);
+    db()->prepare("DELETE FROM content WHERE id IN (?, ?)")->execute([$complete, $incomplete]);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------
