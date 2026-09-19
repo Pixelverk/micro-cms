@@ -1,8 +1,61 @@
 <?php
 
 $pageTitle = admin_trans('nav_users');
-$username = current_username();
+$username  = current_username();
+
+$roles = admin_roles();
+
+// ----------------------------
+// Filters
+// ----------------------------
+$role   = in_array((string) ($_GET['role'] ?? ''), $roles, true) ? (string) $_GET['role'] : '';
+$search = trim((string) ($_GET['q'] ?? ''));
+
 $users = load_users();
+
+// Role counts are taken before the filters, so each tab shows its own total.
+$roleCounts = array_fill_keys($roles, 0);
+
+foreach ($users as $data) {
+    $userRole = (string) ($data['role'] ?? '');
+
+    if (isset($roleCounts[$userRole])) {
+        $roleCounts[$userRole]++;
+    }
+}
+
+$totalCount = count($users);
+
+// The search covers everything that identifies an account, not just the
+// username the table happens to show.
+$visible = array_filter($users, static function (array $data) use ($role, $search): bool {
+    if ($role !== '' && (string) ($data['role'] ?? '') !== $role) {
+        return false;
+    }
+
+    if ($search === '') {
+        return true;
+    }
+
+    $haystack = implode(' ', [
+        (string) ($data['username'] ?? ''),
+        (string) ($data['first_name'] ?? ''),
+        (string) ($data['last_name'] ?? ''),
+        (string) ($data['email'] ?? ''),
+    ]);
+
+    return stripos($haystack, $search) !== false;
+});
+
+// URL that preserves the current filters while changing one of them.
+$filterUrl = function (array $overrides = []) use ($role, $search): string {
+    $query = array_filter(array_merge([
+        'role' => $role,
+        'q'    => $search,
+    ], $overrides), static fn($value) => $value !== '' && $value !== null);
+
+    return url('admin/user') . ($query ? '?' . http_build_query($query) : '');
+};
 
 ob_start();
 ?>
@@ -17,7 +70,35 @@ ob_start();
     </div>
 </div>
 
-<?php if (empty($users)): ?>
+<div class="content-filters">
+    <div class="status-tabs">
+        <a href="<?= e($filterUrl(['role' => ''])) ?>"
+           class="status-tab <?= $role === '' ? 'active' : '' ?>">
+            <?= e(admin_trans('user_all_roles')) ?>
+            <span class="status-tab-count"><?= (int) $totalCount ?></span>
+        </a>
+        <?php foreach ($roles as $roleCode): ?>
+            <a href="<?= e($filterUrl(['role' => $roleCode])) ?>"
+               class="status-tab <?= $role === $roleCode ? 'active' : '' ?>">
+                <?= e(admin_role_label($roleCode)) ?>
+                <span class="status-tab-count"><?= (int) $roleCounts[$roleCode] ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <form method="get" class="content-search">
+        <?php if ($role !== ''): ?>
+            <input type="hidden" name="role" value="<?= e($role) ?>">
+        <?php endif; ?>
+        <input type="search" name="q" value="<?= e($search) ?>"
+               placeholder="<?= e(admin_trans('user_search')) ?>" aria-label="<?= e(admin_trans('user_search')) ?>">
+        <?php if ($search !== ''): ?>
+            <a href="<?= e($filterUrl(['q' => ''])) ?>" class="btn-small btn-muted"><?= e(admin_trans('common_clear')) ?></a>
+        <?php endif; ?>
+    </form>
+</div>
+
+<?php if (empty($visible)): ?>
     <div class="empty-state">
         <span class="empty-state-icon" aria-hidden="true"><?= icon('group', 24) ?></span>
         <p class="empty-state-title"><?= e(admin_trans('user_empty')) ?></p>
@@ -27,15 +108,17 @@ ob_start();
         <thead>
             <tr>
                 <th><?= e(admin_trans('user_username')) ?></th>
+                <th><?= e(admin_trans('user_role')) ?></th>
                 <th><?= e(admin_trans('common_created')) ?></th>
                 <th><?= e(admin_trans('user_last_login')) ?></th>
                 <th class="col-actions col-actions-icons"><?= e(admin_trans('common_actions')) ?></th>
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($users as $name => $data): ?>
+        <?php foreach ($visible as $name => $data): ?>
             <tr>
                 <td><?= e($name) ?></td>
+                <td><?= e(admin_role_label((string) ($data['role'] ?? ''))) ?></td>
                 <td>
                     <?= isset($data['created_at'])
                         ? date('Y-m-d H:i', (int)$data['created_at'])

@@ -60,7 +60,7 @@ t('every class used in admin markup is defined in the design system', function (
     $defined = array_flip(preg_match_all('/\.([a-zA-Z][\w-]*)/', $css, $m) ? $m[1] : []);
 
     // Behavioural hooks carry no styling on purpose.
-    $hooks = ['js-confirm-form', 'messages-row', 'js-row-status', 'js-submission-view', 'js-submission-close'];
+    $hooks = ['js-confirm-form', 'messages-row', 'js-row-status', 'js-submission-view', 'js-submission-close', 'js-media-view', 'js-media-close'];
 
     $undefined = [];
     foreach (admin_markup_classes() as $class => $files) {
@@ -143,7 +143,7 @@ t('the design system defines the shared page furniture', function () {
         '.content-table', '.admin-table', '.actions',
         '.badge', '.status', '.status-draft', '.status-scheduled', '.status-archived',
         '.modal', '.modal-content', '.sidebar', '.sidebar-link', '.header-title',
-        '.toast', '.media-grid', '.media-inspector', '.image-grid', '.login-card',
+        '.toast', '.media-thumb', '.media-preview', '.image-grid', '.login-card',
     ] as $selector) {
         assert_contains($selector, $css, "{$selector} should be styled");
     }

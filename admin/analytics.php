@@ -124,62 +124,72 @@ ob_start();
         </div>
     </div>
 
-    <div class="card">
-        <h2><?= e(admin_trans('analytics_daily', ['range' => $rangeLabel])) ?></h2>
-        <?= analytics_sparkline(array_values($dailyViews)) ?>
-    </div>
-
-    <div class="stack">
-        <div class="card">
-            <h2><?= e(admin_trans('analytics_top_pages')) ?></h2>
-
-            <?php if (!$topPages): ?>
-                <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
-            <?php else: ?>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th><?= e(admin_trans('analytics_path')) ?></th>
-                            <th><?= e(admin_trans('analytics_views')) ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($topPages as $row): ?>
-                            <tr>
-                                <td><code><?= e($row['path']) ?></code></td>
-                                <td><?= e((string) $row['views']) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('clipboard-check', 18) ?>
+            <?= e(admin_trans('analytics_daily', ['range' => $rangeLabel])) ?>
+        </legend>
 
         <div class="card">
-            <h2><?= e(admin_trans('analytics_top_referrers')) ?></h2>
-
-            <?php if (!$topReferrers): ?>
-                <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
-            <?php else: ?>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th><?= e(admin_trans('analytics_referrer')) ?></th>
-                            <th><?= e(admin_trans('analytics_views')) ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($topReferrers as $row): ?>
-                            <tr>
-                                <td><?= e($row['referrer_host']) ?></td>
-                                <td><?= e((string) $row['views']) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+            <?= analytics_sparkline(array_values($dailyViews)) ?>
         </div>
-    </div>
+    </fieldset>
+
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('post', 18) ?>
+            <?= e(admin_trans('analytics_top_pages')) ?>
+        </legend>
+
+        <?php if (!$topPages): ?>
+            <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
+        <?php else: ?>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th><?= e(admin_trans('analytics_path')) ?></th>
+                        <th><?= e(admin_trans('analytics_views')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($topPages as $row): ?>
+                        <tr>
+                            <td><code><?= e($row['path']) ?></code></td>
+                            <td><?= e((string) $row['views']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </fieldset>
+
+    <fieldset class="settings-group">
+        <legend>
+            <?= icon('corner-down-right', 18) ?>
+            <?= e(admin_trans('analytics_top_referrers')) ?>
+        </legend>
+
+        <?php if (!$topReferrers): ?>
+            <p class="empty-state"><?= e(admin_trans('analytics_no_data')) ?></p>
+        <?php else: ?>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th><?= e(admin_trans('analytics_referrer')) ?></th>
+                        <th><?= e(admin_trans('analytics_views')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($topReferrers as $row): ?>
+                        <tr>
+                            <td><?= e($row['referrer_host']) ?></td>
+                            <td><?= e((string) $row['views']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </fieldset>
 </div>
 
 <?php
