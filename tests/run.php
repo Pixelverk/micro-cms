@@ -28,6 +28,29 @@ if (!$files) {
     exit(1);
 }
 
+/*
+|--------------------------------------------------------------------------
+| Serialise concurrent runs
+|--------------------------------------------------------------------------
+| Every suite shares tests/.tmp/storage, and test_fresh_database() replaces
+| data.sqlite before each one. Two runs at once therefore delete the database
+| out from under the other's open connections, which shows up as spurious
+| "database is locked" / "attempt to write a readonly database" failures. Hold
+| an exclusive lock for the life of the run so a second run waits its turn.
+*/
+$lockDir = __DIR__ . '/.tmp';
+
+if (!is_dir($lockDir)) {
+    @mkdir($lockDir, 0775, true);
+}
+
+$lock = @fopen($lockDir . '/run.lock', 'c');
+
+if ($lock !== false && !flock($lock, LOCK_EX | LOCK_NB)) {
+    echo "Another test run is using tests/.tmp — waiting for it to finish...\n";
+    flock($lock, LOCK_EX);
+}
+
 $passed = 0;
 $failures = [];
 

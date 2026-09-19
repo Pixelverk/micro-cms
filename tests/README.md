@@ -32,6 +32,11 @@ php tests/run.php http
 * All artefacts live in `tests/.tmp/` (gitignored). A test run **never** touches
   `storage/` — the bootstrap refuses to start if the test storage resolves inside
   the real storage directory.
+* `tests/run.php` holds an exclusive lock on `tests/.tmp/run.lock` for the whole
+  run. Every suite shares `tests/.tmp/storage` and replaces `data.sqlite` before
+  it starts, so two concurrent runs would delete the database out from under each
+  other (the symptom is spurious `database is locked` / `attempt to write a
+  readonly database` failures). A second run waits its turn instead.
 * `tests/config.test.php` points `storage_path` at `tests/.tmp/storage` and
   `tests/bootstrap.php` puts everything else in place. `CMS_CONFIG_FILE` and the
   optional `storage_path` config key are the only production hooks this needs.

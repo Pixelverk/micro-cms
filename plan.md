@@ -141,6 +141,12 @@ fix. Correct them before adding more features.
 
 ## 2. Test-suite reliability (A, S–M)
 
+**Shipped.** Reproduced: two concurrent runs share `tests/.tmp/storage` and each
+replaces `data.sqlite`, so one deletes the database out from under the other's
+open connections. `tests/run.php` now takes an exclusive lock on
+`tests/.tmp/run.lock` for the run, and the three server suites that were missing
+it reap their `php -S` process with `proc_close()`. `tests/README.md` records why.
+
 **Why.** The verification bar for every later phase depends on a clean run, and
 the HTTP suites are flaky under load here: two runs gave 271/292 and 283/292,
 failing with transient SQLite `database is locked` / `attempt to write a

@@ -367,5 +367,6 @@ t('a taxonomy archive pages its items', function () use ($base) {
 });
 
 proc_terminate($server);
+proc_close($server);
 
 exit(test_summary());

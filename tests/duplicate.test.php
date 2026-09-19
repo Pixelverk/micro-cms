@@ -428,5 +428,6 @@ t('a failing write redirects with an error instead of a 500', function () use ($
 });
 
 proc_terminate($server);
+proc_close($server);
 
 exit(test_summary());

@@ -474,5 +474,6 @@ t('an anonymous visitor cannot reach the inbox or its export', function () use (
 });
 
 proc_terminate($server);
+proc_close($server);
 
 exit(test_summary());
