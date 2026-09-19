@@ -265,6 +265,25 @@ function reindexRecursive(array $array): array {
 $contentData['body'] = reindexRecursive($componentsTree);
 
 // ----------------------------
+// Autosave
+// ----------------------------
+// The editor posts the same form with autosave=1 every minute. Everything
+// above has already capability-checked and validated it, so the snapshot is
+// exactly the state a real save would write — only the live row is left alone.
+// It writes a version, not public content, so nothing needs invalidating.
+if (!empty($_POST['autosave']) && $id !== null) {
+    $versionId = save_content_version((int) $id, $contentData, ['reason' => 'autosave']);
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'ok'       => true,
+        'saved_at' => time(),
+        'version'  => $versionId,
+    ]);
+    exit;
+}
+
+// ----------------------------
 // Save content
 // ----------------------------
 $isNew = empty($id);

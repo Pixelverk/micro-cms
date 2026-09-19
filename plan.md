@@ -195,6 +195,16 @@ second auth system.
 
 ## 4. Editor autosave + unsaved-changes warning (A, M)
 
+**Shipped.** The editor posts its own form to the existing `content/save` with
+`autosave=1` every 60s while the form differs from its state on load, so the
+snapshot goes through the same capability check and validation a real save does
+and only writes a version (`reason` `autosave`); the live row and the cache are
+untouched. At most one autosave is kept and it does not count against
+`versions.keep`. Reopening an item whose autosave is newer than the stored row
+links to it in the version history, where the existing restore path applies it.
+`beforeunload` warns while the form is dirty. Autosave needs the item to exist,
+so a brand-new item is not covered until its first save.
+
 **Why.** A crashed or navigated-away tab loses work that `content_versions` can
 already hold. This is the top editor-safety gap.
 

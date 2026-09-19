@@ -939,6 +939,62 @@ t('an emailed reset link sets a new password exactly once', function () use ($ba
     db()->exec("DELETE FROM users WHERE username = 'reset-target'");
 });
 
+t('an editor autosave stores a draft version without saving the content', function () use ($base) {
+    http_login($base);
+
+    $id = http_seed_content('editor-autosave', 'published', time());
+
+    // Make the stored row clearly older than the autosave that follows, so the
+    // "unsaved draft" comparison is unambiguous.
+    db()->prepare("UPDATE content SET updated_at = :time WHERE id = :id")
+        ->execute(['time' => time() - 120, 'id' => $id]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=page');
+
+    [$status, $body] = http('POST', $base . '/admin/content/save', true, [
+        '_token'   => $token,
+        'autosave' => '1',
+        'id'       => $id,
+        'type'     => 'page',
+        'title'    => 'Autosaved work in progress',
+        'slug'     => 'editor-autosave',
+        'status'   => 'published',
+    ]);
+
+    assert_eq(200, $status);
+    assert_contains('"ok":true', $body, 'the autosave answers JSON');
+
+    $version = latest_content_autosave($id);
+    assert_true($version !== null, 'an autosave version exists');
+    assert_eq('autosave', $version['reason']);
+    assert_eq('Autosaved work in progress', $version['title']);
+
+    // The live row keeps the last real save.
+    assert_eq('Editor autosave', load_content_by_id($id)['title']);
+
+    // Reopening the editor offers the draft back, linking at that version.
+    // (The banner text alone would also appear in the page's translation JSON.)
+    [, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
+    assert_contains('&amp;version=' . $version['id'], $editor, 'the editor links to the autosave version');
+
+    // A real save supersedes the draft, so the offer goes away.
+    http('POST', $base . '/admin/content/save', true, [
+        '_token' => $token,
+        'id'     => $id,
+        'type'   => 'page',
+        'title'  => 'Now saved properly',
+        'slug'   => 'editor-autosave',
+        'status' => 'published',
+    ]);
+
+    [, $saved] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
+    assert_contains('Now saved properly', $saved);
+    assert_not_contains('&amp;version=' . $version['id'], $saved, 'saving clears the offer');
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

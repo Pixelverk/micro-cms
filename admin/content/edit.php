@@ -45,6 +45,18 @@ if ($id) {
 // if there is contentdata, we're editing existing page
 $isEdit = !empty($contentData);
 
+// An autosave newer than the stored row is unsaved work from a tab that went
+// away. It is reviewed and restored through the normal version history.
+$pendingAutosave = null;
+
+if ($isEdit) {
+    $pendingAutosave = latest_content_autosave((int) $contentData['id']);
+
+    if ($pendingAutosave && (int) $pendingAutosave['created_at'] <= (int) ($contentData['updated_at'] ?? 0)) {
+        $pendingAutosave = null;
+    }
+}
+
 // ----------------------------
 // Content values
 // ----------------------------
@@ -307,11 +319,22 @@ ob_start();
             </a>
         <?php endif; ?>
 
+        <span id="autosave-status" class="text-muted text-small" aria-live="polite"></span>
+
         <button type="submit" form="save">
             <?= e(admin_trans('editor_save', ['type' => $typeLabel])) ?>
         </button>
     </div>
 </div>
+
+<?php if ($pendingAutosave): ?>
+    <div class="notice notice-info">
+        <p>
+            <?= e(admin_trans('editor_autosave_found', ['time' => format_local_datetime((int) $pendingAutosave['created_at'], 'Y-m-d H:i')])) ?>
+            <a href="<?= e(url('admin/content/versions') . '?type=' . urlencode($type) . '&id=' . (int) $contentData['id'] . '&version=' . (int) $pendingAutosave['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
+        </p>
+    </div>
+<?php endif; ?>
 
 <form class="flex flex-row gap-lg" id="save" method="post" action="<?= url('admin/content/save') ?>">
     <?= csrf_field() ?>

@@ -258,6 +258,25 @@ function count_content_versions(int $contentId): int
 }
 
 /**
+ * The newest autosave snapshot for an item, or null.
+ *
+ * The editor offers it back when it is newer than the stored row, which means
+ * a tab went away with unsaved work.
+ */
+function latest_content_autosave(int $contentId): ?array
+{
+    $stmt = db()->prepare("
+        SELECT * FROM content_versions
+        WHERE content_id = :id AND reason = 'autosave'
+        ORDER BY version DESC
+        LIMIT 1
+    ");
+    $stmt->execute(['id' => $contentId]);
+
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+/**
  * Restore a snapshot. The state being replaced is snapshotted first, so a
  * restore is itself undoable.
  *
@@ -298,6 +317,10 @@ function restore_content_version(int $versionId, array $context = []): bool
 /**
  * Keep only the newest N versions for an item.
  *
+ * Autosaves are working drafts rather than history: at most one is kept, and
+ * it does not count against the retention window, so a long editing session
+ * cannot push real snapshots out of the history.
+ *
  * @return int number of rows removed
  */
 function prune_content_versions(int $contentId, ?int $keep = null): int
@@ -305,36 +328,38 @@ function prune_content_versions(int $contentId, ?int $keep = null): int
     $keep = max(1, $keep ?? content_version_keep());
 
     $pdo = db();
+    $removed = 0;
 
-    $count = $pdo->prepare("SELECT COUNT(*) FROM content_versions WHERE content_id = :id");
-    $count->execute(['id' => $contentId]);
-
-    if ((int) $count->fetchColumn() <= $keep) {
-        return 0;
-    }
-
-    // Everything at or below this version number is beyond the retention
-    // window, so one statement can drop the whole tail.
-    $cutoff = $pdo->prepare("
-        SELECT MAX(version) - :keep
-        FROM content_versions
-        WHERE content_id = :id
-    ");
-    $cutoff->execute(['id' => $contentId, 'keep' => $keep]);
-    $cutoffVersion = (int) $cutoff->fetchColumn();
-
-    if ($cutoffVersion <= 0) {
-        return 0;
-    }
-
-    $delete = $pdo->prepare("
+    $autosaves = $pdo->prepare("
         DELETE FROM content_versions
-        WHERE content_id = :id
-          AND version <= :cutoff
+        WHERE content_id = ?
+          AND reason = 'autosave'
+          AND id NOT IN (
+              SELECT id FROM content_versions
+              WHERE content_id = ? AND reason = 'autosave'
+              ORDER BY version DESC
+              LIMIT 1
+          )
     ");
-    $delete->execute(['id' => $contentId, 'cutoff' => $cutoffVersion]);
+    $autosaves->execute([$contentId, $contentId]);
+    $removed += $autosaves->rowCount();
 
-    return $delete->rowCount();
+    // $keep is an int, so interpolating it is safe and avoids binding LIMIT.
+    $real = $pdo->prepare("
+        DELETE FROM content_versions
+        WHERE content_id = ?
+          AND reason <> 'autosave'
+          AND id NOT IN (
+              SELECT id FROM content_versions
+              WHERE content_id = ? AND reason <> 'autosave'
+              ORDER BY version DESC
+              LIMIT {$keep}
+          )
+    ");
+    $real->execute([$contentId, $contentId]);
+    $removed += $real->rowCount();
+
+    return $removed;
 }
 
 /**
@@ -421,6 +446,7 @@ function content_version_reason_label(string $reason): string
         'bulk'     => 'Bulk edit',
         'schedule' => 'Scheduled',
         'create'   => 'Created',
+        'autosave' => 'Autosaved',
         default    => 'Saved',
     };
 }

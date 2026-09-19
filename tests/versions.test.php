@@ -213,6 +213,68 @@ t('retention keeps only the newest versions', function () {
     assert_true(count_content_versions($id) >= 1);
 });
 
+t('an autosave is stored under its own reason', function () {
+    $id = version_seed_page('version-autosave', 'Live title');
+
+    $versionId = save_content_version($id, [
+        'title'  => 'Work in progress',
+        'status' => 'published',
+        'body'   => [],
+        'meta'   => [],
+    ], ['reason' => 'autosave']);
+
+    assert_true($versionId !== null, 'a version is written');
+
+    $latest = latest_content_autosave($id);
+    assert_true($latest !== null);
+    assert_eq('autosave', $latest['reason']);
+    assert_eq('Work in progress', $latest['title']);
+    assert_eq($versionId, (int) $latest['id']);
+
+    // The state matches the live row, so there is nothing unsaved to store.
+    assert_eq(null, save_content_version($id, content_version_current_row($id), ['reason' => 'autosave']));
+});
+
+t('autosaves do not count against the retention window', function () {
+    $id = version_seed_page('version-autosave-keep', 'Live');
+
+    // Four real snapshots, pruned to three: the item is at its limit.
+    for ($i = 1; $i <= 4; $i++) {
+        save_content_version($id, [
+            'title'  => "Snapshot {$i}",
+            'status' => 'published',
+            'body'   => [],
+            'meta'   => [],
+        ], ['reason' => 'save', 'live' => false]);
+    }
+
+    prune_content_versions($id, 3);
+    assert_eq(3, count_content_versions($id), 'three real snapshots are kept');
+
+    // A run of autosaves keeps the newest one and evicts no real history.
+    for ($i = 1; $i <= 5; $i++) {
+        save_content_version($id, [
+            'title'  => "Draft {$i}",
+            'status' => 'published',
+            'body'   => [],
+            'meta'   => [],
+        ], ['reason' => 'autosave']);
+    }
+
+    $counts = db()->prepare("
+        SELECT reason, COUNT(*) AS total
+        FROM content_versions
+        WHERE content_id = :id
+        GROUP BY reason
+    ");
+    $counts->execute(['id' => $id]);
+    $byReason = array_column($counts->fetchAll(PDO::FETCH_ASSOC), 'total', 'reason');
+
+    assert_eq(1, (int) ($byReason['autosave'] ?? 0), 'only the newest autosave is kept');
+    assert_eq(3, (int) ($byReason['save'] ?? 0), 'no real snapshot was evicted');
+    assert_eq('Draft 5', latest_content_autosave($id)['title'], 'the newest autosave wins');
+});
+
 t('deleting content removes its history', function () {
     $id = version_seed_page('version-delete', 'Doomed');
 
@@ -264,6 +326,7 @@ t('content_version_reason_label() covers the known reasons', function () {
     assert_eq('Published', content_version_reason_label('publish'));
     assert_eq('Restored', content_version_reason_label('restore'));
     assert_eq('Bulk edit', content_version_reason_label('bulk'));
+    assert_eq('Autosaved', content_version_reason_label('autosave'));
     assert_eq('Saved', content_version_reason_label('anything-else'));
 });
 

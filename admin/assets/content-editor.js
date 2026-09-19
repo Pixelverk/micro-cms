@@ -592,3 +592,65 @@ function getPreviewUrl(img) {
 
 // initial attach
 attachImagePicker();
+
+// ----------------------------
+// Autosave and unsaved-changes warning
+// ----------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const editorForm = document.getElementById('save');
+
+    // An autosave is a version of an existing item; there is nothing to attach
+    // one to until the first real save has created the item.
+    if (!editorForm || !editorForm.querySelector('input[name="id"]')) return;
+
+    const statusEl = document.getElementById('autosave-status');
+
+    // Compare the whole form with its state on load, so adding, removing or
+    // reordering components counts as unsaved work just like typing does.
+    const serialize = () => new URLSearchParams(new FormData(editorForm)).toString();
+    const initialState = serialize();
+    const isDirty = () => serialize() !== initialState;
+
+    let submitting = false;
+
+    // Saving navigates away on purpose; anything else with unsaved edits warns.
+    editorForm.addEventListener('submit', () => { submitting = true; });
+
+    window.addEventListener('beforeunload', event => {
+        if (submitting || !isDirty()) return;
+
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    async function autosave() {
+        if (submitting || !isDirty()) return;
+
+        const body = new FormData(editorForm);
+        body.set('autosave', '1');
+
+        try {
+            const response = await fetch(editorForm.action, {
+                method: 'POST',
+                body,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+
+            if (result && result.ok && statusEl) {
+                const time = new Date(result.saved_at * 1000)
+                    .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                statusEl.textContent = `${t('editor_autosave_saved', 'Autosaved at')} ${time}`;
+            }
+        } catch (error) {
+            // A failed autosave must never interrupt editing.
+        }
+    }
+
+    window.setInterval(autosave, 60000);
+});
