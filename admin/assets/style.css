@@ -1470,10 +1470,15 @@ html.dark .menu-item .remove {
 /* A full-width hint inside a field grid, for text that belongs to the group
    rather than to one field. */
 .field-note {
-    margin: 0;
+    margin: 0.75rem 0;
     color: var(--text-muted);
     font-size: 0.8rem;
     line-height: 1.45;
+}
+
+/* In a field grid the row gap already separates the note from the fields. */
+.field-grid > .field-note {
+    margin: 0;
 }
 
 /* Key/value facts about a record. */

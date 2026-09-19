@@ -31,6 +31,10 @@ function serveAdmin($request) {
     // Apply any pending schema migrations (cheap: a marker file when current).
     migrate_run();
 
+    // A password change (a completed reset, or an admin edit) ends sessions
+    // that were opened with the old password.
+    session_validate_identity();
+
     // Every admin POST must carry a valid token. The login form is the one
     // exception: there is no session to protect yet, so it relies on the
     // throttle in core/helpers/throttle.php instead.

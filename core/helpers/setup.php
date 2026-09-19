@@ -254,6 +254,22 @@ CREATE TABLE form_rate_limits (
 
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_form_rate_limits_lookup ON form_rate_limits (form_type, ip, created_at)");
 
+// One-time password reset tokens: only the hash is stored, the row expires,
+// and completing a reset consumes it.
+$pdo->exec("
+CREATE TABLE password_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    ip TEXT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER NULL,
+    created_at INTEGER NOT NULL
+);
+");
+
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id)");
+
 // what time is it?
 $now = time();
 

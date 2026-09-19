@@ -849,6 +849,97 @@ t('a missing URL answers 404 with noindex and falls back to the core component',
 });
 
 // ---------------------------------------------------------------------------
+// Password reset
+// ---------------------------------------------------------------------------
+
+t('the forgot-password page answers the same for a known and an unknown address', function () use ($base, $cookieJar) {
+    file_put_contents($cookieJar, '');
+    db()->exec("DELETE FROM form_rate_limits");
+    @unlink(STORAGE_PATH . '/logs/forms.log');
+
+    [$status, $page] = http('GET', $base . '/admin/forgot-password', false);
+    assert_eq(200, $status, 'the page is public');
+    assert_contains('name="email"', $page);
+
+    [, $login] = http('GET', $base . '/admin/login', false);
+    assert_contains('forgot-password', $login, 'the login page links to it');
+
+    // A known address ...
+    $token = http_csrf_token($base, '/admin/forgot-password');
+    [$status, $known] = http('POST', $base . '/admin/forgot-password', true, [
+        '_token' => $token,
+        'email'  => 'admin@example.com',
+    ]);
+    assert_eq(200, $status);
+    assert_contains('reset link is on its way', $known);
+
+    // ... and an unknown one render the same confirmation.
+    $token = http_csrf_token($base, '/admin/forgot-password');
+    [$status, $unknown] = http('POST', $base . '/admin/forgot-password', true, [
+        '_token' => $token,
+        'email'  => 'nobody@example.com',
+    ]);
+    assert_eq(200, $status);
+    assert_contains('reset link is on its way', $unknown);
+
+    $log = (string) @file_get_contents(STORAGE_PATH . '/logs/forms.log');
+    assert_contains('admin@example.com', $log, 'the known address gets a logged mail');
+    assert_not_contains('nobody@example.com', $log, 'the unknown one gets none');
+});
+
+t('an emailed reset link sets a new password exactly once', function () use ($base, $cookieJar) {
+    file_put_contents($cookieJar, '');
+    db()->exec("DELETE FROM form_rate_limits");
+    @unlink(STORAGE_PATH . '/logs/forms.log');
+
+    // A throwaway account, so the demo login other tests rely on is untouched.
+    db()->prepare("
+        INSERT INTO users (username, email, password_hash, role, created_at)
+        VALUES ('reset-target', 'reset-target@example.com', :hash, 'author', :now)
+    ")->execute(['hash' => password_hash('old-password-123', PASSWORD_DEFAULT), 'now' => time()]);
+
+    $token = http_csrf_token($base, '/admin/forgot-password');
+    http('POST', $base . '/admin/forgot-password', true, [
+        '_token' => $token,
+        'email'  => 'reset-target@example.com',
+    ]);
+
+    $log = (string) @file_get_contents(STORAGE_PATH . '/logs/forms.log');
+    assert_true((bool) preg_match('#token=([a-f0-9]{64})#', $log, $matches), 'the log carries a link');
+    $raw = $matches[1];
+
+    // An invalid token is refused, and shows no form.
+    [$status, $invalid] = http('GET', $base . '/admin/reset-password/?token=' . str_repeat('a', 64), false);
+    assert_eq(200, $status);
+    assert_contains('invalid or has expired', $invalid);
+    assert_not_contains('name="password"', $invalid);
+
+    // The real link shows the form.
+    [$status, $page] = http('GET', $base . '/admin/reset-password/?token=' . $raw, true);
+    assert_eq(200, $status);
+    assert_contains('name="password"', $page);
+
+    preg_match('/name="_token" value="([^"]+)"/', $page, $csrf);
+
+    [$status] = http('POST', $base . '/admin/reset-password', true, [
+        '_token'           => $csrf[1],
+        'token'            => $raw,
+        'password'         => 'new-password-456',
+        'password_confirm' => 'new-password-456',
+    ]);
+
+    assert_eq(302, $status, 'a completed reset redirects to login');
+
+    $hash = (string) db()->query("SELECT password_hash FROM users WHERE username = 'reset-target'")->fetchColumn();
+    assert_true(password_verify('new-password-456', $hash), 'the new password is stored');
+
+    // The link is spent.
+    assert_eq(null, password_reset_find($raw), 'the link cannot be used twice');
+
+    db()->exec("DELETE FROM users WHERE username = 'reset-target'");
+});
+
+// ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------
 proc_terminate($server);

@@ -163,6 +163,7 @@ bootstrap_core();
 
 if (isset($_COOKIE[session_name()])) {
     session_boot();
+    session_validate_identity();
 }
 
 // Schema migrations must run before ANY query reads content: a database created

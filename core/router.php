@@ -151,9 +151,10 @@ function route_admin_request(): void
     $page = preg_replace('#^/admin#', '', $path);
     $page = $page === '' || $page === '/' ? 'dashboard' : ltrim($page, '/');
 
-    // Public admin routes
-    if ($page === 'login') {
-        require CMS_PATH . '/admin/auth/login.php';
+    // Public admin routes. These render their own shell, so they are dispatched
+    // before require_login() and the capability check.
+    if (in_array($page, ['login', 'forgot-password', 'reset-password'], true)) {
+        require CMS_PATH . '/admin/auth/' . $page . '.php';
         return;
     }
 

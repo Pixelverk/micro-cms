@@ -163,6 +163,15 @@ environment caveat in `tests/README.md` instead of changing product code.
 
 ## 3. Password reset (A, M)
 
+**Shipped.** A `password_resets` table (hashed token, expiry, single use) with
+its migration; public `admin/auth/forgot-password.php` and
+`admin/auth/reset-password.php` in the login page's shell and both languages; the
+link is mailed in production and appended to `storage/logs/forms.log` otherwise;
+requests and resets reach the activity log, and the page never confirms whether an
+address exists. The per-address limit counts every request, so it cannot leak
+existence either. A completed reset ends other sessions through a password-hash
+fingerprint kept in the session. The login page links to it.
+
 **Why.** There is no recovery path: a client who forgets a password is locked
 out and needs a manual database edit. This is the most conspicuous missing
 mainstream CMS feature.

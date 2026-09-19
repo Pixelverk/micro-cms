@@ -127,6 +127,10 @@ function login(string $username, string $password): bool
     $_SESSION['username'] = $user['username'];
     $_SESSION['login_time'] = time();
 
+    // Lets a later request notice that the password changed and end this
+    // session (see session_validate_identity()).
+    $_SESSION['auth_fingerprint'] = auth_password_fingerprint((string) $user['password_hash']);
+
     // A fresh preview token per login, kept in its own cookie so it survives
     // the session-id regeneration above.
     if (function_exists('preview_token_issue')) {
@@ -269,5 +273,235 @@ function session_timeout_check(): void
     ) {
         logout();
         redirect('login');
+    }
+}
+
+// --------------------------------------------------
+// Session identity
+// --------------------------------------------------
+
+/**
+ * A fingerprint of a password hash, kept in the session.
+ *
+ * A derived value rather than the hash itself, so a later request can tell
+ * that the password changed without password material sitting in the session
+ * and without a second users column.
+ */
+function auth_password_fingerprint(?string $passwordHash): string
+{
+    return hash('sha256', 'auth|' . (string) $passwordHash);
+}
+
+/**
+ * End a session that was opened with a password that has since changed.
+ *
+ * Runs once per request, before any capability check. Sessions created before
+ * this check existed carry no fingerprint and adopt the current one, so an
+ * upgrade does not sign everyone out.
+ */
+function session_validate_identity(): void
+{
+    if (empty($_SESSION['user_id'])) {
+        return;
+    }
+
+    $user = current_user();
+
+    if ($user === null) {
+        session_forget_identity();
+        return;
+    }
+
+    $fingerprint = auth_password_fingerprint((string) $user['password_hash']);
+
+    if (empty($_SESSION['auth_fingerprint'])) {
+        $_SESSION['auth_fingerprint'] = $fingerprint;
+        return;
+    }
+
+    if (!hash_equals((string) $_SESSION['auth_fingerprint'], $fingerprint)) {
+        session_forget_identity();
+    }
+}
+
+/**
+ * Drop the signed-in identity without the activity entry a deliberate logout
+ * records. The session itself stays, now anonymous.
+ */
+function session_forget_identity(): void
+{
+    $_SESSION = [];
+
+    if (function_exists('preview_token_clear')) {
+        preview_token_clear();
+    }
+}
+
+// --------------------------------------------------
+// Password reset
+// --------------------------------------------------
+
+/**
+ * How long a reset link stays valid.
+ */
+function password_reset_ttl(): int
+{
+    return 3600;
+}
+
+/**
+ * Per-address limit on reset requests.
+ *
+ * Counts every request, whether or not the address exists, so the limit can
+ * never be used to tell the two apart. Fails open if the table is missing.
+ */
+function password_reset_rate_limit_ok(int $maxPerHour = 5): bool
+{
+    try {
+        $pdo = db();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
+        $cutoff = time() - 3600;
+
+        $count = $pdo->prepare("
+            SELECT COUNT(*) FROM form_rate_limits
+            WHERE form_type = 'password_reset' AND ip = :ip AND created_at > :cutoff
+        ");
+        $count->execute(['ip' => $ip, 'cutoff' => $cutoff]);
+
+        if ((int) $count->fetchColumn() >= $maxPerHour) {
+            return false;
+        }
+
+        $pdo->prepare("
+            INSERT INTO form_rate_limits (form_type, ip, created_at)
+            VALUES ('password_reset', :ip, :now)
+        ")->execute(['ip' => $ip, 'now' => time()]);
+
+        return true;
+    } catch (Throwable $exception) {
+        return true;
+    }
+}
+
+/**
+ * Issue a reset link for an address.
+ *
+ * Silent about whether the address matched: the caller shows the same message
+ * either way. Returns the raw token when one was created (tests use it), null
+ * otherwise.
+ */
+function password_reset_request(string $email): ?string
+{
+    $email = trim($email);
+    $raw = null;
+
+    $stmt = db()->prepare("SELECT id, username, email FROM users WHERE email = :email COLLATE NOCASE LIMIT 1");
+    $stmt->execute(['email' => $email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        $raw = bin2hex(random_bytes(32));
+        $pdo = db();
+        $now = time();
+
+        // Only the newest link works, and expired rows never pile up.
+        $pdo->prepare("DELETE FROM password_resets WHERE user_id = :id OR expires_at < :now")
+            ->execute(['id' => (int) $user['id'], 'now' => $now]);
+
+        $pdo->prepare("
+            INSERT INTO password_resets (user_id, token_hash, ip, expires_at, created_at)
+            VALUES (:user_id, :token_hash, :ip, :expires_at, :created_at)
+        ")->execute([
+            'user_id'    => (int) $user['id'],
+            'token_hash' => hash('sha256', $raw),
+            'ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
+            'expires_at' => $now + password_reset_ttl(),
+            'created_at' => $now,
+        ]);
+
+        password_reset_mail($user, $raw);
+    }
+
+    log_activity('user.password_reset_requested', 'user', $user ? (int) $user['id'] : null, $email);
+
+    return $raw;
+}
+
+/**
+ * The unexpired, unused reset row a raw token belongs to, or null.
+ */
+function password_reset_find(string $rawToken): ?array
+{
+    $rawToken = trim($rawToken);
+
+    if (!preg_match('/^[a-f0-9]{64}$/', $rawToken)) {
+        return null;
+    }
+
+    $stmt = db()->prepare("
+        SELECT * FROM password_resets
+        WHERE token_hash = :hash AND used_at IS NULL AND expires_at > :now
+        LIMIT 1
+    ");
+    $stmt->execute(['hash' => hash('sha256', $rawToken), 'now' => time()]);
+
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+/**
+ * Apply a new password and consume the token that authorised it.
+ */
+function password_reset_complete(array $reset, string $newPassword): void
+{
+    $pdo = db();
+    $userId = (int) $reset['user_id'];
+
+    $pdo->prepare("UPDATE users SET password_hash = :hash WHERE id = :id")
+        ->execute(['hash' => password_hash($newPassword, PASSWORD_DEFAULT), 'id' => $userId]);
+
+    // Single use: a replayed link finds a consumed row.
+    $pdo->prepare("UPDATE password_resets SET used_at = :now WHERE id = :id")
+        ->execute(['now' => time(), 'id' => (int) $reset['id']]);
+
+    $username = (string) $pdo->query("SELECT username FROM users WHERE id = " . $userId)->fetchColumn();
+
+    log_activity('user.password_reset', 'user', $userId, $username);
+}
+
+/**
+ * The reset email. In production it goes out with mail(); everywhere else it
+ * is appended to storage/logs/forms.log the way core/form-submit.php logs.
+ */
+function password_reset_mail(array $user, string $rawToken): void
+{
+    $link = seo_absolute_url(url('admin/reset-password')) . '?token=' . urlencode($rawToken);
+    $site = (string) get_setting('site_title', 'Micro CMS');
+
+    $subject = 'Reset your password for ' . $site;
+    $body = "Someone asked to reset the password for your account.\n\n"
+        . "Open this link within an hour to choose a new one:\n\n"
+        . $link . "\n\n"
+        . "If you did not ask for this, you can ignore this message.\n";
+
+    $headers = ['Content-Type: text/plain; charset=UTF-8'];
+
+    if ((config('env') ?? 'production') !== 'production') {
+        file_put_contents(
+            STORAGE_PATH . '/logs/forms.log',
+            json_encode([
+                'to'      => (string) $user['email'],
+                'subject' => $subject,
+                'body'    => $body,
+                'headers' => $headers,
+                'time'    => date('c'),
+            ], JSON_PRETTY_PRINT) . "\n\n",
+            FILE_APPEND
+        );
+
+        return;
+    }
+
+    if (!mail((string) $user['email'], $subject, $body, implode("\r\n", $headers))) {
+        debug_log('password reset mail failed for user ' . (int) $user['id']);
     }
 }

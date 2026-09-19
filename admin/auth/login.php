@@ -67,6 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <button type="submit" class="btn-primary"><?= e(admin_trans('auth_log_in')) ?></button>
         </form>
+
+        <p class="field-note">
+            <a href="<?= e(url('admin/forgot-password')) ?>"><?= e(admin_trans('auth_forgot_password')) ?></a>
+        </p>
     </div>
 </main>
 <?php include CMS_PATH . '/admin/partials/toasts.php'; ?>
