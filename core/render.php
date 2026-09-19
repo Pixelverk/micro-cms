@@ -48,8 +48,10 @@ function render_page(array $page): array
     }
 
     // Icons
-    if (!empty($theme['icons']['favicon'])) {
-        $head .= "<link rel='icon' href='" . asset($theme['icons']['favicon']) . "'>\n";
+    $favicon = site_favicon_url();
+
+    if ($favicon !== '') {
+        $head .= "<link rel='icon' href='" . e($favicon) . "'>\n";
     }
 
     // Styles
@@ -71,6 +73,15 @@ function render_page(array $page): array
             $head .= $c['content'] . "\n";
         }
         $head .= "</style>\n";
+    }
+
+    // Site CSS from Settings. Raw, trusted input (settings.manage), placed last
+    // so it can override the theme and component styles. minify_html() leaves
+    // <style> alone.
+    $customCss = trim((string) get_setting('custom_css', ''));
+
+    if ($customCss !== '') {
+        $head .= "<style>\n" . $customCss . "\n</style>\n";
     }
 
     // Component JS

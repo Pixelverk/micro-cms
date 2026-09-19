@@ -132,7 +132,7 @@ if (!empty($contentData['scheduled_at'])) {
     $dt = new DateTime(
         '@' . (int) $contentData['scheduled_at'] // force UTC
     );
-    $dt->setTimezone(new DateTimeZone(SITE_TIMEZONE));
+    $dt->setTimezone(new DateTimeZone(site_timezone()));
 
     $scheduledDate = $dt->format('Y-m-d\TH:i');
 }

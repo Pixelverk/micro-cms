@@ -59,6 +59,7 @@ return [
 }
 .navbar-search input::placeholder { color: rgba(255, 255, 255, 0.6); }
 @media (max-width: 991.98px) { .navbar-search { margin-left: 0; } .navbar-search input[type="search"] { width: 100%; } }
+.navbar-brand img { height: 2rem; width: auto; }
 CSS,
 
 /** --------------------------------------------
@@ -112,7 +113,14 @@ JS,
     ?>
     <header id="<?= $id ?>" class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container px-5">
-            <a href="<?= url() ?>" class="navbar-brand">Start Bootstrap</a>
+            <?php $brandLogo = site_logo_url(); ?>
+            <a href="<?= url() ?>" class="navbar-brand">
+                <?php if ($brandLogo !== ''): ?>
+                    <img src="<?= e($brandLogo) ?>" alt="<?= e((string) get_setting('site_title', 'Home')) ?>">
+                <?php else: ?>
+                    <?= e((string) get_setting('site_title', 'Start Bootstrap')) ?>
+                <?php endif; ?>
+            </a>
             <form class="navbar-search" method="get" action="<?= e(url('search')) ?>" role="search">
                 <input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>"
                        placeholder="Search…" aria-label="Search this site">

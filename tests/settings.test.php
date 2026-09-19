@@ -132,4 +132,74 @@ t('setting_value_changed() detects real changes', function () {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Appearance and locale settings
+// ---------------------------------------------------------------------------
+
+t('site_timezone() falls back to the shipped default', function () {
+    set_setting('timezone', 'Europe/Stockholm');
+    assert_eq('Europe/Stockholm', site_timezone());
+
+    set_setting('timezone', 'America/New_York');
+    assert_eq('America/New_York', site_timezone());
+
+    // An invalid value never reaches DateTimeZone.
+    set_setting('timezone', 'Not/AZone');
+    assert_eq('Europe/Stockholm', site_timezone());
+
+    set_setting('timezone', 'Europe/Stockholm');
+});
+
+t('format_date() uses the date format and timezone settings', function () {
+    set_setting('date_format', 'Y-m-d');
+    set_setting('timezone', 'UTC');
+
+    $timestamp = gmmktime(9, 0, 0, 3, 1, 2026);
+
+    assert_eq('2026-03-01', format_date($timestamp));
+    assert_eq('01.03.2026', format_date($timestamp, 'd.m.Y'), 'an explicit format wins');
+    assert_eq('', format_date(null), 'a missing date is empty');
+
+    // The site timezone shifts the rendered date.
+    $evening = gmmktime(23, 0, 0, 2, 28, 2026);
+    assert_eq('2026-02-28', format_date($evening));
+
+    set_setting('timezone', 'Pacific/Auckland');
+    assert_eq('2026-03-01', format_date($evening), 'the same instant is the next day in Auckland');
+
+    set_setting('timezone', 'Europe/Stockholm');
+    set_setting('date_format', 'F j, Y');
+});
+
+t('image settings resolve media ids, URLs and theme filenames', function () {
+    set_setting('logo', '600x400.png');
+    assert_contains('theme/assets/img/600x400.png', site_logo_url());
+
+    set_setting('logo', 'https://cdn.test/logo.svg');
+    assert_eq('https://cdn.test/logo.svg', site_logo_url());
+
+    // A blank setting falls back to the theme manifest, then to nothing.
+    set_setting('logo', '');
+    assert_eq('', site_logo_url(), 'the demo theme declares no logo');
+
+    assert_contains('theme/assets/favicon.ico', site_favicon_url(), 'the theme manifest favicon is the fallback');
+
+    set_setting('favicon', 'icon.png');
+    assert_contains('theme/assets/img/icon.png', site_favicon_url(), 'the setting wins over the manifest');
+
+    set_setting('favicon', '');
+});
+
+t('validate_image_reference() accepts the documented shapes', function () {
+    assert_true(validate_image_reference(''), 'blank is allowed by default');
+    assert_true(validate_image_reference('42'), 'a media id');
+    assert_true(validate_image_reference('https://example.com/logo.png'));
+    assert_true(validate_image_reference('img/logo.svg'));
+    assert_true(validate_image_reference('favicon.ico'));
+
+    assert_false(validate_image_reference('logo.txt'));
+    assert_false(validate_image_reference('javascript:alert(1)'));
+    assert_false(validate_image_reference('', false), 'blank is refused when required');
+});
+
 exit(test_summary());

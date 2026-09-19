@@ -35,7 +35,7 @@ if ($thumbnail !== '') {
                     <article>
                         <header class="mb-4">
                             <h1 class="fw-bolder mb-1"><?= e($page['title'] ?? '') ?></h1>
-                            <?php if (!empty($page['published_at'])): ?><div class="text-muted fst-italic mb-2"><?= e(date('F j, Y', (int) $page['published_at'])) ?></div><?php endif; ?>
+                            <?php if (!empty($page['published_at'])): ?><div class="text-muted fst-italic mb-2"><?= e(format_date((int) $page['published_at'])) ?></div><?php endif; ?>
                             <?php foreach (($page['categories'] ?? []) as $category): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('category/' . $category['slug'])) ?>"><?= e($category['name']) ?></a><?php endforeach; ?>
                             <?php foreach (($page['tags'] ?? []) as $tag): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('tag/' . $tag['slug'])) ?>"><?= e($tag['name']) ?></a><?php endforeach; ?>
                         </header>

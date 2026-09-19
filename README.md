@@ -103,14 +103,18 @@ Demo account:
 * Component editor: drag to reorder, nest, duplicate, clone
 * Section components for assembled pages, rich text for written content
 * User CRUD with three roles (administrator, editor, author) and capability checks
-* Login/logout, login throttling, CSRF protection on every admin POST
+* Login/logout, password reset by emailed link, login throttling, CSRF protection on every admin POST
 * Menu CRUD with drag-and-drop items
 * Media manager: resized variants, WebP with JPEG/PNG fallback, LQIP placeholders, alt text
-* Site settings (homepage, per-type URL prefixes, image quality, admin language)
-* Header and footer script fields for analytics snippets (raw, administrators only)
+* Site settings (homepage, per-type URL prefixes, timezone, date format, site description, logo, favicon, custom CSS, image quality, admin language)
+* Header and footer script fields and custom CSS (raw, administrators only)
+* Maintenance mode: a 503 for visitors while the admin keeps working
 * Draft, scheduled, published and archived statuses
 * Token-based preview of unpublished content
 * Content version history with restore
+* Editor autosave every minute, with an unsaved-changes warning
+* Pre-publish checklist: required component fields block, accessibility and SEO gaps warn
+* Security headers on every response (nosniff, frame policy, referrer policy, HSTS)
 * Trash: deleting keeps content recoverable, with restore and permanent delete
 * Activity log (audit trail) with configurable retention
 * Built-in analytics: page views, unique visitors, top pages and referrers, cache-hit ratio (no IPs stored)
@@ -118,7 +122,7 @@ Demo account:
 * SEO metadata: description, canonical, Open Graph, Twitter, JSON-LD
 * XML sitemap generator
 * HTML page cache, minified in production
-* Contact and newsletter forms with email sendout, rate limiting and a submissions inbox
+* Contact and newsletter forms with typed validation, select/radio fields, several notification addresses and a searchable submissions inbox
 * Bulk actions on the content list
 * Utilities page: clear or warm the cache, reset analytics, regenerate sitemap, publish due content, run migrations
 * Static-site export: download the cached pages, theme assets and media as a zip
@@ -128,10 +132,9 @@ Demo account:
 
 ### Planned
 
-The phased plan of record is [`plan.md`](plan.md): three waves, starting with six
-correctness fixes and then the missing main features (password reset, editor
-autosave, pre-publish checks, maintenance mode, security headers, media wiring
-and form-model completion). The multi-language front end is a deferred track in
+The phased plan of record is [`plan.md`](plan.md): Wave 1 is nearly shipped —
+scheduling/expiry and wiring media into the theme remain — then Wave 2 adds depth
+and Wave 3 is opportunistic. The multi-language front end is a deferred track in
 the same file.
 
 ### Maybe

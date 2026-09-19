@@ -93,7 +93,7 @@ $pageUrl = function (int $pageNumber) use ($action, $query, $filters): string {
                         <p class="search-meta text-muted">
                             <span class="search-type"><?= e($theme['content_types'][$item['type']]['label'] ?? ucfirst($item['type'])) ?></span>
                             <?php if (!empty($item['published_at'])): ?>
-                                &middot; <?= e(date('j M Y', (int) $item['published_at'])) ?>
+                                &middot; <?= e(format_date((int) $item['published_at'], 'j M Y')) ?>
                             <?php endif; ?>
                         </p>
                     </li>

@@ -13,7 +13,7 @@ component($headerComponent, [], $page, $collectedJs, $collectedCss);
                     <header class="mb-5">
                         <h1 class="fw-bolder mb-3"><?= e($page['title'] ?? '') ?></h1>
                         <?php if (!empty($page['published_at'])): ?>
-                            <p class="text-muted mb-0">Last updated <?= e(date('F j, Y', (int) $page['published_at'])) ?></p>
+                            <p class="text-muted mb-0">Last updated <?= e(format_date((int) $page['published_at'])) ?></p>
                         <?php endif; ?>
                     </header>
                     <div class="policy-page-body">

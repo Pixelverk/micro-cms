@@ -343,6 +343,63 @@ function img(string $path): string
     return url("theme/assets/img/" . ltrim($path, '/'));
 }
 
+/**
+ * Resolve a media id, an absolute URL, or a theme image filename to a URL.
+ *
+ * The shape every image setting accepts. Callers that need an absolute URL
+ * (Open Graph, JSON-LD) pass the result through seo_absolute_url().
+ */
+function resolve_image_value(string $value): string
+{
+    $value = trim($value);
+
+    if ($value === '') {
+        return '';
+    }
+
+    if (ctype_digit($value)) {
+        return media_url((int) $value);
+    }
+
+    if (preg_match('#^https?://#i', $value)) {
+        return $value;
+    }
+
+    return img($value);
+}
+
+/**
+ * The site logo: the Settings value, else the theme manifest, else nothing.
+ */
+function site_logo_url(): string
+{
+    $value = trim((string) get_setting('logo', ''));
+
+    if ($value !== '') {
+        return resolve_image_value($value);
+    }
+
+    $fallback = (string) (theme_config()['icons']['logo'] ?? '');
+
+    return $fallback !== '' ? asset($fallback) : '';
+}
+
+/**
+ * The favicon: the Settings value, else the theme manifest, else nothing.
+ */
+function site_favicon_url(): string
+{
+    $value = trim((string) get_setting('favicon', ''));
+
+    if ($value !== '') {
+        return resolve_image_value($value);
+    }
+
+    $fallback = (string) (theme_config()['icons']['favicon'] ?? '');
+
+    return $fallback !== '' ? asset($fallback) : '';
+}
+
 // Debug log message
 function debug_log(string $msg): void {
     $file = STORAGE_PATH . '/logs/debug.log';
@@ -373,7 +430,37 @@ function format_local_datetime(?int $timestamp, string $format = 'Y-m-d H:i'): s
     }
 
     $dt = new DateTime('@' . $timestamp); // UTC
-    $dt->setTimezone(new DateTimeZone(SITE_TIMEZONE));
+    $dt->setTimezone(new DateTimeZone(site_timezone()));
+
+    return $dt->format($format);
+}
+
+/**
+ * The site timezone, from Settings, falling back to the shipped default.
+ */
+function site_timezone(): string
+{
+    $timezone = (string) get_setting('timezone', 'Europe/Stockholm');
+
+    return in_array($timezone, timezone_identifiers_list(), true) ? $timezone : 'Europe/Stockholm';
+}
+
+/**
+ * Format a timestamp for the public site, using the configured date format.
+ *
+ * Unlike format_local_datetime() this returns an empty string rather than a
+ * placeholder, because theme templates already guard against a missing date.
+ */
+function format_date(?int $timestamp, ?string $format = null): string
+{
+    if (!$timestamp) {
+        return '';
+    }
+
+    $format = $format ?? (string) get_setting('date_format', 'F j, Y');
+
+    $dt = new DateTime('@' . $timestamp); // UTC
+    $dt->setTimezone(new DateTimeZone(site_timezone()));
 
     return $dt->format($format);
 }

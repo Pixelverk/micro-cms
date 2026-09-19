@@ -333,6 +333,15 @@ service.
 
 ## 9. Settings gaps (C, S)
 
+**Shipped.** Six settings added, each validated and translated: timezone (IANA,
+replacing the `SITE_TIMEZONE` constant), date format, site description (the
+meta-description fallback), logo, favicon and custom CSS. The theme now formats
+dates through `format_date()`/`site_timezone()`, so the date format and timezone
+reach the public pages, and the header brand is the logo setting, then the theme
+manifest, then the site title. Settled decision: **custom CSS is a raw setting**
+in the Custom code group beside the existing raw header/footer scripts, injected
+last so it can override the theme — not a design editor.
+
 **Why.** Several things operators expect are hardcoded or absent: timezone
 (`SITE_TIMEZONE` is a constant), date format, site description, logo, favicon
 and custom CSS.

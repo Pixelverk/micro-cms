@@ -79,9 +79,6 @@ require CORE_PATH . '/db.php';
 require CORE_PATH . '/render.php';
 require CORE_PATH . '/router.php';
 
-if (!defined('SITE_TIMEZONE')) {
-    define('SITE_TIMEZONE', 'Europe/Stockholm');
-}
 
 // Must run before any other session_* call, including php.ini defaults.
 session_save_path(CMS_SESSION_PATH);

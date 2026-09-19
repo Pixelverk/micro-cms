@@ -24,7 +24,7 @@ return [
                     <h2 class="fw-bolder fs-5 mb-4"><?= e($props['title'] ?? 'News') ?></h2>
                     <?php foreach ($posts as $post): ?>
                         <div class="mb-4">
-                            <div class="small text-muted"><?= e(date('F j, Y', $post['published_at'])) ?></div>
+                            <div class="small text-muted"><?= e(format_date((int) $post['published_at'])) ?></div>
                             <a class="link-dark" href="<?= e(url('blog/' . $post['slug'])) ?>"><h3><?= e($post['title']) ?></h3></a>
                         </div>
                     <?php endforeach; ?>

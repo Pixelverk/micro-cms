@@ -17,8 +17,6 @@ require_once CORE_PATH . '/auth.php';
 require CORE_PATH . '/render.php';
 require CORE_PATH . '/router.php';
 
-// timezone
-define('SITE_TIMEZONE', 'Europe/Stockholm');
 
 function serveAdmin($request) {
 

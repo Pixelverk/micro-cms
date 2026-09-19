@@ -64,7 +64,7 @@ if (!$taxonomy) {
 
             // Published date
             if (!empty($item['published_at'])) {
-                $date = date('F j, Y', (int)$item['published_at']);
+                $date = format_date((int) $item['published_at']);
                 echo "<p class=\"taxonomy-item-date\">Published: {$date}</p>";
             }
 

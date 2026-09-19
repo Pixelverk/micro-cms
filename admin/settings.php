@@ -102,11 +102,41 @@ $settingFields = [
         'options' => $availableFooters,
         'default' => $settings['default_footer'] ?? $theme['defaults']['footer'],
     ],
+    'logo' => [
+        'type'    => 'text',
+        'label'   => 'settings_logo',
+        'help'    => 'settings_logo_help',
+        'default' => '',
+    ],
+    'favicon' => [
+        'type'    => 'text',
+        'label'   => 'settings_favicon',
+        'help'    => 'settings_favicon_help',
+        'default' => '',
+    ],
     'contact_email' => [
         'type'    => 'text',
         'label'   => 'settings_contact_email',
         'help'    => 'settings_contact_email_help',
         'default' => '',
+    ],
+    'site_description' => [
+        'type'    => 'textarea',
+        'label'   => 'settings_site_description',
+        'help'    => 'settings_site_description_help',
+        'default' => '',
+    ],
+    'timezone' => [
+        'type'    => 'text',
+        'label'   => 'settings_timezone',
+        'help'    => 'settings_timezone_help',
+        'default' => 'Europe/Stockholm',
+    ],
+    'date_format' => [
+        'type'    => 'text',
+        'label'   => 'settings_date_format',
+        'help'    => 'settings_date_format_help',
+        'default' => 'F j, Y',
     ],
 
     // ----------------------------
@@ -175,6 +205,15 @@ $settingFields = [
         'help'    => 'settings_maintenance_message_help',
         'default' => 'We are doing a bit of maintenance and will be back shortly.',
     ],
+
+    // ----------------------------
+    // Site CSS
+    'custom_css' => [
+        'type'    => 'textarea',
+        'label'   => 'settings_custom_css',
+        'help'    => 'settings_custom_css_help',
+        'default' => '',
+    ],
 ];
 
 // ----------------------------
@@ -188,7 +227,7 @@ $settingGroups = [
         'label'   => 'settings_group_general',
         'icon'    => 'settings',
         'columns' => 2,
-        'fields'  => ['site_title', 'site_language', 'homepage_id', 'site_url', 'contact_email'],
+        'fields'  => ['site_title', 'site_language', 'homepage_id', 'site_url', 'contact_email', 'site_description', 'timezone', 'date_format'],
     ],
     'account' => [
         'label'   => 'settings_group_account',
@@ -200,7 +239,7 @@ $settingGroups = [
         'label'   => 'settings_group_design',
         'icon'    => 'book',
         'columns' => 3,
-        'fields'  => ['default_layout', 'default_header', 'default_footer'],
+        'fields'  => ['default_layout', 'default_header', 'default_footer', 'logo', 'favicon'],
     ],
     'seo' => [
         'label'   => 'settings_group_seo',
@@ -218,7 +257,7 @@ $settingGroups = [
         'label'   => 'settings_group_code',
         'icon'    => 'wrench',
         'columns' => 2,
-        'fields'  => ['header_scripts', 'footer_scripts'],
+        'fields'  => ['header_scripts', 'footer_scripts', 'custom_css'],
     ],
     'maintenance' => [
         'label'   => 'settings_group_maintenance',
@@ -236,7 +275,7 @@ $settingGroups = [
 
 // Fields that take the whole row rather than one track: the long ones, and the
 // comma list that would otherwise sit under a checkbox column.
-$settingSpanFields = ['media_sizes', 'robots_extra', 'maintenance_message'];
+$settingSpanFields = ['media_sizes', 'robots_extra', 'maintenance_message', 'site_description', 'custom_css'];
 
 // ----------------------------
 // Dynamic prefix fields
@@ -336,8 +375,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($key === 'default_og_image') {
             $value = trim((string) $value);
 
-            if ($value !== '' && !ctype_digit($value) && !validate_url($value) && !preg_match('#^[a-z0-9._\-/]+\.(jpe?g|png|gif|webp|avif)$#i', $value)) {
+            if (!validate_image_reference($value)) {
                 $errors[$key] = admin_trans('settings_error_og_image');
+                continue;
+            }
+        } elseif (in_array($key, ['logo', 'favicon'], true)) {
+            $value = trim((string) $value);
+
+            if (!validate_image_reference($value)) {
+                $errors[$key] = admin_trans('settings_error_image');
+                continue;
+            }
+        } elseif ($key === 'timezone') {
+            if (!in_array((string) $value, timezone_identifiers_list(), true)) {
+                $errors[$key] = admin_trans('settings_error_timezone');
+                continue;
+            }
+        } elseif ($key === 'date_format') {
+            if ($value === '' || mb_strlen((string) $value) > 40) {
+                $errors[$key] = admin_trans('settings_error_date_format');
                 continue;
             }
         } elseif ($key === 'twitter_site') {

@@ -135,7 +135,7 @@ if ($status === 'scheduled') {
     if ($scheduledRaw === '') {
         $errors['scheduled_at'] = admin_trans('content_error_schedule_missing');
     } else {
-        $scheduledAt = validate_local_datetime($scheduledRaw, SITE_TIMEZONE);
+        $scheduledAt = validate_local_datetime($scheduledRaw, site_timezone());
 
         if ($scheduledAt === null) {
             $errors['scheduled_at'] = admin_trans('content_error_schedule_invalid');

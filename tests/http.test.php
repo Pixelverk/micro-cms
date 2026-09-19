@@ -1223,6 +1223,45 @@ t('bulk publish skips items that are missing required fields', function () use (
     db()->prepare("DELETE FROM content WHERE id IN (?, ?)")->execute([$complete, $incomplete]);
 });
 
+t('the appearance settings reach the rendered page', function () use ($base) {
+    $id = seed_content([
+        'type'         => 'page',
+        'slug'         => 'appearance-check',
+        'title'        => 'Appearance check',
+        'status'       => 'published',
+        'published_at' => time(),
+        'meta'         => '{}',
+        'body'         => '[]',
+    ]);
+
+    try {
+        save_settings([
+            'favicon'          => 'https://example.com/icon.png',
+            'site_description' => 'A description from Settings.',
+            'logo'             => '600x400.png',
+            'custom_css'       => '.from-settings { color: red; }',
+        ]);
+
+        test_clear_cache_files();
+        [$status, $body] = http('GET', $base . '/appearance-check/', false);
+
+        assert_eq(200, $status);
+        assert_contains("<link rel='icon' href='https://example.com/icon.png'>", $body, 'the favicon setting wins');
+        assert_contains("name='description' content='A description from Settings.'", $body, 'the site description fills in');
+        assert_contains('/theme/assets/img/600x400.png', $body, 'the logo renders in the header');
+        assert_contains('.from-settings { color: red; }', $body, 'custom CSS is injected');
+    } finally {
+        save_settings([
+            'favicon'          => '',
+            'site_description' => '',
+            'logo'             => '',
+            'custom_css'       => '',
+        ]);
+        test_clear_cache_files();
+        db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+    }
+});
+
 t('maintenance mode closes the public site but not the editor', function () use ($base) {
     try {
         save_settings(['maintenance_mode' => true, 'maintenance_message' => 'Back after lunch.']);

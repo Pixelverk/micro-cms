@@ -146,6 +146,11 @@ function seo_metadata(array $page): array
 
     $description = trim((string) ($meta['description'] ?? $meta['excerpt'] ?? ''));
 
+    // A page with no description of its own borrows the site description.
+    if ($description === '') {
+        $description = trim((string) ($settings['site_description'] ?? ''));
+    }
+
     $canonical = trim((string) ($meta['canonical'] ?? ''));
 
     if ($canonical === '') {
@@ -220,23 +225,9 @@ function seo_robots(array $page): string
  */
 function seo_resolve_image(string $value): string
 {
-    $value = trim($value);
+    $url = resolve_image_value($value);
 
-    if ($value === '') {
-        return '';
-    }
-
-    if (ctype_digit($value)) {
-        $url = media_url((int) $value);
-
-        return $url === '' ? '' : seo_absolute_url($url);
-    }
-
-    if (preg_match('#^https?://#i', $value)) {
-        return $value;
-    }
-
-    return seo_absolute_url(img($value));
+    return $url === '' ? '' : seo_absolute_url($url);
 }
 
 /**

@@ -112,7 +112,7 @@ CSS,
                             <h3><a class="link-dark" href="<?= e($itemUrl) ?>"><?= e($item['title']) ?></a></h3>
 
                             <?php if (!empty($props['show_date']) && !empty($item['published_at'])): ?>
-                                <div class="list-section-meta"><?= e(date('F j, Y', (int) $item['published_at'])) ?></div>
+                                <div class="list-section-meta"><?= e(format_date((int) $item['published_at'])) ?></div>
                             <?php endif; ?>
 
                             <?php if (!empty($props['show_excerpt']) && !empty($item['meta']['excerpt'])): ?>

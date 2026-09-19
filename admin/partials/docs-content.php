@@ -50,6 +50,8 @@ function docs_content(): array
                         'Archived' => 'Kept in the admin but hidden from visitors.',
                     ]],
                     ['p' => 'Use Preview to see the real page as it will look, including unpublished changes. Preview pages are never cached and never indexed, so you can share the link with a colleague.'],
+                    ['p' => 'While you edit, the CMS autosaves a draft about once a minute. If the tab closes, the next visit offers the draft back into the editor; saving is still what updates the page.'],
+                    ['p' => 'Publishing is blocked while a required component field is empty: the save is kept as a draft and the Pre-publish checklist shows what is missing. Missing image descriptions, dead links and a missing meta description only warn.'],
                     ['p' => 'If your role is Author you can write and preview drafts, but an editor or administrator has to publish them.'],
                 ],
                 'Versions and undo' => [
@@ -89,10 +91,10 @@ function docs_content(): array
                     ['p' => 'Deleting a menu leaves its locations empty until another menu is assigned to them.'],
                 ],
                 'Settings' => [
-                    ['p' => 'Settings is grouped by what you are changing: Site, Editor account, Layout, SEO and social, Media uploads, Custom code, and the URL prefix for each content type. Related fields sit side by side, and a Save button for the whole page is at the top right.'],
+                    ['p' => 'Settings is grouped by what you are changing: Site, Editor account, Layout, SEO and social, Media uploads, Custom code, Maintenance, and the URL prefix for each content type. Related fields sit side by side, and a Save button for the whole page is at the top right.'],
                     ['p' => 'Site URL matters most: set it to the site\'s real address so canonical URLs, the sitemap and social sharing are correct. Leave it blank and the CMS works it out from the request.'],
                     ['p' => 'Change a URL prefix only on a site that is not yet public, or with redirects ready: existing links to the old paths will break.'],
-                    ['p' => 'Custom code is written into every public page exactly as typed, so treat it as trusted-admin-only input. Saving settings clears the page cache.'],
+                    ['p' => 'Custom code and custom CSS are written into every public page exactly as typed, so treat them as trusted-admin-only input. Saving settings clears the page cache.'],
                 ],
                 'SEO and sharing' => [
                     ['p' => 'The SEO & Social panel on each item controls the browser title, the description search engines show, the canonical URL, and the image and text used when the page is shared. Leave a field blank to inherit a sensible default.'],
@@ -118,8 +120,12 @@ function docs_content(): array
                 ],
                 'The theme manifest' => [
                     ['p' => 'theme/theme.php returns an array declaring what the theme supports:'],
-                    ['code' => "return [\n    'name' => 'My Theme',\n    'layouts' => ['default' => 'Default', 'blog' => 'Blog Post'],\n    'headers' => ['site-header' => 'Default Header'],\n    'footers' => ['site-footer' => 'Default Footer'],\n    'menu_locations' => ['main' => 'Main Menu', 'footer' => 'Footer Menu'],\n    'content_types' => [\n        'page' => [\n            'label' => 'Page',\n            'default_layout' => 'default',\n            'available_components' => ['hero-section', 'cta-section'],\n            'url_prefix' => '',\n        ],\n    ],\n    'form_types' => [ /* contact, newsletter … */ ],\n    'styles' => ['utilities.css', 'style.css'],\n    'scripts' => [['src' => 'main.js', 'defer' => true]],\n    'icons' => ['favicon' => 'favicon.ico'],\n];"],
+                    ['code' => "return [
+    'name' => 'My Theme',
+    'schema' => true,
+    'layouts' => ['default' => 'Default', 'blog' => 'Blog Post'],\n    'headers' => ['site-header' => 'Default Header'],\n    'footers' => ['site-footer' => 'Default Footer'],\n    'menu_locations' => ['main' => 'Main Menu', 'footer' => 'Footer Menu'],\n    'content_types' => [\n        'page' => [\n            'label' => 'Page',\n            'default_layout' => 'default',\n            'available_components' => ['hero-section', 'cta-section'],\n            'url_prefix' => '',\n        ],\n    ],\n    'form_types' => [ /* contact, newsletter … */ ],\n    'styles' => ['utilities.css', 'style.css'],\n    'scripts' => [['src' => 'main.js', 'defer' => true]],\n    'icons' => ['favicon' => 'favicon.ico'],\n];"],
                     ['p' => 'Content types drive the admin: the sidebar, the component palette and URL prefixes all come from here.'],
+                    ['p' => "schema => true emits JSON-LD structured data in the head; the homepage also gets an Organization entry. icons.favicon and icons.logo are the fallbacks for the matching Settings fields."],
                 ],
                 'Writing a component' => [
                     ['p' => 'A component is a single file in theme/components/ that returns an array. The render function receives props, the page, and the collected CSS/JS arrays.'],
@@ -131,6 +137,7 @@ function docs_content(): array
                         "css and js ship only on pages that use the component",
                         'always escape output with e()',
                         'read optional props defensively: $props["x"] ?? ""',
+                        'required => true is enforced when publishing: the missing value blocks the publish and the save is kept as a draft',
                     ]],
                 ],
                 'Helpers available to themes' => [
@@ -145,7 +152,36 @@ function docs_content(): array
                         'picture($mediaId, $attrs)' => 'Responsive <picture> element',
                         'media_url($id, $width)' => 'URL for any uploaded file',
                         'settings' => 'load_settings() / get_setting(key)',
+                        'format_date($ts, $format = null)' => 'Date using the site date format and timezone settings',
+                        'site_timezone()' => 'The timezone chosen in Settings',
+                        'site_logo_url() / site_favicon_url()' => 'Logo and favicon: Settings value, then the theme manifest',
                         'component($name, $props, $page)' => 'Render one component',
+                    ]],
+                ],
+                'Forms' => [
+                    ['p' => 'Public forms are declared under form_types in the manifest. The CMS validates the declared field types server-side, stores the submission and emails the notification address; the theme renders the fields (contact-section does).'],
+                    ['code' => "// theme/theme.php
+'form_types' => [
+    'contact' => [
+        'label' => 'Contact',
+        'fields' => [
+            'name'    => ['type' => 'text', 'label' => 'Your name', 'required' => true],
+            'email'   => ['type' => 'email', 'required' => true],
+            'subject' => ['type' => 'select', 'required' => false, 'options' => ['general' => 'General', 'sales' => 'Sales']],
+            'reply_by'=> ['type' => 'radio', 'required' => false, 'options' => ['email' => 'Email', 'phone' => 'Phone']],
+            'message' => ['type' => 'textarea', 'required' => true],
+        ],
+        'notification_email_setting' => 'contact_email',
+        'store_submission' => true,
+    ],
+];"],
+                    ['ul' => [
+                        'field types: text, textarea, email, tel, url, number, select, radio, checkbox',
+                        'label is optional; without it the field name is turned into a label',
+                        'select and radio require options as value => label',
+                        'max bounds a text or textarea value (500 and 5000 by default)',
+                        'notification_email_setting names a Settings value, which may hold several comma-separated addresses',
+                        'store_submission => false validates and emails without keeping the submission',
                     ]],
                 ],
                 'Layouts' => [
@@ -163,12 +199,20 @@ function docs_content(): array
                         'utilities.css is the shared class layer (grid, spacing, cards, buttons). Its class names are a public API.',
                         'style.css holds design tokens and theme-wide rules.',
                         'Everything specific to one component belongs in that component\'s css block.',
-                        'Component CSS is injected last, so it can always override the shared layer.',
+                        'Component CSS is injected after the shared layer so it can override it; custom CSS from Settings comes after that, so an operator can override the theme without editing it.',
                     ]],
                 ],
                 'Caching' => [
                     ['p' => 'Rendered pages are cached as HTML under storage/cache. Saving content clears the cache for that item and regenerates the sitemap.'],
                     ['p' => 'Drafts, previews, search results, taxonomy archives and anything rendered for a signed-in user are never cached.'],
+                ],
+                'Responses the theme does not render' => [
+                    ['p' => 'A few responses bypass the theme on purpose, so a theme cannot style them:'],
+                    ['ul' => [
+                        'Maintenance mode answers with a standalone 503 page while the public site is closed.',
+                        'A database the CMS cannot upgrade shows its own explanatory page.',
+                        'When no 404 page exists, core/components/404.php renders. Override it with your own components/404.php, or by giving a page the slug 404.',
+                    ]],
                 ],
                 'Adding an admin language' => [
                     ['p' => 'Admin strings live in admin/lang/. Copy en.php, translate the values, and add the language to admin_languages() in core/helpers/admin.php. Every string is fetched with admin_trans(key).'],

@@ -107,6 +107,31 @@ function validate_email_list(string $value, bool $allowEmpty = true): bool
     return true;
 }
 
+/**
+ * A media id, an absolute URL, or a theme asset filename.
+ *
+ * The shape every image setting accepts, so a favicon can point at a media id
+ * while a theme keeps shipping a plain filename.
+ */
+function validate_image_reference(string $value, bool $allowEmpty = true): bool
+{
+    $value = trim($value);
+
+    if ($value === '') {
+        return $allowEmpty;
+    }
+
+    if (ctype_digit($value)) {
+        return true;
+    }
+
+    if (validate_url($value)) {
+        return true;
+    }
+
+    return (bool) preg_match('#^[a-z0-9._\-/]+\.(jpe?g|png|gif|webp|avif|svg|ico)$#i', $value);
+}
+
 function validate_username(string $username): bool
 {
     return (bool) preg_match('/^[a-z0-9._\-]{3,32}$/', strtolower($username));
