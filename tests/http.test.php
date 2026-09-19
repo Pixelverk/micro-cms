@@ -972,10 +972,10 @@ t('an editor autosave stores a draft version without saving the content', functi
     // The live row keeps the last real save.
     assert_eq('Editor autosave', load_content_by_id($id)['title']);
 
-    // Reopening the editor offers the draft back, linking at that version.
-    // (The banner text alone would also appear in the page's translation JSON.)
+    // Reopening the editor offers the draft, linking into the editor with it
+    // loaded. (The banner text alone would also appear in the translation JSON.)
     [, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
-    assert_contains('&amp;version=' . $version['id'], $editor, 'the editor links to the autosave version');
+    assert_contains('restore_version=' . $version['id'], $editor, 'the editor offers to open the draft');
 
     // A real save supersedes the draft, so the offer goes away.
     http('POST', $base . '/admin/content/save', true, [
@@ -989,7 +989,117 @@ t('an editor autosave stores a draft version without saving the content', functi
 
     [, $saved] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
     assert_contains('Now saved properly', $saved);
-    assert_not_contains('&amp;version=' . $version['id'], $saved, 'saving clears the offer');
+    assert_not_contains('restore_version=' . $version['id'], $saved, 'saving clears the offer');
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
+t('an autosave draft can be dismissed from the editor', function () use ($base) {
+    http_login($base);
+
+    $id = http_seed_content('editor-dismiss', 'published', time());
+
+    db()->prepare("UPDATE content SET updated_at = :time WHERE id = :id")
+        ->execute(['time' => time() - 120, 'id' => $id]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=page');
+
+    http('POST', $base . '/admin/content/save', true, [
+        '_token'   => $token,
+        'autosave' => '1',
+        'id'       => $id,
+        'type'     => 'page',
+        'title'    => 'Dismiss me',
+        'slug'     => 'editor-dismiss',
+        'status'   => 'published',
+    ]);
+
+    $version = latest_content_autosave($id);
+    assert_true($version !== null, 'a draft was stored');
+
+    // Dismissing discards the draft instead of only hiding the notice.
+    [$status] = http('POST', $base . '/admin/content/edit?id=' . $id . '&type=page', true, [
+        '_token'     => $token,
+        'action'     => 'discard_autosave',
+        'version_id' => $version['id'],
+    ]);
+
+    assert_eq(302, $status, 'dismiss redirects back to the editor');
+    assert_eq(null, latest_content_autosave($id), 'the draft is gone');
+
+    [, $after] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page');
+    assert_not_contains('restore_version=' . $version['id'], $after, 'the offer is gone');
+
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
+t('restoring an autosave loads it into the editor without touching the page', function () use ($base) {
+    http_login($base);
+
+    $id = http_seed_content('editor-load-draft', 'published', time());
+
+    db()->prepare("UPDATE content SET updated_at = :time WHERE id = :id")
+        ->execute(['time' => time() - 120, 'id' => $id]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=page');
+
+    http('POST', $base . '/admin/content/save', true, [
+        '_token'   => $token,
+        'autosave' => '1',
+        'id'       => $id,
+        'type'     => 'page',
+        'title'    => 'Half finished draft',
+        'slug'     => 'editor-load-draft',
+        'status'   => 'published',
+    ]);
+
+    $version = latest_content_autosave($id);
+    assert_true($version !== null);
+
+    // Opening the draft fills the editor form...
+    [$status, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=page&restore_version=' . $version['id']);
+    assert_eq(200, $status);
+    assert_contains('value="Half finished draft"', $editor, 'the draft is shown in the form');
+
+    // ...and nothing is written or published.
+    assert_eq('Editor load draft', load_content_by_id($id)['title'], 'the live row is unchanged');
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
+t('the history restore for an autosave opens the editor instead of publishing', function () use ($base) {
+    http_login($base);
+
+    $id = http_seed_content('editor-history-load', 'published', time());
+
+    db()->prepare("UPDATE content SET updated_at = :time WHERE id = :id")
+        ->execute(['time' => time() - 120, 'id' => $id]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=page');
+
+    http('POST', $base . '/admin/content/save', true, [
+        '_token'   => $token,
+        'autosave' => '1',
+        'id'       => $id,
+        'type'     => 'page',
+        'title'    => 'Never publish me',
+        'slug'     => 'editor-history-load',
+        'status'   => 'published',
+    ]);
+
+    $version = latest_content_autosave($id);
+    assert_true($version !== null);
+
+    [$status, , $headers] = http('POST', $base . '/admin/content/versions?type=page&id=' . $id, true, [
+        '_token'     => $token,
+        'version_id' => $version['id'],
+    ]);
+
+    assert_eq(302, $status);
+    assert_contains('restore_version=' . $version['id'], $headers, 'it redirects into the editor');
+    assert_eq('Editor history load', load_content_by_id($id)['title'], 'the live row is unchanged');
 
     delete_content_versions($id);
     db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);

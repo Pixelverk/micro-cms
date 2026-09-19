@@ -201,7 +201,10 @@ snapshot goes through the same capability check and validation a real save does
 and only writes a version (`reason` `autosave`); the live row and the cache are
 untouched. At most one autosave is kept and it does not count against
 `versions.keep`. Reopening an item whose autosave is newer than the stored row
-links to it in the version history, where the existing restore path applies it.
+shows a notice that loads the draft back into the editor; an autosave is unsaved
+work, so it is never written straight over the live row (which could publish
+half-finished content). The version history offers the same load-in-editor action
+for an autosave instead of a restore, and Dismiss discards the draft.
 `beforeunload` warns while the form is dirty. Autosave needs the item to exist,
 so a brand-new item is not covered until its first save.
 

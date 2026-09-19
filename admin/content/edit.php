@@ -45,6 +45,35 @@ if ($id) {
 // if there is contentdata, we're editing existing page
 $isEdit = !empty($contentData);
 
+// ----------------------------
+// Discard a pending autosave
+// ----------------------------
+// The notice's Dismiss button discards the draft rather than only hiding the
+// notice, so a draft the editor does not want cannot linger forever.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'discard_autosave') {
+    if (!$isEdit || !can_edit_content($contentData)) {
+        log_activity('security.forbidden', 'content', $id !== null ? (int) $id : null, 'content.edit.own', []);
+        http_response_code(403);
+        render_admin_forbidden('content.edit.own');
+        exit;
+    }
+
+    $versionId = (int) ($_POST['version_id'] ?? 0);
+    $version   = load_content_version($versionId);
+
+    // Only this item's own autosave can be dismissed.
+    if ($version && (int) $version['content_id'] === (int) $contentData['id'] && $version['reason'] === 'autosave') {
+        delete_content_version($versionId);
+
+        log_activity('content.autosave_discarded', 'content', (int) $contentData['id'], (string) $contentData['title']);
+    }
+
+    redirect_with_toast('content/edit', 'success', admin_trans('editor_autosave_dismissed'), [
+        'id'   => (int) $contentData['id'],
+        'type' => $type,
+    ]);
+}
+
 // An autosave newer than the stored row is unsaved work from a tab that went
 // away. It is reviewed and restored through the normal version history.
 $pendingAutosave = null;
@@ -55,6 +84,31 @@ if ($isEdit) {
     if ($pendingAutosave && (int) $pendingAutosave['created_at'] <= (int) ($contentData['updated_at'] ?? 0)) {
         $pendingAutosave = null;
     }
+}
+
+// ----------------------------
+// Load an autosave into the editor
+// ----------------------------
+// Restoring a draft only fills the form; it never writes the row. Writing it
+// would save whatever status the form carried and could publish half-finished
+// work. Saving is the explicit step that keeps it.
+$restoringAutosave = null;
+
+if ($pendingAutosave && (int) ($_GET['restore_version'] ?? 0) === (int) $pendingAutosave['id']) {
+    $restoringAutosave = $pendingAutosave;
+
+    $restoredMeta = json_decode((string) $restoringAutosave['meta'], true);
+    $restoredBody = json_decode((string) $restoringAutosave['body'], true);
+
+    $contentData['title']        = (string) $restoringAutosave['title'];
+    $contentData['status']       = (string) $restoringAutosave['status'];
+    $contentData['layout']       = $restoringAutosave['layout'];
+    $contentData['header']       = $restoringAutosave['header'];
+    $contentData['footer']       = $restoringAutosave['footer'];
+    $contentData['meta']         = is_array($restoredMeta) ? $restoredMeta : [];
+    $contentData['body']         = is_array($restoredBody) ? $restoredBody : [];
+    $contentData['published_at'] = $restoringAutosave['published_at'];
+    $contentData['scheduled_at'] = $restoringAutosave['scheduled_at'];
 }
 
 // ----------------------------
@@ -319,20 +373,47 @@ ob_start();
             </a>
         <?php endif; ?>
 
-        <span id="autosave-status" class="text-muted text-small" aria-live="polite"></span>
-
         <button type="submit" form="save">
             <?= e(admin_trans('editor_save', ['type' => $typeLabel])) ?>
         </button>
     </div>
 </div>
 
-<?php if ($pendingAutosave): ?>
-    <div class="notice notice-info">
-        <p>
-            <?= e(admin_trans('editor_autosave_found', ['time' => format_local_datetime((int) $pendingAutosave['created_at'], 'Y-m-d H:i')])) ?>
-            <a href="<?= e(url('admin/content/versions') . '?type=' . urlencode($type) . '&id=' . (int) $contentData['id'] . '&version=' . (int) $pendingAutosave['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
-        </p>
+<?php if ($restoringAutosave): ?>
+    <div class="notice notice-info autosave-notice">
+        <div class="autosave-notice-text">
+            <p><strong><?= e(admin_trans('editor_autosave_viewing_title')) ?></strong></p>
+            <p><?= e(admin_trans('editor_autosave_viewing')) ?></p>
+        </div>
+        <div class="autosave-notice-actions">
+            <form method="post" class="inline-form js-confirm-form"
+                  data-confirm-title="<?= e(admin_trans('editor_autosave_dismiss')) ?>"
+                  data-confirm="<?= e(admin_trans('editor_autosave_discard_confirm')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="discard_autosave">
+                <input type="hidden" name="version_id" value="<?= (int) $restoringAutosave['id'] ?>">
+                <button type="submit" class="btn-small btn-muted"><?= e(admin_trans('editor_autosave_dismiss')) ?></button>
+            </form>
+        </div>
+    </div>
+<?php elseif ($pendingAutosave): ?>
+    <div class="notice notice-info autosave-notice">
+        <div class="autosave-notice-text">
+            <p><strong><?= e(admin_trans('editor_autosave_found_title')) ?></strong></p>
+            <p><?= e(admin_trans('editor_autosave_found', ['time' => format_local_datetime((int) $pendingAutosave['created_at'], 'Y-m-d H:i')])) ?></p>
+        </div>
+        <div class="autosave-notice-actions">
+            <a class="btn-small btn-primary" href="<?= e(url('admin/content/edit') . '?type=' . urlencode($type) . '&id=' . (int) $contentData['id'] . '&restore_version=' . (int) $pendingAutosave['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
+
+            <form method="post" class="inline-form js-confirm-form"
+                  data-confirm-title="<?= e(admin_trans('editor_autosave_dismiss')) ?>"
+                  data-confirm="<?= e(admin_trans('editor_autosave_discard_confirm')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="discard_autosave">
+                <input type="hidden" name="version_id" value="<?= (int) $pendingAutosave['id'] ?>">
+                <button type="submit" class="btn-small btn-muted"><?= e(admin_trans('editor_autosave_dismiss')) ?></button>
+            </form>
+        </div>
     </div>
 <?php endif; ?>
 

@@ -372,6 +372,15 @@ function delete_content_versions(int $contentId): void
 }
 
 /**
+ * Remove one snapshot. Used when an autosave draft is discarded.
+ */
+function delete_content_version(int $versionId): void
+{
+    $stmt = db()->prepare("DELETE FROM content_versions WHERE id = :id");
+    $stmt->execute(['id' => $versionId]);
+}
+
+/**
  * A readable summary of what changed between two payloads.
  *
  * @return list<string>

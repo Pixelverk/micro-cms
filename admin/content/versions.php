@@ -48,6 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_with_toast('content/versions', 'error', admin_trans('versions_error_other_content'), ['id' => $id, 'type' => $type]);
     }
 
+    // An autosave is unsaved work, not a state the page was ever in. Writing it
+    // back would save whatever status the form happened to carry, which can
+    // publish half-finished content, so it is loaded into the editor instead.
+    if (($version['reason'] ?? '') === 'autosave') {
+        header('Location: ' . url('admin/content/edit') . '?id=' . $id . '&type=' . urlencode($type) . '&restore_version=' . $versionId);
+        exit;
+    }
+
     if (restore_content_version($versionId, ['reason' => 'restore'])) {
         log_activity('content.restored', 'content', $id, admin_trans('versions_restored', ['number' => (int) $version['version']]), [
             'id'      => $id,
@@ -115,13 +123,17 @@ ob_start();
                 <span class="status status-<?= e($viewing['status']) ?>"><?= e(content_status_label($viewing['status'])) ?></span>
             </h3>
             <div class="version-view-actions">
-                <form method="post" class="inline-form js-confirm-form"
-                      data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
-                      data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $viewing['version']])) ?>">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="version_id" value="<?= (int) $viewing['id'] ?>">
-                    <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('versions_restore_this')) ?></button>
-                </form>
+                <?php if (($viewing['reason'] ?? '') === 'autosave'): ?>
+                    <a class="btn-small btn-primary" href="<?= e($editUrl . '&restore_version=' . (int) $viewing['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
+                <?php else: ?>
+                    <form method="post" class="inline-form js-confirm-form"
+                          data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
+                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $viewing['version']])) ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="version_id" value="<?= (int) $viewing['id'] ?>">
+                        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('versions_restore_this')) ?></button>
+                    </form>
+                <?php endif; ?>
                 <a class="btn-small btn-muted" href="<?= e($historyUrl) ?>"><?= e(admin_trans('common_close')) ?></a>
             </div>
         </div>
@@ -234,13 +246,17 @@ ob_start();
                         <?= e(admin_trans('common_view')) ?>
                     </a>
 
-                    <form method="post" class="inline-form js-confirm-form"
-                          data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
-                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $version['version']])) ?>">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="version_id" value="<?= (int) $version['id'] ?>">
-                        <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('common_restore')) ?></button>
-                    </form>
+                    <?php if (($version['reason'] ?? '') === 'autosave'): ?>
+                        <a class="btn-small btn-primary" href="<?= e($editUrl . '&restore_version=' . (int) $version['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
+                    <?php else: ?>
+                        <form method="post" class="inline-form js-confirm-form"
+                              data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
+                              data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $version['version']])) ?>">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="version_id" value="<?= (int) $version['id'] ?>">
+                            <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('common_restore')) ?></button>
+                        </form>
+                    <?php endif; ?>
                 </td>
             </tr>
         <?php endforeach; ?>

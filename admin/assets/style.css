@@ -2467,6 +2467,19 @@ button.sidebar-link {
 .notice-success { border-left-color: var(--success); }
 .notice-info { border-left-color: var(--info); }
 
+/* A notice with a text column and an action column, used for the pending
+   autosave offer. */
+.autosave-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.autosave-notice-text { flex: 1 1 24rem; }
+.autosave-notice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
 /*   7.6 Documentation
    Long-form prose, so it gets its own reading rhythm: a bounded line length,
    generous line height, and real space between blocks. Without this the
