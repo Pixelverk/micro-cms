@@ -197,6 +197,12 @@ function seo_robots(array $page): string
         return 'noindex, nofollow';
     }
 
+    // A not-found response must never be indexed. Its links are still worth
+    // following, so this is noindex rather than nofollow.
+    if ($status === '404') {
+        return 'noindex, follow';
+    }
+
     $meta = is_array($page['meta'] ?? null) ? $page['meta'] : [];
     $extra = trim((string) ($meta['robots_extra'] ?? ''));
 
@@ -331,9 +337,28 @@ function seo_json_ld(array $page): string
         }
     }
 
-    return "<script type='application/ld+json'>"
+    $out = "<script type='application/ld+json'>"
         . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)
         . "</script>\n";
+
+    // The homepage also identifies the organisation behind the site, which is
+    // what a brochure site's structured data is mostly for.
+    $settings = load_settings();
+
+    if (!empty($settings['homepage_id']) && (int) ($page['id'] ?? 0) === (int) $settings['homepage_id']) {
+        $organization = [
+            '@context' => 'https://schema.org',
+            '@type'    => 'Organization',
+            'name'     => $seo['site_name'],
+            'url'      => seo_site_url() . '/',
+        ];
+
+        $out .= "<script type='application/ld+json'>"
+            . json_encode($organization, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)
+            . "</script>\n";
+    }
+
+    return $out;
 }
 
 /*

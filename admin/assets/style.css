@@ -2181,7 +2181,7 @@ button.sidebar-link {
 /* The media dialog carries a preview, a form and a URL picker, so it needs
    more room than the message-reading one. */
 .modal-lg {
-    max-width: 640px;
+    max-width: 700px;
 }
 
 .modal h3 {

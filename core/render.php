@@ -83,7 +83,7 @@ function render_page(array $page): array
         $head .= "});\n</script>\n";
     }
 
-    $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language')) . "'>\n<head>\n{$head}</head>\n<body>\n";
+    $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language', 'en')) . "'>\n<head>\n{$head}</head>\n<body>\n";
     $html .= render_preview_bar($page);
     $html .= $bodyContent;
     $html .= "</body>\n</html>";

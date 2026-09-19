@@ -146,13 +146,6 @@ PHP;
         );
     }
 
-    // The installer seeds content straight into the tables, which bypasses
-    // save_content() and therefore the search index. Build it here so every
-    // restored copy starts searchable.
-    if (function_exists('search_reindex_all')) {
-        search_reindex_all();
-    }
-
     if (!copy($dbPath, $templatePath)) {
         throw new RuntimeException('Could not store the seed template.');
     }

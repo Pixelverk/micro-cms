@@ -31,6 +31,14 @@ function search_seed(string $slug, string $title, string $text, string $body = '
     return $id;
 }
 
+t('the installer builds the search index', function () {
+    // test_fresh_database() restores a template built by the real installer,
+    // so this asserts what a fresh install ships with.
+    $unindexed = (int) db()->query("SELECT COUNT(*) FROM content WHERE search_text IS NULL OR search_text = ''")->fetchColumn();
+
+    assert_eq(0, $unindexed, 'every seeded item has searchable text');
+});
+
 t('search_extract_text() turns components into prose', function () {
     $body = [
         ['type' => 'hero-section', 'props' => ['title' => 'Hello', 'text' => '<p>World</p>'], 'children' => []],
@@ -81,6 +89,19 @@ t('saving content indexes it', function () {
     $stored->execute(['id' => $id]);
 
     assert_contains('UniqueSearchableWord', (string) $stored->fetchColumn());
+});
+
+t('search_reindex_all() rebuilds the whole index', function () {
+    db()->exec("UPDATE content SET search_text = NULL");
+
+    $count = search_reindex_all();
+
+    assert_true($count > 0, 'there is content to index');
+
+    $unindexed = (int) db()->query("SELECT COUNT(*) FROM content WHERE search_text IS NULL OR search_text = ''")->fetchColumn();
+    assert_eq(0, $unindexed, 'every item was rebuilt');
+
+    assert_true(search_content('About Us')['total'] >= 1, 'seeded content is searchable after a rebuild');
 });
 
 t('search finds content by body text', function () {

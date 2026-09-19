@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations', 'search_reindex'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -96,6 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = $published
                     ? admin_trans('utilities_success_published', ['count' => count($published)])
                     : admin_trans('utilities_success_nothing_due');
+                break;
+
+            case 'search_reindex':
+                $indexed = search_reindex_all();
+                log_activity('utility.search_reindex', 'utility', null, $indexed . ' item(s)', []);
+                $message = admin_trans('utilities_success_search_reindex', ['count' => $indexed]);
                 break;
 
             case 'run_migrations':
@@ -193,6 +199,17 @@ ob_start();
                 <p><?= e(admin_trans('utilities_publish_due_help')) ?></p>
                 <button type="button" data-action="publish_due" class="btn">
                     <?= icon('post', 16) ?><?= e(admin_trans('utilities_publish_due_button')) ?>
+                </button>
+            </div>
+
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('search', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_search_reindex')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_search_reindex_help')) ?></p>
+                <button type="button" data-action="search_reindex" class="btn">
+                    <?= icon('search', 16) ?><?= e(admin_trans('utilities_search_reindex')) ?>
                 </button>
             </div>
 
@@ -301,6 +318,7 @@ const confirmations = <?= json_encode([
     'regenerate_sitemap' => admin_trans('utilities_sitemap_confirm'),
     'publish_due'        => admin_trans('utilities_confirm_publish_due'),
     'run_migrations'     => admin_trans('utilities_confirm_migrations'),
+    'search_reindex'     => admin_trans('utilities_search_reindex_confirm'),
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
 // Attach click handlers to buttons

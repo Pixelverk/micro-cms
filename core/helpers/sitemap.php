@@ -26,7 +26,7 @@ function generate_sitemap(): string
         $prefix = $prefixes[$type] ?? '';
 
         $stmt = $pdo->prepare("
-            SELECT id, slug, updated_at, published_at
+            SELECT id, slug, meta, updated_at, published_at
             FROM content
             WHERE type = :type
               AND status = 'published'
@@ -37,6 +37,15 @@ function generate_sitemap(): string
         $stmt->execute(['type' => $type, 'now' => $now]);
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+            // A per-page robots override of noindex means the editor does not
+            // want this URL indexed, so it must not be advertised here either.
+            $meta = json_decode((string) ($row['meta'] ?? ''), true);
+            $robots = seo_robots(['status' => 'published', 'meta' => is_array($meta) ? $meta : []]);
+
+            if (str_contains($robots, 'noindex')) {
+                continue;
+            }
 
             // Prefer published date
             $timestamp = $row['published_at'] ?: $row['updated_at'];

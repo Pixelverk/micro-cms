@@ -113,7 +113,13 @@ download, health, migrations, admin i18n. See `README.md` for the full list.
 
 ## 1. Correctness fixes (A, S)
 
-**Why.** Six latent defects make existing features wrong, and each is cheap to
+**Shipped.** All five fixes are in: `core/components/404.php` renders the
+no-content fallback and a 404 answers `noindex, follow`; JSON-LD is enabled in
+`theme/theme.php`, with an Organization entry on the homepage; the installer
+builds the search index and Utilities gains "Rebuild Search Index"; `<html lang>`
+falls back to `en`; the sitemap skips items whose robots override is `noindex`.
+
+**Why.** Five latent defects make existing features wrong, and each is cheap to
 fix. Correct them before adding more features.
 
 **Work.**
@@ -126,16 +132,12 @@ fix. Correct them before adding more features.
 * Search index: rebuild the index after first setup and expose a Utilities
   "Rebuild search index" action; `search_reindex_all()` currently has no
   production caller and seeded content has no `search_text`.
-* Media replace: include `sizes_json` in the UPDATE so replaced files do not keep
-  stale dimensions.
 * `<html lang>` must fall back to the default when `site_language` is unset.
 * Sitemap: skip published items whose per-page robots override is `noindex`.
 
-**Verify.** Extend `tests/seo.test.php`, `tests/search.test.php`,
-`tests/media.test.php`, `tests/http.test.php`; render the no-content 404 through
-the local server.
+**Verify.** Extend `tests/seo.test.php`, `tests/search.test.php`, `tests/http.test.php`; render the no-content 404 through the local server.
 
-**Reject if** it grows into an SEO audit; this is six small fixes.
+**Reject if** it grows into an SEO audit; this is five small fixes.
 
 ## 2. Test-suite reliability (A, S–M)
 

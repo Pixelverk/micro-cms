@@ -791,6 +791,63 @@ t('the admin renders in the language of the signed-in user', function () use ($b
     http_login($base);
 });
 
+t('the utilities page can rebuild the search index', function () use ($base) {
+    http_login($base);
+
+    db()->exec("UPDATE content SET search_text = NULL");
+
+    [$status] = http('POST', $base . '/admin/utilities', true, [
+        '_token'         => http_csrf_token($base, '/admin/utilities'),
+        'utility_action' => 'search_reindex',
+    ]);
+
+    assert_eq(302, $status);
+
+    $unindexed = (int) db()->query("SELECT COUNT(*) FROM content WHERE search_text IS NULL OR search_text = ''")->fetchColumn();
+    assert_eq(0, $unindexed, 'the action rebuilt the index');
+
+    [, $page] = http('GET', $base . '/admin/utilities');
+    assert_contains('Search index rebuilt', $page, 'the toast reports the result');
+});
+
+t('<html lang> falls back to the default when site_language is unset', function () use ($base) {
+    $original = (string) get_setting('site_language', 'en');
+
+    db()->prepare("DELETE FROM settings WHERE `key` = 'site_language'")->execute();
+    settings_cache_clear();
+
+    test_clear_cache_files();
+    [$status, $body] = http('GET', $base . '/about/', false);
+
+    assert_eq(200, $status);
+    assert_contains("<html lang='en'>", $body);
+
+    set_setting('site_language', $original);
+    test_clear_cache_files();
+});
+
+t('a missing URL answers 404 with noindex and falls back to the core component', function () use ($base) {
+    test_clear_cache_files();
+
+    // The seeded 404 page answers first, and must not be indexable.
+    [$status, $body] = http('GET', $base . '/no-such-page-xyz/', false);
+
+    assert_eq(404, $status);
+    assert_contains("name='robots' content='noindex, follow'", $body);
+
+    // Without it the router synthesises a page whose only component is the
+    // core fallback, so that file must render rather than warn.
+    db()->exec("DELETE FROM content WHERE slug = '404' AND type = 'page'");
+
+    test_clear_cache_files();
+    [$status, $body] = http('GET', $base . '/no-such-page-xyz/', false);
+
+    assert_eq(404, $status);
+    assert_contains('cms-not-found', $body, 'the core 404 component renders');
+    assert_not_contains('component not found', $body);
+    assert_contains("name='robots' content='noindex, follow'", $body);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

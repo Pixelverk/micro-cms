@@ -161,6 +161,17 @@ t('a robots override is honoured but an editor cannot index a draft', function (
     assert_eq('noindex, nofollow', $seo['robots']);
 });
 
+t('a 404 response is noindex but followable', function () {
+    $seo = seo_metadata(seo_page(['status' => '404']));
+
+    assert_contains('noindex', $seo['robots']);
+    assert_contains('follow', $seo['robots']);
+
+    // An editor override cannot make a 404 indexable.
+    $seo = seo_metadata(seo_page(['status' => '404', 'meta' => ['robots_extra' => 'index, follow']]));
+    assert_contains('noindex', $seo['robots']);
+});
+
 t('og:type follows the content type', function () {
     assert_eq('website', seo_metadata(seo_page())['og_type']);
     assert_eq('article', seo_metadata(seo_page(['type' => 'blog_post']))['og_type']);
@@ -242,20 +253,41 @@ t('empty optional fields are omitted rather than emitted blank', function () {
     assert_not_contains('twitter:site', $html, 'no empty handle');
 });
 
-t('JSON-LD is opt-in via the theme manifest', function () {
-    // theme.php does not enable it by default.
-    assert_eq('', seo_json_ld(seo_page()));
+t('JSON-LD is emitted for a page when the theme enables it', function () {
+    set_setting('site_url', 'https://example.com');
+    settings_cache_clear();
 
-    // Simulate a theme that turns schema on.
-    [$output] = test_php([
-        'putenv("CMS_CONFIG_FILE=" . ' . var_export(CMS_PATH . '/tests/config.test.php', true) . ');',
-        '$GLOBALS["cms_theme_schema"] = true;',
-        '$theme = theme_config();',
-        '$theme["schema"] = true;',
-        'echo "theme-ok";',
-    ]);
+    $html = seo_json_ld(seo_page());
 
-    assert_contains('theme-ok', implode("\n", $output));
+    assert_contains("type='application/ld+json'", $html);
+    assert_contains('"@type":"WebPage"', $html);
+    assert_contains('"url":"https://example.com/about"', $html);
+
+    // A blog post is an Article carrying its author and dates.
+    $article = seo_json_ld(seo_page([
+        'type' => 'blog_post',
+        'meta' => ['author' => 'Ada Lovelace'],
+    ]));
+
+    assert_contains('"@type":"Article"', $article);
+    assert_contains('"@type":"Person"', $article);
+    assert_contains('"name":"Ada Lovelace"', $article);
+});
+
+t('the homepage JSON-LD also identifies the organisation', function () {
+    set_setting('site_url', 'https://example.com');
+    settings_cache_clear();
+
+    $homepageId = (int) get_setting('homepage_id', 0);
+    assert_true($homepageId > 0, 'the demo site has a homepage');
+
+    $html = seo_json_ld(seo_page(['id' => $homepageId, 'slug' => '', 'path' => '']));
+
+    assert_contains('"@type":"Organization"', $html);
+    assert_contains('"url":"https://example.com/"', $html);
+
+    // Other pages do not repeat it.
+    assert_not_contains('Organization', seo_json_ld(seo_page(['id' => $homepageId + 1])));
 });
 
 t('seo_validate_canonical() only accepts same-origin absolute URLs', function () {
@@ -314,6 +346,24 @@ t('the sitemap lists published content on the configured origin', function () {
 
     db()->exec("UPDATE content SET status = 'published' WHERE slug = 'privacy'");
     db()->exec("DELETE FROM content WHERE slug = 'scheduled-seo'");
+});
+
+t('the sitemap skips items whose robots override is noindex', function () {
+    set_setting('site_url', 'https://example.com');
+    settings_cache_clear();
+
+    $now = time();
+    db()->prepare("
+        INSERT INTO content (type, slug, title, status, meta, body, published_at, created_at, updated_at)
+        VALUES ('page', 'noindex-sitemap', 'Noindex Sitemap', 'published', :meta, '[]', :now, :now, :now)
+    ")->execute(['meta' => json_encode(['robots_extra' => 'noindex, follow']), 'now' => $now]);
+
+    $xml = generate_sitemap();
+
+    assert_not_contains('noindex-sitemap', $xml, 'a noindex page is not advertised');
+    assert_contains('https://example.com/about/', $xml, 'other pages are still listed');
+
+    db()->exec("DELETE FROM content WHERE slug = 'noindex-sitemap'");
 });
 
 t('the rendered page carries the SEO tags end to end', function () {

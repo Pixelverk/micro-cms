@@ -963,6 +963,21 @@ $notFoundData = [
 
 insert_seed_content($pdo, $notFoundData);
 
+/*
+|--------------------------------------------------------------------------
+| Build the search index
+|--------------------------------------------------------------------------
+| Seeds are inserted straight into the table, which bypasses save_content()
+| and therefore the indexer. Build the index here so a fresh install is
+| searchable without editing every item first.
+*/
+
+require_once CORE_PATH . '/helpers/common.php';
+require_once CORE_PATH . '/helpers/search.php';
+require_once CORE_PATH . '/db.php';
+
+search_reindex_all();
+
 /* update the config to say setup has been done */
 function update_config_value(string $key, mixed $value): bool
 {
