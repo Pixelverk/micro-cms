@@ -301,6 +301,16 @@ nothing written to the cache.
 
 ## 8. Form model completion (C, S–M)
 
+**Shipped.** `contact-section.php` renders `select` and `radio` as real markup
+and uses an optional `label`, falling back to the key; the demo contact form
+gained a `select` and a `radio`, and both demo forms gained labels. Validation
+moved into `form_submission_validate()` in `core/helpers/forms.php`: required,
+the declared type (email/tel/url/number), select/radio options, and a per-field
+length bound with a `max` override. A notification setting may name several
+comma-separated addresses, and each is sent a separate message. The inbox search
+was already implemented (`form_submission_filter()` searches the JSON `data` and
+the inbox has a search box), so that work item needed nothing.
+
 **Why.** Forms are a main CMS feature and the model is thin: a `select` or
 `radio` field declared in `theme.php` renders as invalid markup, labels are
 auto-derived from keys, only required+email are validated, there is one
@@ -384,7 +394,7 @@ for all types.
 # Wave 2 — depth and polish
 
 Each phase below is still independently shippable; detail is deliberately
-shorter.
+shorter. Ask the user to expand on each item before implementation.
 
 ## 12. Media library UX + media usage before delete (A, S–M)
 

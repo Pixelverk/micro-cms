@@ -207,7 +207,7 @@ function docs_content(): array
                     ['p' => 'The last remaining administrator cannot be demoted or deleted.'],
                 ],
                 'Form submissions' => [
-                    ['p' => 'Contact and newsletter forms are configured under form_types in theme/theme.php and their submissions appear in the Forms section of the admin. Notifications go to the address set in Settings.'],
+                    ['p' => 'Contact and newsletter forms are configured under form_types in theme/theme.php and their submissions appear in the Forms section of the admin. Notifications go to the addresses set in Settings.'],
                 ],
                 'Configuration' => [
                     ['table' => [

@@ -329,3 +329,140 @@ function form_submission_export_csv(array $submissions, string $filename): void
 
     fclose($out);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Public form submission
+|--------------------------------------------------------------------------
+|
+| Validation for a posted form, driven entirely by the field definitions in
+| theme/theme.php. Kept here so the endpoint stays thin and the rules can be
+| unit-tested without a request.
+|
+*/
+
+/**
+ * Validate a posted submission against the fields the theme declares.
+ *
+ * Optional fields left blank are kept as empty strings, so the inbox still
+ * shows the field rather than silently dropping it.
+ *
+ * @param array<string, array<string, mixed>> $fields theme.php form_types[...]['fields']
+ * @param array<string, mixed> $input Typically $_POST
+ * @return array{data: array<string, string>, errors: array<string, string>}
+ */
+function form_submission_validate(array $fields, array $input): array
+{
+    $data   = [];
+    $errors = [];
+
+    foreach ($fields as $name => $rules) {
+        if (!is_array($rules)) {
+            continue;
+        }
+
+        $name  = (string) $name;
+        $label = (string) ($rules['label'] ?? form_submission_field_label($name));
+        $value = $input[$name] ?? '';
+
+        // A field the browser sends as a list is not something these forms use.
+        $value = trim(is_array($value) ? '' : (string) $value);
+
+        if (($rules['required'] ?? false) && $value === '') {
+            $errors[$name] = $label . ' is required.';
+            continue;
+        }
+
+        if ($value !== '') {
+            $error = form_submission_field_error($rules, $value, $label);
+
+            if ($error !== null) {
+                $errors[$name] = $error;
+                continue;
+            }
+        }
+
+        $data[$name] = $value;
+    }
+
+    return ['data' => $data, 'errors' => $errors];
+}
+
+/**
+ * The problem with one non-empty value, or null when it is acceptable.
+ *
+ * @param array<string, mixed> $rules
+ */
+function form_submission_field_error(array $rules, string $value, string $label): ?string
+{
+    // The `email => true` shorthand predates `type`; both still work.
+    $type = (string) ($rules['type'] ?? (!empty($rules['email']) ? 'email' : 'text'));
+
+    switch ($type) {
+        case 'email':
+            if (!validate_email($value)) {
+                return $label . ' must be a valid email address.';
+            }
+            break;
+
+        case 'tel':
+            // Deliberately permissive: punctuation varies by country, so this
+            // only rejects values that could not be a phone number at all.
+            if (!preg_match('/^[0-9+()\-.\s]{3,40}$/', $value)) {
+                return $label . ' does not look like a phone number.';
+            }
+            break;
+
+        case 'url':
+            if (!validate_url($value)) {
+                return $label . ' must be a full web address (https://…).';
+            }
+            break;
+
+        case 'number':
+            if (!is_numeric($value)) {
+                return $label . ' must be a number.';
+            }
+            break;
+
+        case 'select':
+        case 'radio':
+            $options = array_map('strval', array_keys($rules['options'] ?? []));
+
+            if ($options && !in_array($value, $options, true)) {
+                return $label . ' has an unknown value.';
+            }
+            break;
+    }
+
+    $max = (int) ($rules['max'] ?? ($type === 'textarea' ? 5000 : 500));
+
+    if ($max > 0 && mb_strlen($value) > $max) {
+        return $label . ' is too long (at most ' . $max . ' characters).';
+    }
+
+    return null;
+}
+
+/**
+ * Split a notification setting into the addresses it names.
+ *
+ * Blank entries and anything that is not an address are dropped rather than
+ * failing the submission; the settings form already validated the list.
+ *
+ * @return list<string>
+ */
+function form_notification_recipients(string $value): array
+{
+    $recipients = [];
+
+    foreach (preg_split('/\s*,\s*/', trim($value)) ?: [] as $email) {
+        $email = trim($email);
+
+        if ($email !== '' && validate_email($email) && !in_array($email, $recipients, true)) {
+            $recipients[] = $email;
+        }
+    }
+
+    return $recipients;
+}

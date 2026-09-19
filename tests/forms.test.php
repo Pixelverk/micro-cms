@@ -210,4 +210,109 @@ t('a submission with unreadable JSON still lists', function () {
     assert_eq([], $page['items'][0]['data'], 'broken data degrades to an empty set');
 });
 
+// ---------------------------------------------------------------------------
+// Public submission validation
+// ---------------------------------------------------------------------------
+
+t('a required field is reported by its label', function () {
+    $fields = [
+        'name'  => ['type' => 'text', 'label' => 'Your name', 'required' => true],
+        'email' => ['type' => 'email', 'required' => true],
+    ];
+
+    $result = form_submission_validate($fields, ['email' => 'ada@example.com']);
+
+    assert_contains('Your name is required.', $result['errors']['name'] ?? '');
+    assert_false(array_key_exists('name', $result['data']), 'a failed field is not stored');
+    assert_eq('ada@example.com', $result['data']['email'] ?? '', 'the other field still validates');
+});
+
+t('typed fields are checked by their declared type', function () {
+    $fields = [
+        'email' => ['type' => 'email', 'required' => false],
+        'phone' => ['type' => 'tel', 'required' => false],
+        'site'  => ['type' => 'url', 'required' => false],
+        'age'   => ['type' => 'number', 'required' => false],
+    ];
+
+    $bad = form_submission_validate($fields, [
+        'email' => 'nope', 'phone' => 'not a phone', 'site' => 'example.com', 'age' => 'old',
+    ]);
+
+    assert_count(4, $bad['errors'], 'every invalid value is reported');
+
+    $good = form_submission_validate($fields, [
+        'email' => 'ada@example.com', 'phone' => '+46 (0)8 123 456', 'site' => 'https://example.com', 'age' => '42',
+    ]);
+
+    assert_count(0, $good['errors']);
+    assert_eq('42', $good['data']['age']);
+});
+
+t('an optional empty field is kept as an empty string', function () {
+    $fields = [
+        'name'   => ['type' => 'text', 'required' => true],
+        'phone'  => ['type' => 'tel', 'required' => false],
+        'legacy' => ['email' => true, 'required' => false],
+    ];
+
+    $result = form_submission_validate($fields, ['name' => 'Ada']);
+
+    assert_count(0, $result['errors']);
+    assert_eq('', $result['data']['phone'], 'the inbox still shows the field');
+    assert_eq('', $result['data']['legacy']);
+
+    // The older `email => true` shorthand still validates.
+    $result = form_submission_validate($fields, ['name' => 'Ada', 'legacy' => 'nope']);
+    assert_contains('valid email', $result['errors']['legacy'] ?? '');
+});
+
+t('select and radio values must be declared options', function () {
+    $fields = [
+        'subject' => ['type' => 'select', 'required' => false, 'options' => ['general' => 'General', 'sales' => 'Sales']],
+        'reply'   => ['type' => 'radio', 'required' => false, 'options' => ['email' => 'Email', 'phone' => 'Phone']],
+    ];
+
+    $bad = form_submission_validate($fields, ['subject' => 'other', 'reply' => 'fax']);
+    assert_count(2, $bad['errors']);
+
+    $good = form_submission_validate($fields, ['subject' => 'sales', 'reply' => 'phone']);
+    assert_count(0, $good['errors']);
+    assert_eq('sales', $good['data']['subject']);
+});
+
+t('length is bounded per field, with an optional max', function () {
+    $fields = [
+        'nick' => ['type' => 'text', 'required' => false],
+        'code' => ['type' => 'text', 'required' => false, 'max' => 3],
+        'bio'  => ['type' => 'textarea', 'required' => false],
+    ];
+
+    $over = form_submission_validate($fields, [
+        'nick' => str_repeat('x', 501),
+        'code' => 'abcd',
+        'bio'  => str_repeat('y', 5001),
+    ]);
+
+    assert_count(3, $over['errors'], 'all three are over their bound');
+
+    $at = form_submission_validate($fields, [
+        'nick' => str_repeat('x', 500),
+        'code' => 'abc',
+        'bio'  => str_repeat('y', 5000),
+    ]);
+
+    assert_count(0, $at['errors'], 'the bounds are inclusive');
+});
+
+t('a notification setting can name several recipients', function () {
+    assert_eq(
+        ['a@example.com', 'b@example.com'],
+        form_notification_recipients(' a@example.com , b@example.com ')
+    );
+    assert_eq(['a@example.com'], form_notification_recipients('a@example.com, a@example.com'), 'duplicates collapse');
+    assert_eq([], form_notification_recipients('not-an-address'));
+    assert_eq([], form_notification_recipients(''));
+});
+
 exit(test_summary());

@@ -118,10 +118,29 @@ return [
         'contact' => [
             'label' => 'Contact',
             'fields' => [
-                'name'    => ['type' => 'text', 'required' => true],
-                'email'   => ['type' => 'email', 'required' => true],
-                'phone'   => ['type' => 'tel', 'required' => true],
-                'message' => ['type' => 'textarea', 'required' => true],
+                'name'    => ['type' => 'text', 'label' => 'Your name', 'required' => true],
+                'email'   => ['type' => 'email', 'label' => 'Email address', 'required' => true],
+                'phone'   => ['type' => 'tel', 'label' => 'Phone', 'required' => true],
+                'subject' => [
+                    'type'     => 'select',
+                    'label'    => 'Subject',
+                    'required' => false,
+                    'options'  => [
+                        'general' => 'General enquiry',
+                        'support' => 'Support',
+                        'sales'   => 'Sales',
+                    ],
+                ],
+                'reply_by' => [
+                    'type'     => 'radio',
+                    'label'    => 'Preferred reply',
+                    'required' => false,
+                    'options'  => [
+                        'email' => 'Email',
+                        'phone' => 'Phone',
+                    ],
+                ],
+                'message' => ['type' => 'textarea', 'label' => 'Message', 'required' => true],
             ],
             'notification_email_setting' => 'contact_email',
             'store_submission' => true,
@@ -129,8 +148,8 @@ return [
         'newsletter' => [
             'label' => 'Newsletter',
             'fields' => [
-                'email' => ['type' => 'email', 'required' => true],
-                'opt_in' => ['type' => 'checkbox', 'required' => false],
+                'email'  => ['type' => 'email', 'label' => 'Email address', 'required' => true],
+                'opt_in' => ['type' => 'checkbox', 'label' => 'Yes, send me the newsletter', 'required' => false],
             ],
             'store_submission' => true,
         ]

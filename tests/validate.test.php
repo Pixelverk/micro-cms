@@ -96,4 +96,14 @@ t('validate_throw() reports JSON callers with 422', function () {
     assert_contains('Bad slug.', $text);
 });
 
+t('validate_email_list() accepts a comma-separated list', function () {
+    assert_true(validate_email_list(''), 'blank is allowed by default');
+    assert_true(validate_email_list('a@example.com'));
+    assert_true(validate_email_list('a@example.com, b@example.com'), 'commas and spaces');
+    assert_false(validate_email_list('a@example.com, nope'));
+    assert_false(validate_email_list('nope'));
+    assert_false(validate_email_list('', false), 'blank is refused when a value is required');
+    assert_false(validate_email_list('a@example.com,,b@example.com'), 'an empty entry is not an address');
+});
+
 exit(test_summary());

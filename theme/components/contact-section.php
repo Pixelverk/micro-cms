@@ -211,16 +211,38 @@ JS,
                             <!-- Dynamic fields -->
                             <?php foreach ($fields as $name => $cfg): ?>
                                 <?php
-                                    $fieldType = $cfg['type'] ?? 'text';
+                                    $fieldType  = $cfg['type'] ?? 'text';
                                     $isRequired = !empty($cfg['required']) ? 'required' : '';
-                                    $fieldId = $id . '-' . $name;
-                                    $fieldLabel = ucfirst(str_replace('_', ' ', $name));
+                                    $fieldId    = $id . '-' . $name;
+                                    $fieldLabel = (string) ($cfg['label'] ?? ucfirst(str_replace('_', ' ', $name)));
+                                    $options    = is_array($cfg['options'] ?? null) ? $cfg['options'] : [];
                                 ?>
                                 <?php if ($fieldType === 'checkbox'): ?>
                                     <div class="form-check mb-3">
                                         <input class="form-check-input" id="<?= e($fieldId) ?>" type="checkbox" name="<?= e($name) ?>" <?= $isRequired ?> />
                                         <label class="form-check-label" for="<?= e($fieldId) ?>"><?= e($fieldLabel) ?></label>
                                     </div>
+                                <?php elseif ($fieldType === 'select'): ?>
+                                    <div class="form-floating mb-3">
+                                        <select class="form-control" id="<?= e($fieldId) ?>" name="<?= e($name) ?>" <?= $isRequired ?>>
+                                            <option value=""></option>
+                                            <?php foreach ($options as $optionValue => $optionLabel): ?>
+                                                <option value="<?= e((string) $optionValue) ?>"><?= e((string) $optionLabel) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <label for="<?= e($fieldId) ?>"><?= e($fieldLabel) ?></label>
+                                    </div>
+                                <?php elseif ($fieldType === 'radio'): ?>
+                                    <fieldset class="mb-3">
+                                        <legend class="form-check-label"><?= e($fieldLabel) ?></legend>
+                                        <?php foreach ($options as $optionValue => $optionLabel): ?>
+                                            <?php $optionId = $fieldId . '-' . $optionValue; ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="<?= e($optionId) ?>" name="<?= e($name) ?>" value="<?= e((string) $optionValue) ?>" <?= $isRequired ?> />
+                                                <label class="form-check-label" for="<?= e($optionId) ?>"><?= e((string) $optionLabel) ?></label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </fieldset>
                                 <?php else: ?>
                                     <div class="form-floating mb-3">
                                         <?php if ($fieldType === 'textarea'): ?>

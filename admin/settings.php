@@ -305,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
         } elseif ($key === 'contact_email') {
-            if (!validate_email((string) $value, true)) {
+            if (!validate_email_list((string) $value)) {
                 $errors[$key] = admin_trans('settings_error_email');
                 continue;
             }

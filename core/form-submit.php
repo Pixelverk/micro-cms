@@ -67,26 +67,11 @@ if (!$fields) {
 // --------------------------------------------------
 // Validate fields
 // --------------------------------------------------
-$data = [];
-$errors = [];
-
-foreach ($fields as $field => $rules) {
-    $value = trim($_POST[$field] ?? '');
-
-    if (($rules['required'] ?? false) && $value === '') {
-        $errors[$field] = 'Required';
-        continue;
-    }
-
-    if (($rules['email'] ?? false) && $value !== '') {
-        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            $errors[$field] = 'Invalid email';
-            continue;
-        }
-    }
-
-    $data[$field] = $value;
-}
+// The rules come from the theme's field definitions: required, the declared
+// type, any length bound, and the options a select or radio offers.
+$validation = form_submission_validate($fields, $_POST);
+$data       = $validation['data'];
+$errors     = $validation['errors'];
 
 if ($errors) {
     http_response_code(422);
@@ -153,15 +138,16 @@ $env      = config('env') ?? 'production';
 $sent = true;
 
 $settingKey = $formConfig['notification_email_setting'] ?? null;
-$to = $settingKey ? ($settings[$settingKey] ?? '') : '';
+$recipients = $settingKey ? form_notification_recipients((string) ($settings[$settingKey] ?? '')) : [];
 
-if ($to && filter_var($to, FILTER_VALIDATE_EMAIL)) {
+if ($recipients) {
 
     $subject = "New {$formConfig['label']} submission";
 
     $body = '';
     foreach ($data as $key => $value) {
-        $body .= ucfirst($key) . ": {$value}\n";
+        $label = (string) ($fields[$key]['label'] ?? form_submission_field_label((string) $key));
+        $body .= $label . ": {$value}\n";
     }
 
     $headers = [
@@ -177,7 +163,7 @@ if ($to && filter_var($to, FILTER_VALIDATE_EMAIL)) {
     if ($env !== 'production') {
         // Log instead of send
         $log = [
-            'to'      => $to,
+            'to'      => implode(', ', $recipients),
             'subject' => $subject,
             'body'    => $body,
             'headers' => $headers,
@@ -190,7 +176,12 @@ if ($to && filter_var($to, FILTER_VALIDATE_EMAIL)) {
             FILE_APPEND
         );
     } else {
-        $sent = mail($to, $subject, $body, implode("\r\n", $headers));
+        // One message per address, so no recipient sees the others.
+        foreach ($recipients as $recipient) {
+            if (!mail($recipient, $subject, $body, implode("\r\n", $headers))) {
+                $sent = false;
+            }
+        }
     }
 }
 

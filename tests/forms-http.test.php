@@ -121,6 +121,16 @@ function inbox_csrf_token(string $base, string $path = '/admin/messages'): strin
 }
 
 /**
+ * A fresh signed token for a public form.
+ */
+function inbox_form_token(string $base, string $formType): string
+{
+    [, $body] = inbox_http('GET', $base . '/form-token?form_type=' . urlencode($formType), false);
+
+    return (string) (json_decode($body, true)['token'] ?? '');
+}
+
+/**
  * Insert a submission straight into the table.
  *
  * @param array<string, mixed> $data
@@ -471,6 +481,61 @@ t('an anonymous visitor cannot reach the inbox or its export', function () use (
     assert_eq(302, $inboxStatus, 'the inbox requires a session');
     assert_eq(302, $exportStatus, 'so does the export');
     assert_eq(302, $updateStatus, 'and so does a status change');
+});
+
+t('a submission is validated by its declared field type', function () use ($base) {
+    $post = [
+        'form_type'   => 'contact',
+        '_form_token' => inbox_form_token($base, 'contact'),
+        'name'        => 'Ada',
+        'email'       => 'not-an-email',
+        'phone'       => '555',
+        'message'     => 'Hi',
+    ];
+
+    [$status, $body] = inbox_http('POST', $base . '/form-submit', false, $post);
+
+    assert_eq(422, $status, 'an invalid email is refused');
+    assert_contains('email', $body, 'the offending field is named');
+
+    // Correct it, and post values from the declared select and radio options.
+    $post['email']       = 'ada@example.com';
+    $post['subject']     = 'support';
+    $post['reply_by']    = 'email';
+    $post['_form_token'] = inbox_form_token($base, 'contact');
+
+    [$status] = inbox_http('POST', $base . '/form-submit', false, $post);
+    assert_eq(200, $status, 'a well-formed submission is accepted');
+
+    // A value outside the declared options is refused even though it is a string.
+    $post['subject']     = 'not-an-option';
+    $post['_form_token'] = inbox_form_token($base, 'contact');
+
+    [$status, $body] = inbox_http('POST', $base . '/form-submit', false, $post);
+    assert_eq(422, $status);
+    assert_contains('subject', $body);
+});
+
+t('a notification goes to every configured address', function () use ($base) {
+    save_settings(['contact_email' => 'first@example.com, second@example.com']);
+    @unlink(STORAGE_PATH . '/logs/forms.log');
+
+    [$status] = inbox_http('POST', $base . '/form-submit', false, [
+        'form_type'   => 'contact',
+        '_form_token' => inbox_form_token($base, 'contact'),
+        'name'        => 'Ada',
+        'email'       => 'ada@example.com',
+        'phone'       => '555',
+        'message'     => 'Hi',
+    ]);
+
+    assert_eq(200, $status);
+
+    $log = (string) @file_get_contents(STORAGE_PATH . '/logs/forms.log');
+    assert_contains('first@example.com', $log);
+    assert_contains('second@example.com', $log);
+
+    save_settings(['contact_email' => 'test-admin@domain.com']);
 });
 
 proc_terminate($server);

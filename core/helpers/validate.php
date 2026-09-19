@@ -87,6 +87,26 @@ function validate_email(string $email, bool $allowEmpty = false): bool
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 }
 
+/**
+ * A comma-separated list of email addresses. Blank is allowed when $allowEmpty.
+ */
+function validate_email_list(string $value, bool $allowEmpty = true): bool
+{
+    $value = trim($value);
+
+    if ($value === '') {
+        return $allowEmpty;
+    }
+
+    foreach (preg_split('/\s*,\s*/', $value) ?: [] as $email) {
+        if (!validate_email($email)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function validate_username(string $username): bool
 {
     return (bool) preg_match('/^[a-z0-9._\-]{3,32}$/', strtolower($username));
