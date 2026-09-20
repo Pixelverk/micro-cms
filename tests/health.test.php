@@ -40,6 +40,19 @@ t('the required extensions and writable storage are reported as ok', function ()
     assert_eq('ok', $byLabel['storage/cache/'] ?? null, 'the test cache is writable');
 });
 
+t('the theme manifest is reported as healthy', function () {
+    $byLabel = [];
+
+    foreach (health_checks() as $check) {
+        $byLabel[$check['label']] = $check;
+    }
+
+    foreach (['Theme layouts', 'Theme components', 'Theme assets', 'Theme partials', 'Theme form fields'] as $label) {
+        assert_true(isset($byLabel[$label]), "{$label} should be part of the report");
+        assert_eq('ok', $byLabel[$label]['status'] ?? null, "{$label} should be ok for the shipped theme");
+    }
+});
+
 t('a read-only storage directory is reported as a problem', function () {
     $directory = STORAGE_PATH . '/cache';
     $original  = fileperms($directory) & 0777;

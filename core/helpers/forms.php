@@ -389,6 +389,20 @@ function form_submission_validate(array $fields, array $input): array
 }
 
 /**
+ * The field types a public form may declare.
+ *
+ * Anything else is treated as plain text by form_submission_field_error(), so a
+ * typo silently drops that field's validation — which is why the theme check on
+ * the Health page reports it.
+ *
+ * @return list<string>
+ */
+function form_submission_field_types(): array
+{
+    return ['text', 'textarea', 'email', 'tel', 'url', 'number', 'select', 'radio', 'checkbox'];
+}
+
+/**
  * The problem with one non-empty value, or null when it is acceptable.
  *
  * @param array<string, mixed> $rules

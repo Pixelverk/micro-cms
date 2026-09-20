@@ -26,6 +26,286 @@ function health_result(string $label, string $status, string $detail, string $fi
     return ['label' => $label, 'status' => $status, 'detail' => $detail, 'fix' => $fix];
 }
 
+/*
+|--------------------------------------------------------------------------
+| Theme manifest integrity
+|--------------------------------------------------------------------------
+|
+| Nothing else validates the manifest. A layout that no longer exists throws a
+| blank 500 out of render_layout(), a missing header or component prints
+| "component not found" into the page, and a missing partial is a fatal
+| require — all of them silent until a visitor arrives.
+|
+| Only what the manifest reaches is checked: a component file nobody lists is
+| not an error, and the placeholder child name in core/components/sample-
+| component.php is not part of any palette. Everything resolves theme-first
+| with the core/components fallback, exactly as component() does it.
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Problems with a theme manifest, grouped by area.
+ *
+ * @param array<string, mixed> $theme
+ * @param string $themePath the theme directory (theme())
+ * @param array<string, mixed> $settings current settings, for the selections the site actually uses
+ * @return array<string, list<array{status: string, message: string}>> group => problems
+ */
+function theme_manifest_problems(array $theme, string $themePath, array $settings): array
+{
+    $problems  = [];
+    $themePath = rtrim($themePath, '/');
+
+    $add = static function (string $group, string $status, string $message) use (&$problems): void {
+        $problems[$group][] = ['status' => $status, 'message' => $message];
+    };
+
+    // Component files by name. The theme wins over core, as at render time.
+    $componentFiles = [];
+
+    foreach ([CORE_PATH . '/components', $themePath . '/components'] as $directory) {
+        foreach (glob($directory . '/*.php') ?: [] as $file) {
+            $componentFiles[basename($file, '.php')] = $file;
+        }
+    }
+
+    $layoutFiles = [];
+
+    foreach (glob($themePath . '/layouts/*.php') ?: [] as $file) {
+        $layoutFiles[basename($file, '.php')] = true;
+    }
+
+    $contentTypes = is_array($theme['content_types'] ?? null) ? $theme['content_types'] : [];
+
+    // ------------------------------------------------------------- layouts
+    $layoutReferences = [];
+
+    foreach (array_keys((array) ($theme['layouts'] ?? [])) as $layout) {
+        $layoutReferences[] = ["layouts.{$layout}", (string) $layout];
+    }
+
+    foreach ($contentTypes as $type => $config) {
+        if (!is_array($config)) {
+            continue;
+        }
+
+        foreach (['default_layout', 'taxonomy_layout'] as $key) {
+            $layout = trim((string) ($config[$key] ?? ''));
+
+            if ($layout !== '') {
+                $layoutReferences[] = ["{$type}.{$key}", $layout];
+            }
+        }
+    }
+
+    $namedLayouts = [
+        'search_layout'  => (string) ($theme['search_layout'] ?? ''),
+        'defaults.layout' => (string) ($theme['defaults']['layout'] ?? ''),
+        // The setting beats the manifest, so it is the one that renders.
+        'settings.default_layout' => (string) ($settings['default_layout'] ?? ''),
+    ];
+
+    foreach ($namedLayouts as $key => $layout) {
+        if (trim($layout) !== '') {
+            $layoutReferences[] = [$key, trim($layout)];
+        }
+    }
+
+    foreach ($layoutReferences as [$key, $layout]) {
+        if (!isset($layoutFiles[$layout])) {
+            $add('layouts', 'fail', "{$key} names '{$layout}', but theme/layouts/{$layout}.php does not exist");
+        }
+    }
+
+    // ---------------------------------------------------------- components
+    $componentReferences = [];
+    $available           = [];
+
+    foreach (['headers', 'footers'] as $key) {
+        foreach (array_keys((array) ($theme[$key] ?? [])) as $name) {
+            $componentReferences[] = ["{$key}.{$name}", (string) $name];
+            $available[(string) $name] = true;
+        }
+    }
+
+    foreach ($contentTypes as $type => $config) {
+        if (!is_array($config)) {
+            continue;
+        }
+
+        foreach ((array) ($config['available_components'] ?? []) as $name) {
+            $componentReferences[] = ["{$type}.available_components", (string) $name];
+            $available[(string) $name] = true;
+        }
+
+        foreach (['default_header', 'default_footer'] as $key) {
+            $name = trim((string) ($config[$key] ?? ''));
+
+            if ($name !== '') {
+                $componentReferences[] = ["{$type}.{$key}", $name];
+            }
+        }
+    }
+
+    $namedComponents = [
+        'defaults.header'         => (string) ($theme['defaults']['header'] ?? ''),
+        'defaults.footer'         => (string) ($theme['defaults']['footer'] ?? ''),
+        'settings.default_header' => (string) ($settings['default_header'] ?? ''),
+        'settings.default_footer' => (string) ($settings['default_footer'] ?? ''),
+    ];
+
+    foreach ($namedComponents as $key => $name) {
+        if (trim($name) !== '') {
+            $componentReferences[] = [$key, trim($name)];
+        }
+    }
+
+    foreach ($componentReferences as [$key, $name]) {
+        if (!isset($componentFiles[$name])) {
+            $add('components', 'fail', "{$key} names '{$name}', which has no component file in theme/components or core/components");
+        }
+    }
+
+    // What the components the palette reaches declare about themselves.
+    foreach (array_keys($available) as $name) {
+        if (!isset($componentFiles[$name])) {
+            continue; // Already reported above.
+        }
+
+        $component = require $componentFiles[$name];
+
+        if (!is_array($component)) {
+            $add('components', 'fail', "{$name} does not return an array");
+            continue;
+        }
+
+        foreach ((array) ($component['allowed_children'] ?? []) as $child) {
+            if (!isset($componentFiles[(string) $child])) {
+                $add('components', 'fail', "{$name} allows child '{$child}', which has no component file");
+            }
+        }
+
+        $schema = is_array($component['schema'] ?? null) ? $component['schema'] : [];
+
+        // Only a select is filled from the manifest, so only a select can
+        // disagree with it.
+        if (is_array($schema['menu'] ?? null) && ($schema['menu']['type'] ?? '') === 'select') {
+            $default = trim((string) ($schema['menu']['default'] ?? ''));
+
+            if ($default !== '' && !isset($theme['menu_locations'][$default])) {
+                $add('components', 'warn', "{$name}'s menu default '{$default}' is not a declared menu_location");
+            }
+        }
+
+        if (is_array($schema['content_type'] ?? null) && ($schema['content_type']['type'] ?? '') === 'select') {
+            $default = trim((string) ($schema['content_type']['default'] ?? ''));
+
+            if ($default !== '' && !isset($contentTypes[$default])) {
+                $add('components', 'warn', "{$name}'s content_type default '{$default}' is not a declared content type");
+            }
+        }
+    }
+
+    // -------------------------------------------------------------- assets
+    $assetReferences = [];
+
+    foreach ((array) ($theme['styles'] ?? []) as $style) {
+        $assetReferences['styles'][] = (string) $style;
+    }
+
+    foreach ((array) ($theme['scripts'] ?? []) as $script) {
+        $assetReferences['scripts'][] = is_array($script) ? (string) ($script['src'] ?? '') : '';
+    }
+
+    foreach ((array) ($theme['icons'] ?? []) as $key => $icon) {
+        $assetReferences['icons.' . $key][] = (string) $icon;
+    }
+
+    foreach ($assetReferences as $key => $values) {
+        // A missing icon costs a broken image; a missing stylesheet or script
+        // leaves the page unstyled or without its behaviour.
+        $status = str_starts_with($key, 'icons.') ? 'warn' : 'fail';
+
+        foreach ($values as $value) {
+            if (trim($value) === '') {
+                $add('assets', 'fail', "{$key} has an empty entry");
+                continue;
+            }
+
+            // A CDN or any absolute URL is not ours to check.
+            if (preg_match('#^(?:https?:)?//#i', $value)) {
+                continue;
+            }
+
+            $relative = ltrim(explode('?', $value, 2)[0], '/');
+
+            if (!is_file($themePath . '/assets/' . $relative)) {
+                $add('assets', $status, "theme/assets/{$relative} is missing ({$key})");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ partials
+    $themeFiles = array_merge(
+        glob($themePath . '/layouts/*.php') ?: [],
+        glob($themePath . '/components/*.php') ?: [],
+        glob($themePath . '/partials/*.php') ?: []
+    );
+
+    $partialReferences = [];
+
+    foreach ($themeFiles as $file) {
+        if (preg_match_all('/theme\(\s*[\'"]([^\'"]+)[\'"]\s*\)/', (string) file_get_contents($file), $matches)) {
+            foreach ($matches[1] as $reference) {
+                if (str_starts_with($reference, 'partials/')) {
+                    $partialReferences[$reference] = true;
+                }
+            }
+        }
+    }
+
+    foreach (array_keys($partialReferences) as $reference) {
+        if (!is_file($themePath . '/' . $reference)) {
+            $add('partials', 'fail', "{$reference} is included by a layout or component but does not exist");
+        }
+    }
+
+    // --------------------------------------------------------------- forms
+    $knownFieldTypes = form_submission_field_types();
+
+    foreach ((array) ($theme['form_types'] ?? []) as $formType => $config) {
+        if (!is_array($config)) {
+            $add('forms', 'fail', "form type '{$formType}' is not a definition");
+            continue;
+        }
+
+        $fields = is_array($config['fields'] ?? null) ? $config['fields'] : [];
+
+        if ($fields === []) {
+            $add('forms', 'warn', "form type '{$formType}' declares no fields");
+        }
+
+        foreach ($fields as $field => $rules) {
+            if (!is_array($rules)) {
+                $add('forms', 'fail', "{$formType}.{$field} is not a field definition");
+                continue;
+            }
+
+            $type = (string) ($rules['type'] ?? (!empty($rules['email']) ? 'email' : 'text'));
+
+            if (!in_array($type, $knownFieldTypes, true)) {
+                $add('forms', 'warn', "{$formType}.{$field} uses an unknown field type '{$type}'");
+            }
+
+            if (in_array($type, ['select', 'radio'], true) && empty($rules['options'])) {
+                $add('forms', 'warn', "{$formType}.{$field} is a {$type} with no options");
+            }
+        }
+    }
+
+    return $problems;
+}
+
 /**
  * Every check, in report order.
  *
@@ -124,6 +404,59 @@ function health_checks(): array
         $current ? 'The migration marker matches the registry.' : 'Migrations are pending.',
         $current ? '' : 'Open Utilities and run the migrations.'
     );
+
+    // --------------------------------------------------------------- theme
+    // Everything the manifest names has to exist, or the page that uses it is a
+    // blank 500, an unstyled page or a "component not found" placeholder.
+    $themeProblems = theme_manifest_problems(theme_config(), theme(), load_settings());
+
+    $themeGroups = [
+        'layouts'    => ['Theme layouts', 'Every declared layout resolves, and the settings select one that exists.'],
+        'components' => ['Theme components', 'Every declared header, footer, component and child name resolves.'],
+        'assets'     => ['Theme assets', 'Every declared stylesheet, script and icon exists.'],
+        'partials'   => ['Theme partials', 'Every partial a layout or component includes exists.'],
+        'forms'      => ['Theme form fields', 'Every declared form field is well formed.'],
+    ];
+
+    foreach ($themeGroups as $group => [$label, $okDetail]) {
+        $found = $themeProblems[$group] ?? [];
+
+        if (!$found) {
+            $checks[] = health_result($label, 'ok', $okDetail);
+            continue;
+        }
+
+        $status = 'ok';
+
+        foreach ($found as $problem) {
+            if (($problem['status'] ?? 'fail') === 'fail') {
+                $status = 'fail';
+                break;
+            }
+
+            $status = 'warn';
+        }
+
+        // Four is enough to show what is wrong; the rest are only counted, so
+        // the row stays readable.
+        $shown = array_slice($found, 0, 4);
+
+        $detail = implode('; ', array_map(
+            static fn(array $problem): string => (string) $problem['message'],
+            $shown
+        ));
+
+        if (count($found) > count($shown)) {
+            $detail .= '; and ' . (count($found) - count($shown)) . ' more';
+        }
+
+        $checks[] = health_result(
+            $label,
+            $status,
+            $detail,
+            'Add the missing file, or remove the name from theme/theme.php.'
+        );
+    }
 
     // -------------------------------------------------------------- config
     $setup = config('setup_completed') === true;

@@ -202,4 +202,225 @@ t('a cleared image prop falls back to the theme placeholder', function () {
     );
 });
 
+/*
+|--------------------------------------------------------------------------
+| Manifest integrity
+|--------------------------------------------------------------------------
+| The validator takes the manifest and the theme directory as arguments, so a
+| throwaway theme can be checked without touching theme/.
+|
+*/
+
+/**
+ * Write a throwaway theme directory and return its path.
+ *
+ * @param array<string, string> $files relative path => contents
+ */
+function theme_fixture(array $files): string
+{
+    $root = test_tmp_root() . '/theme-fixture';
+
+    // Start from nothing: a file left behind by the previous fixture would be
+    // scanned again and change the result.
+    foreach (['layouts', 'components', 'partials', 'assets'] as $directory) {
+        foreach (glob($root . '/' . $directory . '/*') ?: [] as $file) {
+            @unlink($file);
+        }
+
+        @rmdir($root . '/' . $directory);
+    }
+
+    foreach ($files as $relative => $contents) {
+        $path = $root . '/' . $relative;
+
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+    }
+
+    return $root;
+}
+
+/**
+ * The messages one group reported, joined for a substring assertion.
+ *
+ * @param array<string, list<array{status: string, message: string}>> $problems
+ */
+function theme_problem_messages(array $problems, string $group): string
+{
+    return implode(' | ', array_map(
+        static fn(array $problem): string => (string) $problem['message'],
+        $problems[$group] ?? []
+    ));
+}
+
+/**
+ * The status of the first problem in a group whose message contains a string.
+ *
+ * @param array<string, list<array{status: string, message: string}>> $problems
+ */
+function theme_problem_status(array $problems, string $group, string $needle): ?string
+{
+    foreach ($problems[$group] ?? [] as $problem) {
+        if (str_contains((string) $problem['message'], $needle)) {
+            return (string) $problem['status'];
+        }
+    }
+
+    return null;
+}
+
+t('a consistent theme manifest reports no problems', function () {
+    $path = theme_fixture([
+        'layouts/default.php'         => "<?php\nreturn [];\n",
+        'components/site-header.php'  => "<?php\nreturn ['label' => 'Header'];\n",
+        'components/site-footer.php'  => "<?php\nreturn ['label' => 'Footer'];\n",
+        'components/hero-section.php' => "<?php\nreturn ['label' => 'Hero'];\n",
+        // A component that includes a partial which does exist.
+        'components/pager-user.php'   => "<?php\nreturn ['label' => 'Pager', 'render' => function () { require theme('partials/pager.php'); }];\n",
+        'partials/pager.php'          => "<?php\n// pager\n",
+        'assets/style.css'            => "/* styles */\n",
+        'assets/app.js'               => "// app\n",
+        'assets/favicon.ico'          => "icon\n",
+    ]);
+
+    $theme = [
+        'layouts'        => ['default' => 'Default'],
+        'headers'        => ['site-header' => 'Header'],
+        'footers'        => ['site-footer' => 'Footer'],
+        'defaults'       => ['layout' => 'default', 'header' => 'site-header', 'footer' => 'site-footer'],
+        'menu_locations' => ['main' => 'Main'],
+        'content_types'  => [
+            'page' => [
+                'default_layout'       => 'default',
+                'default_header'       => 'site-header',
+                'default_footer'       => 'site-footer',
+                'available_components' => ['hero-section', 'pager-user'],
+            ],
+        ],
+        'form_types' => [
+            'contact' => ['fields' => [
+                'name'    => ['type' => 'text'],
+                'subject' => ['type' => 'select', 'options' => ['general' => 'General']],
+            ]],
+        ],
+        'icons'   => ['favicon' => 'favicon.ico'],
+        'styles'  => ['style.css', 'style.css?v=4'],
+        'scripts' => [['src' => 'app.js?v=2']],
+    ];
+
+    $problems = theme_manifest_problems($theme, $path, [
+        'default_layout' => 'default',
+        'default_header' => 'site-header',
+        'default_footer' => 'site-footer',
+    ]);
+
+    $summary = [];
+
+    foreach ($problems as $group => $list) {
+        foreach ($list as $problem) {
+            $summary[] = "{$group}: {$problem['message']}";
+        }
+    }
+
+    assert_count(0, $summary, implode('; ', $summary));
+});
+
+t('a broken theme manifest names everything that does not resolve', function () {
+    $path = theme_fixture([
+        'layouts/default.php'           => "<?php\nreturn [];\n",
+        'components/site-header.php'    => "<?php\nreturn ['label' => 'Header'];\n",
+        'components/site-footer.php'    => "<?php\nreturn ['label' => 'Footer'];\n",
+        // Reached from the palette, and wrong about itself in three ways.
+        'components/broken-section.php' => "<?php\nreturn [\n    'label' => 'Broken',\n    'allowed_children' => ['ghost-child'],\n    'schema' => [\n        'menu' => ['type' => 'select', 'default' => 'sidebar'],\n        'content_type' => ['type' => 'select', 'default' => 'event'],\n    ],\n    'render' => function () { require theme('partials/gone.php'); },\n];\n",
+        'partials/pager.php'            => "<?php\n// pager\n",
+        'assets/style.css'              => "/* styles */\n",
+    ]);
+
+    $theme = [
+        'layouts'        => ['default' => 'Default', 'blog' => 'Blog'],
+        'headers'        => ['site-header' => 'Header', 'ghost-header' => 'Ghost'],
+        'footers'        => ['site-footer' => 'Footer'],
+        'defaults'       => ['layout' => 'default', 'header' => 'site-header', 'footer' => 'ghost-footer'],
+        'search_layout'  => 'search',
+        'menu_locations' => ['main' => 'Main'],
+        'content_types'  => [
+            'page' => [
+                'default_layout'       => 'default',
+                'default_header'       => 'site-header',
+                'available_components' => ['broken-section', 'ghost-component'],
+            ],
+            'blog_post' => [
+                'default_layout'       => 'blog',
+                'taxonomy_layout'      => 'taxonomy',
+                'available_components' => ['broken-section'],
+            ],
+        ],
+        'form_types' => [
+            'contact' => ['fields' => [
+                'name'    => ['type' => 'text'],
+                'colour'  => ['type' => 'wibble'],
+                'subject' => ['type' => 'select'],
+            ]],
+        ],
+        'icons'   => ['favicon' => 'favicon.ico'],
+        'styles'  => ['style.css', 'missing.css?v=3'],
+        'scripts' => [['src' => 'app.js?v=1']],
+    ];
+
+    $problems = theme_manifest_problems($theme, $path, [
+        'default_layout' => 'gone-layout',
+        'default_header' => 'site-header',
+        'default_footer' => 'ghost-footer',
+    ]);
+
+    // Layouts: a declared layout, a content type's layouts, the search layout
+    // and the setting the site actually renders.
+    $layouts = theme_problem_messages($problems, 'layouts');
+
+    foreach (['layouts.blog', 'blog_post.default_layout', 'blog_post.taxonomy_layout', 'search_layout', 'settings.default_layout'] as $needle) {
+        assert_contains($needle, $layouts, "{$needle} should be reported");
+    }
+
+    // Components: missing files, a missing child, and the two field defaults
+    // that only mislead the editor.
+    $components = theme_problem_messages($problems, 'components');
+
+    foreach (['headers.ghost-header', 'defaults.footer', 'ghost-component', 'ghost-child', 'sidebar', 'event'] as $needle) {
+        assert_contains($needle, $components, "{$needle} should be reported");
+    }
+
+    assert_eq('fail', theme_problem_status($problems, 'components', 'ghost-child'), 'a missing child breaks the editor');
+    assert_eq('warn', theme_problem_status($problems, 'components', "'sidebar'"), 'an undeclared menu slot only misleads');
+    assert_eq('warn', theme_problem_status($problems, 'components', "'event'"), 'an undeclared content type only misleads');
+
+    // Assets: a missing stylesheet or script breaks the page; an icon does not.
+    assert_eq('fail', theme_problem_status($problems, 'assets', 'missing.css'));
+    assert_eq('fail', theme_problem_status($problems, 'assets', 'app.js'));
+    assert_eq('warn', theme_problem_status($problems, 'assets', 'favicon.ico'));
+
+    assert_contains('partials/gone.php', theme_problem_messages($problems, 'partials'), 'a missing partial is fatal');
+
+    $forms = theme_problem_messages($problems, 'forms');
+    assert_contains("'wibble'", $forms, 'an unknown field type is reported');
+    assert_contains('no options', $forms, 'a select with no options is reported');
+    assert_eq('warn', theme_problem_status($problems, 'forms', 'wibble'), 'form field problems only warn');
+});
+
+t('the shipped theme has no manifest problems', function () {
+    $problems = theme_manifest_problems(theme_config(), theme(), load_settings());
+
+    $summary = [];
+
+    foreach ($problems as $group => $list) {
+        foreach ($list as $problem) {
+            $summary[] = "{$group}: {$problem['message']}";
+        }
+    }
+
+    assert_count(0, $summary, implode('; ', $summary));
+});
+
 exit(test_summary());

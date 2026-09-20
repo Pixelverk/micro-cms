@@ -41,6 +41,21 @@ return [
         'site-footer' => 'Default Footer',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Defaults
+    |--------------------------------------------------------------------------
+    | The last fallback for a page's layout, header and footer: a page's own
+    | value wins, then the content type, then the settings, then these. Every
+    | read site ends its chain here, so all three must name something that
+    | exists — the Health page reports it if not.
+    */
+    'defaults' => [
+        'layout' => 'default',
+        'header' => 'site-header',
+        'footer' => 'site-footer',
+    ],
+
     'menu_locations' => [
         'main' => 'Main Menu',
         'footer' => 'Footer Menu',

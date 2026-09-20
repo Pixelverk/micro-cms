@@ -492,13 +492,85 @@ column drop keeps the rows around it); manual library use.
 
 ## 13. Theme integrity check + Health (B, S–M)
 
-Validate the manifest before it reaches a visitor:
-every layout/header/footer has a file (respecting the `core/components/`
-fallback), every `available_components` and `allowed_children` name resolves,
-every `styles`/`scripts` entry exists (strip `?v=`), and the default
-layout/header/footer still resolve. Surface it in `admin/health.php`. Extend
-`tests/theme.test.php` with a deliberately broken fixture. Reject if it becomes a
-general theme linter.
+**Shipped.** `theme_manifest_problems()` in `core/helpers/health.php` checks
+everything the manifest names against the filesystem and against the manifest
+itself, grouped into the five areas below, and `health_checks()` reports one row
+per group: `ok` with what was checked, or `fail`/`warn` with the specific
+problems (the first four, plus a count) and a fix hint. It resolves theme-first
+with the `core/components/` fallback exactly as `component()` does, and checks
+only what the manifest reaches — an unreferenced component file, or the
+placeholder child name inside `core/components/sample-component.php`, is not an
+error. `theme.php` now declares `defaults` explicitly, turning an implicit
+contract into a checked one, and `form_submission_field_types()` is the single
+list of field types a public form may declare.
+
+Verified with fixture tests for every problem class and severity, a clean
+fixture for false positives, a guard that the shipped theme reports none, the
+Health rows on a healthy install, and a live check with a deliberately ghost
+layout and component in the manifest: those two rows went to Problem with the
+exact names, and the other three stayed OK.
+
+**Why.** Nothing validates the manifest. `theme_config()` only checks that
+`theme/theme.php` exists and returns an array, so a broken declaration is silent
+until a visitor hits it: a missing layout throws out of `render_layout()` (a
+blank 500), a missing header/footer or `available_components` name prints
+"component not found" into the page, a missing partial is a fatal `require`, and
+a missing stylesheet is a 404 that leaves the page unstyled.
+
+**Checks.** Grouped by area, each becoming one Health row; everything resolves
+theme-first with the `core/components/` fallback, exactly as `component()` does.
+
+* **Layouts** — every `layouts` key has `theme/layouts/<key>.php`; every content
+  type's `default_layout` and `taxonomy_layout` resolves; `search_layout`, when
+  declared, resolves; `defaults.layout`, when declared, resolves; and the layout
+  the **settings** select resolves against the manifest (a stale setting 500s
+  every page). *fail*
+* **Components** — every `headers`/`footers` key, every `available_components`
+  name, and every `allowed_children` name resolves (only for components the
+  palette reaches, so `sample-component.php`'s placeholder is not flagged);
+  `defaults.header`/`.footer` resolve; the settings' header/footer selections
+  resolve; a component's `menu` field default is a declared `menu_locations` key
+  and its `content_type` default a declared content type. *fail*, except the two
+  field-default cases, which only mislead the editor: *warn*
+* **Assets** — every `styles` entry and `scripts[].src` exists under
+  `theme/assets/` with `?v=` stripped (absolute URLs skipped, since they cannot
+  be checked); `icons.favicon`/`icons.logo`, when declared, exist. *fail*, icons
+  *warn*.
+* **Partials** — every literal `theme('partials/…')` referenced from
+  `theme/**/*.php` exists; a missing one is a fatal require. *fail*
+* **Forms** — every declared form field type is one the validator knows, and
+  every `select`/`radio` field declares options. An unknown type silently falls
+  back to plain text today. *warn*
+
+**Decisions.** Grouped rows rather than one cell, so a developer can see which
+part of the theme broke. Selections are checked from **settings only** — the
+content columns are not scanned; stale per-item values are a different class of
+problem. All four optional check groups are in, including form fields, which is
+as close to a general linter as this goes. `defaults.layout/header/footer` should
+become an **explicit manifest block** (`theme.php` gains one, the docs example
+follows): twelve read sites currently end their fallback chain at
+`$theme['defaults'][…]` without a literal, which is an undefined-key warning the
+moment settings ever lack the value, and declaring it turns an implicit contract
+into a checked one.
+
+**Design.** `theme_manifest_problems(array $theme, string $themePath): array`
+returning problems grouped by area, in `core/helpers/health.php` (its only
+consumer). Taking the manifest and base path as arguments is what makes the
+fixture below possible without touching `theme/`. Health row labels stay plain
+English like the existing ones, so no new translation keys.
+
+**Verify.** `tests/theme.test.php` with a deliberately broken fixture under
+`tests/.tmp/` — one case per problem class, a clean fixture proving there are no
+false positives, and a guard that the **shipped theme reports none**;
+`tests/health.test.php` asserting the rows exist and are `ok` on a healthy
+install.
+
+**Reject if** it becomes a general theme linter: no PHP syntax checks, no CSS
+analysis, no dead-file detection, no schema-type auditing.
+
+**Boundary.** If `theme/theme.php` itself is missing or returns a non-array, the
+admin cannot render at all (`sidebar.php` calls `theme_config()`), so Health
+cannot report it. That case stays a blank 500.
 
 ## 14. Theme asset auto-versioning (B, S)
 
@@ -703,3 +775,4 @@ Settle each at the start of its phase, not now.
  * There is no need for the theme to have placeholders in assets/img. Generic fallback or placeholder images can be provided by the CMS, or a css skeleton can be used instead when media is missing.
  * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
  * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 
+ * I suppose categories and tags could get the same multi-select delete as the media library has. They don't have any other bulk actions that can be done to them.
