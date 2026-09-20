@@ -1001,6 +1001,233 @@ function content_url(array $row, array $allRows = []): string
 }
 
 /**
+ * Is a link one we can resolve against this site?
+ *
+ * A root-relative path, or an absolute URL on the configured host, is ours.
+ * `#`, mail and script schemes, protocol-relative URLs and other hosts are not.
+ */
+function content_link_is_internal(string $href): bool
+{
+    $href = trim($href);
+
+    if ($href === '' || str_starts_with($href, '#')) {
+        return false;
+    }
+
+    if (preg_match('#^(mailto:|tel:|javascript:|data:)#i', $href) === 1 || str_starts_with($href, '//')) {
+        return false;
+    }
+
+    if (preg_match('#^https?://#i', $href) === 1) {
+        $host     = parse_url($href, PHP_URL_HOST);
+        $siteHost = parse_url(seo_site_url(), PHP_URL_HOST);
+
+        return is_string($host) && $host !== ''
+            && is_string($siteHost) && $siteHost !== ''
+            && strcasecmp($host, $siteHost) === 0;
+    }
+
+    return str_starts_with($href, '/');
+}
+
+/**
+ * A link's path, with query, fragment and this install's base path removed.
+ */
+function content_link_normalize(string $href): string
+{
+    if (preg_match('#^https?://#i', $href) === 1) {
+        $href = (string) (parse_url($href, PHP_URL_PATH) ?? '');
+    }
+
+    $href = (string) (preg_split('/[?#]/', $href)[0] ?? $href);
+    $href = rawurldecode($href);
+
+    // A subfolder install prefixes every URL with config('url'); a typed link
+    // can carry it even though the path itself does not.
+    $base = trim((string) config('url', ''), '/');
+
+    if ($base !== '') {
+        if ($href === '/' . $base) {
+            $href = '/';
+        } elseif (str_starts_with($href, '/' . $base . '/')) {
+            $href = substr($href, strlen($base) + 1);
+        }
+    }
+
+    return trim($href, '/');
+}
+
+/**
+ * Does an internal link resolve on the front end?
+ *
+ * Mirrors route_request(): the virtual documents, the archive routes, then
+ * content by full path through load_content_by_slug(). A redirect is served
+ * before routing, so a path that 301s resolves as well, and /media/… is a file.
+ */
+function content_link_resolves(string $href): bool
+{
+    if (!content_link_is_internal($href)) {
+        return false;
+    }
+
+    $path = content_link_normalize($href);
+
+    if (str_contains($path, '..')) {
+        return false;
+    }
+
+    if ($path === '') {
+        $homepageId = (int) (load_settings()['homepage_id'] ?? 0);
+
+        if ($homepageId <= 0) {
+            return false;
+        }
+
+        $home = load_content_by_id($homepageId);
+
+        // A homepage that is not itself reachable (a draft, say) 404s at /.
+        return is_array($home) && content_link_resolves(content_url($home));
+    }
+
+    if (in_array($path, ['search', 'sitemap.xml', 'robots.txt', 'site.webmanifest'], true)) {
+        return true;
+    }
+
+    if (str_starts_with($path, 'media/')) {
+        $root = realpath(STORAGE_PATH . '/media');
+        $file = realpath(STORAGE_PATH . '/media/' . substr($path, strlen('media/')));
+
+        return $root !== false && $file !== false && str_starts_with($file, $root . '/');
+    }
+
+    if (preg_match('#^(category|tag)/([^/]+)$#', $path, $matches) === 1) {
+        $stmt = db()->prepare("SELECT 1 FROM taxonomy WHERE taxonomy_type = ? AND slug = ? LIMIT 1");
+        $stmt->execute([$matches[1], $matches[2]]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    // A redirect is served before routing, so it resolves for a visitor.
+    foreach (redirect_all() as $row) {
+        if (redirect_normalize_path((string) $row['from_path']) === $path) {
+            return true;
+        }
+    }
+
+    return load_content_by_slug($path) !== null;
+}
+
+/**
+ * Internal links in published, non-trashed content that no longer resolve.
+ *
+ * Only what a visitor can reach is checked: a draft's links are the pre-publish
+ * checklist's problem. Component props the schema calls a link and `<a href>`
+ * inside rich text are both examined, plus link-shaped meta keys such as the
+ * portfolio's project_url.
+ *
+ * @return list<array{id: int, type: string, title: string, field: string, href: string}>
+ */
+function content_broken_links(): array
+{
+    $visible = content_visibility_sql();
+
+    $stmt = db()->prepare("SELECT id, type, title, meta, body FROM content WHERE 1 = 1 " . $visible['sql'] . " ORDER BY type, title");
+    $stmt->execute($visible['params']);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $findings = [];
+
+    $note = static function (array $row, string $field, string $href) use (&$findings): void {
+        $findings[] = [
+            'id'    => (int) $row['id'],
+            'type'  => (string) $row['type'],
+            'title' => (string) $row['title'],
+            'field' => $field,
+            'href'  => $href,
+        ];
+    };
+
+    $check = static function (array $row, string $field, string $href) use ($note): void {
+        if (content_link_is_internal($href) && !content_link_resolves($href)) {
+            $note($row, $field, $href);
+        }
+    };
+
+    foreach ($rows as $row) {
+        $meta = json_decode((string) $row['meta'], true);
+
+        if (is_array($meta)) {
+            foreach ($meta as $key => $value) {
+                if (!is_scalar($value) || !content_checklist_is_link_field((string) $key, [])) {
+                    continue;
+                }
+
+                $href = trim((string) $value);
+
+                if ($href !== '') {
+                    $check($row, 'meta.' . $key, $href);
+                }
+            }
+        }
+
+        $body = json_decode((string) $row['body'], true);
+
+        if (!is_array($body)) {
+            continue;
+        }
+
+        $walk = static function (array $components) use (&$walk, $check, $row): void {
+            foreach ($components as $component) {
+                if (!is_array($component)) {
+                    continue;
+                }
+
+                $name   = (string) ($component['type'] ?? '');
+                $props  = is_array($component['props'] ?? null) ? $component['props'] : [];
+                $schema = $name !== '' ? (content_component_definition($name)['schema'] ?? []) : [];
+
+                foreach ($props as $field => $value) {
+                    if (!is_scalar($value)) {
+                        continue;
+                    }
+
+                    $href = trim((string) $value);
+
+                    if ($href === '') {
+                        continue;
+                    }
+
+                    $rules = is_array($schema[$field] ?? null) ? $schema[$field] : [];
+
+                    if (content_checklist_is_link_field((string) $field, $rules)) {
+                        $check($row, (string) $field, $href);
+                        continue;
+                    }
+
+                    // Rich text stores raw HTML, so its links are read from it.
+                    if (($rules['type'] ?? '') === 'quill'
+                        && preg_match_all('/<a\b[^>]*\bhref\s*=\s*("|\')(.*?)\1/is', (string) $value, $matches)) {
+                        foreach ($matches[2] as $rawHref) {
+                            $rawHref = trim(html_entity_decode($rawHref, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+                            if ($rawHref !== '') {
+                                $check($row, (string) $field, $rawHref);
+                            }
+                        }
+                    }
+                }
+
+                $walk(is_array($component['children'] ?? null) ? $component['children'] : []);
+            }
+        };
+
+        $walk($body);
+    }
+
+    return $findings;
+}
+
+/**
  * Ids of every descendant of $id within $allItems, recursively.
  *
  * Keeps a page from being nested under itself or one of its own children.

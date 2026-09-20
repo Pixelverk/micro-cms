@@ -65,6 +65,7 @@ function docs_content(): array
                     ['p' => 'Deleting moves an item to the trash instead of removing it. It leaves the site and the Content list, keeps its version history, and can be brought back from the Trash tab.'],
                     ['p' => 'Trashed items are purged automatically after a while — 30 days by default, see trash.retention_days in config.php. "Delete permanently" in the Trash tab removes one item immediately, and Utilities → Clear Trash empties the whole trash at once. Trashing a page also trashes the pages nested under it.'],
                     ['p' => 'Utilities → Clear Trash cannot be undone. Everything else on the Utilities page either can be repeated safely or makes a file you download.'],
+                    ['p' => 'Two Utilities cards, under Content and data, check for rot without changing anything: Media library compares the library with the files on disk, and Broken links checks every internal link in published content against the site. Each opens its report in a dialog, and only the media scan offers a repair — it removes a folder only when no library row and no content reference it.'],
                 ],
                 'Media' => [
                     ['p' => 'Upload images, PDFs or video in Media. Give each image alt text so it is accessible and searchable.'],
@@ -72,6 +73,7 @@ function docs_content(): array
                     ['p' => 'Selecting a file opens an inspector on the right: the preview, its name, size and upload date, the alt text and description, and an optional replacement file.'],
                     ['p' => 'Choose size/format lists every stored variant with its pixel dimensions, so you can pick the right one before pressing Copy URL. The URL goes on the clipboard ready to paste into content or a template.'],
                     ['p' => 'Deleting a file that content still uses would break that content, so the confirmation names what uses it — content, site settings and menus — before anything is removed. Media has a search box for finding a file by name, alt text or description.'],
+                    ['p' => 'Utilities → Media library compares the library with storage/media and reports files with no row and rows with no file. It is a scan, not a cleanup: only the repair button removes anything, and it keeps a folder that content, settings or a menu still references.'],
                     ['p' => 'Authors may pick from the media library but cannot upload or delete.'],
                 ],
                 'Bulk actions' => [

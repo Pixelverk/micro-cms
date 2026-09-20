@@ -360,4 +360,77 @@ t('media_delete() removes the row and the folder, and refuses bad input', functi
     assert_eq(1, (int) $check->fetchColumn(), 'and its row is left alone');
 });
 
+t('media_orphans() reports both directions and the repair is careful', function () {
+    $now = time();
+
+    $insert = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description,
+                           created_at, updated_at)
+        VALUES (:name, :base, 'image/jpeg', 100, 10, 10, '{}', '{}', NULL, '', NULL, :now, :now)
+    ");
+
+    $mediaRoot = STORAGE_PATH . '/media';
+
+    // A row and its folder: in step, so neither direction reports it.
+    $paired = '2026/04/aaaa0001';
+    @mkdir($mediaRoot . '/' . $paired, 0777, true);
+    file_put_contents($mediaRoot . '/' . $paired . '/a.jpg', str_repeat('a', 100));
+    $insert->execute(['name' => 'paired.jpg', 'base' => $paired, 'now' => $now]);
+
+    // A folder with no row.
+    $orphan = '2026/04/bbbb0002';
+    @mkdir($mediaRoot . '/' . $orphan, 0777, true);
+    file_put_contents($mediaRoot . '/' . $orphan . '/b.jpg', str_repeat('b', 2048));
+
+    // A row with no folder — the class media_delete() cannot remove.
+    $ghost = '2026/04/cccc0003';
+    $insert->execute(['name' => 'ghost.jpg', 'base' => $ghost, 'now' => $now]);
+    $ghostId = (int) db()->lastInsertId();
+
+    $scan     = media_orphans();
+    $fileList = array_column($scan['files'], 'path');
+    $rowList  = array_column($scan['rows'], 'base_path');
+
+    assert_true(in_array($orphan, $fileList, true), 'a folder with no row is reported');
+    assert_false(in_array($paired, $fileList, true), 'a paired folder is not');
+    assert_true(in_array($ghost, $rowList, true), 'a row with no folder is reported');
+    assert_false(in_array($paired, $rowList, true), 'a paired row is not');
+
+    // The reported size is the folder's, not a guess.
+    $sizes = array_column($scan['files'], 'bytes', 'path');
+    assert_eq(2048, (int) ($sizes[$orphan] ?? 0), 'the folder size is measured');
+
+    // A path still referenced by content is never deleted.
+    seed_content([
+        'slug'         => 'orphan-reference',
+        'title'        => 'Orphan reference',
+        'status'       => 'published',
+        'published_at' => $now,
+        'meta'         => ['description' => 'd'],
+        'body'         => [['type' => 'quill-editor', 'props' => ['content' => '<img src="/media/' . $orphan . '/b.jpg">'], 'children' => []]],
+    ]);
+
+    assert_true(in_array($orphan, media_referenced_paths(), true), 'the path reference is seen');
+    assert_eq(0, media_delete_orphans([$orphan]), 'a referenced folder is kept');
+    assert_true(is_dir($mediaRoot . '/' . $orphan), 'and stays on disk');
+
+    // Once nothing references it, the repair removes it.
+    db()->exec("DELETE FROM content WHERE slug = 'orphan-reference'");
+    assert_eq(1, media_delete_orphans([$orphan]), 'an unreferenced folder is removed');
+    assert_false(is_dir($mediaRoot . '/' . $orphan), 'and is gone');
+
+    // A folder a row owns is never touched, even if asked for.
+    assert_eq(0, media_delete_orphans([$paired]), 'a folder with a row is refused');
+    assert_true(is_dir($mediaRoot . '/' . $paired), 'and stays');
+
+    // A row with no folder cannot be removed through the library...
+    assert_eq('invalid_path', media_delete($ghostId), 'media_delete() refuses it');
+    assert_eq(1, (int) db()->query("SELECT COUNT(*) FROM media WHERE id = {$ghostId}")->fetchColumn(), 'and leaves the row');
+
+    // ...but the scan repair can.
+    assert_eq(1, media_delete_missing_rows([$ghostId]), 'the repair removes the row');
+    assert_eq(0, (int) db()->query("SELECT COUNT(*) FROM media WHERE id = {$ghostId}")->fetchColumn(), 'and it is gone');
+});
+
 exit(test_summary());

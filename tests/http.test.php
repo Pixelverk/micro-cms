@@ -2089,6 +2089,40 @@ t('the history page diffs two versions and refuses another item\'s', function ()
     db()->prepare('DELETE FROM content WHERE id = :id')->execute(['id' => $otherId]);
 });
 
+t('the utilities scans report orphaned media and dead links', function () use ($base) {
+    http_login($base);
+
+    $orphan = '2026/04/http0001';
+    @mkdir(STORAGE_PATH . '/media/' . $orphan, 0777, true);
+    file_put_contents(STORAGE_PATH . '/media/' . $orphan . '/x.jpg', 'xx');
+
+    [$status, $body] = http('GET', $base . '/admin/utilities?scan=media', true);
+
+    assert_eq(200, $status);
+    assert_contains($orphan, $body, 'the orphan folder is listed');
+    assert_contains('value="clean_media"', $body, 'and the repair is offered');
+
+    $id = http_seed_content('http-broken-link', 'published', time());
+    db()->prepare('UPDATE content SET body = :body WHERE id = :id')->execute([
+        'body' => json_encode([['type' => 'cta-section', 'props' => ['title' => 'Go', 'text' => 't', 'url' => '/http-gone/', 'linktext' => 'Go'], 'children' => []]]),
+        'id'   => $id,
+    ]);
+
+    [$status, $body] = http('GET', $base . '/admin/utilities?scan=links', true);
+
+    assert_eq(200, $status);
+    assert_contains('/http-gone/', $body, 'the dead link is listed');
+    assert_contains('Http broken link', $body, 'with the content it lives in');
+
+    // The repair removes the orphan folder and nothing else.
+    $token = http_csrf_token($base, '/admin/utilities');
+    http('POST', $base . '/admin/utilities', true, ['_token' => $token, 'utility_action' => 'clean_media']);
+
+    assert_false(is_dir(STORAGE_PATH . '/media/' . $orphan), 'the orphan folder is gone');
+
+    db()->prepare('DELETE FROM content WHERE id = :id')->execute(['id' => $id]);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

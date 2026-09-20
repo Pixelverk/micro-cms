@@ -1187,7 +1187,10 @@ html.dark .menu-item .remove {
     display: flex;
     flex-direction: column;
 }
-.utility-action > button {
+/* The action sits at the bottom, sized to its label. A link button needs the
+   same rule: a flex item stretches by default, which would make it full-width. */
+.utility-action > button,
+.utility-action > .btn {
     align-self: flex-start;
     margin-top: auto;
 }

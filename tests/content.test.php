@@ -505,4 +505,68 @@ t('the content list search treats % and _ literally', function () {
     assert_count(0, list_content('page', ['q' => '__']), '__ is not a match-everything wildcard');
 });
 
+t('content_link_resolves() mirrors the front-end routes', function () {
+    test_anonymous_request();
+
+    // Earlier tests in this file draft everything, so give these their own
+    // published state rather than depending on the seed.
+    $homeId = (int) (load_settings()['homepage_id'] ?? 0);
+
+    if ($homeId > 0) {
+        db()->prepare("UPDATE content SET status = 'published', published_at = :now WHERE id = :id")
+            ->execute(['now' => time(), 'id' => $homeId]);
+    }
+
+    seed_content(['slug' => 'link-target-page', 'title' => 'Link target', 'status' => 'published', 'published_at' => time()]);
+
+    assert_true(content_link_resolves('/'), 'the homepage');
+    assert_true(content_link_resolves('/link-target-page/'), 'a page');
+    assert_true(content_link_resolves('/category/news/'), 'a category archive');
+    assert_true(content_link_resolves('/search'), 'a virtual route');
+    assert_true(content_link_resolves('/link-target-page?x=1#frag'), 'query and fragment are ignored');
+
+    assert_false(content_link_resolves('/definitely-missing/'), 'a missing path');
+    assert_false(content_link_resolves('https://example.com/'), 'another host');
+    assert_false(content_link_resolves('mailto:a@example.com'), 'a mail link');
+    assert_false(content_link_resolves('#'), 'a placeholder');
+    assert_false(content_link_resolves('about'), 'a bare relative path is not ours');
+    assert_false(content_link_resolves('/media/2026/04/nope/x.jpg'), 'a missing media file');
+});
+
+t('content_link_resolves() follows a redirect and checks media files', function () {
+    test_anonymous_request();
+
+    redirect_save('old-link-target', 'about');
+    assert_true(content_link_resolves('/old-link-target'), 'a redirected path still works');
+
+    $base = '2026/04/1ink0001';
+    @mkdir(STORAGE_PATH . '/media/' . $base, 0777, true);
+    file_put_contents(STORAGE_PATH . '/media/' . $base . '/doc.pdf', 'x');
+
+    assert_true(content_link_resolves('/media/' . $base . '/doc.pdf'), 'a media file resolves');
+    assert_false(content_link_resolves('/media/' . $base . '/missing.pdf'), 'a missing file does not');
+});
+
+t('content_broken_links() finds dead links in props and rich text', function () {
+    test_anonymous_request();
+
+    $id = seed_content([
+        'slug'         => 'broken-links-page',
+        'title'        => 'Broken links page',
+        'status'       => 'published',
+        'published_at' => time(),
+        'meta'         => ['description' => 'd'],
+        'body'         => [
+            ['type' => 'cta-section', 'props' => ['title' => 'Go', 'text' => 't', 'url' => '/gone-for-good/', 'linktext' => 'Go'], 'children' => []],
+            ['type' => 'quill-editor', 'props' => ['content' => '<p><a href="/also-gone/">x</a> <a href="/link-target-page/">ok</a> <a href="https://example.com/">out</a> <a href="#top">top</a></p>'], 'children' => []],
+        ],
+    ]);
+
+    $findings = array_values(array_filter(content_broken_links(), fn(array $finding): bool => $finding['id'] === $id));
+
+    assert_count(2, $findings, 'only the two dead internal links are reported');
+    assert_eq(['url', 'content'], array_column($findings, 'field'));
+    assert_eq(['/gone-for-good/', '/also-gone/'], array_column($findings, 'href'));
+});
+
 exit(test_summary());

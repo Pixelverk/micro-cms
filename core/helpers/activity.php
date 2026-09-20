@@ -131,6 +131,7 @@ function activity_action_label(string $action): string
         'utility.sitemap'     => 'Regenerated the sitemap',
         'utility.published_due' => 'Published due content',
         'utility.migrations'  => 'Ran migrations',
+        'utility.media_clean' => 'Cleaned up media',
         'security.csrf_failed' => 'Rejected a bad token',
     ];
 

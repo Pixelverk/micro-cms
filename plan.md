@@ -91,9 +91,9 @@ Wave 3 is opportunistic and can be dropped.
 | 19 | 2 | B/C | Accessibility pass | S–M | — |
 | 20 | 2 | A | Search hardening | M | 1 |
 | 21 | 2 | A | Version diff and compare | M | — |
-| 22 | 2 | C | Publish webhook | S | — |
-| 23 | 2 | C | RSS/Atom feed | S | — |
-| 24 | 2 | C | Backup retention, orphaned media, broken links | M | — |
+| 22 | 2 | C | Publish webhook (dropped) | S | — |
+| 23 | 2 | C | RSS/Atom feed (dropped) | S | — |
+| 24 | 2 | C | Site scans: orphaned media, broken links | M | — |
 | 25 | 3 | A | Rich-text editor completion | S–M | — |
 | 26 | 3 | B | Live style switch in preview | S | 14 |
 | 27 | 3 | C | SMTP delivery | M | 3 |
@@ -480,10 +480,10 @@ the registry and stalling every later migration.
 
 **Known, deliberately left.** `media_delete()` reports `invalid_path` when a
 row's folder is already missing, so such a row cannot be removed from the
-library — the orphaned-media scan in phase 24 is the right place to handle that
-class properly. The per-page `media_usage_map()` pass and the tabs' full-column
-scan are both cheap today and can be revisited if a library reaches tens of
-thousands of files.
+library — phase 24's Utilities media scan now handles that class (it reports the
+row, and its repair removes it). The per-page `media_usage_map()` pass and the
+tabs' full-column scan are both cheap today and can be revisited if a library
+reaches tens of thousands of files.
 
 **Verify.** `tests/media.test.php` (the usage map, `media_delete()`), `tests/http.test.php`
 (the confirmation content, paging, stored variant sizes, bulk delete),
@@ -1430,24 +1430,148 @@ removed old hero, the added new hero and CTA lines with the unchanged ones muted
 the From/To selects defaulting to the newest version and Current, and the row
 Compare link.
 
-## 22. Publish webhook (C, S)
+## 22. Publish webhook (C, S) — dropped
 
-A Settings URL that receives a small JSON
-POST on publish/unpublish so the static export can be triggered without polling.
-Fire-and-forget; a failed webhook never blocks a save. Verify with
-`tests/settings.test.php`.
+**Dropped.** No webhooks: nothing should call out on publish, and no other item
+depends on it. The static export stays a command the operator runs. Recorded in
+Considered and not planned.
 
-## 23. RSS/Atom feed (C, S)
+## 23. RSS/Atom feed (C, S) — dropped
 
-`/feed/` for the content types the theme
-marks as feed sources, cached like a page, with `<link rel="alternate">`. Reuse
-the sitemap helper's XML style. Reject hardcoded blog-only logic.
+**Dropped.** A feed is a blog-era distribution channel with no audience for the
+brochure sites this CMS serves; the sitemap already covers crawler discovery.
+Recorded in Considered and not planned.
 
-## 24. Backup retention, orphaned media, broken links (C, M)
+## 24. Site scans: orphaned media and broken links (C, M)
 
-Keep the last N backup archives locally instead of deleting after download; add
-Utilities scans for media files with no database row and for content links that
-no longer resolve. Verify with `tests/backup.test.php` and `tests/health.test.php`.
+**Shipped.** Utilities gained two read-only cards in its **Content and data**
+group, and each report opens in a dialog rather than at the foot of the page:
+the request that runs the scan renders the dialog open (the same shape as the
+import preview), so nothing has to be fetched and closing it leaves the page
+where it was. `?scan=media` runs `media_orphans()`, which walks the two-level
+tree under
+`storage/media` and compares it with `media.base_path` in both directions, with
+each folder's measured size; its repair (a POST behind the confirm modal)
+recomputes the scan, deletes only a folder with no row and no path reference
+anywhere in content, settings or menus, and removes library rows whose folder is
+gone. `?scan=links` runs `content_broken_links()`, which reads published,
+non-trashed content for link-shaped component props, link-shaped meta keys and
+`<a href>` inside rich text, and resolves each through `content_link_resolves()`
+— a mirror of `route_request()` covering the homepage, the virtual documents,
+taxonomy archives, redirected paths (served before routing), media files and
+content by full path. Findings name the item, the field and the target, and link
+to the editor. A new language key group, an activity label (`utility.media_clean`)
+and the docs text landed with them.
+
+**Two bugs found on the way, both fixed.** `media_referenced_paths()`
+walked the raw `content` JSON columns, where every slash is escaped (`2026\/09\/…`),
+so the path regex matched nothing and the repair would have deleted a referenced
+folder; it now decodes the JSON before walking, as `media_usage_map()` always
+did. And `content_link_resolves()` briefly cached the redirect set in a function
+`static`, which goes stale the moment a redirect is added in the same process —
+and resolved `/` from the `homepage_id` setting alone, so a draft homepage looked
+reachable. Both are gone: the redirect set is read per call, and `/` resolves
+through the homepage's own path.
+
+**Why.** Two kinds of rot are invisible until a visitor hits them. The media
+library can hold folders with no database row — an interrupted upload, a
+restored backup, a file copied in by hand — and rows whose folder is gone, which
+phase 12 already recorded as unremovable through the library (`media_delete()`
+reports `invalid_path`). And content can link to a path that no longer exists:
+a page was renamed and the link was never updated, or it was trashed. Neither
+shows up anywhere today. The pre-publish checklist only checks that a link field
+is *empty*, never that a non-empty target resolves, and it never looks inside
+rich text.
+
+**Findings (probed on a fresh install).**
+
+* **Media has no disk-versus-table check.** `media_usage_map()` answers "where is
+  this file used?" and `media_delete()` refuses a row whose folder is missing,
+  but nothing compares the folders under `storage/media` with the `media` table.
+  Files live at `storage/media/YYYY/MM/<12-hex>/…` and the row's `base_path` is
+  exactly that `YYYY/MM/<12-hex>`, so the scan is a two-level walk plus one
+  query.
+* **The only link check is emptiness.** `content_checklist_is_link_field()`
+  recognises a link field (`url`, `href`, a `*_url` name, or schema type `url`)
+  and the checklist flags a blank target that still has a label. Nothing resolves
+  a target that is present, and rich text (`quill` props, stored as raw HTML) is
+  not examined at all.
+* **Resolution has one implementation to mirror.** `route_request()` serves the
+  homepage, `search`, `sitemap.xml`, `robots.txt`, `site.webmanifest`,
+  `category/<slug>` and `tag/<slug>` archives, then content by full path through
+  `load_content_by_slug()`. A redirect is served *before* routing, so a
+  redirected path resolves as well, and `/media/…` is a file on disk.
+
+**Work.**
+
+1. **`media_orphans()` in `core/helpers/common.php`**, beside the media helpers:
+   walk the two-level tree under `storage/media`, compare it with the
+   `base_path` values in the table, and return both directions — `files` (on disk
+   with no row) and `rows` (a row whose folder is gone) — each with its size, so
+   the report can say how much space is involved.
+2. **`content_broken_links()` in `core/helpers/content.php`**: walk published,
+   non-trashed content, collect every link value (a component prop
+   `content_checklist_is_link_field()` accepts, and every `<a href>` inside a
+   `quill` prop), keep the ones that point at this site, and resolve each through
+   `content_link_resolves()`. That resolver mirrors `route_request()`: the
+   virtual paths, `load_content_by_slug()` for content, a `taxonomy` lookup for an
+   archive, `redirect_all()` for a path that 301s, and the file for `/media/…`.
+   A link is internal when it is root-relative or its host matches the configured
+   `site_url`; `#`, `mailto:`, `tel:` and other hosts are skipped, and query
+   string and fragment are stripped before resolving. Each finding names the
+   content item, the field and the target, and links to the editor for it.
+3. **Two Utilities cards.** A new group beside Maintenance, Content, System and
+   Package, each card a read-only link to `?scan=media` or `?scan=links` — the
+   same shape as Check redirects on the redirects page — that renders the report
+   in place: the counts first, then the rows. A scan writes nothing.
+4. **One repair, and only where it is safe.** Orphaned media gets a "Delete N
+   orphaned folders" action (POST, behind the confirm modal) that removes only a
+   folder with no row **and** no path reference anywhere in content, settings or
+   menus — a file whose row was removed can still be linked by URL in rich text.
+   That second check cannot come from `media_usage_map()`: it keys its result by
+   media id, so a path with no row is invisible to it. The reference scan has to
+   key by path instead — the same one-pass walk over content, settings and menus
+   returning the set of `YYYY/MM/…` strings the site mentions — and only a folder
+   absent from both the table and that set is deleted. Rows whose folder is
+   missing are deleted from the table, which is what makes them removable at all.
+   Broken links get no action: the fix is to edit the content, and the report
+   links there.
+5. **Words, docs and the phase-12 note.** New `utilities_scan_*` strings in both
+   language files; the in-app docs' media and maintenance text mentions the
+   scans; and phase 12's "known, deliberately left" paragraph now points at the
+   shipped scan instead of promising it.
+
+**Decisions.** A scan is **read-only**; only orphaned media has a repair, and it
+refuses anything still referenced by path. Only **published, non-trashed**
+content is link-scanned — a draft's links are the pre-publish checklist's
+problem, and including them would bury the live ones. `#` is not reported: the
+checklist already calls it a dead link, and the demo uses it as a deliberate
+placeholder. The scans live in **Utilities, not Health**: they read every content
+body and walk the media tree, which is right on request and wrong on every page
+load. No external URL is ever fetched.
+
+**Reject if** it becomes a crawler or a link monitor: no HTTP requests, no
+scheduled runs, no external-link checking, no automatic link rewriting, and no
+deleting a media file that is still referenced.
+
+**Verify.** `tests/media.test.php` (16): `media_orphans()` finds a folder with no
+row and a row with no folder in a fixture tree, measures the folder, and reports
+neither when the two agree; a referenced orphan survives the repair and an
+unreferenced one does not; `media_delete()` still refuses the missing-folder row
+while `media_delete_missing_rows()` removes it. `tests/content.test.php` (25):
+`content_link_resolves()` for the homepage, a page, an archive, a virtual route,
+a redirected path and a media file, and its refusal for a missing path, another
+host, a mail link, a placeholder, a bare relative path and a missing media file;
+`content_broken_links()` reports the dead component prop and the dead rich-text
+link and nothing else. `tests/http.test.php` (97): an authenticated GET of
+`?scan=media` lists the orphan folder and offers the repair, `?scan=links` lists
+the dead link with its content, and the repair POST removes the folder.
+`php tests/run.php` → 451 passed. Through the local server with a seeded orphan
+folder, a ghost row and a dead link: the media report read "2 file(s) with no
+library row, 1 library row(s) with no file (4.1 KB on disk)", the link report
+named the page and `/server-gone/`, the repair redirected to `?scan=media` with
+"Every file on disk has a library row, and every row has its folder.", and the
+activity log recorded `utility.media_clean | 2 folder(s), 1 row(s)`.
 
 ---
 
@@ -1530,11 +1654,18 @@ phase 7.
 * **2FA, per-resource ACLs, GDPR/consent suite** — effort out of proportion to
   the threat model of a small brochure site; the existing roles and audit log are
   the bar.
-* **S3/CDN/file-storage adapters, offsite/scheduled backups** — hosting choices,
-  not CMS features. Local backup retention is in phase 24.
-* **Marketing/CRM integrations, maps, oEmbed, mega menus, custom taxonomies,
-  FTS5** — raw header/footer scripts are the integration point; the rest waits
-  for a concrete requirement.
+* **S3/CDN/file-storage adapters, offsite/scheduled backups, local backup
+  retention** — hosting choices, not CMS features, and a backup is a download you
+  keep rather than a pile on the server (phase 24 dropped its retention half).
+* **Publish webhooks and outbound integrations** — nothing should call out when
+  content is published; the static export stays a command the operator runs
+  (phase 22 dropped).
+* **RSS/Atom feeds** — a blog-era distribution channel with no audience for a
+  brochure site, and the sitemap already covers crawler discovery (phase 23
+  dropped).
+* **Marketing/CRM integrations, maps, oEmbed, mega menus, custom taxonomies** —
+  raw header/footer scripts are the integration point; the rest waits for a
+  concrete requirement.
 * **Download-and-restore backup button** — deliberately absent; a wrong database
   bricks the site. Restore stays a documented manual step.
 
@@ -1586,4 +1717,3 @@ Settle each at the start of its phase, not now.
  * There is no need for the theme to have placeholders in assets/img. Generic fallback or placeholder images can be provided by the CMS, or a css skeleton can be used instead when media is missing.
  * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
  * The content editor should have a button to add a new component, which brings up the component list in a modal, preferrably with preview and info. It can go beneath the current components, as a ghost/outline area.
- * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 

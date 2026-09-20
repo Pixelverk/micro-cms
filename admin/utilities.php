@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations', 'search_reindex', 'export_package', 'import_preview', 'import_apply'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations', 'search_reindex', 'export_package', 'import_preview', 'import_apply', 'clean_media'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
@@ -308,6 +308,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = admin_trans('utilities_success_search_reindex', ['count' => $indexed]);
                 break;
 
+            case 'clean_media':
+                // Recompute rather than trust posted paths: the report is only a
+                // view, and the repair decides again what is safe to remove.
+                $orphans = media_orphans();
+                $folders = media_delete_orphans(array_column($orphans['files'], 'path'));
+                $rows    = media_delete_missing_rows(array_column($orphans['rows'], 'id'));
+
+                log_activity('utility.media_clean', 'utility', null, $folders . ' folder(s), ' . $rows . ' row(s)', [
+                    'folders' => $folders,
+                    'rows'    => $rows,
+                ]);
+
+                redirect_with_toast('utilities', 'success', admin_trans('utilities_scan_media_cleaned', [
+                    'folders' => $folders,
+                    'rows'    => $rows,
+                ]), ['scan' => 'media']);
+                exit;
+
             case 'run_migrations':
                 migrate_reset_marker();
                 $ran = migrate_run();
@@ -329,6 +347,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $trashCount = content_trash_count();
+
+// Read-only scans, triggered by ?scan= and rendered below the cards. Nothing is
+// written; only the orphan repair posts.
+$scan = (string) ($_GET['scan'] ?? '');
+$scan = in_array($scan, ['media', 'links'], true) ? $scan : '';
+
+$mediaScan = $scan === 'media' ? media_orphans() : null;
+$linkScan  = $scan === 'links' ? content_broken_links() : null;
+
+$humanBytes = static function (int $bytes): string {
+    if ($bytes >= 1048576) {
+        return round($bytes / 1048576, 1) . ' MB';
+    }
+
+    if ($bytes >= 1024) {
+        return round($bytes / 1024, 1) . ' KB';
+    }
+
+    return $bytes . ' B';
+};
 
 ob_start();
 ?>
@@ -441,6 +479,30 @@ ob_start();
                 <button type="button" data-action="reset_analytics" class="btn">
                     <?= icon('warning-triangle', 16, 'icon-danger') ?><?= e(admin_trans('utilities_reset_analytics')) ?>
                 </button>
+            </div>
+
+            <?php /* Read-only scans: a link runs the scan and the request renders
+                     the report in a dialog. */ ?>
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('media-image', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_scan_media')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_scan_media_help')) ?></p>
+                <a class="btn" href="<?= e(url('admin/utilities') . '?scan=media') ?>">
+                    <?= icon('search', 16) ?><?= e(admin_trans('utilities_scan_media_button')) ?>
+                </a>
+            </div>
+
+            <div class="utility-action">
+                <div class="utility-action-head">
+                    <span class="tile-icon" aria-hidden="true"><?= icon('open-in-browser', 20) ?></span>
+                    <h3><?= e(admin_trans('utilities_scan_links')) ?></h3>
+                </div>
+                <p><?= e(admin_trans('utilities_scan_links_help')) ?></p>
+                <a class="btn" href="<?= e(url('admin/utilities') . '?scan=links') ?>">
+                    <?= icon('search', 16) ?><?= e(admin_trans('utilities_scan_links_button')) ?>
+                </a>
             </div>
         </div>
     </fieldset>
@@ -706,6 +768,110 @@ $importReady   = $importPreview && !$importRefused;
     </div>
 </div>
 
+<?php /* Scan reports. A scan is server-side work, so the dialog is rendered open
+         by the request that ran it — the same shape as the import preview —
+         while the card that ran it stays a plain link. */ ?>
+<div id="scan-media" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="scan-media-title"<?= $mediaScan !== null ? ' style="display:flex"' : ' hidden' ?>>
+    <div class="modal modal-lg" tabindex="-1">
+        <div class="modal-header">
+            <h3 id="scan-media-title"><?= e(admin_trans('utilities_scan_media')) ?></h3>
+            <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <?php if ($mediaScan !== null): ?>
+                <?php if (!$mediaScan['files'] && !$mediaScan['rows']): ?>
+                    <p class="text-muted"><?= e(admin_trans('utilities_scan_media_clean')) ?></p>
+                <?php else: ?>
+                    <p><?= e(admin_trans('utilities_scan_media_summary', [
+                        'files' => count($mediaScan['files']),
+                        'rows'  => count($mediaScan['rows']),
+                        'size'  => $humanBytes((int) array_sum(array_column($mediaScan['files'], 'bytes'))),
+                    ])) ?></p>
+
+                    <?php if ($mediaScan['files']): ?>
+                        <h4><?= e(admin_trans('utilities_scan_media_files')) ?></h4>
+                        <ul>
+                            <?php foreach ($mediaScan['files'] as $file): ?>
+                                <li>
+                                    <code><?= e($file['path']) ?></code>
+                                    <span class="text-muted"><?= e($humanBytes((int) $file['bytes'])) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+
+                    <?php if ($mediaScan['rows']): ?>
+                        <h4><?= e(admin_trans('utilities_scan_media_rows')) ?></h4>
+                        <ul>
+                            <?php foreach ($mediaScan['rows'] as $row): ?>
+                                <li>
+                                    <code><?= e($row['base_path']) ?></code>
+                                    <span class="text-muted"><?= e($row['original_name']) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+
+                    <form method="post" class="form-actions js-confirm-form"
+                          data-confirm-title="<?= e(admin_trans('utilities_scan_media')) ?>"
+                          data-confirm="<?= e(admin_trans('utilities_scan_media_confirm')) ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="utility_action" value="clean_media">
+                        <button type="submit" class="btn btn-delete">
+                            <?= icon('trash', 16) ?><?= e(admin_trans('utilities_scan_media_clean_button', [
+                                'count' => count($mediaScan['files']) + count($mediaScan['rows']),
+                            ])) ?>
+                        </button>
+                    </form>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<div id="scan-links" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="scan-links-title"<?= $linkScan !== null ? ' style="display:flex"' : ' hidden' ?>>
+    <div class="modal modal-lg" tabindex="-1">
+        <div class="modal-header">
+            <h3 id="scan-links-title"><?= e(admin_trans('utilities_scan_links')) ?></h3>
+            <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <?php if ($linkScan !== null): ?>
+                <?php if (!$linkScan): ?>
+                    <p class="text-muted"><?= e(admin_trans('utilities_scan_links_clean')) ?></p>
+                <?php else: ?>
+                    <p><?= e(admin_trans('utilities_scan_links_summary', ['count' => count($linkScan)])) ?></p>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><?= e(admin_trans('content_title')) ?></th>
+                                <th><?= e(admin_trans('utilities_scan_links_field')) ?></th>
+                                <th><?= e(admin_trans('utilities_scan_links_target')) ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($linkScan as $finding): ?>
+                                <tr>
+                                    <td>
+                                        <a href="<?= e(url('admin/content/edit') . '?id=' . (int) $finding['id'] . '&type=' . urlencode((string) $finding['type'])) ?>">
+                                            <?= e($finding['title']) ?>
+                                        </a>
+                                    </td>
+                                    <td><code><?= e($finding['field']) ?></code></td>
+                                    <td><code><?= e($finding['href']) ?></code></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
 <script>
 const form = document.getElementById('utilities-form');
 const actionInput = document.getElementById('utility-action-input');
@@ -742,15 +908,12 @@ form.querySelectorAll('button[data-action]').forEach(btn => {
     });
 });
 
-/* The content package dialogs. A preview is rendered open by the server, so
-   opening and closing are all this needs to do; the shared dialog helper owns
-   focus, Escape and the backdrop click. */
+/* The dialogs on this page. The package ones are opened by a button; the scan
+   ones are rendered open by the request that ran them, so they only need the
+   close wiring. The shared dialog helper owns focus, Escape and focus return. */
 (() => {
-    document.querySelectorAll('[data-modal]').forEach(opener => {
-        const backdrop = document.getElementById(opener.dataset.modal);
+    const wireDialog = backdrop => {
         if (!backdrop) return;
-
-        opener.addEventListener('click', (event) => openDialog(backdrop, event.currentTarget));
 
         // Clicking the backdrop (but not the dialog) closes it.
         backdrop.addEventListener('click', event => {
@@ -760,7 +923,18 @@ form.querySelectorAll('button[data-action]').forEach(btn => {
         backdrop.querySelectorAll('.close-modal').forEach(button => {
             button.addEventListener('click', () => closeDialog(backdrop));
         });
+    };
+
+    document.querySelectorAll('[data-modal]').forEach(opener => {
+        const backdrop = document.getElementById(opener.dataset.modal);
+        if (!backdrop) return;
+
+        opener.addEventListener('click', (event) => openDialog(backdrop, event.currentTarget));
+        wireDialog(backdrop);
     });
+
+    wireDialog(document.getElementById('scan-media'));
+    wireDialog(document.getElementById('scan-links'));
 
     /* Chosen files replace the demo rather than adding to it, and that has to
        be visible before the preview says which one it read. */
