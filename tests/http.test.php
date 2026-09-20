@@ -228,14 +228,15 @@ t('every layout the theme ships is reachable on the front end', function () use 
         assert_contains('<html', $body, "{$layout} returned a page");
     }
 
-    // The two archive layouts are told apart by their own markup: the blog
-    // archive prefixes the heading, the generic one does not.
+    // The two archive layouts share their body markup, so they are told apart
+    // by the class the blog one adds to its main landmark.
     [, $blogArchive] = http('GET', $base . '/category/news/', false);
-    assert_contains('Blog! News', $blogArchive, 'the blog archive layout renders the term');
+    assert_contains('blog-archive-page', $blogArchive, 'the blog archive layout renders the term');
+    assert_contains('<h1>News</h1>', $blogArchive, 'as the page heading');
 
     [, $archive] = http('GET', $base . '/category/design/', false);
     assert_contains('Type: category', $archive, 'so does the generic archive layout');
-    assert_not_contains('Blog! Design', $archive, 'which is not the blog one');
+    assert_not_contains('blog-archive-page', $archive, 'which is not the blog one');
 
     // The landing layout deliberately leaves the site chrome out.
     [$status, $home]      = http('GET', $base . '/', false);

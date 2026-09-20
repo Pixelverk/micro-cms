@@ -66,34 +66,14 @@ These are not up for renegotiation inside a phase:
 
 | # | Track | Phase | Size | Depends on |
 | --- | --- | --- | --- | --- |
-| 1 | A/C | Small fixes and tidy-ups | S | — |
-| 2 | B/C | Media fallbacks without theme placeholder files | M | — |
-| 3 | A/B | Component previews and the Add component dialog | M | — |
+| 1 | B/C | Media fallbacks without theme placeholder files | M | — |
+| 2 | A/B | Component previews and the Add component dialog | M | — |
 
 Each phase is independent and can be dropped without affecting the others.
 
 ---
 
-## 1. Small fixes and tidy-ups (A/C, S)
-
-**Why.** Two leftovers from the shipped phases, each too small for its own
-phase.
-
-**Work.**
-* `theme/layouts/blog-archive.php` renders its heading as `Blog! <term>` — a
-  stray literal. Make it a proper heading, and update the `tests/http.test.php`
-  assertion that uses that string to tell the blog archive apart from the generic
-  taxonomy layout.
-* The auth pages (`admin/auth/login.php`, `forgot-password.php`,
-  `reset-password.php`) did not get the skip link and `#main-content` the rest of
-  the admin gained in old phase 19. Add them.
-
-**Verify.** `php tests/run.php`; the login page's first Tab stop is the skip
-link.
-
-**Reject if** it grows into a subsystem — these are two small edits.
-
-## 2. Media fallbacks without theme placeholder files (B/C, M)
+## 1. Media fallbacks without theme placeholder files (B/C, M)
 
 **Why.** `theme/assets/img/` ships eight dummy placeholder PNGs (`40x40.png`
 through `1300x700.png`, plus `placeholder.png`) that component schemas and the
@@ -123,7 +103,7 @@ field.
 **Reject if** it turns into an image-generation feature or changes how a media id
 resolves.
 
-## 3. Component previews and the Add component dialog (A/B, M)
+## 2. Component previews and the Add component dialog (A/B, M)
 
 **Why.** The editor's component palette is a column of draggable labels, so an
 editor chooses a component from its name alone and adds one by dragging — awkward
@@ -229,10 +209,10 @@ Utilities Export/Import cards. It is not a non-goal.
 
 Settle each at the start of its phase, not now.
 
-* **Phase 2:** a CMS placeholder image, a CSS skeleton, or both? Deleting the
+* **Phase 1:** a CMS placeholder image, a CSS skeleton, or both? Deleting the
   placeholders also changes how the shipped demo looks, so decide whether demo
   parity still matters.
-* **Phase 3:** where do previews live — `theme/components/previews/<name>.png`, a
+* **Phase 2:** where do previews live — `theme/components/previews/<name>.png`, a
   path declared in the component, or another convention? And does the drag
   palette stay beside the dialog?
 * **Backlog:** is a Content Security Policy wanted at all, and if so how far —

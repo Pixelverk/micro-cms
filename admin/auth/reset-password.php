@@ -49,13 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reset) {
     <link rel='icon' href="<?= admin_asset('admin/assets/favicon.png')?>">
 </head>
 <body class="auth-page">
+<a class="skip-link" href="#main-content"><?= e(admin_trans('nav_skip_to_content')) ?></a>
 <header class="auth-header">
     <div class="auth-brand">
         <?= icon('profile-circle', 20) ?>
         <h1><?= e(admin_trans('auth_title')) ?></h1>
     </div>
 </header>
-<main>
+<main id="main-content">
     <div class="login-card">
         <h2><?= e(admin_trans('auth_reset_title')) ?></h2>
 

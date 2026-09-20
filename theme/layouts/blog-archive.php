@@ -21,7 +21,7 @@ require theme('partials/taxonomy-archive.css.php');
 component($headerComponent, [], $page, $collectedJs, $collectedCss);
 
 // Main content
-echo '<main id="main-content" class="taxonomy-archive-page">';
+echo '<main id="main-content" class="taxonomy-archive-page blog-archive-page">';
 echo '<div class="inner flex-column">';
 
 $taxonomy = $page['taxonomy'] ?? null;
@@ -31,7 +31,7 @@ if (!$taxonomy) {
     echo '<p>Taxonomy not found.</p>';
 } else {
     echo '<header>';
-    echo '<h1>Blog! ' . htmlspecialchars($taxonomy['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    echo '<h1>' . htmlspecialchars($taxonomy['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
     echo '<p>Type: ' . htmlspecialchars($taxonomy['taxonomy_type'], ENT_QUOTES, 'UTF-8') . '</p>';
     echo '</header>';
 

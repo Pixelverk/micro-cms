@@ -313,6 +313,19 @@ t('the theme and the admin offer a skip link to a marked main landmark', functio
     $adminLayout = (string) file_get_contents(CMS_PATH . '/admin/partials/layout.php');
     assert_contains('class="skip-link"', $adminLayout, 'the admin has a skip link');
     assert_contains('<main id="main-content">', $adminLayout, 'and a matching target');
+
+    // The auth pages are standalone documents outside that layout, so each
+    // carries its own pair — and the link comes first, or it is not a skip link.
+    foreach (['login.php', 'forgot-password.php', 'reset-password.php'] as $authPage) {
+        $markup = (string) file_get_contents(CMS_PATH . '/admin/auth/' . $authPage);
+
+        assert_contains('class="skip-link" href="#main-content"', $markup, "{$authPage} has a skip link");
+        assert_contains('<main id="main-content">', $markup, "{$authPage} has a matching target");
+        assert_true(
+            strpos($markup, 'class="skip-link"') < strpos($markup, '<main id="main-content">'),
+            "{$authPage} offers the skip link before its main landmark"
+        );
+    }
 });
 
 t('every dialog is a labelled modal that the helper can manage', function () {
