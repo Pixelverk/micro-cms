@@ -26,7 +26,7 @@ function docs_content(): array
             'intro' => 'Everything you need to publish content, without touching code.',
             'sections' => [
                 'Getting around' => [
-                    ['p' => 'The sidebar is the map of the admin: Welcome, Content, Collections (categories and tags), Forms, Site (media, menus, redirects), Reports (analytics, activity, health), System (settings, users, utilities) and Help (documentation). Anything your role cannot use is hidden.'],
+                    ['p' => 'The sidebar is the map of the admin: Welcome, Content, Collections (categories and tags), Forms, Site (media, menus, redirects), Reports (analytics, activity, health), System (settings, users, utilities) and Help (documentation). Anything your role cannot use is hidden, and a group disappears when it has nothing left to show.'],
                     ['p' => 'The top bar names the page you are on. On the right are a link to the live site, the help button, the light/dark switch, and your account. Each page carries its own working buttons at the top right of the content area.'],
                     ['p' => 'On a narrow screen the sidebar becomes a drawer and the top bar keeps only the menu and account controls.'],
                 ],

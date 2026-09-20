@@ -52,9 +52,12 @@ foreach ($contentTypes as $type => $config) {
     ];
 }
 
-// Submissions that still want an answer.
-$newMessages     = $formTypes ? form_submission_count(['status' => 'new']) : 0;
-$waitingMessages = $formTypes ? form_submission_count(['status' => 'waiting']) : 0;
+// Submissions that still want an answer. Only a role that can open the inbox
+// gets the count: for anyone else the tile would only be a link to a 403.
+$canViewForms = admin_can('forms.view');
+
+$newMessages     = ($formTypes && $canViewForms) ? form_submission_count(['status' => 'new']) : 0;
+$waitingMessages = ($formTypes && $canViewForms) ? form_submission_count(['status' => 'waiting']) : 0;
 
 $messageWork = [];
 

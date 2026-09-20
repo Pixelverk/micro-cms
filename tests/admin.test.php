@@ -113,6 +113,32 @@ t('the page-to-capability map resolves the longest prefix', function () {
     assert_false(isset($map['dashboard']), 'unguarded pages stay open to any signed-in user');
 });
 
+t('admin_can_open() answers with the same map the guard uses', function () {
+    $author = ['role' => 'author'];
+    $admin  = ['role' => 'admin'];
+
+    // Pages with no capability are open to any signed-in role.
+    assert_true(admin_can_open('dashboard', $author));
+    assert_true(admin_can_open('analytics', $author));
+    assert_true(admin_can_open('docs', $author));
+
+    // Guarded pages follow the capability matrix.
+    foreach (['messages', 'settings', 'user', 'utilities', 'health', 'menu/edit', 'redirects', 'category', 'tag', 'media', 'activity'] as $page) {
+        assert_false(admin_can_open($page, $author), "an author must not open {$page}");
+        assert_true(admin_can_open($page, $admin), "an admin opens {$page}");
+    }
+
+    // An editor manages content, media and taxonomies but not settings.
+    assert_true(admin_can_open('messages', ['role' => 'editor']));
+    assert_true(admin_can_open('media', ['role' => 'editor']));
+    assert_false(admin_can_open('settings', ['role' => 'editor']));
+
+    // Same prefix resolution as the guard.
+    assert_eq('users.manage', admin_page_capability('user/add'));
+    assert_eq('profile.own', admin_page_capability('/profile/'));
+    assert_eq(null, admin_page_capability('dashboard'));
+});
+
 t('admin_guard() blocks pages the role cannot open', function () {
     // Guarding is what protects a page; it exits for a forbidden page, so this
     // runs in a subprocess.

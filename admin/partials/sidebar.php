@@ -86,22 +86,28 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
         <?php endforeach; ?>
     </div>
 
+    <?php if (admin_can_open('category') || admin_can_open('tag')): ?>
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_collections')) ?></div>
 
+        <?php if (admin_can_open('category')): ?>
         <a href="<?= url('admin/category') ?>" class="sidebar-link <?= is_active('category', $currentPath) ?>" data-label="Categories">
             <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
             <?= e(admin_trans('nav_categories')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('tag')): ?>
         <a href="<?= url('admin/tag') ?>" class="sidebar-link <?= is_active('tag', $currentPath) ?>" data-label="Tags">
             <span class="sidebar-icon"><?= icon('label', 20) ?></span>
             <?= e(admin_trans('nav_tags')) ?>
         </a>
+        <?php endif; ?>
 
     </div>
+    <?php endif; ?>
 
-    <?php if (!empty($formTypes)): ?>
+    <?php if (!empty($formTypes) && admin_can_open('messages')): ?>
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_forms')) ?></div>
 
@@ -118,24 +124,32 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     </div>
     <?php endif; ?>
 
+    <?php if (admin_can_open('media') || admin_can_open('menu') || admin_can_open('redirects')): ?>
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_site')) ?></div>
 
+        <?php if (admin_can_open('media')): ?>
         <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>" data-label="Media">
             <span class="sidebar-icon"><?= icon('media-image', 20) ?></span>
             <?= e(admin_trans('nav_media')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('menu')): ?>
         <a href="<?= url('admin/menu/edit') ?>" class="sidebar-link <?= is_active('menu', $currentPath) ?>" data-label="Menus">
             <span class="sidebar-icon"><?= icon('menu', 20) ?></span>
             <?= e(admin_trans('nav_menus')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('redirects')): ?>
         <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= is_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('nav_redirects')) ?>">
             <span class="sidebar-icon"><?= icon('open-in-browser', 20) ?></span>
             <?= e(admin_trans('nav_redirects')) ?>
         </a>
+        <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_reports')) ?></div>
@@ -145,35 +159,47 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
             <?= e(admin_trans('nav_analytics')) ?>
         </a>
 
+        <?php if (admin_can_open('activity')): ?>
         <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= is_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('nav_activity')) ?>">
             <span class="sidebar-icon"><?= icon('clock', 20) ?></span>
             <?= e(admin_trans('nav_activity')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('health')): ?>
         <a href="<?= url('admin/health') ?>" class="sidebar-link <?= is_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('nav_health')) ?>">
             <span class="sidebar-icon"><?= icon('heart-pulse', 20) ?></span>
             <?= e(admin_trans('nav_health')) ?>
         </a>
+        <?php endif; ?>
     </div>
 
+    <?php if (admin_can_open('settings') || admin_can_open('user') || admin_can_open('utilities')): ?>
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_system')) ?></div>
 
+        <?php if (admin_can_open('settings')): ?>
         <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>" data-label="Settings">
             <span class="sidebar-icon"><?= icon('settings', 20) ?></span>
             <?= e(admin_trans('nav_settings')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('user')): ?>
         <a href="<?= url('admin/user') ?>" class="sidebar-link <?= is_active('user', $currentPath) ?>" data-label="Users">
             <span class="sidebar-icon"><?= icon('group', 20) ?></span>
             <?= e(admin_trans('nav_users')) ?>
         </a>
+        <?php endif; ?>
 
+        <?php if (admin_can_open('utilities')): ?>
         <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= is_active('utilities', $currentPath) ?>" data-label="Utilities">
             <span class="sidebar-icon"><?= icon('wrench', 20) ?></span>
             <?= e(admin_trans('nav_utilities')) ?>
         </a>
+        <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_help')) ?></div>

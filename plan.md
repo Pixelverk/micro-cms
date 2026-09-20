@@ -358,28 +358,27 @@ the local server.
 
 ## 10. Scheduling and visibility (A/C, S–M)
 
-**Partly shipped.** The content list already has a Scheduled column showing the
-date, with a Scheduled status tab that filters to it, and the dashboard already
-surfaces scheduled items and new/waiting form submissions as attention tiles.
-What remains is sorting or filtering the content list by publish date, and
-gating the dashboard's submissions tile (and its counts) behind `forms.view` — an
-author currently sees counts and a link to an inbox that 403s.
+**Shipped.** The content list already had a Scheduled column showing the date,
+with a Scheduled status tab that filters to it, and the dashboard already
+surfaced scheduled items and new/waiting form submissions as attention tiles.
+The dashboard's submissions count and tile now require `forms.view`, so an author
+is no longer shown a count and a link to an inbox that 403s.
+
+The admin sidebar is filtered by the same map: every navigation link is gated on
+the capability its page requires (`admin_can_open()`), and a section disappears
+when none of its links survive. That generalises the `forms.view` fix to the
+whole navigation — before it, an author was offered Media, Menus, Redirects,
+Categories, Tags, Activity, Health, Settings, Users and Utilities, nearly all of
+which answered 403, and the in-app docs claimed otherwise.
+
+**Decision: no publish-date sorting.** Sorting or filtering the content list by
+publish date is deliberately skipped: the Scheduled status tab already narrows
+the list to exactly the items whose date matters, so a second sort control would
+add UI without answering a question the tab does not.
 
 **Decision: no expiry feature.** Content is taken down by changing its status,
 not by a timer, so there is deliberately no `expires_at` and no expiry branch in
 `publishing_check()`. Scheduling still publishes.
-
-**Why.** Scheduled publishing works, but the list cannot be sorted or filtered by
-publish date, so seeing what goes live when means scanning it, and the dashboard
-offers submissions to roles that cannot open them.
-
-**Work.**
-* Content list: allow sorting/filtering by publish date (the scheduled date is
-  already shown).
-* Dashboard: reuse `forms.view` for the submissions tile.
-
-**Verify.** Extend `tests/content.test.php`, `tests/forms.test.php` and
-`tests/http.test.php`; manual list and dashboard check.
 
 **Reject if** it becomes a calendar UI.
 
@@ -442,7 +441,7 @@ shorter. Ask the user to expand on each item before implementation.
 
 ## 12. Media library UX + media usage before delete (A, S–M)
 
-Add a caption (or drop the dormant `title` column), a type filter and user sort,
+Mostly done from previous work. Add a caption (or drop the dormant `title` column), a type filter,
 drag-and-drop upload, multi-select with bulk delete, AVIF generation when
 Imagick supports it, and the "where is this file used?" warning before delete.
 No crop unless a concrete client asks. Verify with
@@ -480,9 +479,9 @@ slug for existing items), add hide, add a server-side active state with
 `aria-current`, and show a simple preview. Verify with `tests/menus.test.php` and
 `tests/http.test.php`.
 
-## 17. Redirect search + conflict detection (C, S)
+## 17. Redirect conflict detection (C, S)
 
-Add a search/filter to the redirects list and reject loops, self-targets,
+Add a way for the redirects list to reject loops, self-targets,
 duplicates that shadow real content, and chains. Verify with
 `tests/redirects.test.php`.
 
@@ -632,8 +631,7 @@ Settle each at the start of its phase, not now.
 * **Phase 15:** starter theme at `theme-starter/` or `examples/theme-starter/`?
 * **Phase 20:** FTS5 now, or only when a client reports search quality problems?
 * **Phase 27:** hand-rolled SMTP client or documented host relay?
-* **Track D:** when to schedule, and whether per-locale menu labels are needed in
-  v1.
+* **Track D:** when to schedule, and whether per-locale menu labels are needed in v1.
 
 # Notes
 
@@ -656,3 +654,9 @@ Settle each at the start of its phase, not now.
 * Keep conditional state and feedback CSS (error/success colours, `.status-*`,
   empty states, `.field-error`, `.notice*`, `.off-screen`); a static grep finding
   no uses is not evidence they are dead.
+
+# Things that might be changed later
+
+ * There is no need for the theme to have placeholders in assets/img. Generic fallback or placeholder images can be provided by the CMS, or a css skeleton can be used instead when media is missing.
+ * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
+ * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 

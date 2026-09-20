@@ -222,14 +222,14 @@ function admin_is_self_service_request(string $page): bool
 }
 
 /**
- * Abort an admin request when the current page needs a capability the user
- * does not have.
+ * The capability that guards an admin page, or null when it needs none.
+ *
+ * Longest matching prefix wins, so 'user/add' beats 'user'.
  */
-function admin_guard(string $page): void
+function admin_page_capability(string $page): ?string
 {
     $page = trim($page, '/');
 
-    // Longest matching prefix wins, so 'user/add' beats 'user'.
     $required = null;
     $bestLength = 0;
 
@@ -239,6 +239,30 @@ function admin_guard(string $page): void
             $bestLength = strlen($prefix);
         }
     }
+
+    return $required;
+}
+
+/**
+ * May this user open an admin page? Pages with no capability are open to any
+ * signed-in user. Navigation uses this so it never offers a page that 403s.
+ */
+function admin_can_open(string $page, ?array $user = null): bool
+{
+    $required = admin_page_capability($page);
+
+    return $required === null || admin_can($required, $user);
+}
+
+/**
+ * Abort an admin request when the current page needs a capability the user
+ * does not have.
+ */
+function admin_guard(string $page): void
+{
+    $page = trim($page, '/');
+
+    $required = admin_page_capability($page);
 
     if ($required === null || admin_can($required)) {
         return;

@@ -118,7 +118,7 @@ function http(string $method, string $url, bool $useCookies = true, array $post 
     return [$status, substr($response, $headerSize), substr($response, 0, $headerSize)];
 }
 
-function http_login(string $base): void
+function http_login(string $base, string $username = 'demo', string $password = 'demo'): void
 {
     global $cookieJar;
 
@@ -131,8 +131,8 @@ function http_login(string $base): void
     }
 
     [$status] = http('POST', $base . '/admin/login', true, [
-        'username' => 'demo',
-        'password' => 'demo',
+        'username' => $username,
+        'password' => $password,
         '_token'   => $matches[1],
     ]);
 
@@ -1300,6 +1300,58 @@ t('maintenance mode closes the public site but not the editor', function () use 
         save_settings(['maintenance_mode' => false]);
         test_clear_cache_files();
     }
+});
+
+t('the dashboard offers only what the signed-in role can open', function () use ($base) {
+    // Something is waiting, so the tile would render for a role that may read it.
+    db()->prepare("
+        INSERT INTO form_submissions (form_type, data, status, created_at, updated_at)
+        VALUES ('contact', '{}', 'new', :now, :now)
+    ")->execute(['now' => time()]);
+
+    // An author writes content but cannot open the forms inbox.
+    db()->prepare("
+        INSERT INTO users (username, email, password_hash, role, created_at)
+        VALUES ('author-dashboard', 'author-dashboard@example.com', :hash, 'author', :now)
+    ")->execute(['hash' => password_hash('secret-password', PASSWORD_DEFAULT), 'now' => time()]);
+
+    // The tile, as opposed to the sidebar's per-form links.
+    $inboxTile = 'href="' . url('admin/messages') . '"';
+
+    http_login($base, 'author-dashboard', 'secret-password');
+    [$status, $authorDashboard] = http('GET', $base . '/admin/dashboard');
+    assert_eq(200, $status, 'the dashboard still opens for an author');
+    assert_not_contains($inboxTile, $authorDashboard, 'an author is not offered an inbox that 403s');
+
+    // The sidebar mirrors the page guard, so it lists nothing that 403s.
+    $gatedLinks = [
+        'admin/messages/?form='                 => 'the forms inbox',
+        'href="' . url('admin/media') . '"'     => 'media',
+        'href="' . url('admin/settings') . '"'  => 'settings',
+        'href="' . url('admin/user') . '"'      => 'users',
+        'href="' . url('admin/utilities') . '"' => 'utilities',
+        'href="' . url('admin/category') . '"'  => 'categories',
+        'href="' . url('admin/tag') . '"'       => 'tags',
+        'href="' . url('admin/activity') . '"'  => 'the activity log',
+    ];
+
+    foreach ($gatedLinks as $needle => $label) {
+        assert_not_contains($needle, $authorDashboard, "an author sidebar must not link to {$label}");
+    }
+
+    // …and keeps the pages an author may open.
+    assert_contains('href="' . url('admin/content') . '?type=', $authorDashboard, 'an author keeps the content links');
+    assert_contains('href="' . url('admin/analytics') . '"', $authorDashboard, 'and analytics');
+
+    // The same page for an administrator offers all of it, so the checks above
+    // are not passing merely because nothing renders.
+    http_login($base);
+    [, $adminDashboard] = http('GET', $base . '/admin/dashboard');
+    assert_contains($inboxTile, $adminDashboard, 'an administrator is offered the inbox');
+    assert_contains('admin/messages/?form=', $adminDashboard, 'and the sidebar forms links');
+    assert_contains('href="' . url('admin/settings') . '"', $adminDashboard, 'and settings');
+    assert_contains('href="' . url('admin/media') . '"', $adminDashboard, 'and media');
+    assert_contains('href="' . url('admin/user') . '"', $adminDashboard, 'and users');
 });
 
 // ---------------------------------------------------------------------------
