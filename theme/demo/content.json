@@ -770,9 +770,128 @@
             "published_at": 1789885037,
             "created_at": 1789885037,
             "updated_at": 1789885037
+        },
+        {
+            "type": "page",
+            "path": "landing",
+            "title": "Launch week",
+            "status": "published",
+            "layout": "landing",
+            "meta": {
+                "description": "Five days of new features, live sessions and early access."
+            },
+            "body": [
+                {
+                    "type": "hero-section",
+                    "props": {
+                        "title": "Launch week is here",
+                        "subtitle": "Five days of new features, live sessions and early access for our readers.",
+                        "image": "600x400.png",
+                        "btn1_url": "/blog/",
+                        "btn1_text": "Read the announcements",
+                        "btn2_url": "/contact/",
+                        "btn2_text": "Get in touch"
+                    },
+                    "children": []
+                },
+                {
+                    "type": "features-section",
+                    "props": [],
+                    "children": [
+                        {
+                            "type": "feature-card",
+                            "props": {
+                                "title": "Monday — New features",
+                                "text": "A tour of everything shipping this week.",
+                                "icon": "bi-stars",
+                                "image": "placeholder.png"
+                            },
+                            "children": []
+                        },
+                        {
+                            "type": "feature-card",
+                            "props": {
+                                "title": "Wednesday — Live session",
+                                "text": "Bring your questions; we answer them on air.",
+                                "icon": "bi-broadcast",
+                                "image": "placeholder.png"
+                            },
+                            "children": []
+                        },
+                        {
+                            "type": "feature-card",
+                            "props": {
+                                "title": "Friday — Early access",
+                                "text": "Newsletter readers get the first invite.",
+                                "icon": "bi-envelope-open",
+                                "image": "placeholder.png"
+                            },
+                            "children": []
+                        }
+                    ]
+                },
+                {
+                    "type": "cta-section",
+                    "props": {
+                        "title": "Want the recap?",
+                        "text": "Tell us where to send it and we will keep you posted.",
+                        "url": "/contact/",
+                        "linktext": "Get in touch"
+                    },
+                    "children": []
+                }
+            ],
+            "published_at": 1789885037,
+            "created_at": 1789889909,
+            "updated_at": 1789889909
         }
     ],
-    "taxonomies": [],
+    "taxonomies": [
+        {
+            "type": "category",
+            "content_type": "blog_post",
+            "name": "News",
+            "slug": "news",
+            "description": "",
+            "content": [
+                "blog_post:welcome-to-our-blog",
+                "blog_post:building-better-websites",
+                "blog_post:a-practical-design-system"
+            ]
+        },
+        {
+            "type": "tag",
+            "content_type": "blog_post",
+            "name": "Web Design",
+            "slug": "web-design",
+            "description": "",
+            "content": [
+                "blog_post:welcome-to-our-blog",
+                "blog_post:building-better-websites"
+            ]
+        },
+        {
+            "type": "tag",
+            "content_type": "blog_post",
+            "name": "Freebies",
+            "slug": "freebies",
+            "description": "",
+            "content": [
+                "blog_post:a-practical-design-system"
+            ]
+        },
+        {
+            "type": "category",
+            "content_type": "portfolio_item",
+            "name": "Design",
+            "slug": "design",
+            "description": "",
+            "content": [
+                "portfolio_item:project-one",
+                "portfolio_item:project-two"
+            ]
+        }
+    ],
     "menus": [
         {
             "label": "Footer Menu",

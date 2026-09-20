@@ -611,8 +611,8 @@ admin's own stamp still matched its file's mtime.
 
 ## 15. Theme demo content as data + reference parity (B, M)
 
-**Partly shipped — steps 1 and 2 of 3.** The package format and the importer are
-in. `theme/demo/content.json` and `theme/demo/settings.json` were **generated from
+**Shipped.** The package format and the importer are in.
+`theme/demo/content.json` and `theme/demo/settings.json` were **generated from
 the old seed through the new exporter**, so no content was retyped by hand, and
 `setup.php` now seeds by importing them: **1047 lines down to 437**, with no
 behavioural change (the whole suite passes untouched). The `content_package_*`
@@ -648,18 +648,37 @@ was as a `<type>:<path>` reference, re-matches it among the imported rows, and i
 the package has no such page it clears the setting and says so in the preview and
 the toast, instead of leaving `/` broken.
 
-Still to do: **step 3**, the coverage pass.
+The coverage pass landed with it. The demo now carries **four taxonomy terms** —
+a blog category and two tags attached to the demo posts, and a portfolio category
+— so `/category/…` and `/tag/…` render the blog archive and the generic taxonomy
+archive instead of 404ing, and the blog layout's badges have something to show. A
+**`landing` page** uses the manifest's header-less layout, which no page used
+before, so every declared layout renders on a fresh install. `contact-section`
+and `blog-preview-section` now share **`theme/partials/form.php`**, which renders
+any declared form type (fields, token, honeypot, feedback) and ships its own CSS
+and JS with the first form on the page: the blog signup finally posts to the
+`newsletter` type instead of being dead markup. The theme developer guide gained
+the reference-page-to-demo-page mapping, and says blog comments are out of scope.
+The demo stayed exporter-written — `tests/bootstrap.php` rebuilds the seed
+template when `theme/demo/*.json` change, and counts in the suite derive from the
+demo rather than from a hard-coded 15.
 
-**Why.** Two things are wrong with treating `theme/` as the worked example. The
-demo content that shows what the theme can do is buried in `setup.php` — about
-500 of its 1047 lines — so a theme developer's data lives away from their theme
-and only the installer can produce it. And the demo does not exercise everything
-the theme implements: it seeds **no categories or tags**, so `blog-archive.php`
-and `taxonomy.php` never render on a fresh install, the blog layout's category
-and tag badges never appear and `taxonomy-archive.css.php` is never used; the
-`landing` layout belongs to no page; and `blog-preview-section` ships a
-hard-coded newsletter form that does nothing (no action, no token) while
-`contact-section` already renders the declared `newsletter` form type properly.
+The installer now also seeds **one account per role** — `demo` (administrator),
+`editor` and `author`, each password its username, listed in `README.md` — so the
+capability matrix can be tried from every point of view on a fresh install.
+Users are still never part of a content package: they are schema-side seed data,
+not content.
+
+**Why.** Two things were wrong with treating `theme/` as the worked example. The
+demo content that shows what the theme can do was buried in `setup.php` — about
+500 of its 1047 lines — so a theme developer's data lived away from their theme
+and only the installer could produce it. And the demo did not exercise everything
+the theme implements: it seeded **no categories or tags**, so `blog-archive.php`
+and `taxonomy.php` never rendered on a fresh install, the blog layout's category
+and tag badges never appeared and `taxonomy-archive.css.php` was never used; the
+`landing` layout belonged to no page; and `blog-preview-section` shipped a
+hard-coded newsletter form that did nothing (no action, no token) while
+`contact-section` already rendered the declared `newsletter` form type properly.
 
 The minimal starter theme this phase used to describe is **dropped**: the
 default theme is the example, and the developer need is met by it being complete,
@@ -702,8 +721,8 @@ home and blog post all map to existing components and layouts.
    when they do not.
 3. **Wire it up and fill the gaps.**
    * `theme/demo/content.json` and `theme/demo/settings.json`; `setup.php` seeds
-     by importing them instead of 500 lines of arrays — the same 15 items in the
-     same order, so slugs, URLs and the test suite are unchanged.
+     by importing them instead of 500 lines of arrays — the same items in the
+     same order, so slugs and URLs were unchanged.
    * Utilities gains **Export** — one download button per document, no zip — and
      **Import** with two sources: the theme's demo files (choose content, settings
      or both) or uploaded JSON — one input accepting several files, sections
@@ -715,9 +734,10 @@ home and blog post all map to existing components and layouts.
      writable-directory list gains that directory. The demo path needs no stash —
      it re-reads the files.
    * The coverage pass: categories and tags in the demo content attached to the
-     demo posts, the `landing` layout on a demo page, and the form markup
-     `contact-section` and `blog-preview-section` share extracted into a partial
-     so the blog signup posts to the newsletter form type. The developer guide
+     demo posts, the `landing` layout on a new `/landing/` demo page, and the form
+     markup `contact-section` and `blog-preview-section` share extracted into
+     `theme/partials/form.php` so the blog signup posts to the newsletter form
+     type. The developer guide
      gains the reference-page-to-demo-page mapping, so "resembles the reference"
      stays checkable, and says comments are out of scope — the reference's blog
      comments have no CMS counterpart, which "considered and not planned" already
@@ -733,11 +753,12 @@ import takes any subset, which is also how live content moves between installs.
 slugs, types, titles, URLs, taxonomy links, menus, assignments and settings all
 match, and the settings-only case leaves content untouched. A package naming an
 unknown content type, component or layout is refused with the offending names in
-the report and nothing written. Seeding from the JSON produces exactly today's
-15 items — counts, types and slugs — with the search index built. **Every layout
-in the manifest is reachable from some seeded page**, which is what the coverage
-pass buys, and a test can assert it. The phase-13 check stays clean,
-`tests/theme.test.php` and `tests/export.test.php` extend, and the admin flow is
+the report and nothing written. Seeding from the JSON reproduces every demo item
+and taxonomy link — counts, types, slugs and attachments — with the search index
+built. **Every layout the theme ships renders on the front end**, which is what
+the coverage pass buys: `tests/http.test.php` fetches one seeded URL per layout,
+and `tests/export.test.php` asserts the demo uses every declared page layout and
+both archive layouts. The phase-13 check stays clean, and the admin flow is
 exercised through the local server: preview, import, reset, and a rejected file.
 
 **Reject if** it becomes a full site-migration tool — users, media binaries,

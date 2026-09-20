@@ -538,6 +538,36 @@ t('a notification goes to every configured address', function () use ($base) {
     save_settings(['contact_email' => 'test-admin@domain.com']);
 });
 
+t('the theme newsletter signup posts to the newsletter form type', function () use ($base) {
+    // The blog preview section used to ship a dead form with no action and no
+    // token; it now renders the same partial as the contact section, so the
+    // signup is validated and stored like any other submission.
+    [$status, $home] = inbox_http('GET', $base . '/', false);
+
+    assert_eq(200, $status);
+    assert_contains('theme-form--inline', $home, 'the signup uses the inline variant');
+    assert_contains('name="form_type" value="newsletter"', $home, 'and posts the newsletter type');
+    assert_contains('name="_form_token"', $home, 'with a signed token');
+    assert_contains('name="company"', $home, 'and the honeypot');
+    assert_contains('name="opt_in"', $home, 'plus the declared fields');
+
+    $before = (int) db()->query("SELECT COUNT(*) FROM form_submissions WHERE form_type = 'newsletter'")->fetchColumn();
+
+    [$status, $body] = inbox_http('POST', $base . '/form-submit', false, [
+        'form_type'   => 'newsletter',
+        '_form_token' => inbox_form_token($base, 'newsletter'),
+        'email'       => 'reader@example.com',
+        'opt_in'      => '1',
+        'company'     => '',
+    ]);
+
+    assert_eq(200, $status, $body);
+    assert_contains('"success":true', $body, 'the signup is accepted');
+
+    $after = (int) db()->query("SELECT COUNT(*) FROM form_submissions WHERE form_type = 'newsletter'")->fetchColumn();
+    assert_eq($before + 1, $after, 'and the submission is stored');
+});
+
 proc_terminate($server);
 proc_close($server);
 

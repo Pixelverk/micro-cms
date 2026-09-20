@@ -59,11 +59,12 @@ t('taxonomy archive CSS lives with the archive layouts', function () {
 t('component-specific rules are not in the shared layer', function () {
     $utilities = theme_css('utilities.css');
 
-    assert_not_contains('.contact-form', $utilities, 'contact form styling belongs to contact-section');
+    assert_not_contains('.contact-form', $utilities, 'form styling belongs to the form partial');
     assert_not_contains('.bg-featured-blog', $utilities, 'blog hero styling belongs to blog-featured-section');
 
-    // …and they are present in the component that owns them.
-    assert_contains('.contact-form', (string) file_get_contents(CMS_PATH . '/theme/components/contact-section.php'));
+    // …and they are present where the markup that needs them lives: both
+    // contact-section and blog-preview-section render the shared form partial.
+    assert_contains('.theme-form .message', (string) file_get_contents(CMS_PATH . '/theme/partials/form.php'));
     assert_contains('.bg-featured-blog', (string) file_get_contents(CMS_PATH . '/theme/components/blog-featured-section.php'));
 });
 

@@ -18,6 +18,19 @@ t('the seeded demo account can log in', function () {
     assert_eq('demo', current_user()['username']);
 });
 
+t('a fresh install ships one account per role', function () {
+    $roles = [];
+
+    foreach (['demo', 'editor', 'author'] as $username) {
+        $_SESSION = [];
+
+        assert_true(login($username, $username), "{$username} signs in with its own name as the password");
+        $roles[$username] = current_user()['role'];
+    }
+
+    assert_eq(['demo' => 'admin', 'editor' => 'editor', 'author' => 'author'], $roles, 'each account carries its role');
+});
+
 t('login issues a per-browser preview token', function () {
     $_SESSION = [];
     unset($_COOKIE[preview_cookie_name()]);

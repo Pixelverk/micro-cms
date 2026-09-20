@@ -274,34 +274,37 @@ $now = time();
 
 /*
 |--------------------------------------------------------------------------
-| Insert Initial Admin User
+| Insert the demo users
 |--------------------------------------------------------------------------
+| One account per role, so a fresh install can be explored from every point of
+| view — what an author may do is only obvious next to what an editor may do.
+| Each password is its username; these are demo logins, and README.md lists
+| them. A real install changes the passwords on the Users page.
 */
 
-$defaultAdmin = [
-    "username" => "demo",
-    "first_name" => "Mister",
-    "last_name" => "Administrator",
-    "email" => "admin@example.com",
-    "password" => password_hash('demo', PASSWORD_DEFAULT),
-    "created" => $now,
-    "last_login" => $now,
+$demoUsers = [
+    ['username' => 'admin',   'first_name' => 'Albert', 'last_name' => 'Administrator', 'email' => 'admin@example.com',  'role' => 'admin'],
+    ['username' => 'editor', 'first_name' => 'Edith',  'last_name' => 'Editor',        'email' => 'editor@example.com', 'role' => 'editor'],
+    ['username' => 'author', 'first_name' => 'Anna',   'last_name' => 'Author',        'email' => 'author@example.com', 'role' => 'author'],
 ];
 
 $stmt = $pdo->prepare("
-INSERT INTO users (username, first_name, last_name, email, password_hash, created_at, last_login)
-VALUES (:username, :first_name, :last_name, :email, :password_hash, :created_at, :last_login)
+INSERT INTO users (username, first_name, last_name, email, password_hash, role, created_at, last_login)
+VALUES (:username, :first_name, :last_name, :email, :password_hash, :role, :created_at, :last_login)
 ");
 
-$stmt->execute([
-    'username'      => $defaultAdmin["username"],
-    'first_name'    => $defaultAdmin["first_name"],
-    'last_name'     => $defaultAdmin["last_name"],
-    'email'         => $defaultAdmin["email"],
-    'password_hash' => $defaultAdmin["password"],
-    'created_at'    => $defaultAdmin["created"],
-    'last_login'    => $defaultAdmin["last_login"],
-]);
+foreach ($demoUsers as $user) {
+    $stmt->execute([
+        'username'      => $user['username'],
+        'first_name'    => $user['first_name'],
+        'last_name'     => $user['last_name'],
+        'email'         => $user['email'],
+        'password_hash' => password_hash($user['username'], PASSWORD_DEFAULT),
+        'role'          => $user['role'],
+        'created_at'    => $now,
+        'last_login'    => $now,
+    ]);
+}
 
 /*
 |--------------------------------------------------------------------------

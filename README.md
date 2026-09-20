@@ -25,6 +25,9 @@ We want to present the user with html whenever they visit an url, it's not rocke
 ## Project Structure
 
 * `theme/components/` – Custom PHP components for your pages
+* `theme/layouts/` – Page wrappers (default, landing, blog, portfolio, policy, archives)
+* `theme/partials/` – Shared includes, such as the public form renderer
+* `theme/demo/` – The demo content package a fresh install imports
 * `theme/assets/` – Global CSS, JavaScript, and images
 * `storage/` – Cache, logs, media uploads, SQLlite file, sitemap.xml.
 * `admin/` – Admin panel for creating/editing content and managing users
@@ -86,10 +89,11 @@ Check the config.php file to make sure `setup_completed` is set to `false` for t
 
 Access the editor at `/admin/` to manage content and users.
 
-Demo account:
+Demo accounts, one per role. The password is the username:
 
-* Username: `demo`
-* Password: `demo`
+* `admin`  / `admin`  — administrator
+* `editor` / `editor` — editor
+* `author` / `author` — author
 
 ---
 

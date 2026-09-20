@@ -170,7 +170,7 @@ function docs_content(): array
                     ]],
                 ],
                 'Forms' => [
-                    ['p' => 'Public forms are declared under form_types in the manifest. The CMS validates the declared field types server-side, stores the submission and emails the notification address; the theme renders the fields (contact-section does).'],
+                    ['p' => 'Public forms are declared under form_types in the manifest. The CMS validates the declared field types server-side, stores the submission and emails the notification address; the theme renders the fields. In the default theme one partial does that for every type: theme/partials/form.php, included by contact-section and blog-preview-section alike, so a new form needs only a form_types entry and somewhere to put it. It ships its own CSS and JS with the first form on the page and comes in two variants — stacked (a card of fields, with floating labels) and inline (one row for a signup).'],
                     ['code' => "// theme/theme.php
 'form_types' => [
     'contact' => [
@@ -198,6 +198,23 @@ function docs_content(): array
                 'Layouts' => [
                     ['p' => 'A layout receives $page, $headerComponent, $footerComponent and the CSS/JS arrays by reference. It renders the header, the main content, then the footer:'],
                     ['code' => "<?php\ncomponent(\$headerComponent, [], \$page, \$collectedJs, \$collectedCss);\n\necho '<main>';\nrender_components(\$page['components'], \$page, \$collectedJs, \$collectedCss);\necho '</main>';\n\ncomponent(\$footerComponent, [], \$page, \$collectedJs, \$collectedCss);\n\n// Add layout-specific CSS (shipped only on pages using this layout):\nrequire theme('partials/taxonomy-archive.css.php');"],
+                ],
+                'The default theme as an example' => [
+                    ['p' => 'The theme that ships with the CMS is the worked example. It mirrors the Start Bootstrap "Modern Business" reference page for page, and its demo lives in theme/demo/content.json and theme/demo/settings.json rather than in code.'],
+                    ['table' => [
+                        'index.html' => '/ — home: hero, features, testimonial, blog preview',
+                        'about.html' => '/about/ — hero, feature rows, team',
+                        'pricing.html' => '/pricing/ — pricing plans',
+                        'faq.html' => '/faq/ — FAQ accordion',
+                        'contact.html' => '/contact/ — the contact form',
+                        'blog-home.html' => '/blog/ — featured post, news list, stories',
+                        'blog-post.html' => '/blog/welcome-to-our-blog/ — a written post',
+                        'portfolio-overview.html' => '/portfolio/ — the project grid',
+                        'portfolio-item.html' => '/portfolio/project-one/ — one project',
+                    ]],
+                    ['p' => 'The demo also carries pages the reference has no counterpart for: /services/, /privacy/, the 404 page, and /landing/, which is the only page using the landing layout — a page with no header or footer. Between them and the search route, every layout the manifest declares renders on a fresh install, and the demo categories and tags are what make the blog archive and the generic taxonomy archive reachable: drop them and those two layouts have no page to appear on.'],
+                    ['p' => 'A fresh install imports the demo; Utilities → Import with the file field left empty puts it back after experimenting. Both files are written by the package exporter, so a demo can never contain something an import could not reproduce.'],
+                    ['p' => 'Blog comments are deliberately out of scope: the reference\'s post comments have no CMS counterpart, so nothing in this theme renders them. Do not go looking for the missing component.'],
                 ],
                 'Menus' => [
                     ['p' => 'menu_locations in the manifest declares every place a menu can appear. It is the single source of truth: the admin menu page lists these slots, and a component references one of them.'],
@@ -260,6 +277,7 @@ function docs_content(): array
                         'Author' => 'Their own content only. Can draft and preview, cannot publish or delete.',
                     ]],
                     ['p' => 'The last remaining administrator cannot be demoted or deleted.'],
+                    ['p' => 'A fresh install ships one account per role, so the difference between them can be seen side by side; README.md lists the demo logins.'],
                 ],
                 'Form submissions' => [
                     ['p' => 'Contact and newsletter forms are configured under form_types in theme/theme.php and their submissions appear in the Forms section of the admin. Notifications go to the addresses set in Settings.'],

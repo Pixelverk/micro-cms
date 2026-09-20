@@ -178,7 +178,9 @@ t('results can be filtered by category and tag', function () {
 
     $pageId = search_seed('search-tax-page', 'TaxPageMarker', 'TaxPageMarker', '');
 
-    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('category', 'page', 'News', 'news', :now, :now)")
+    // The demo seeds a 'news' blog category and a slug is unique per type, so
+    // this fixture uses a slug of its own.
+    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('category', 'page', 'News', 'page-news', :now, :now)")
         ->execute(['now' => $now]);
     $categoryId = (int) $pdo->lastInsertId();
 
@@ -191,7 +193,7 @@ t('results can be filtered by category and tag', function () {
     $pdo->prepare("INSERT INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id) VALUES ('page', :id, :tax)")
         ->execute(['id' => $pageId, 'tax' => $tagId]);
 
-    assert_true(search_content('TaxPageMarker', ['category' => 'news'])['total'] >= 1, 'category filter matches');
+    assert_true(search_content('TaxPageMarker', ['category' => 'page-news'])['total'] >= 1, 'category filter matches');
     assert_true(search_content('TaxPageMarker', ['tag' => 'featured'])['total'] >= 1, 'tag filter matches');
     assert_eq(0, search_content('TaxPageMarker', ['category' => 'missing'])['total'], 'unknown term matches nothing');
 });

@@ -207,6 +207,45 @@ t('a public page renders', function () use ($base) {
     assert_contains('<html', $body);
 });
 
+t('every layout the theme ships is reachable on the front end', function () use ($base) {
+    // One seeded URL per layout file. The archive layouts come from the demo's
+    // taxonomy terms; search has its own route and is never a page.
+    $paths = [
+        '/'                          => 'default',
+        '/blog/welcome-to-our-blog/' => 'blog',
+        '/portfolio/project-one/'    => 'portfolio',
+        '/privacy/'                  => 'policy',
+        '/landing/'                  => 'landing',
+        '/category/news/'            => 'blog-archive',
+        '/category/design/'          => 'taxonomy',
+        '/search?q=launch'           => 'search',
+    ];
+
+    foreach ($paths as $path => $layout) {
+        [$status, $body] = http('GET', $base . $path, false);
+
+        assert_eq(200, $status, "{$layout} renders at {$path}");
+        assert_contains('<html', $body, "{$layout} returned a page");
+    }
+
+    // The two archive layouts are told apart by their own markup: the blog
+    // archive prefixes the heading, the generic one does not.
+    [, $blogArchive] = http('GET', $base . '/category/news/', false);
+    assert_contains('Blog! News', $blogArchive, 'the blog archive layout renders the term');
+
+    [, $archive] = http('GET', $base . '/category/design/', false);
+    assert_contains('Type: category', $archive, 'so does the generic archive layout');
+    assert_not_contains('Blog! Design', $archive, 'which is not the blog one');
+
+    // The landing layout deliberately leaves the site chrome out.
+    [$status, $home]      = http('GET', $base . '/', false);
+    [$status, $landing]   = http('GET', $base . '/landing/', false);
+
+    assert_eq(200, $status);
+    assert_contains('navbar', $home, 'a normal page carries the header');
+    assert_not_contains('navbar', $landing, 'a landing page does not');
+});
+
 t('every response carries the security baseline', function () use ($base) {
     foreach (['/' => 'front page', '/admin/login' => 'admin page'] as $path => $label) {
         [, , $headers] = http('GET', $base . $path, false);
@@ -1544,7 +1583,7 @@ t('a content package exports through Utilities', function () use ($base) {
     assert_eq(1, $document['format'] ?? null, 'it is a versioned package');
     // Earlier tests add content of their own, so the demo is a floor, not the
     // exact total.
-    assert_true(count($document['content'] ?? []) >= 15, 'every content item travels');
+    assert_true(count($document['content'] ?? []) >= demo_content_count(), 'every content item travels');
     assert_contains('"path": "home"', $body, 'the demo pages are in there');
     assert_not_contains('"settings"', $body, 'and settings stay out of a content-only export');
 
@@ -1622,7 +1661,7 @@ t('the theme demo imports through the Utilities preview', function () use ($base
 
     assert_eq(302, $status, 'applying lands back on the page with a toast');
     assert_eq('Awesome site', get_setting('site_title'), 'the package settings were applied');
-    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'and the content replaced');
+    assert_eq(demo_content_count(), (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'and the content replaced');
 });
 
 t('an uploaded package is stashed, previewed and applied', function () use ($base) {

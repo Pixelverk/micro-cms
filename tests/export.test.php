@@ -182,10 +182,46 @@ t('the theme demo package loads and matches the installed demo', function () {
 
     // The installer seeds from exactly these files, so the counts have to be
     // the ones a fresh install has.
-    assert_eq(15, $plan['create']['content'], 'the demo ships 15 items');
+    assert_eq(demo_content_count(), $plan['create']['content'], 'the demo ships every item');
     assert_eq(2, $plan['create']['menus'], 'and two menus');
     assert_eq('page:home', $plan['homepage']['ref']);
     assert_true($plan['homepage']['resolves'], 'the homepage resolves inside the package');
+});
+
+t('the demo content exercises every layout the theme declares', function () {
+    $theme   = theme_config();
+    $merged  = content_package_merge(content_package_theme_demo()['documents']);
+    $package = $merged['package'];
+
+    // Page layouts: everything an editor can choose except search, which
+    // belongs to the search route rather than to a page.
+    $used = [];
+
+    foreach ($package['content'] as $item) {
+        $used[(string) ($item['layout'] ?? '')] = true;
+    }
+
+    $missing = [];
+
+    foreach (array_keys($theme['layouts']) as $layout) {
+        if ($layout !== 'search' && !isset($used[$layout])) {
+            $missing[] = $layout;
+        }
+    }
+
+    assert_count(0, $missing, 'layouts no demo page uses: ' . implode(', ', $missing));
+
+    // Archive layouts are reached through terms, one per content type: the
+    // blog's own archive and the generic fallback both need demo terms.
+    $archives = [];
+
+    foreach ($package['taxonomies'] as $term) {
+        $config = $theme['content_types'][$term['content_type']] ?? [];
+        $archives[$config['taxonomy_layout'] ?? 'taxonomy'] = true;
+    }
+
+    assert_true(isset($archives['blog-archive']), 'a blog term renders the blog archive layout');
+    assert_true(isset($archives['taxonomy']), 'and a term of another type renders the generic one');
 });
 
 t('a package round trip reproduces the site it came from', function () {
@@ -204,11 +240,11 @@ t('a package round trip reproduces the site it came from', function () {
 
     assert_count(0, $plan['problems'], implode('; ', $plan['problems']));
     assert_eq(1, $plan['create']['settings'], 'one setting differs before the import');
-    assert_eq(15, $plan['create']['content']);
+    assert_eq(demo_content_count(), $plan['create']['content']);
 
     $summary = content_package_import($merged['package']);
 
-    assert_eq(15, $summary['content']);
+    assert_eq(demo_content_count(), $summary['content']);
     assert_eq(2, $summary['menus']);
     assert_eq('page:home', $summary['homepage']);
 
@@ -217,7 +253,7 @@ t('a package round trip reproduces the site it came from', function () {
     assert_eq($beforeSettings, content_package_export_settings(), 'and so do settings');
 
     $indexed = db()->query("SELECT COUNT(*) FROM content WHERE search_text IS NOT NULL AND search_text != ''")->fetchColumn();
-    assert_eq(15, (int) $indexed, 'the imported content is searchable');
+    assert_eq(demo_content_count(), (int) $indexed, 'the imported content is searchable');
 
     $homepageId = (int) (load_settings()['homepage_id'] ?? 0);
     $homepage   = load_content_by_id($homepageId);
@@ -255,7 +291,7 @@ t('content and settings import independently', function () {
     content_package_import($contentOnly['package']);
 
     assert_eq('Keep Me Again', get_setting('site_title'), 'the setting survived a content import');
-    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn());
+    assert_eq(demo_content_count(), (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn());
 });
 
 t('a package this theme cannot render is refused', function () {
@@ -285,7 +321,7 @@ t('a package this theme cannot render is refused', function () {
     assert_contains("Setting 'site_url' cannot travel", implode('; ', $settingsPlan['problems']), 'an unportable setting is refused');
 
     // Nothing was written by any of that.
-    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'validation changes nothing');
+    assert_eq(demo_content_count(), (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'validation changes nothing');
 });
 
 t('two files defining the same section are refused', function () {
@@ -332,7 +368,7 @@ t('the two package documents stay separate', function () {
     $settings = content_package_export_settings();
 
     assert_eq(CONTENT_PACKAGE_FORMAT, $content['format'] ?? null, 'the content document is versioned');
-    assert_true(count($content['content'] ?? []) >= 15, 'the content travels');
+    assert_true(count($content['content'] ?? []) >= demo_content_count(), 'the content travels');
     assert_eq('page:home', $settings['settings']['homepage'] ?? null, 'and the homepage travels by slug');
 
     // One button downloads one document, so neither may smuggle in the other.

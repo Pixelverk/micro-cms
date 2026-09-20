@@ -67,11 +67,22 @@ return [
                         <div class="text-white-50">Sign up for our newsletter for the latest updates.</div>
                     </div>
                     <div class="ms-xl-4">
-                        <div class="input-group mb-2">
-                            <input class="form-control" type="text" placeholder="Email address..." aria-label="Email address..." aria-describedby="button-newsletter" />
-                            <button class="btn btn-outline-light" id="button-newsletter" type="button">Sign up</button>
-                        </div>
-                        <div class="small text-white-50">We care about privacy, and will never share your data.</div>
+                        <?php
+                        // The same form the contact section renders, in its inline
+                        // variant: it posts the manifest's newsletter type, so the
+                        // submission is validated and stored like any other.
+                        $form = [
+                            'type'    => 'newsletter',
+                            'variant' => 'inline',
+                            'id'      => $id,
+                            'submit'  => 'Sign up',
+                            'success' => 'Thanks for signing up!',
+                            'error'   => 'Something went wrong. Please try again later.',
+                            'page_id' => (int) ($props['_page_id'] ?? 0),
+                        ];
+
+                        require theme('partials/form.php');
+                        ?>
                     </div>
                 </div>
             </aside>

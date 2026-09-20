@@ -98,8 +98,15 @@ function test_fresh_database(): void
     $dbPath       = STORAGE_PATH . '/data.sqlite';
     $templatePath = STORAGE_PATH . '/seed-template.sqlite';
 
-    // Rebuild when the template is missing or predates the schema source.
-    if (!is_file($templatePath) || filemtime($templatePath) < filemtime(CORE_PATH . '/helpers/setup.php')) {
+    // Rebuild when the template is missing or predates what it is built from:
+    // the schema, or the demo files the installer seeds.
+    $sourceTime = max(
+        filemtime(CORE_PATH . '/helpers/setup.php'),
+        filemtime(CMS_PATH . '/theme/demo/content.json'),
+        filemtime(CMS_PATH . '/theme/demo/settings.json')
+    );
+
+    if (!is_file($templatePath) || filemtime($templatePath) < $sourceTime) {
         test_build_seed_template($templatePath);
         return;
     }

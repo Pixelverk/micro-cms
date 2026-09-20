@@ -158,6 +158,20 @@ function zip_entry_names(string $archive): array
 }
 
 /**
+ * How many content items the theme's demo ships.
+ *
+ * Derived from the demo files rather than hard-coded, so extending the demo
+ * does not quietly break every count in the suite.
+ */
+function demo_content_count(): int
+{
+    $demo   = content_package_theme_demo();
+    $merged = content_package_merge($demo['documents']);
+
+    return count($merged['package']['content'] ?? []);
+}
+
+/**
  * Print the summary and return a process exit code.
  */
 

@@ -41,7 +41,8 @@ PHP 8.5 with `pdo_sqlite` and `imagick`; `zip` is **not** installed.
 generation depend on Imagick.
 
 First run: `config.php` with `setup_completed => false` seeds the schema and
-demo content into `storage/` on the next request. Demo login is `demo` / `demo`.
+demo content into `storage/` on the next request. Demo logins are `admin` / `admin`
+(administrator), `editor` / `editor` and `author` / `author`.
 
 ## Where things are
 
