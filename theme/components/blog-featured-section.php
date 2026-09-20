@@ -20,7 +20,8 @@ CSS,
     if (!$post) return;
 
     $meta = $post['meta'] ?? [];
-    $image = $meta['thumbnail'] ?? $meta['image'] ?? '700x350.png';
+    $image = $meta['thumbnail'] ?? $meta['image'] ?? ':placeholder';
+    $imageUrl = resolve_image_value((string) $image, 1200);
     $excerpt = $meta['excerpt'] ?? '';
     $slug = $post['slug'] ?? '';
     ?>
@@ -38,7 +39,13 @@ CSS,
                                 <a class="stretched-link text-decoration-none" href="<?= e(url('blog/' . $slug)) ?>">Read more <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
-                        <div class="col-lg-6 col-xl-7"><div class="bg-featured-blog" style="background-image: url('<?= e(resolve_image_value((string) $image, 1200)) ?>')"></div></div>
+                        <div class="col-lg-6 col-xl-7">
+                            <?php if ($imageUrl !== ''): ?>
+                                <div class="bg-featured-blog" style="background-image: url('<?= e($imageUrl) ?>')"></div>
+                            <?php else: ?>
+                                <div class="bg-featured-blog image-placeholder" aria-hidden="true"></div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>

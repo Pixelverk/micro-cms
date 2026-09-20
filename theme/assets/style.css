@@ -43,6 +43,19 @@
     opacity: 1;
 }
 
+/* The CMS image placeholder (core ships the box and its ratio). It fills the
+   slot by default; the one shape that is not a slot is the round avatar, which
+   the theme sizes so a 40px face does not become a full-width disc. */
+.image-placeholder.rounded-circle {
+    width: 40px;
+    max-width: 100%;
+}
+
+/* A team portrait is the one round image that is large. */
+.image-placeholder.rounded-circle.img-fluid {
+    width: 150px;
+}
+
 /* Default theme surface */
 :root {
     --theme-primary: #0d6efd;

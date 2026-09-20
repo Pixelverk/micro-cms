@@ -40,7 +40,7 @@ function docs_content(): array
                         'Parent: nest a page under another to build a URL like /services/consulting/.',
                         'Images: a Blog Post has a Featured image, and a Portfolio Item also has a Gallery. Pick from the media library, or type a theme file name or a full URL.',
                     ]],
-                    ['p' => "Clear removes the selected image. A section image falls back to the theme's placeholder; a featured image or gallery row simply becomes empty. A gallery keeps the order you add images in, and removing a row takes that image out."],
+                    ['p' => "Clear removes the selected image. A section image falls back to the placeholder box; a featured image or gallery row simply becomes empty. A gallery keeps the order you add images in, and removing a row takes that image out."],
                     ['p' => 'Save at any time. Nothing is live until the status is Published.'],
                 ],
                 'Drafts, scheduling and preview' => [
@@ -150,7 +150,7 @@ function docs_content(): array
                     ['ul' => [
                         "schema field types: text, textarea, number, color, checkbox, url, email, select, quill, image",
                         "an image field gets the media-library picker; render its value with render_image(\$props['image'] ?? '', ['class' => 'img-fluid']) so a media id, a theme filename and a URL all work",
-                        "an image field's default is its placeholder: it fills a new component, and it comes back when the editor clears the field",
+                        "an image field's default fills a new component and comes back when the editor clears the field; ':placeholder' is the value that means the CMS's placeholder box, and 'ratio' in the attrs says what shape it is",
                         "a field named 'menu' is filled with the theme's menu_locations, so the editor picks a menu slot (see Menus below)",
                         "children: 'none', 'any', or 'some' with allowed_children listing permitted types",
                         "css and js ship only on pages that use the component",

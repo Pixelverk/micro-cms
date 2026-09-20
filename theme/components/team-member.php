@@ -22,7 +22,7 @@ return [
         'type' => 'image',
         'label' => 'Portrait',
         'required' => true,
-        'default' => '150x150.png'
+        'default' => ':placeholder'
     ],
     'image_alt' => [
         'type' => 'text',
@@ -46,7 +46,8 @@ return [
         $imageAlt = (string) ($props['name'] ?? '');
     }
 
-    $imageAttrs = ['class' => 'img-fluid rounded-circle mb-4 px-4'];
+    // Square: the portrait is rendered as a circle.
+    $imageAttrs = ['class' => 'img-fluid rounded-circle mb-4 px-4', 'ratio' => '1'];
 
     if ($imageAlt !== '') {
         $imageAttrs['alt'] = $imageAlt;

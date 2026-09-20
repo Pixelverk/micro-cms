@@ -192,7 +192,10 @@ t('the social image resolves from a media id, URL or theme file', function () {
     set_setting('site_url', 'https://example.com');
 
     // Theme image filename
-    assert_eq('https://example.com/theme/assets/img/hero.png', seo_resolve_image('hero.png'));
+    assert_eq('https://example.com/theme/assets/img/icon-512.png', seo_resolve_image('icon-512.png'));
+
+    // A theme file that is not there has no URL to share
+    assert_eq('', seo_resolve_image('hero.png'));
 
     // Absolute URL passes through
     assert_eq('https://cdn.test/x.jpg', seo_resolve_image('https://cdn.test/x.jpg'));

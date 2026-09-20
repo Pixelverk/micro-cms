@@ -382,10 +382,34 @@ function img(string $path): string
 }
 
 /**
+ * Whether the theme ships the file a theme image filename names.
+ *
+ * A theme image value is a filename under theme/assets/img/. A value with
+ * nothing behind it is not an image: it renders the CMS placeholder instead of
+ * a URL that 404s. The documented way to ask for that placeholder is the
+ * `:placeholder` value, which is a filename nothing can ship.
+ */
+function theme_image_exists(string $filename): bool
+{
+    $filename = ltrim(trim($filename), '/');
+
+    // img() joins the name onto theme/assets/img/, so refuse anything that
+    // could climb back out of the folder.
+    if ($filename === '' || str_contains($filename, '..')) {
+        return false;
+    }
+
+    return is_file(CMS_PATH . '/theme/assets/img/' . $filename);
+}
+
+/**
  * Resolve a media id, an absolute URL, or a theme image filename to a URL.
  *
  * The shape every image setting accepts. Callers that need an absolute URL
- * (Open Graph, JSON-LD) pass the result through seo_absolute_url().
+ * (Open Graph, JSON-LD) pass the result through seo_absolute_url(). A theme
+ * filename the theme does not ship resolves to nothing rather than to a URL
+ * that 404s; render_image() is the entry point that shows the CMS placeholder
+ * for one.
  */
 function resolve_image_value(string $value, ?int $width = null): string
 {
@@ -403,6 +427,10 @@ function resolve_image_value(string $value, ?int $width = null): string
         return $value;
     }
 
+    if (!theme_image_exists($value)) {
+        return '';
+    }
+
     return img($value);
 }
 
@@ -415,9 +443,17 @@ function resolve_image_value(string $value, ?int $width = null): string
  * before, so it is never wrapped in picture()'s LQIP wrapper — main.js only
  * un-blurs `.image-wrapper picture img`, and a bare <img> there would stay
  * invisible.
+ *
+ * A theme filename the theme does not ship — including the `:placeholder` a
+ * component schema uses as its default — renders the CMS placeholder box.
+ * `$attrs['ratio']` is the shape that box takes, since a missing file has no
+ * aspect ratio of its own; it defaults to 3:2 and is never emitted on an <img>.
  */
 function render_image(mixed $value, array $attrs = []): string
 {
+    $ratio = trim((string) ($attrs['ratio'] ?? '3 / 2'));
+    unset($attrs['ratio']);
+
     $value = is_scalar($value) ? trim((string) $value) : '';
 
     if ($value === '') {
@@ -441,6 +477,8 @@ function render_image(mixed $value, array $attrs = []): string
         }
 
         $url = media_url((int) $value);
+    } elseif (!preg_match('#^https?://#i', $value) && !theme_image_exists($value)) {
+        return image_placeholder($ratio, $attrs);
     } else {
         $url = resolve_image_value($value);
     }
@@ -457,6 +495,48 @@ function render_image(mixed $value, array $attrs = []): string
     }
 
     return '<img' . $attrString . '>';
+}
+
+/**
+ * The box that stands in for an image the site does not have.
+ *
+ * It ships from core, so a theme need not carry a placeholder file: the theme
+ * only says which shape the slot is. The caller's classes are kept, so the
+ * theme still sizes and rounds the box, and the alt text is dropped because
+ * there is no image to describe.
+ */
+function image_placeholder(string $ratio, array $attrs = []): string
+{
+    unset($attrs['alt']);
+
+    $attrs['class']       = trim((string) ($attrs['class'] ?? '') . ' image-placeholder');
+    $attrs['style']       = 'aspect-ratio: ' . $ratio . ';' . (string) ($attrs['style'] ?? '');
+    $attrs['aria-hidden'] = 'true';
+
+    $attrString = '';
+    foreach ($attrs as $name => $attrValue) {
+        $attrString .= ' ' . e($name) . '="' . e((string) $attrValue) . '"';
+    }
+
+    return '<span' . $attrString . '></span>';
+}
+
+/**
+ * The image placeholder's CSS.
+ *
+ * render_page() ships it on every page, before the theme's stylesheets: a
+ * theme need not carry the fallback, and can still restyle it.
+ */
+function image_placeholder_css(): string
+{
+    return <<<'CSS'
+.image-placeholder {
+    display: block;
+    width: 100%;
+    background-color: #e9ecef;
+    background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.04) 0 6px, transparent 6px 12px);
+}
+CSS;
 }
 
 /**

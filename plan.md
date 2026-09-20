@@ -66,44 +66,13 @@ These are not up for renegotiation inside a phase:
 
 | # | Track | Phase | Size | Depends on |
 | --- | --- | --- | --- | --- |
-| 1 | B/C | Media fallbacks without theme placeholder files | M | — |
-| 2 | A/B | Component previews and the Add component dialog | M | — |
+| 1 | A/B | Component previews and the Add component dialog | M | — |
 
 Each phase is independent and can be dropped without affecting the others.
 
 ---
 
-## 1. Media fallbacks without theme placeholder files (B/C, M)
-
-**Why.** `theme/assets/img/` ships eight dummy placeholder PNGs (`40x40.png`
-through `1300x700.png`, plus `placeholder.png`) that component schemas and the
-demo use as defaults, and `img()` only builds a URL — so a missing theme file is
-a 404, and a cleared image prop falls back to a placeholder filename (old phase
-11). A theme should not have to carry stand-ins; the CMS can own the fallback.
-
-**Work.**
-1. Give `resolve_image_value()` / `render_image()` a **missing** state: a theme
-   filename that does not exist under `theme/assets/` resolves to the CMS
-   fallback rather than to a URL that 404s.
-2. Provide that fallback the CMS's way — a single shipped placeholder image, a
-   CSS skeleton with the right aspect ratio, or both (see Open decisions). A
-   skeleton costs no request and no file; a shipped image still looks like a
-   picture.
-3. Remove the placeholder PNGs, and repoint every component-schema `default` and
-   the demo content that named them, so a new image field and the demo render the
-   fallback.
-4. `theme_manifest_problems()` must not report the removed files, and the theme
-   developer guide documents the fallback.
-
-**Verify.** `tests/media.test.php` (a missing theme file falls back; a media id
-still wins), `tests/theme.test.php` (the demo renders, and no shipped component
-default names a file that does not exist), a manual check of an empty image
-field.
-
-**Reject if** it turns into an image-generation feature or changes how a media id
-resolves.
-
-## 2. Component previews and the Add component dialog (A/B, M)
+## 1. Component previews and the Add component dialog (A/B, M)
 
 **Why.** The editor's component palette is a column of draggable labels, so an
 editor chooses a component from its name alone and adds one by dragging — awkward
@@ -209,10 +178,7 @@ Utilities Export/Import cards. It is not a non-goal.
 
 Settle each at the start of its phase, not now.
 
-* **Phase 1:** a CMS placeholder image, a CSS skeleton, or both? Deleting the
-  placeholders also changes how the shipped demo looks, so decide whether demo
-  parity still matters.
-* **Phase 2:** where do previews live — `theme/components/previews/<name>.png`, a
+* **Phase 1:** where do previews live — `theme/components/previews/<name>.png`, a
   path declared in the component, or another convention? And does the drag
   palette stay beside the dialog?
 * **Backlog:** is a Content Security Policy wanted at all, and if so how far —

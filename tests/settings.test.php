@@ -172,8 +172,12 @@ t('format_date() uses the date format and timezone settings', function () {
 });
 
 t('image settings resolve media ids, URLs and theme filenames', function () {
-    set_setting('logo', '600x400.png');
-    assert_contains('theme/assets/img/600x400.png', site_logo_url());
+    set_setting('logo', 'icon-512.png');
+    assert_contains('theme/assets/img/icon-512.png', site_logo_url());
+
+    // A filename the theme does not ship is not a logo; nothing renders.
+    set_setting('logo', 'gone.png');
+    assert_eq('', site_logo_url());
 
     set_setting('logo', 'https://cdn.test/logo.svg');
     assert_eq('https://cdn.test/logo.svg', site_logo_url());
@@ -184,8 +188,8 @@ t('image settings resolve media ids, URLs and theme filenames', function () {
 
     assert_contains('theme/assets/favicon.ico', site_favicon_url(), 'the theme manifest favicon is the fallback');
 
-    set_setting('favicon', 'icon.png');
-    assert_contains('theme/assets/img/icon.png', site_favicon_url(), 'the setting wins over the manifest');
+    set_setting('favicon', 'icon-192.png');
+    assert_contains('theme/assets/img/icon-192.png', site_favicon_url(), 'the setting wins over the manifest');
 
     set_setting('favicon', '');
 });

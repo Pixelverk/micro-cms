@@ -24,7 +24,7 @@ return [
             </div>
             <div class="row gx-5">
                 <?php foreach ($projects as $project): ?>
-                    <?php $meta = $project['meta'] ?? []; $image = $meta['thumbnail'] ?? $meta['image'] ?? '600x400.png'; ?>
+                    <?php $meta = $project['meta'] ?? []; $image = $meta['thumbnail'] ?? $meta['image'] ?? ':placeholder'; ?>
                     <div class="col-lg-6"><div class="position-relative mb-5"><?= render_image($image, ['class' => 'img-fluid rounded-3 mb-3', 'alt' => $project['title']]) ?><a class="h3 fw-bolder text-decoration-none link-dark stretched-link" href="<?= e(url('portfolio/' . $project['slug'])) ?>"><?= e($project['title']) ?></a></div></div>
                 <?php endforeach; ?>
                 <?php if (!$projects): ?><p class="text-muted">No published projects yet.</p><?php endif; ?>

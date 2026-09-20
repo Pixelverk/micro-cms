@@ -28,7 +28,7 @@ return [
         'type' => 'image',
         'label' => 'Hero Image',
         'required' => false,
-        'default' => '600x400.png'
+        'default' => ':placeholder'
     ],
     'btn1_url' => [
         'type' => 'text',

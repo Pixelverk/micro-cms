@@ -30,7 +30,7 @@ return [
         'type' => 'image',
         'label' => 'Section Image',
         'required' => true,
-        'default' => '600x400.png'
+        'default' => ':placeholder'
     ],
     'image_alt' => [
         'type' => 'text',

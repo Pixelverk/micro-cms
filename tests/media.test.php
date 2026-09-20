@@ -189,7 +189,8 @@ t('resolve_image_value() picks a media variant width', function () {
     ]);
 
     assert_contains('photo-1280.webp', resolve_image_value((string) $id, 1200), 'closest variant to the requested width');
-    assert_eq(img('logo.png'), resolve_image_value('logo.png'), 'theme filenames still resolve through img()');
+    assert_eq(img('icon-512.png'), resolve_image_value('icon-512.png'), 'theme filenames still resolve through img()');
+    assert_eq('', resolve_image_value('gone.png'), 'a filename the theme does not ship resolves to nothing, not a 404');
     assert_eq('https://example.test/x.jpg', resolve_image_value('https://example.test/x.jpg'));
     assert_eq('', resolve_image_value(''));
 });
@@ -215,13 +216,31 @@ t('render_image() uses picture() for media ids and a bare img otherwise', functi
 
     // A theme asset must stay a bare <img>. main.js only reveals images inside
     // .image-wrapper picture, so wrapping one would leave it invisible.
-    $asset = render_image('600x400.png', ['class' => 'img-fluid', 'alt' => 'Placeholder']);
+    $asset = render_image('icon-512.png', ['class' => 'img-fluid', 'alt' => 'The app icon']);
 
     assert_contains('<img', $asset);
     assert_contains('class="img-fluid"', $asset);
-    assert_contains('alt="Placeholder"', $asset);
+    assert_contains('alt="The app icon"', $asset);
     assert_not_contains('image-wrapper', $asset);
     assert_not_contains('<picture>', $asset);
+
+    // A filename the theme does not ship — and the `:placeholder` a schema
+    // default uses — is the CMS's placeholder box, never a URL that 404s.
+    $missing = render_image('gone.png', ['class' => 'img-fluid', 'alt' => 'Gone']);
+
+    assert_contains('<span class="img-fluid image-placeholder"', $missing);
+    assert_contains('aria-hidden="true"', $missing);
+    assert_contains('aspect-ratio: 3 / 2', $missing, 'the default slot shape');
+    assert_not_contains('<img', $missing);
+    assert_not_contains('alt=', $missing, 'there is no image to describe');
+
+    $square = render_image(':placeholder', ['class' => 'rounded-circle', 'ratio' => '1']);
+
+    assert_contains('aspect-ratio: 1', $square, 'the caller says what shape the slot is');
+    assert_not_contains('ratio=', $square, 'the ratio is never emitted as an attribute');
+
+    // A real image never picks the ratio up either.
+    assert_not_contains('ratio', render_image('icon-512.png', ['ratio' => '1']));
 
     assert_eq('', render_image(''));
     assert_eq('', render_image(null));

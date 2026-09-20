@@ -81,8 +81,15 @@ Render a theme image with `render_image($value, $attrs)`:
 
 * a media id renders `picture()` — a responsive `<picture>` with a WebP source,
   `srcset`/`sizes`, a LQIP background and `alt` text from the media record;
-* a filename (`600x400.png`, resolved through `img()`) or an absolute URL
-  renders a plain `<img>`.
+* a filename the theme ships (`icon-512.png`, resolved through `img()`) or an
+  absolute URL renders a plain `<img>`;
+* a filename the theme does not ship renders the CMS's placeholder box instead
+  of a URL that 404s, so a theme never has to carry a stand-in image.
+
+The placeholder is a block the theme still sizes and rounds: pass `'ratio' => '1'`
+(any CSS `aspect-ratio` value, default `3 / 2`) for a slot that is not 3:2. Its
+styling ships from core, before the theme's stylesheets, so `.image-placeholder`
+can be restyled in the theme.
 
 Do not call `img()` on a value that may hold a media id — `img()` treats its
 argument as a theme filename, so a media id would resolve to a 404. Use
@@ -120,17 +127,19 @@ For a component prop, use the `image` schema type and `render_image()`:
 
 ```php
 'schema' => [
-    'image' => ['type' => 'image', 'label' => 'Section Image', 'required' => false, 'default' => '600x400.png'],
+    'image' => ['type' => 'image', 'label' => 'Section Image', 'required' => false, 'default' => ':placeholder'],
 ],
 'render' => function (array $props, array $page) {
     echo render_image($props['image'] ?? '', ['class' => 'img-fluid']);
 },
 ```
 
-The `image` type gives the field the media-library picker. Its `default` is the
-theme's placeholder image: it fills a new component, and it comes back when an
-editor clears the field. Only image fields are filled this way, so a cleared text
-field stays empty; declare no default if an empty image should render nothing.
+The `image` type gives the field the media-library picker. Its `default` fills a
+new component, and it comes back when an editor clears the field; `:placeholder`
+is the value that means the CMS's placeholder box, and the `render_image()` call
+says what shape that box is. Only image fields are filled this way, so a cleared
+text field stays empty; declare no default if an empty image should render
+nothing.
 
 ## Vendored third-party code
 

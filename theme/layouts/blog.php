@@ -18,7 +18,7 @@ $thumbnail = $meta['thumbnail'] ?? $meta['image'] ?? '';
                     <div class="col-lg-3">
                         <div class="d-flex align-items-center mt-lg-5 mb-4">
                             <?php if ($authorImage): ?>
-                                <?= render_image($authorImage, ['class' => 'img-fluid rounded-circle', 'alt' => $author]) ?>
+                                <?= render_image($authorImage, ['class' => 'img-fluid rounded-circle', 'alt' => $author, 'ratio' => '1']) ?>
                             <?php endif; ?>
                             <div class="ms-3">
                                 <div class="fw-bold"><?= e($author) ?></div>

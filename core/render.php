@@ -59,6 +59,10 @@ function render_page(array $page): array
     $head .= seo_app_head_tags();
 
     // Styles
+    // The image placeholder ships from core, so a theme need not carry it. It
+    // goes before the theme's stylesheets, which lets the theme restyle it.
+    $head .= "<style>\n" . image_placeholder_css() . "\n</style>\n";
+
     foreach ($theme['styles'] ?? [] as $style) {
         $head .= "<link rel='stylesheet' href='" . asset($style) . "'>\n";
     }

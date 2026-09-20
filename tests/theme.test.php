@@ -88,7 +88,7 @@ t('the about feature section puts its image on either side', function () {
         $component['render']([
             'title'          => 'Section',
             'text'           => 'Text',
-            'image'          => '600x400.png',
+            'image'          => ':placeholder',
             'image_position' => $position,
         ], [], $js, $collected);
 
@@ -201,7 +201,7 @@ t('the content types that render a thumbnail expose it to the editor', function 
     assert_true(!empty($types['portfolio_item']['images']['gallery']['multiple']), 'portfolio galleries are repeatable');
 });
 
-t('a cleared image prop falls back to the theme placeholder', function () {
+t('a cleared image prop falls back to the CMS placeholder', function () {
     $page = ['title' => 'Test', 'type' => 'page'];
 
     $render = function (string $name, array $props) use ($page): string {
@@ -214,17 +214,42 @@ t('a cleared image prop falls back to the theme placeholder', function () {
         return (string) ob_get_clean();
     };
 
-    // hero-section declares `600x400.png` as its image placeholder.
+    // hero-section declares `:placeholder` as its image default.
     $cleared = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There', 'image' => '']);
-    assert_contains('theme/assets/img/600x400.png', $cleared, 'the placeholder comes back when the field is cleared');
+    assert_contains('image-placeholder', $cleared, 'the placeholder comes back when the field is cleared');
 
     $missing = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There']);
-    assert_contains('theme/assets/img/600x400.png', $missing, 'and when the prop was never set');
+    assert_contains('image-placeholder', $missing, 'and when the prop was never set');
 
     // A value the editor did choose wins over the placeholder.
     $chosen = $render('hero-section', ['title' => 'Hi', 'subtitle' => 'There', 'image' => 'https://example.test/pick.jpg']);
     assert_contains('https://example.test/pick.jpg', $chosen);
-    assert_not_contains('600x400.png', $chosen);
+    assert_not_contains('image-placeholder', $chosen);
+
+    // The theme names no placeholder files: the CMS owns the fallback, and a
+    // default that named a file the theme does not ship would silently become
+    // one too.
+    $named = [];
+
+    foreach (theme_config()['content_types'] as $type => $config) {
+        foreach (($config['available_components'] ?? []) as $name) {
+            $schema = content_component_definition((string) $name)['schema'] ?? [];
+
+            foreach ($schema as $field => $rules) {
+                if (!is_array($rules) || ($rules['type'] ?? '') !== 'image') {
+                    continue;
+                }
+
+                $default = trim((string) ($rules['default'] ?? ''));
+
+                if ($default !== '' && $default !== ':placeholder') {
+                    $named[] = "{$name}.{$field} = {$default}";
+                }
+            }
+        }
+    }
+
+    assert_count(0, $named, 'image defaults that name a file: ' . implode(', ', $named));
 
     // Only image fields are filled: a cleared text field stays empty.
     $text = $render('hero-section', ['title' => '', 'subtitle' => 'There', 'image' => '']);

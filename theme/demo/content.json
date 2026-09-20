@@ -18,7 +18,7 @@
                     "props": {
                         "title": "A Bootstrap 5 template for modern businesses",
                         "subtitle": "Quickly design and customize responsive mobile-first sites with Bootstrap, the world's most popular front-end open source toolkit!",
-                        "image": "600x400.png",
+                        "image": ":placeholder",
                         "btn1_url": "#features",
                         "btn1_text": "Get Started",
                         "btn2_url": "#",
@@ -76,7 +76,7 @@
                         "quote": "Working with Start Bootstrap templates has saved me tons of development time when building new projects! Starting with a Bootstrap template just makes things easier!",
                         "name": "Mr Mister",
                         "job": "Boss, BigCompany",
-                        "img": "40x40.png"
+                        "img": ":placeholder"
                     },
                     "children": []
                 },
@@ -92,8 +92,8 @@
                             "props": {
                                 "title": "Blog post title",
                                 "text": "Some quick example text to build on the card title and make up the bulk of the card content.",
-                                "img": "600x350.png",
-                                "img2": "40x40.png"
+                                "img": ":placeholder",
+                                "img2": ":placeholder"
                             },
                             "children": []
                         },
@@ -102,8 +102,8 @@
                             "props": {
                                 "title": "Blog post title",
                                 "text": "Some quick example text to build on the card title and make up the bulk of the card content.",
-                                "img": "600x350.png",
-                                "img2": "40x40.png"
+                                "img": ":placeholder",
+                                "img2": ":placeholder"
                             },
                             "children": []
                         },
@@ -112,8 +112,8 @@
                             "props": {
                                 "title": "Blog post title",
                                 "text": "Some quick example text to build on the card title and make up the bulk of the card content.",
-                                "img": "600x350.png",
-                                "img2": "40x40.png"
+                                "img": ":placeholder",
+                                "img2": ":placeholder"
                             },
                             "children": []
                         }
@@ -151,7 +151,7 @@
                     "props": {
                         "title": "Our founding",
                         "text": "We started with a simple goal: make dependable web tools easier to use for small teams and growing businesses.",
-                        "image": "600x400.png",
+                        "image": ":placeholder",
                         "image_alt": "Our founding team at work",
                         "image_position": "left",
                         "background": "light"
@@ -163,7 +163,7 @@
                     "props": {
                         "title": "Growth & beyond",
                         "text": "Today we keep improving the tools, systems, and support that help people turn good ideas into useful websites.",
-                        "image": "600x400.png",
+                        "image": ":placeholder",
                         "image_alt": "A team planning the next project",
                         "image_position": "right",
                         "background": "white"
@@ -183,7 +183,7 @@
                             "props": {
                                 "name": "Ibbie Eckart",
                                 "role": "Founder & CEO",
-                                "image": "150x150.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -192,7 +192,7 @@
                             "props": {
                                 "name": "Arden Vasek",
                                 "role": "CFO",
-                                "image": "150x150.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -201,7 +201,7 @@
                             "props": {
                                 "name": "Toribio Nerthus",
                                 "role": "Operations Manager",
-                                "image": "150x150.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -210,7 +210,7 @@
                             "props": {
                                 "name": "Malvina Cilla",
                                 "role": "CTO",
-                                "image": "150x150.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         }
@@ -394,9 +394,9 @@
             "meta": {
                 "description": "A first look at what we are building.",
                 "excerpt": "A first look at the ideas, tools, and people behind our work.",
-                "thumbnail": "900x400.png",
+                "thumbnail": ":placeholder",
                 "author": "Valerie Luna",
-                "author_image": "50x50.png"
+                "author_image": ":placeholder"
             },
             "body": [
                 {
@@ -422,9 +422,9 @@
             "meta": {
                 "description": "A few principles for useful websites.",
                 "excerpt": "Good websites make complicated things feel clear.",
-                "thumbnail": "600x350.png",
+                "thumbnail": ":placeholder",
                 "author": "Kelly Rowan",
-                "author_image": "40x40.png"
+                "author_image": ":placeholder"
             },
             "body": [
                 {
@@ -450,9 +450,9 @@
             "meta": {
                 "description": "How reusable patterns make small sites stronger.",
                 "excerpt": "A small set of dependable patterns can carry a whole site.",
-                "thumbnail": "600x350.png",
+                "thumbnail": ":placeholder",
                 "author": "Josiah Barclay",
-                "author_image": "40x40.png"
+                "author_image": ":placeholder"
             },
             "body": [
                 {
@@ -512,11 +512,11 @@
             "footer": "site-footer",
             "meta": {
                 "description": "A focused digital experience built for a growing team.",
-                "thumbnail": "600x400.png",
+                "thumbnail": ":placeholder",
                 "gallery": [
-                    "1300x700.png",
-                    "600x400.png",
-                    "600x400.png"
+                    ":placeholder",
+                    ":placeholder",
+                    ":placeholder"
                 ],
                 "project_url": "#"
             },
@@ -543,11 +543,11 @@
             "footer": "site-footer",
             "meta": {
                 "description": "A responsive platform designed around real user needs.",
-                "thumbnail": "600x400.png",
+                "thumbnail": ":placeholder",
                 "gallery": [
-                    "1300x700.png",
-                    "600x400.png",
-                    "600x400.png"
+                    ":placeholder",
+                    ":placeholder",
+                    ":placeholder"
                 ],
                 "project_url": "#"
             },
@@ -611,7 +611,7 @@
                     "props": {
                         "title": "Our Services",
                         "subtitle": "Practical solutions designed to move your business forward.",
-                        "image": "placeholder.png"
+                        "image": ":placeholder"
                     },
                     "children": []
                 },
@@ -625,7 +625,7 @@
                                 "title": "Strategy & Planning",
                                 "text": "Clear roadmaps built around your real business goals.",
                                 "icon": "🧭",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -635,7 +635,7 @@
                                 "title": "Execution & Delivery",
                                 "text": "We turn plans into action and ship real results.",
                                 "icon": "⚙️",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -645,7 +645,7 @@
                                 "title": "Review & Optimization",
                                 "text": "Continuous improvement based on measurable outcomes.",
                                 "icon": "🔍",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         }
@@ -754,7 +754,7 @@
                     "props": {
                         "title": "404 – Not found",
                         "subtitle": "There could be a page here, but we didn’t make one. Sorry!",
-                        "image": "placeholder.png"
+                        "image": ":placeholder"
                     },
                     "children": []
                 },
@@ -788,7 +788,7 @@
                     "props": {
                         "title": "Launch week is here",
                         "subtitle": "Five days of new features, live sessions and early access for our readers.",
-                        "image": "600x400.png",
+                        "image": ":placeholder",
                         "btn1_url": "/blog/",
                         "btn1_text": "Read the announcements",
                         "btn2_url": "/contact/",
@@ -806,7 +806,7 @@
                                 "title": "Monday — New features",
                                 "text": "A tour of everything shipping this week.",
                                 "icon": "bi-stars",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -816,7 +816,7 @@
                                 "title": "Wednesday — Live session",
                                 "text": "Bring your questions; we answer them on air.",
                                 "icon": "bi-broadcast",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         },
@@ -826,7 +826,7 @@
                                 "title": "Friday — Early access",
                                 "text": "Newsletter readers get the first invite.",
                                 "icon": "bi-envelope-open",
-                                "image": "placeholder.png"
+                                "image": ":placeholder"
                             },
                             "children": []
                         }
