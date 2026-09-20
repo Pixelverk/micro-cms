@@ -64,7 +64,7 @@ return [
             <?= render_image($img ?? '', ['class' => 'card-img-top', 'alt' => '...']) ?>
             <div class="card-body p-4">
                 <div class="badge bg-primary bg-gradient rounded-pill mb-2">News</div>
-                <a class="text-decoration-none link-dark stretched-link" href="#!"><h5 class="card-title mb-3"><?= e($title)?></h5></a>
+                <a class="text-decoration-none link-dark stretched-link" href="#!"><h2 class="h5 card-title mb-3"><?= e($title)?></h2></a>
                 <p class="card-text mb-0"><?= e($text)?></p>
             </div>
             <div class="card-footer p-4 pt-0 bg-transparent border-top-0">

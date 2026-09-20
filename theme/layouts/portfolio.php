@@ -46,7 +46,7 @@ if (!$images) {
                 <div class="col-lg-6">
                     <div class="mb-5">
                         <?php render_components($page['components'] ?? [], $page, $collectedJs, $collectedCss); ?>
-                        <?php if (!empty($meta['project_url'])): ?><a class="text-decoration-none" href="<?= e($meta['project_url']) ?>">View project <i class="bi bi-arrow-right"></i></a><?php endif; ?>
+                        <?php if (!empty($meta['project_url'])): ?><a class="text-decoration-none" href="<?= e($meta['project_url']) ?>">View project <?= theme_icon('arrow-right') ?></a><?php endif; ?>
                     </div>
                 </div>
             </div>

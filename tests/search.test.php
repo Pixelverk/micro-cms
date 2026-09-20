@@ -78,13 +78,13 @@ t('search_extract_text() separates block elements', function () {
 });
 
 t('search_extract_text() skips non-prose props', function () {
-    $body = ['type' => 'hero-section', 'props' => ['image' => 'hero.png', 'icon' => 'bi-star', 'title' => 'Real title']];
+    $body = ['type' => 'hero-section', 'props' => ['image' => 'hero.png', 'icon' => 'star-glyph', 'title' => 'Real title']];
 
     $text = search_extract_text($body);
 
     assert_contains('Real title', $text);
     assert_not_contains('hero.png', $text, 'image references are not searchable');
-    assert_not_contains('bi-star', $text, 'icon classes are not searchable');
+    assert_not_contains('star-glyph', $text, 'icon names are not searchable');
 });
 
 t('search_build_text() includes the title, meta and body', function () {

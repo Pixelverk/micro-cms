@@ -1546,6 +1546,11 @@ t('the editor offers the component library as a dialog, not a drag palette', fun
 
     // The name-only list is gone.
     assert_not_contains('draggable-component', $editor);
+
+    // The icon browser ships with the editor, one tile per icon the theme has.
+    assert_contains('id="icon-picker"', $editor, 'the icon browser is in the page');
+    assert_contains('data-icon="collection"', $editor, 'with the theme\'s icons as tiles');
+    assert_contains('data-icon-picker', $editor, 'and the field that stores the choice');
 });
 
 t('an autosave draft can be dismissed from the editor', function () use ($base) {

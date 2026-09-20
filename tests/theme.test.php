@@ -116,6 +116,62 @@ t('every theme component follows the component contract', function () {
     }
 });
 
+t('the theme ships its icons as SVG files, and inlines the one a component asks for', function () {
+    $icons = theme_icons();
+
+    assert_true(count($icons) >= 20, 'the theme offers a browsable set of icons');
+
+    foreach (['arrow-right', 'check', 'star-fill', 'x'] as $name) {
+        assert_true(in_array($name, $icons, true), "{$name} is in the set");
+    }
+
+    // The theme's stylesheets are its own files and it vendors nothing, so
+    // there is no icon font to load however the page is built.
+    assert_eq(['layout.css', 'utilities.css', 'style.css'], theme_config()['styles'] ?? [], 'the theme loads its own stylesheets');
+    assert_true(!is_dir(CMS_PATH . '/theme/assets/vendor'), 'the theme vendors no third-party assets');
+
+    $icon = theme_icon('arrow-right');
+
+    assert_contains('<svg', $icon, 'the icon is inlined');
+    assert_contains('width="1em" height="1em"', $icon, 'sized in text');
+    assert_contains('fill="currentColor"', $icon, 'and coloured by the text around it');
+    assert_contains('class="theme-icon"', $icon);
+    assert_contains('aria-hidden="true"', $icon, 'an icon carries no meaning of its own');
+
+    // A class travels through, so a theme can colour or size one icon.
+    assert_contains('class="theme-icon text-primary"', theme_icon('check', 'theme-icon text-primary'));
+
+    // The name is the file name: anything the theme does not ship renders
+    // nothing rather than a broken box, and a path is not a name.
+    assert_eq('', theme_icon('not-an-icon'));
+    assert_eq('', theme_icon('../../config'));
+    assert_eq('', theme_icon(''));
+});
+
+t('component cards keep the heading order of the page they sit in', function () {
+    $render = function (string $name, array $props): string {
+        $js = [];
+        $css = [];
+
+        ob_start();
+        component($name, $props, ['title' => 'Test', 'type' => 'page'], $js, $css);
+
+        return (string) ob_get_clean();
+    };
+
+    // The audit flagged an h5 title under an h2 section heading, which skips
+    // levels. Card titles are h2s styled small, like feature-card.
+    foreach ([
+        'blog-card'   => ['title' => 'Post', 'text' => 'Text'],
+        'team-member' => ['name' => 'Ada', 'role' => 'Engineer'],
+    ] as $name => $props) {
+        $markup = $render($name, $props);
+
+        assert_contains('<h2 class="h5', $markup, "{$name} titles with an h2 styled as an h5");
+        assert_not_contains('<h5', $markup, "{$name} never skips to an h5");
+    }
+});
+
 t('every component the library offers is described and previewed', function () {
     $config  = theme_config();
     $headers = array_keys($config['headers'] ?? []);
@@ -547,10 +603,10 @@ t('asset() stamps theme assets with their modification time', function () {
 
     assert_eq(url('theme/assets/style.css') . '?v=' . filemtime($style), asset('style.css'), 'a plain name is stamped');
 
-    $icons = CMS_PATH . '/theme/assets/vendor/bootstrap-icons/bootstrap-icons.css';
+    $icons = CMS_PATH . '/theme/assets/icons/arrow-right.svg';
     assert_eq(
-        url('theme/assets/vendor/bootstrap-icons/bootstrap-icons.css') . '?v=' . filemtime($icons),
-        asset('vendor/bootstrap-icons/bootstrap-icons.css'),
+        url('theme/assets/icons/arrow-right.svg') . '?v=' . filemtime($icons),
+        asset('icons/arrow-right.svg'),
         'a nested path is stamped too'
     );
 

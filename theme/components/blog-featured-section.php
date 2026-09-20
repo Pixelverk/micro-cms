@@ -37,7 +37,7 @@ CSS,
                                 <div class="badge bg-primary bg-gradient rounded-pill mb-2">News</div>
                                 <div class="h2 fw-bolder"><?= e($post['title']) ?></div>
                                 <?php if ($excerpt): ?><p><?= e($excerpt) ?></p><?php endif; ?>
-                                <a class="stretched-link text-decoration-none" href="<?= e(url('blog/' . $slug)) ?>">Read more <i class="bi bi-arrow-right"></i></a>
+                                <a class="stretched-link text-decoration-none" href="<?= e(url('blog/' . $slug)) ?>">Read more <?= theme_icon('arrow-right') ?></a>
                             </div>
                         </div>
                         <div class="col-lg-6 col-xl-7">

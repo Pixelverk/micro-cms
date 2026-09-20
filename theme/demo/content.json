@@ -37,7 +37,7 @@
                             "props": {
                                 "title": "Fast Delivery",
                                 "text": "We deliver your project on time.",
-                                "icon": "bi-collection"
+                                "icon": "collection"
                             },
                             "children": []
                         },
@@ -46,7 +46,7 @@
                             "props": {
                                 "title": "Proven Results",
                                 "text": "We focus on outcomes, not buzzwords.",
-                                "icon": "bi-building"
+                                "icon": "building"
                             },
                             "children": []
                         },
@@ -55,7 +55,7 @@
                             "props": {
                                 "title": "Proven Results",
                                 "text": "We focus on outcomes, not buzzwords.",
-                                "icon": "bi-toggles2"
+                                "icon": "toggles2"
                             },
                             "children": []
                         },
@@ -64,7 +64,7 @@
                             "props": {
                                 "title": "Clear Communication",
                                 "text": "You always know what’s happening.",
-                                "icon": "bi-toggles2"
+                                "icon": "toggles2"
                             },
                             "children": []
                         }
@@ -624,7 +624,7 @@
                             "props": {
                                 "title": "Strategy & Planning",
                                 "text": "Clear roadmaps built around your real business goals.",
-                                "icon": "🧭",
+                                "icon": "compass",
                                 "image": ":placeholder"
                             },
                             "children": []
@@ -634,7 +634,7 @@
                             "props": {
                                 "title": "Execution & Delivery",
                                 "text": "We turn plans into action and ship real results.",
-                                "icon": "⚙️",
+                                "icon": "gear",
                                 "image": ":placeholder"
                             },
                             "children": []
@@ -644,7 +644,7 @@
                             "props": {
                                 "title": "Review & Optimization",
                                 "text": "Continuous improvement based on measurable outcomes.",
-                                "icon": "🔍",
+                                "icon": "search",
                                 "image": ":placeholder"
                             },
                             "children": []
@@ -684,7 +684,7 @@
                         "form_type": "contact",
                         "title": "Get in touch",
                         "description": "We'd love to hear from you",
-                        "icon": "bi-envelope",
+                        "icon": "envelope",
                         "success_message": "Thanks! Your message has been sent.",
                         "error_message": "Something went wrong. Please try again later."
                     },
@@ -699,7 +699,7 @@
                             "props": {
                                 "title": "Chat with us",
                                 "text": "Chat live with one of our support specialists.",
-                                "icon": "bi-chat-dots"
+                                "icon": "chat-dots"
                             },
                             "children": []
                         },
@@ -708,7 +708,7 @@
                             "props": {
                                 "title": "Ask the community",
                                 "text": "Explore our community forums and communicate with other users.",
-                                "icon": "bi-people"
+                                "icon": "people"
                             },
                             "children": []
                         },
@@ -717,7 +717,7 @@
                             "props": {
                                 "title": "Support center",
                                 "text": "Browse FAQ's and support articles to find solutions.",
-                                "icon": "bi-question-circle"
+                                "icon": "question-circle"
                             },
                             "children": []
                         },
@@ -726,7 +726,7 @@
                             "props": {
                                 "title": "Call us",
                                 "text": "Call us during normal business hours at (555) 892-9403.",
-                                "icon": "bi-telephone"
+                                "icon": "telephone"
                             },
                             "children": []
                         }
@@ -805,7 +805,7 @@
                             "props": {
                                 "title": "Monday — New features",
                                 "text": "A tour of everything shipping this week.",
-                                "icon": "bi-stars",
+                                "icon": "stars",
                                 "image": ":placeholder"
                             },
                             "children": []
@@ -815,7 +815,7 @@
                             "props": {
                                 "title": "Wednesday — Live session",
                                 "text": "Bring your questions; we answer them on air.",
-                                "icon": "bi-broadcast",
+                                "icon": "broadcast",
                                 "image": ":placeholder"
                             },
                             "children": []
@@ -825,7 +825,7 @@
                             "props": {
                                 "title": "Friday — Early access",
                                 "text": "Newsletter readers get the first invite.",
-                                "icon": "bi-envelope-open",
+                                "icon": "envelope-open",
                                 "image": ":placeholder"
                             },
                             "children": []

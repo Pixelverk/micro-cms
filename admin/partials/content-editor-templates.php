@@ -114,6 +114,26 @@
     </label>
 </template>
 
+<!-- Icon picker field -->
+<template id="icon-template">
+    <label class="field">
+        <span class="field-label"></span>
+        <div class="icon-picker-wrapper">
+            <!-- Stores the icon's name; the browser writes it -->
+            <input type="hidden" class="field-input" data-icon-picker>
+
+            <!-- The chosen glyph, copied out of the browser's own markup -->
+            <span class="icon-preview" aria-hidden="true"></span>
+            <span class="icon-name"></span>
+
+            <div class="icon-picker-actions">
+                <button type="button" class="select-icon-btn"><?= e(admin_trans('editor_select_icon')) ?></button>
+                <button type="button" class="clear-icon-btn"><?= e(admin_trans('common_clear')) ?></button>
+            </div>
+        </div>
+    </label>
+</template>
+
 <!-- Image picker field -->
 <template id="image-template">
     <label class="field">

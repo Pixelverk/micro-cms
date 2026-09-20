@@ -56,6 +56,13 @@
     width: 150px;
 }
 
+/* Icons are inline SVG (theme_icon(); the artwork lives in theme/assets/icons/).
+   They are sized and coloured by the helper; the baseline offset is what the
+   icon font used, so text and icon still line up. */
+.theme-icon {
+    vertical-align: -0.125em;
+}
+
 /* Default theme surface */
 :root {
     --theme-primary: #0d6efd;

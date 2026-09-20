@@ -12,8 +12,7 @@ folder.
 | 1 | `layout.css` | Page scaffolding (sticky footer, full-height body) |
 | 2 | `utilities.css` | The shared class layer |
 | 3 | `style.css` | Theme tokens and theme-wide element rules |
-| 4 | `vendor/bootstrap-icons/bootstrap-icons.css` | Icon font |
-| 5 | *(injected)* | Per-component CSS, collected by `core/render.php` |
+| 4 | *(injected)* | Per-component CSS, collected by `core/render.php` |
 
 Component CSS is injected after the stylesheets, so a component can always
 override the shared layer on equal specificity.
@@ -157,6 +156,40 @@ A component with neither still appears, on a neutral tile, so a theme with no
 previews works. The Health page warns about a preview file that matches no
 component and about one in a format the picker does not read.
 
+## Icons
+
+The theme owns its icons, the way the admin area owns its own: one SVG file per
+icon in `theme/assets/icons/`, and `theme_icon('name')` inlines one where it is
+used.
+
+```php
+<a href="…">Read more <?= theme_icon('arrow-right') ?></a>
+<div class="feature"><?= theme_icon($icon) ?></div>
+```
+
+The helper sets `width`/`height` to `1em` and `fill="currentColor"`, so an icon
+scales with the text and takes its colour (and any extra class you pass, such as
+`.text-primary`). It adds `aria-hidden="true"` because every icon decorates a
+label that is already on the page. `theme_icons()` returns the names, sorted.
+
+A file is bare artwork — no `width`, no `height`, no `fill`:
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <path d="…"/>
+</svg>
+```
+
+Drop one in and it is available everywhere: to a component through
+`theme_icon()`, and to an editor through the `icon` schema field, which opens an
+icon browser built from this folder. A name the theme does not ship renders
+nothing rather than a broken box, and the name is the file name: `arrow-right`
+draws `arrow-right.svg`, nothing else.
+
+There is no icon font: a webfont costs every visitor a stylesheet listing every
+glyph plus the font file, is render-blocking, and fixes the set of icons to
+someone else's library. Files in this folder are the set.
+
 ## Vendored third-party code
 
 External libraries are committed, never loaded from a CDN:
@@ -165,8 +198,6 @@ External libraries are committed, never loaded from a CDN:
   when a content type can render a rich-text field.
 * `admin/assets/vendor/sortable/` — Sortable 1.15.0 (drag and drop), MIT.
   Shipped to every content editor.
-* `theme/assets/vendor/bootstrap-icons/` — the theme's icon font. Ships
-  `.woff2` only; a browser without woff2 support falls back to the system font.
 
 Each keeps its upstream `LICENSE`. To upgrade, replace the files and update
 the version note above; there is no package manager involved.

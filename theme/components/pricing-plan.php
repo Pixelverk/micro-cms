@@ -67,7 +67,7 @@ return [
         <div class="card mb-5 mb-xl-0">
             <div class="card-body p-5">
                 <div class="small text-uppercase fw-bold <?= $featured ? '' : 'text-muted' ?>">
-                    <?php if ($featured): ?><i class="bi bi-star-fill text-warning"></i><?php endif; ?>
+                    <?php if ($featured): ?><?= theme_icon('star-fill', 'theme-icon text-warning') ?><?php endif; ?>
                     <?= e($props['name'] ?? '') ?>
                 </div>
                 <div class="mb-3">
@@ -78,7 +78,7 @@ return [
                     <?php foreach ($features as $feature): ?>
                         <?php $available = !str_starts_with($feature, '-'); $label = ltrim($feature, '-'); ?>
                         <li class="mb-2 <?= $available ? '' : 'text-muted' ?>">
-                            <i class="bi <?= $available ? 'bi-check text-primary' : 'bi-x' ?>"></i>
+                            <?= theme_icon($available ? 'check' : 'x', $available ? 'theme-icon text-primary' : 'theme-icon') ?>
                             <?= e($label) ?>
                         </li>
                     <?php endforeach; ?>

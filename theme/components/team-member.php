@@ -57,7 +57,7 @@ return [
     <div class="col mb-5 mb-xl-0">
         <div class="text-center">
             <?= render_image($imageValue, $imageAttrs) ?>
-            <h5 class="fw-bolder"><?= e($props['name'] ?? '') ?></h5>
+            <h2 class="h5 fw-bolder"><?= e($props['name'] ?? '') ?></h2>
             <div class="fst-italic text-muted"><?= e($props['role'] ?? '') ?></div>
         </div>
     </div>

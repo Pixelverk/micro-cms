@@ -228,7 +228,6 @@ return [
         'layout.css',
         'utilities.css',
         'style.css',
-        'vendor/bootstrap-icons/bootstrap-icons.css',
     ],
 
     /*

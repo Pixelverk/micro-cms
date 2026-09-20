@@ -311,6 +311,22 @@ t('the content editor puts SEO & social under both columns', function () {
     assert_not_contains('position: sticky', $sidebarRule, 'the content editor column does not stick');
 });
 
+t('the icon field offers the theme\'s icons as a browser', function () {
+    $js = (string) file_get_contents(CMS_PATH . '/admin/assets/content-editor.js');
+
+    assert_contains("case 'icon': tpl = iconTemplate", $js, 'the field type has its own template');
+    assert_contains("document.querySelectorAll('#icon-picker [data-icon]')", $js, 'the browser\'s glyphs are the tiles');
+    assert_contains('function showIconPreview', $js);
+
+    $template = (string) file_get_contents(CMS_PATH . '/admin/partials/content-editor-templates.php');
+    assert_contains('id="icon-template"', $template);
+    assert_contains('data-icon-picker', $template, 'the field stores the icon name');
+
+    // Components ask for an icon by name; the theme decides what exists.
+    assert_contains("'type' => 'icon'", (string) file_get_contents(CMS_PATH . '/theme/components/feature-card.php'));
+    assert_contains("'type' => 'icon'", (string) file_get_contents(CMS_PATH . '/theme/components/contact-section.php'));
+});
+
 t('the component editor keeps the Add area under the last component', function () {
     $js = (string) file_get_contents(CMS_PATH . '/admin/assets/content-editor.js');
 
@@ -372,6 +388,7 @@ t('every dialog is a labelled modal that the helper can manage', function () {
         'admin/partials/confirm.php',
         'admin/partials/image-picker.php',
         'admin/partials/component-picker.php',
+        'admin/partials/icon-picker.php',
         'admin/utilities.php',
         'admin/messages.php',
         'admin/media/index.php',

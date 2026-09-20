@@ -35,10 +35,10 @@ return [
         'default' => 'Send us a message and we will get back to you.'
     ],
     'icon' => [
-        'type' => 'text',
+        'type' => 'icon',
         'label' => 'Header Icon',
         'required' => false,
-        'default' => 'bi-envelope'
+        'default' => 'envelope'
     ],
     'success_message' => [
         'type' => 'text',
@@ -85,7 +85,8 @@ return [
         <div class="container px-5">
             <div class="bg-light rounded-3 py-5 px-4 px-md-5 mb-5">
                 <div class="text-center mb-5">
-                    <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi <?= e($icon ?? 'bi-envelope') ?>"></i></div>
+                    <?php $iconMarkup = theme_icon((string) ($icon ?? 'envelope')); ?>
+                    <?php if ($iconMarkup !== ''): ?><div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><?= $iconMarkup ?></div><?php endif; ?>
                     <?php if (!empty($title)): ?>
                         <h2 class="h1 fw-bolder"><?= e($title) ?></h2>
                     <?php endif; ?>

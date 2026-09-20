@@ -26,10 +26,10 @@ return [
         'default' => 'Default Text'
     ],
     'icon' => [
-        'type' => 'string',
+        'type' => 'icon',
         'label' => 'Feature Icon',
         'required' => false,
-        'default' => 'bi-collection'
+        'default' => 'collection'
     ]
 ],
 
@@ -86,7 +86,8 @@ CSS,
 
     ?>
     <div id="<?= $id ?>" class="col mb-5 h-100">
-        <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi <?= e($icon)?>"></i></div>
+        <?php $iconMarkup = theme_icon((string) ($icon ?? '')); ?>
+        <?php if ($iconMarkup !== ''): ?><div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><?= $iconMarkup ?></div><?php endif; ?>
         <h2 class="h5"><?= e($title)?></h2>
         <p class="mb-0"><?= e($text)?></p>
     </div>

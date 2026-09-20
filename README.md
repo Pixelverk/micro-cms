@@ -83,7 +83,9 @@ All requests should go through `index.php` and the .htaccess for proper handling
 
 Make sure there are sufficient permissions to write files in `storage`.
 
-The demo data and storage folder will be created automatically if no `storage/data.sqlite` file exists.
+The storage folder will be created automatically if no `storage/data.sqlite` file exists.
+
+When logged in, you can run one of the utility tools to fill the site with demo-data from the default theme.
 
 Check the config.php file to make sure `setup_completed` is set to `false` for the first visit.
 
@@ -138,9 +140,7 @@ Demo accounts, one per role. The password is the username:
 
 ### Planned
 
-The plan of record is [`plan.md`](plan.md). The programme that built the CMS —
-including the deferred multi-language design — is kept as
-[`old-plan.md`](old-plan.md).
+The plan of record is [`plan.md`](plan.md). The programme that built the CMS — including the deferred multi-language design — is kept as [`old-plan.md`](old-plan.md).
 
 ### Maybe
 

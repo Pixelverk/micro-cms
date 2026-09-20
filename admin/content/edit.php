@@ -800,6 +800,7 @@ window.csrfToken = <?= json_encode(csrf_token()) ?>;
 
 <?php include CMS_PATH . '/admin/partials/image-picker.php'; ?>
 <?php include CMS_PATH . '/admin/partials/component-picker.php'; ?>
+<?php include CMS_PATH . '/admin/partials/icon-picker.php'; ?>
 <?php include CMS_PATH . '/admin/partials/content-editor-templates.php'; ?>
 <script type="module" src="<?= admin_asset('admin/assets/content-editor.js') ?>"></script>
 

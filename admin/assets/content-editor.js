@@ -27,6 +27,16 @@ const emailTemplate = document.getElementById('email-template');
 const quillTemplate = document.getElementById('quill-editor-template');
 const selectTemplate = document.getElementById('select-template');
 const imageTemplate = document.getElementById('image-template');
+const iconTemplate = document.getElementById('icon-template');
+
+// The icon browser's tiles are the inline SVGs themselves. Collect them up
+// front, because the components on the page are built before the dialog is
+// wired and each icon field paints its current glyph immediately.
+const iconGlyphs = {};
+
+document.querySelectorAll('#icon-picker [data-icon]').forEach(tile => {
+    iconGlyphs[tile.dataset.icon] = tile.querySelector('svg')?.outerHTML || '';
+});
 
 // ----------------------------
 // Create a component from schema + data
@@ -71,6 +81,7 @@ function createComponent(type, data = {}) {
             case 'quill': tpl = quillTemplate; break;
             case 'select': tpl = selectTemplate; break;
             case 'image': tpl = imageTemplate; break;
+            case 'icon': tpl = iconTemplate; break;
             default: tpl = fieldTemplate;
         }
 
@@ -134,6 +145,20 @@ function createComponent(type, data = {}) {
 
             fieldNode.querySelector('.select-image-btn').addEventListener('click', (event) => openImagePicker(input, event.currentTarget));
             fieldNode.querySelector('.clear-image-btn').addEventListener('click', () => clearImagePicker(input));
+
+            fieldsContainer.appendChild(fieldNode);
+            continue;
+        }
+
+        // icon picker
+        if (fieldType === 'icon') {
+            input.name = `components[][props][${name}]`;
+            input.value = value || '';
+
+            showIconPreview(input);
+
+            fieldNode.querySelector('.select-icon-btn').addEventListener('click', (event) => openIconPicker(input, event.currentTarget));
+            fieldNode.querySelector('.clear-icon-btn').addEventListener('click', () => clearIconPicker(input));
 
             fieldsContainer.appendChild(fieldNode);
             continue;
@@ -625,6 +650,60 @@ function getPreviewUrl(img) {
 
 // initial attach
 attachImagePicker();
+
+// ----------------------------
+// Icon picker
+// ----------------------------
+// The browser's tiles carry the inline SVG, so the glyph is copied rather than
+// fetched, and the field beside it names the icon the editor chose.
+const iconPickerModal = document.getElementById('icon-picker');
+let currentIconField = null;
+
+if (iconPickerModal) {
+    iconPickerModal.querySelectorAll('[data-icon]').forEach(tile => {
+        tile.addEventListener('click', () => chooseIcon(tile.dataset.icon));
+    });
+
+    iconPickerModal.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', () => closeDialog(iconPickerModal));
+    });
+
+    iconPickerModal.addEventListener('click', event => {
+        if (event.target === iconPickerModal) closeDialog(iconPickerModal);
+    });
+}
+
+function openIconPicker(fieldInput, trigger = null) {
+    currentIconField = fieldInput;
+    openDialog(iconPickerModal, trigger);
+}
+
+function chooseIcon(name) {
+    if (!currentIconField) return;
+
+    currentIconField.value = name;
+    showIconPreview(currentIconField);
+    closeDialog(iconPickerModal);
+    currentIconField = null;
+}
+
+function clearIconPicker(input) {
+    input.value = '';
+    showIconPreview(input);
+}
+
+// Paint the stored icon, or say so when there is none. A name the theme does not
+// ship (content written for another icon set, or a file the theme dropped) shows
+// its name rather than nothing, so it can be corrected.
+function showIconPreview(input) {
+    const wrapper = input.closest('.icon-picker-wrapper');
+    if (!wrapper) return;
+
+    const name = input.value || '';
+
+    wrapper.querySelector('.icon-preview').innerHTML = iconGlyphs[name] || '';
+    wrapper.querySelector('.icon-name').textContent = name || t('editor_no_icon', 'No icon');
+}
 
 // ----------------------------
 // Repeatable gallery meta fields
