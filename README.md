@@ -138,14 +138,13 @@ Demo accounts, one per role. The password is the username:
 
 ### Planned
 
-The phased plan of record is [`plan.md`](plan.md): Wave 1 is nearly shipped —
-expiry is deliberately not a feature, and Wave 2 adds depth
-and Wave 3 is opportunistic. The multi-language front end is a deferred track in
-the same file.
+The plan of record is [`plan.md`](plan.md). The programme that built the CMS —
+including the deferred multi-language design — is kept as
+[`old-plan.md`](old-plan.md).
 
 ### Maybe
 
-Smaller opportunities are tracked in Wave 3 of [`plan.md`](plan.md).
+Unscheduled ideas are listed under Backlog in [`plan.md`](plan.md).
 
 ---
 

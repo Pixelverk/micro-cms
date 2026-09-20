@@ -14,9 +14,10 @@ Editors manage content. Design and structure live in `theme/`.
 
 ## Plan of record
 
-`plan.md` is the single plan of record: scope, phase order, the verification bar
-and the non-goals. Keep it the only plan document — extend it rather than adding
-another `*plan*.md`, and update it when a phase ships.
+`plan.md` is the single plan of record for what is next: scope, phase order, the
+verification bar and the non-goals. `old-plan.md` is the completed programme,
+kept as history — extend `plan.md` rather than adding another `*plan*.md`, never
+add phases to `old-plan.md`, and update `plan.md` when a phase ships.
 
 ## Commands
 
@@ -191,11 +192,10 @@ block before including the layout.
   Admin → Health reports this class directly; run it before blaming code.
 * **HTML minification** only runs when `config('env') === 'production'`;
   component JS is collected and wrapped in a `DOMContentLoaded` handler.
-* **The admin UI may assume JavaScript. The public front end may not.** In the
-  admin, a control that saves when it changes can use an inline
-  `onchange="this.form.submit()"` (the form inbox's status select does) and needs
-  no submit-button fallback. Keep the public theme rendering without script:
-  navigation, menus and forms there must not depend on JS.
+* **The admin UI and the public theme may assume JavaScript.** A control that
+  saves when it changes can use an inline `onchange="this.form.submit()"` (the
+  form inbox's status select does) and needs no submit-button fallback; the
+  public navigation, menus and forms may use theme scripts to work.
 * `config.php` controls `env`, `url`, `perf_logging`, `setup_completed`, session
   timeout, security policy, `cache_lifetime`, activity-log retention, and
   version retention (`versions.keep`).

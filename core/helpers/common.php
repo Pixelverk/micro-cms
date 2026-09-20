@@ -45,7 +45,8 @@ function config(string $key, mixed $default = null): mixed
 | A conservative baseline sent with every response. No Content-Security-Policy
 | is set here on purpose: the admin boots from inline scripts and the Settings
 | screen deliberately allows raw header/footer snippets, so a useful policy
-| would need either nonce plumbing or 'unsafe-inline'. See plan.md phase 6.
+| would need either nonce plumbing or 'unsafe-inline'. See the CSP entry in
+| plan.md's backlog.
 */
 
 /**
