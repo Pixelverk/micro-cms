@@ -267,6 +267,25 @@ a:focus-visible,
     white-space: nowrap;
 }
 
+/* The first focusable element on every admin page; visible only when focused. */
+.skip-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1100;
+    padding: 0.6rem 1rem;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border-radius: 0 0 var(--radius-sm) 0;
+    text-decoration: none;
+    transform: translateY(-120%);
+    transition: transform var(--transition-fast) var(--ease);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
 .block { display: block; }
 
 .inline { display: inline; }

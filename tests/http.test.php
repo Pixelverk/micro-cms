@@ -246,6 +246,37 @@ t('every layout the theme ships is reachable on the front end', function () use 
     assert_not_contains('navbar', $landing, 'a landing page does not');
 });
 
+t('every page has one h1 and a skip link through to the main content', function () use ($base) {
+    // Covers one URL per layout plus the pages that combine several sections,
+    // which is where a second <h1> used to appear.
+    $paths = [
+        '/', '/about/', '/services/', '/pricing/', '/faq/', '/blog/',
+        '/portfolio/', '/privacy/', '/contact/', '/landing/',
+        '/blog/welcome-to-our-blog/', '/portfolio/project-one/',
+        '/category/news/', '/category/design/', '/search?q=launch',
+    ];
+
+    foreach ($paths as $path) {
+        [$status, $body] = http('GET', $base . $path, false);
+
+        assert_eq(200, $status, "{$path} renders");
+        assert_eq(1, substr_count($body, '<h1'), "{$path} has exactly one h1");
+        assert_contains('class="skip-link" href="#main-content"', $body, "{$path} offers a skip link");
+        assert_contains('<main id="main-content"', $body, "{$path} marks the skip target");
+
+        assert_true(
+            strpos($body, 'class="skip-link"') < strpos($body, '<main id="main-content"'),
+            "{$path} puts the skip link before the main landmark"
+        );
+    }
+
+    // The synthesised 404 renders through the same layouts.
+    [$status, $missing] = http('GET', $base . '/definitely-not-a-page/', false);
+
+    assert_eq(404, $status);
+    assert_eq(1, substr_count($missing, '<h1'), 'the 404 page has exactly one h1');
+});
+
 t('the navigation marks the current page and its section', function () use ($base) {
     // Markup, not script: a visitor without JavaScript sees the same thing.
     [$status, $about] = http('GET', $base . '/about/', false);

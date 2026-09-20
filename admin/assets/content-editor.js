@@ -125,7 +125,7 @@ function createComponent(type, data = {}) {
 
             showImagePickerPreview(input);
 
-            fieldNode.querySelector('.select-image-btn').addEventListener('click', () => openImagePicker(input));
+            fieldNode.querySelector('.select-image-btn').addEventListener('click', (event) => openImagePicker(input, event.currentTarget));
             fieldNode.querySelector('.clear-image-btn').addEventListener('click', () => clearImagePicker(input));
 
             fieldsContainer.appendChild(fieldNode);
@@ -472,16 +472,16 @@ const imageSearch = document.getElementById('image-search');
 let currentImageField = null;
 
 // Open modal for a given input
-function openImagePicker(fieldInput) {
+function openImagePicker(fieldInput, trigger = null) {
     currentImageField = fieldInput;
     renderImageGrid(window.mediaImages || []);
-    imagePickerModal.classList.remove('hidden');
+    openDialog(imagePickerModal, trigger);
     imageSearch.value = '';
 }
 
 // Close modal
 function closeImagePicker() {
-    imagePickerModal.classList.add('hidden');
+    closeDialog(imagePickerModal);
     currentImageField = null;
 }
 
@@ -504,14 +504,27 @@ function renderImageGrid(images) {
         el.title = img.original_name;
         el.dataset.id = img.id;
 
-        el.addEventListener('click', () => {
+        // Clickable-only would strand keyboard users, so it is also a button.
+        el.tabIndex = 0;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', img.original_name);
+
+        const choose = () => {
             if (!currentImageField) return;
 
             currentImageField.value = img.id; // save DB id
             showImagePickerPreview(currentImageField);
 
             closeImagePicker();
-        });       
+        };
+
+        el.addEventListener('click', choose);
+        el.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+
+            event.preventDefault();
+            choose();
+        });
 
         imageGrid.appendChild(el);
     });
@@ -542,7 +555,7 @@ function attachImagePicker() {
 
         const wrapper = input.closest('.image-picker-wrapper');
 
-        wrapper?.querySelector('.select-image-btn')?.addEventListener('click', () => openImagePicker(input));
+        wrapper?.querySelector('.select-image-btn')?.addEventListener('click', (event) => openImagePicker(input, event.currentTarget));
         wrapper?.querySelector('.clear-image-btn')?.addEventListener('click', () => clearImagePicker(input));
 
         showImagePickerPreview(input);

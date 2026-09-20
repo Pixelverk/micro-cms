@@ -34,7 +34,7 @@ return [
     padding: 0 1.5rem;
     text-align: center;
 }
-.cms-not-found h1 {
+.cms-not-found h2 {
     margin: 0 0 0.5rem;
 }
 .cms-not-found p {
@@ -48,7 +48,7 @@ CSS,
 'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {
     ?>
     <section class="cms-not-found">
-        <h1><?= e('Page not found') ?></h1>
+        <h2 class="h1"><?= e('Page not found') ?></h2>
         <p><?= e('The page you are looking for does not exist or has been moved.') ?></p>
         <p><a class="btn btn-primary" href="<?= e(url('')) ?>"><?= e('Go to the home page') ?></a></p>
     </section>

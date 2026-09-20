@@ -86,7 +86,7 @@ return [
                 <div class="text-center mb-5">
                     <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi <?= e($icon ?? 'bi-envelope') ?>"></i></div>
                     <?php if (!empty($title)): ?>
-                        <h1 class="fw-bolder"><?= e($title) ?></h1>
+                        <h2 class="h1 fw-bolder"><?= e($title) ?></h2>
                     <?php endif; ?>
                     <?php if (!empty($description)): ?>
                         <p class="lead fw-normal text-muted mb-0"><?= e($description) ?></p>

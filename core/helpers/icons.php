@@ -16,10 +16,11 @@ function icon(string $name, int $size = 24, string $class = ''): string
         $svg = preg_replace('/<svg /', '<svg viewBox="0 0 24 24" ', $svg, 1);
     }
 
-    // Add width, height, and class attributes
+    // Add width, height, class and hide it from assistive technology: every
+    // icon-only control carries its own label.
     $svg = preg_replace(
         '/<svg /',
-        "<svg width=\"{$size}\" height=\"{$size}\" class=\"{$class}\" ",
+        "<svg width=\"{$size}\" height=\"{$size}\" class=\"{$class}\" aria-hidden=\"true\" focusable=\"false\" ",
         $svg,
         1
     );

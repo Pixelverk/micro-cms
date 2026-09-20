@@ -21,7 +21,7 @@ require theme('partials/taxonomy-archive.css.php');
 component($headerComponent, [], $page, $collectedJs, $collectedCss);
 
 // Main content
-echo '<main class="taxonomy-archive-page">';
+echo '<main id="main-content" class="taxonomy-archive-page">';
 echo '<div class="inner flex-column">';
 
 $taxonomy = $page['taxonomy'] ?? null;

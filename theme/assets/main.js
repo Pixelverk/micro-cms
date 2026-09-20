@@ -242,6 +242,61 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /**
+     * Menus: arrow-key navigation through an open dropdown
+     */
+    function dropdownItems(menu) {
+        return [...menu.children]
+            .map(li => li.querySelector(':scope > .dropdown-item, :scope > .dropdown-toggle'))
+            .filter(Boolean);
+    }
+
+    function focusDropdownItem(items, index) {
+        if (!items.length) return;
+
+        const target = items[(index + items.length) % items.length];
+        if (target) target.focus();
+    }
+
+    document.addEventListener('keydown', event => {
+        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+
+        const active = document.activeElement;
+        const menu = active && active.closest ? active.closest('.dropdown-menu') : null;
+
+        if (menu) {
+            event.preventDefault();
+
+            const items = dropdownItems(menu);
+            const index = items.indexOf(active);
+
+            if (event.key === 'Home') focusDropdownItem(items, 0);
+            else if (event.key === 'End') focusDropdownItem(items, items.length - 1);
+            else if (event.key === 'ArrowDown') focusDropdownItem(items, index + 1);
+            else focusDropdownItem(items, index - 1);
+
+            return;
+        }
+
+        const toggle = active && active.closest ? active.closest('.dropdown-toggle') : null;
+
+        if (toggle && event.key === 'ArrowDown') {
+            event.preventDefault();
+
+            const parent = toggle.closest('.dropdown');
+            const target = parent ? parent.querySelector(':scope > .dropdown-menu') : null;
+            if (!target) return;
+
+            if (!target.classList.contains('show')) {
+                closeAllDropdowns();
+                target.classList.add('show');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+
+            focusDropdownItem(dropdownItems(target), 0);
+        }
+    });
+
+    /**
      * Media: Image LQIP blur removal and responsive container sizing
      */
     document.querySelectorAll('.image-wrapper picture img').forEach(img => {

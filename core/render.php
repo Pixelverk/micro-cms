@@ -99,6 +99,7 @@ function render_page(array $page): array
     }
 
     $html = "<!DOCTYPE html>\n<html lang='" . e(get_setting('site_language', 'en')) . "'>\n<head>\n{$head}</head>\n<body>\n";
+    $html .= render_skip_link();
     $html .= render_preview_bar($page);
     $html .= $bodyContent;
     $html .= "</body>\n</html>";
@@ -147,6 +148,18 @@ function inject_site_scripts(string $html): string
     }
 
     return $html;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Skip Link
+|--------------------------------------------------------------------------
+| The first focusable element in the body, so a keyboard user can jump past
+| the navigation. Every theme layout marks its <main> with #main-content.
+*/
+function render_skip_link(): string
+{
+    return '<a class="skip-link" href="#main-content">Skip to main content</a>' . "\n";
 }
 
 /*

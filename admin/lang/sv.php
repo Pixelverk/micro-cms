@@ -35,6 +35,9 @@ return [
     'nav_aria_breadcrumb' => 'Brödsmulor',
     'nav_aria_light' => 'Ljust läge',
     'nav_aria_dark' => 'Mörkt läge',
+    'nav_aria_main' => 'Huvudnavigering',
+    'nav_aria_help' => 'Hjälp',
+    'nav_skip_to_content' => 'Hoppa till huvudinnehållet',
     // Dashboard
     'dashboard_intro' => 'Här finns en översikt av webbplatsen och vad som behöver din uppmärksamhet.',
     'dashboard_maintenance_title' => 'Underhållsläget är på.',
@@ -346,6 +349,8 @@ return [
     'editor_no_child_components' => 'Inga underkomponenter tillåtna',
     'editor_child' => '+ Underobjekt',
     'editor_duplicate' => '⧉ Duplicera',
+    'editor_move_up' => 'Flytta upp',
+    'editor_move_down' => 'Flytta ner',
     'editor_author_cannot_publish' => 'Din roll kan inte publicera; en redaktör eller administratör publicerar detta.',
     'editor_help' => 'Bygg sidan av komponenter och ange sedan detaljer, status och SEO till höger.',
     'editor_help_components' => 'Dra komponenter för att ändra ordning och nästla underkomponenter där komponenten tillåter det.',

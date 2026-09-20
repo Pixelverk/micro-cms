@@ -292,10 +292,10 @@ ob_start();
                Kept outside the table so the rows keep their column count. */ ?>
     <?php foreach ($result['items'] as $row): ?>
         <?php $rowId = (int) $row['id']; ?>
-        <div id="submission-view-<?= $rowId ?>" class="modal-backdrop" hidden>
-            <div class="modal">
+        <div id="submission-view-<?= $rowId ?>" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="submission-view-<?= $rowId ?>-title" hidden>
+            <div class="modal" tabindex="-1">
                 <div class="modal-header">
-                    <h3>
+                    <h3 id="submission-view-<?= $rowId ?>-title">
                         <?= e($formTypes[$row['form_type']]['label'] ?? ucfirst((string) $row['form_type'])) ?>
                         <span class="text-muted"><?= e(format_local_datetime($row['created_at'], 'Y-m-d H:i')) ?></span>
                     </h3>
@@ -411,37 +411,20 @@ if (messagesTypeSelect) {
 
 /* Submission details, in the shared modal style used elsewhere in the admin. */
 (() => {
-    const close = backdrop => {
-        backdrop.hidden = true;
-        backdrop.style.display = '';
-    };
-
     document.querySelectorAll('.js-submission-view').forEach(button => {
         const backdrop = document.getElementById(button.dataset.modal);
         if (!backdrop) return;
 
-        button.addEventListener('click', () => {
-            backdrop.hidden = false;
-            backdrop.style.display = 'flex';
-
-            const focusable = backdrop.querySelector('button');
-            if (focusable) focusable.focus();
-        });
+        button.addEventListener('click', (event) => openDialog(backdrop, event.currentTarget));
 
         // Clicking the backdrop (but not the dialog) closes it.
         backdrop.addEventListener('click', event => {
-            if (event.target === backdrop) close(backdrop);
+            if (event.target === backdrop) closeDialog(backdrop);
         });
 
-        backdrop.querySelectorAll('.js-submission-close').forEach(button => {
-            button.addEventListener('click', () => close(backdrop));
+        backdrop.querySelectorAll('.js-submission-close').forEach(closeButton => {
+            closeButton.addEventListener('click', () => closeDialog(backdrop));
         });
-    });
-
-    document.addEventListener('keydown', event => {
-        if (event.key !== 'Escape') return;
-
-        document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(close);
     });
 })();
 </script>

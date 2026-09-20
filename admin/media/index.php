@@ -351,10 +351,10 @@ if ((int) $result['pages'] > 1) {
          modal per row would be simpler to read but would repeat this markup for
          every file in the library. The variant links are made absolute, so a
          copied one works wherever it is pasted. */ ?>
-<div id="media-view" class="modal-backdrop" data-media-base="<?= e(seo_absolute_url(url('media/'))) ?>" hidden>
-    <div class="modal modal-lg media-modal">
+<div id="media-view" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="media-view-title" data-media-base="<?= e(seo_absolute_url(url('media/'))) ?>" hidden>
+    <div class="modal modal-lg media-modal" tabindex="-1">
         <div class="modal-header">
-            <h3>
+            <h3 id="media-view-title">
                 <span id="media-view-name"></span>
                 <span class="text-muted" id="media-view-meta"></span>
             </h3>
@@ -459,11 +459,6 @@ if ((int) $result['pages'] > 1) {
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
     ));
 
-    const close = () => {
-        backdrop.hidden = true;
-        backdrop.style.display = '';
-    };
-
     const copyText = text => navigator.clipboard?.writeText
         ? navigator.clipboard.writeText(text)
         : new Promise(resolve => {
@@ -529,22 +524,17 @@ if ((int) $result['pages'] > 1) {
 
             sizeSelect.innerHTML = options;
 
-            backdrop.hidden = false;
-            backdrop.style.display = 'flex';
+            openDialog(backdrop, button);
             document.getElementById('media-view-alt').focus();
         });
     });
 
     backdrop.addEventListener('click', event => {
-        if (event.target === backdrop) close();
+        if (event.target === backdrop) closeDialog(backdrop);
     });
 
     backdrop.querySelectorAll('.js-media-close').forEach(button => {
-        button.addEventListener('click', close);
-    });
-
-    document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && !backdrop.hidden) close();
+        button.addEventListener('click', () => closeDialog(backdrop));
     });
 
     copyButton.addEventListener('click', () => {

@@ -541,10 +541,10 @@ ob_start();
 
 <?php /* Export dialog: one document per button, so there is nothing to tick and
          nothing to zip. */ ?>
-<div id="package-export" class="modal-backdrop" hidden>
-    <div class="modal">
+<div id="package-export" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="package-export-title" hidden>
+    <div class="modal" tabindex="-1">
         <div class="modal-header">
-            <h3><?= e(admin_trans('utilities_export_title')) ?></h3>
+            <h3 id="package-export-title"><?= e(admin_trans('utilities_export_title')) ?></h3>
             <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
         </div>
 
@@ -580,10 +580,10 @@ ob_start();
 $importRefused = $importPreview && ($importPreview['errors'] || $importPreview['plan']['problems']);
 $importReady   = $importPreview && !$importRefused;
 ?>
-<div id="package-import" class="modal-backdrop"<?= $importPreview ? ' style="display:flex"' : ' hidden' ?>>
-    <div class="modal modal-lg">
+<div id="package-import" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="package-import-title"<?= $importPreview ? ' style="display:flex"' : ' hidden' ?>>
+    <div class="modal modal-lg" tabindex="-1">
         <div class="modal-header">
-            <h3><?= e(admin_trans('utilities_import_title')) ?></h3>
+            <h3 id="package-import-title"><?= e(admin_trans('utilities_import_title')) ?></h3>
             <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
         </div>
 
@@ -743,39 +743,23 @@ form.querySelectorAll('button[data-action]').forEach(btn => {
 });
 
 /* The content package dialogs. A preview is rendered open by the server, so
-   opening, closing and Escape are all this needs to do. */
+   opening and closing are all this needs to do; the shared dialog helper owns
+   focus, Escape and the backdrop click. */
 (() => {
-    const close = backdrop => {
-        backdrop.hidden = true;
-        backdrop.style.display = '';
-    };
-
     document.querySelectorAll('[data-modal]').forEach(opener => {
         const backdrop = document.getElementById(opener.dataset.modal);
         if (!backdrop) return;
 
-        opener.addEventListener('click', () => {
-            backdrop.hidden = false;
-            backdrop.style.display = 'flex';
-
-            const focusable = backdrop.querySelector('input, button');
-            if (focusable) focusable.focus();
-        });
+        opener.addEventListener('click', (event) => openDialog(backdrop, event.currentTarget));
 
         // Clicking the backdrop (but not the dialog) closes it.
         backdrop.addEventListener('click', event => {
-            if (event.target === backdrop) close(backdrop);
+            if (event.target === backdrop) closeDialog(backdrop);
         });
 
         backdrop.querySelectorAll('.close-modal').forEach(button => {
-            button.addEventListener('click', () => close(backdrop));
+            button.addEventListener('click', () => closeDialog(backdrop));
         });
-    });
-
-    document.addEventListener('keydown', event => {
-        if (event.key !== 'Escape') return;
-
-        document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(close);
     });
 
     /* Chosen files replace the demo rather than adding to it, and that has to

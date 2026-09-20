@@ -1,5 +1,5 @@
-<div id="confirm-modal" class="modal-backdrop" hidden>
-    <div class="modal">
+<div id="confirm-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+    <div class="modal" tabindex="-1">
         <h3 id="confirm-title"><?= e(admin_trans('common_confirm_action')) ?></h3>
         <p id="confirm-message"><?= e(admin_trans('common_are_you_sure')) ?></p>
 

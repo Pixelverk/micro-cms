@@ -19,10 +19,22 @@
                     <button type="button" class="add-child-btn"><?= e(admin_trans('common_add')) ?></button>
                 </div>
                 <div class="actions-right">
-                    <button type="button" class="move-up">&#8593;</button>
-                    <button type="button" class="move-down">&#8595;</button>
-                    <button type="button" class="duplicate-btn">&#9868;</button>
-                    <button type="button" class="remove-btn">&#33;</button>
+                    <button type="button" class="move-up" title="<?= e(admin_trans('editor_move_up')) ?>">
+                        &#8593;
+                        <span class="off-screen"><?= e(admin_trans('editor_move_up')) ?></span>
+                    </button>
+                    <button type="button" class="move-down" title="<?= e(admin_trans('editor_move_down')) ?>">
+                        &#8595;
+                        <span class="off-screen"><?= e(admin_trans('editor_move_down')) ?></span>
+                    </button>
+                    <button type="button" class="duplicate-btn" title="<?= e(admin_trans('editor_duplicate')) ?>">
+                        &#9868;
+                        <span class="off-screen"><?= e(admin_trans('editor_duplicate')) ?></span>
+                    </button>
+                    <button type="button" class="remove-btn" title="<?= e(admin_trans('common_remove')) ?>">
+                        &#33;
+                        <span class="off-screen"><?= e(admin_trans('common_remove')) ?></span>
+                    </button>
                 </div>
             </div>
         </details>

@@ -33,10 +33,12 @@ $pageScripts = $pageScripts ?? [];
 
     <body class="no-transitions">
 
+        <a class="skip-link" href="#main-content"><?= e(admin_trans('nav_skip_to_content')) ?></a>
+
         <div class="admin-layout">
             <?php include __DIR__ . '/sidebar.php'; ?>
 
-            <main>
+            <main id="main-content">
                 <?php include __DIR__ . '/header.php'; ?>
 
                 <div class="main-container">

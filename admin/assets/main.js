@@ -150,6 +150,89 @@ requestAnimationFrame(() => {
     document.body.classList.remove('no-transitions');
 });
 
+/* dialog helper: one open/close path for every .modal-backdrop */
+
+const dialogTriggers = new WeakMap();
+
+/**
+ * The controls Tab should cycle through inside an open dialog. Hidden controls
+ * (a simple confirm's Cancel, say) have no client rects and drop out.
+ */
+function dialogElements(backdrop) {
+    const dialog = backdrop.querySelector('.modal') || backdrop;
+
+    return [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter(el => el.getClientRects().length > 0);
+}
+
+function openDialog(backdrop, trigger = null) {
+    if (!backdrop) return;
+
+    dialogTriggers.set(backdrop, trigger || document.activeElement);
+
+    backdrop.hidden = false;
+    backdrop.style.display = 'flex';
+
+    const dialog = backdrop.querySelector('.modal') || backdrop;
+    const focusable = dialogElements(backdrop);
+
+    (focusable[0] || dialog).focus();
+}
+
+function closeDialog(backdrop) {
+    if (!backdrop || backdrop.hidden) return;
+
+    backdrop.hidden = true;
+    backdrop.style.display = '';
+
+    const trigger = dialogTriggers.get(backdrop);
+    dialogTriggers.delete(backdrop);
+
+    if (trigger && document.contains(trigger)) trigger.focus();
+
+    // Lets an awaiting caller (the confirm promise) settle as cancelled.
+    backdrop.dispatchEvent(new CustomEvent('dialog:closed'));
+}
+
+function activeDialog() {
+    const open = [...document.querySelectorAll('.modal-backdrop')]
+        .filter(backdrop => !backdrop.hidden && backdrop.style.display !== 'none');
+
+    return open.length ? open[open.length - 1] : null;
+}
+
+/* Escape closes the top dialog; Tab stays inside it. */
+document.addEventListener('keydown', event => {
+    const backdrop = activeDialog();
+    if (!backdrop) return;
+
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDialog(backdrop);
+        return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = dialogElements(backdrop);
+
+    if (!focusable.length) {
+        event.preventDefault();
+        return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+});
+
 /* confirm modal helper */
 
 const modal = document.getElementById('confirm-modal');
@@ -166,26 +249,27 @@ function confirmModal({ title = adminText('common_confirm', 'Confirm'), message 
     titleEl.textContent = title;
     messageEl.textContent = message;
 
-    modal.style.display = 'flex';
+    // Reset both ways: a simple dialog must not leave the next one without a
+    // Cancel button or labelled OK.
+    cancelBtn.style.display = simple ? 'none' : '';
+    okBtn.textContent = simple ? adminText('common_ok', 'OK') : adminText('common_confirm', 'Confirm');
 
-    if(simple){
-        cancelBtn.style.display = 'none';
-        okBtn.textContent = adminText('common_ok', 'OK');
-    }
+    openDialog(modal);
 
     return new Promise(resolve => {
         onConfirm = () => resolve(true);
-        cancelBtn.onclick = () => resolve(false);
+        modal.addEventListener('dialog:closed', () => resolve(false), { once: true });
     });
 }
 
 okBtn.addEventListener('click', () => {
-    modal.style.display = 'none';
     onConfirm?.();
+    onConfirm = null;
+    closeDialog(modal);
 });
 
 cancelBtn.addEventListener('click', () => {
-    modal.style.display = 'none';
+    closeDialog(modal);
 });
 
 /* Listen for clicks on confirm buttons */

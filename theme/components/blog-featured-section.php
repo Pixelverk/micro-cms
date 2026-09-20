@@ -26,7 +26,7 @@ CSS,
     ?>
     <section id="<?= e($id) ?>" class="py-5">
         <div class="container px-5">
-            <h1 class="fw-bolder fs-5 mb-4"><?= e($props['title'] ?? 'Company Blog') ?></h1>
+            <h2 class="fw-bolder fs-5 mb-4"><?= e($props['title'] ?? 'Company Blog') ?></h2>
             <div class="card border-0 shadow rounded-3 overflow-hidden">
                 <div class="card-body p-0">
                     <div class="row gx-0">

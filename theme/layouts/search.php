@@ -39,7 +39,7 @@ $pageUrl = function (int $pageNumber) use ($action, $query, $filters): string {
     return $action . ($params ? '?' . http_build_query($params) : '');
 };
 ?>
-<main class="search-page">
+<main id="main-content" class="search-page">
     <div class="inner flex-column search-inner">
 
         <header class="search-header">

@@ -121,7 +121,7 @@ CSS,
             <div class="row gx-5 align-items-center justify-content-center">
                 <div class="col-lg-8 col-xl-7 col-xxl-6">
                     <div class="my-5 text-center text-xl-start">
-                        <h1 class="display-5 fw-bolder text-white mb-2"><?= e($title) ?></h1>
+                        <h2 class="display-5 fw-bolder text-white mb-2"><?= e($title) ?></h2>
                         <p class="lead fw-normal text-white-50 mb-4"><?= e($subtitle) ?></p>
                         <?php if ($btn1Text !== '' || $btn2Text !== ''): ?>
                             <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">

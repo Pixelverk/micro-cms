@@ -1,6 +1,6 @@
 <?php if (empty($pageHelp)) return; ?>
 
-<span id="help-fab" class="header-icon"><?= icon('help-circle', 20) ?></span>
+<button type="button" id="help-fab" class="header-icon" aria-label="<?= e(admin_trans('nav_aria_help')) ?>" aria-expanded="false" aria-controls="help-panel"><?= icon('help-circle', 20) ?></button>
 
 <div id="help-panel">
     <?= $pageHelp ?>
@@ -25,14 +25,18 @@
 
     if (!fab || !panel) return;
 
+    const setOpen = open => {
+        panel.style.display = open ? 'block' : 'none';
+        fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
     fab.addEventListener('click', () => {
-        panel.style.display =
-            panel.style.display === 'block' ? 'none' : 'block';
+        setOpen(panel.style.display !== 'block');
     });
 
     document.addEventListener('click', (e) => {
         if (!panel.contains(e.target) && !fab.contains(e.target)) {
-            panel.style.display = 'none';
+            setOpen(false);
         }
     });
 })();

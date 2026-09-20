@@ -48,7 +48,7 @@ return [
     <section id="<?= e($id) ?>" class="py-5">
         <div class="container px-5 my-5">
             <div class="text-center mb-5">
-                <h1 class="fw-bolder"><?= e($props['title'] ?? '') ?></h1>
+                <h2 class="h1 fw-bolder"><?= e($props['title'] ?? '') ?></h2>
                 <?php if (!empty($props['subtitle'])): ?><p class="lead fw-normal text-muted mb-0"><?= e($props['subtitle']) ?></p><?php endif; ?>
             </div>
             <div class="row gx-5">

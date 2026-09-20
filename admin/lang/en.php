@@ -35,6 +35,9 @@ return [
     'nav_aria_breadcrumb' => 'Breadcrumb',
     'nav_aria_light' => 'Light mode',
     'nav_aria_dark' => 'Dark mode',
+    'nav_aria_main' => 'Main navigation',
+    'nav_aria_help' => 'Help',
+    'nav_skip_to_content' => 'Skip to main content',
     // Dashboard
     'dashboard_intro' => 'Here is an overview of your site and what needs attention.',
     'dashboard_maintenance_title' => 'Maintenance mode is on.',
@@ -346,6 +349,8 @@ return [
     'editor_no_child_components' => 'No child components allowed',
     'editor_child' => '+ Child',
     'editor_duplicate' => '⧉ Duplicate',
+    'editor_move_up' => 'Move up',
+    'editor_move_down' => 'Move down',
     'editor_author_cannot_publish' => 'Your role cannot publish; an editor or administrator will publish this.',
     'editor_help' => 'Build the page from components, then set its details, status and SEO on the right.',
     'editor_help_components' => 'Drag components to reorder them, and nest children where a component allows it.',

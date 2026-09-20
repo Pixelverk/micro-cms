@@ -241,5 +241,5 @@ $formField = static function (array $cfg, string $name, string $formId): array {
         </div>
     <?php endif; ?>
 
-    <div class="message"></div>
+    <div class="message" role="status"></div>
 </form>

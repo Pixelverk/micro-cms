@@ -88,7 +88,7 @@ Wave 3 is opportunistic and can be dropped.
 | 16 | 2 | C | Navigation: content links, hide, server-side active state | M | — |
 | 17 | 2 | C | Redirect search + conflict detection | M | — |
 | 18 | 2 | C | SEO output polish | M | 1 |
-| 19 | 2 | B/C | Accessibility pass | S | — |
+| 19 | 2 | B/C | Accessibility pass | S–M | — |
 | 20 | 2 | A | Search hardening | S–M | 1 |
 | 21 | 2 | A | Version diff and compare | M | — |
 | 22 | 2 | C | Publish webhook | S | — |
@@ -1020,12 +1020,162 @@ clicks and typing: the title and description follow the fields, a renamed page
 title flows into the fallback, and picking and clearing a social image swaps the
 card image and its empty state.
 
-## 19. Accessibility pass (B/C, S)
+## 19. Accessibility pass (B/C, S–M)
 
-Skip link in theme and admin; one `h1` per page (several section components
-hardcode one); `role="dialog"`/`aria-modal`/focus handling in the confirm modal;
-accessible names on the editor's glyph-only buttons; arrow-key navigation in
-menus. Verify manually and through `tests/design.test.php` where it can.
+**Shipped.** Every page now carries a skip link as the first focusable element
+and exactly one `<h1>`: the nine components that hardcoded one render `<h2>`
+(keeping their size through the classes they already carried), and the `default`
+and `landing` layouts — the two that showed no document heading at all — emit the
+page title as a visually hidden `<h1>`. The skip link is emitted once in
+`render_page()`, so it reaches every layout including the preview bar, and all
+eight theme layouts plus the admin mark their `<main>` with `#main-content`. One
+shared dialog helper in `admin/assets/main.js` gives all six `.modal-backdrop`s
+`role="dialog"`, `aria-modal`, a labelled heading, initial focus, a Tab trap,
+Escape and focus restore — replacing four copies of the same bespoke open/close
+code — and the image-grid thumbnails became keyboard-operable controls in the
+same pass. The editor's four component-toolbar glyphs, the picker's close button
+and search box, and the help affordance (now a real `<button>`) all have names,
+in both languages. `icon()` output is `aria-hidden`; the admin toast container
+and the public form's feedback are live regions; the sidebar and header
+landmarks are labelled.
+
+**Why.** Most of the admin is already usable by keyboard — the list icon buttons,
+header controls, mobile drawer and account menu all carry names and an Escape
+handler — so this is a short list of places where it is not. Four of them are
+blockers rather than polish: the public submenus cannot be opened at all without
+JavaScript, no page offers a way past the navigation, section components make
+several `<h1>`s on one page, and the editor's own component controls are unnamed
+punctuation marks.
+
+**Findings (probed on a fresh install through the local server).**
+
+* **No skip link anywhere.** Every theme layout and the admin layout render a
+  `<main>` with no `id`, so there is nothing to jump to. The admin sidebar is
+  ~20 links; a keyboard user tabs it on every page.
+* **Three seeded pages render two `<h1>`s**: `/services/` and `/landing/`
+  (`hero-section` + `cta-section`) and the seeded `/404` page. Eight section
+  components hardcode an `<h1>` — `hero-section`, `cta-section`,
+  `about-hero-section`, `contact-section`, `pricing-section`, `faq-section`,
+  `blog-featured-section`, `portfolio-grid-section` — and
+  `core/components/404.php` does too. The `default` and `landing` layouts render
+  no page heading of their own, which is why the first section's `<h1>` has been
+  standing in for one.
+* **No dialog semantics or focus handling.** `admin/partials/confirm.php` is a
+  `<div class="modal-backdrop">` with no `role="dialog"`, no `aria-modal` and no
+  label; `admin/assets/main.js` shows it with `style.display = 'flex'` and never
+  moves focus into it, never traps Tab, never closes it on Escape and never
+  returns focus to the trigger. The image picker
+  (`admin/partials/image-picker.php`) is the same. The other four backdrops
+  (`utilities` ×2, `messages`, `media`) do focus the first control and close on
+  Escape, but still have no dialog role and no trap.
+* **The editor's glyph-only buttons are unnamed.** In
+  `admin/partials/content-editor-templates.php` the component toolbar is
+  `<button>&#8593;</button>`, `&#8595;`, `&#9868;`, `&#33;` — a screen reader
+  announces "up arrow", "down arrow" and so on, with no idea what they act on.
+  `admin/partials/image-picker.php`'s close control is a bare `&times;`, and
+  `admin/partials/help.php`'s help affordance is a `<span>` that is not
+  focusable at all.
+* **Menus are pointer-only.** The public header dropdowns rely on `.show` being
+  added by `theme/assets/main.js`; it handles click and Escape but no arrow keys.
+  `theme/assets/utilities.css` gives `.dropdown-menu` `display: none` with no
+  `:focus-within`/`:hover` fallback, so without JavaScript (or from the
+  keyboard's point of view, before the toggle is clicked) the submenus are
+  unreachable.
+* **Every decorative icon is exposed.** `icon()` in `core/helpers/icons.php`
+  inlines the SVG with no `aria-hidden`, so each one is an unlabelled graphic in
+  the accessibility tree. Both live regions are silent too: the admin toast
+  container (`admin/partials/toasts.php`) and the public form's `.message`
+  (`theme/partials/form.php`) announce nothing when they fill.
+
+**Work.**
+
+1. **Skip links.** The theme link belongs in the one place every layout passes
+   through — `render_page()` in `core/render.php`, immediately after `<body>` so
+   it is the first focusable element, ahead of the preview bar. Point it at
+   `#main-content` and put that id on the `<main>` of all eight theme layouts.
+   The admin layout gets the same link before `.admin-layout` and the id on its
+   `<main>`. Every new string — the skip link and the control names from step 4 —
+   goes in **both** language files. Give the link a `.skip-link`/`:focus` rule
+   that brings it on-screen top-left with a high `z-index`; the theme has no
+   visually-hidden helper yet, so add one and use it for the page-title `<h1>`
+   below.
+2. **One `h1` per page.** Demote the nine components above from `<h1>` to `<h2>`,
+   keeping the current rendering by carrying the size in the class where the tag
+   was doing the work: add `h1` where the markup has only `fw-bolder`
+   (`about-hero-section`, `contact-section`, `pricing-section`, `faq-section`,
+   `portfolio-grid-section`), leave `display-5`/`fs-5` cases as they are, and
+   change `cta-section`'s own `.cta h1` rule to match its new tag. The `default`
+   and `landing` layouts then render the page's own title as a visually hidden
+   `<h1>` — the layouts whose visible heading is a section, not the document
+   title. The layouts that already render `<h1>` (blog, portfolio, policy,
+   search, taxonomy, blog-archive) and the admin header are unchanged. Change
+   `default.php` to always emit `<main id="main-content">`, so a component-less
+   page still has both the landmark and the heading.
+3. **Dialog semantics and focus.** One small helper in `admin/assets/main.js`:
+   `role="dialog"`, `aria-modal="true"` and `aria-labelledby` (pointing at each
+   dialog's existing `<h3>`; the confirm title is set at runtime, so a label id
+   is the right shape), focus moves to the first control on open, Tab cycles
+   inside the dialog, Escape closes it, and focus returns to the control that
+   opened it. Apply it to `#confirm-modal` and the image picker, and replace the
+   four bespoke open/close blocks with it, so one implementation covers every
+   `.modal-backdrop` and the duplicated code goes away.
+4. **Names on the glyph-only controls.** Name the four component toolbar buttons
+   (move up, move down, duplicate, remove) with the same `title` +
+   `.off-screen` pair the menu editor's icon buttons already use, so the tooltip
+   and the accessible name come from one key. The image-picker close button gets
+   `type="button"` and a label; its search box gets a label (`placeholder` is not
+   one). The help affordance becomes a real `<button type="button">` with a label
+   and `aria-expanded`/`aria-controls`.
+5. **Menus by keyboard.** The public dropdowns in `theme/assets/main.js` gained
+   ArrowUp/ArrowDown/Home/End over their items, and ArrowDown on a closed toggle
+   opens it and focuses the first item; Enter already opened it, because the
+   toggle is a link and the existing click handler runs. The `:focus-within`
+   reveal the plan first described is **not** in: Escape returns focus to the
+   toggle, so a focus-based rule would leave on screen the menu the keypress just
+   closed. The no-JavaScript half — the mobile collapse and the submenu reveal —
+   is untouched and stays the open decision below.
+6. **Smaller, same-class fixes taken while here.** `icon()` gains
+   `aria-hidden="true" focusable="false"` (every icon-only control has a name of
+   its own by then, so nothing is silenced). The admin toast container and the
+   public form's `.message` become `role="status"`. The admin sidebar `<nav>`
+   and the public header `<nav>` get an `aria-label`.
+
+**Decisions.** The page's own title owns the single `<h1>`, as a visually hidden
+heading on the two layouts that do not render one, rather than letting the first
+section's heading be the page heading — which component is "first" is not
+knowable at render time and the section heading is the section's, not the
+document's. The dialog helper is **shared across all six backdrops**, not special
+cased for the confirm modal: they are one pattern and the four existing blocks
+were copies of each other. The picker's thumbnails became keyboard-operable
+(`tabindex`, `role="button"`, Enter/Space) rather than staying click-only, so
+nothing in the pass is left pointer-only. The `:focus-within` submenu reveal was
+dropped for the Escape conflict above, which also means the no-JS submenu case is
+still unreached.
+
+**Explicitly out.** The public form's no-JavaScript path is a separate defect
+(`core/form-submit.php` always answers JSON), so it is not this phase's work; it
+is raised in the open decisions rather than folded in. No colour-contrast audit,
+no screen-reader sweep beyond the paths above, no ARIA on every widget, no
+`prefers-reduced-motion` changes (already handled where it matters).
+
+**Verify.** `tests/design.test.php` (18): a skip link in the theme render path and
+the admin layout, `id="main-content"` in every theme layout, `role="dialog"` /
+`aria-modal` / `aria-labelledby` on every backdrop, a name on each editor toolbar
+button, `icon()` emitting `aria-hidden`, and the two live regions.
+`tests/http.test.php`: 15 seeded URLs render **exactly one `<h1>`** with the skip
+link before `<main id="main-content">`, plus the synthesised 404.
+`php tests/run.php` → 429 passed. Through the local server: every seeded URL
+counted one `<h1>`, the skip link rendered first in the body, the admin
+dashboard showed the labelled skip link, sidebar and help button, the editor
+rendered the named toolbar and the labelled picker dialog, and the fallback 404
+(seeded page removed) still rendered one `<h1>`. Keyboard-only and no-JS
+walkthroughs remain the manual check a browser owns; the headings were left with
+the classes that fixed their size, so the demotion is not expected to move
+anything on screen.
+
+**Reject if** it becomes an ARIA retrofit or a WCAG audit. If the mobile-collapse
+no-JS half turns into a navigation rebuild, ship the skip link, the single
+heading, the dialogs, the names and the arrow keys, and record the rest.
 
 ## 20. Search hardening (A, S–M)
 
@@ -1157,6 +1307,11 @@ Settle each at the start of its phase, not now.
 * **Phase 6:** how far the CSP goes given vendored Quill and raw snippet
   settings.
 * **Phase 9:** custom CSS — a raw setting, or explicitly out (theme owns design)?
+* **Phase 19:** the pass shipped, so what remains is the no-JS public nav — the
+  mobile collapse and the submenu reveal are still script-only (arrow keys and
+  Enter-to-open cover the keyboard with script) — and the public form's no-JS
+  path, since `form-submit.php` answers JSON to any POST. One small item each, or
+  one "public front end without JavaScript" item?
 * **Phase 20:** FTS5 now, or only when a client reports search quality problems?
 * **Phase 27:** hand-rolled SMTP client or documented host relay?
 * **Track D:** when to schedule, and whether per-locale menu labels are needed in v1.

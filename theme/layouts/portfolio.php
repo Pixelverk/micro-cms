@@ -24,7 +24,7 @@ if (!$images) {
     $images = array_values(array_filter([(string) ($meta['thumbnail'] ?? $meta['image'] ?? '')]));
 }
 ?>
-<main>
+<main id="main-content">
     <section class="py-5">
         <div class="container px-5 my-5">
             <div class="row gx-5 justify-content-center">

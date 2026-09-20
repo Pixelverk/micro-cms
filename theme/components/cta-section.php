@@ -58,7 +58,7 @@ return [
     display: block;
 }
 
-.cta h1 {
+.cta h2 {
     font-size: 2rem;
     margin-bottom: 1rem;
 }
@@ -96,7 +96,7 @@ CSS,
     ?>
     <section id="<?= $id ?>" class="cta">
         <div class="inner">
-            <h1><?= e($title) ?></h1>
+            <h2><?= e($title) ?></h2>
             <p><?= e($text) ?></p>
             <?php if ($linktext !== ''): ?>
                 <a href="<?= e($url !== '' ? url($url) : '#') ?>" class="cta-button">

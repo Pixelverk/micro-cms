@@ -57,7 +57,7 @@ return [
         <div class="row justify-content-center">
             <div class="col-lg-8 col-xxl-6">
                 <div class="text-center my-5">
-                    <h1 class="fw-bolder mb-3"><?= e($title) ?></h1>
+                    <h2 class="h1 fw-bolder mb-3"><?= e($title) ?></h2>
                     <p class="lead fw-normal text-muted mb-4"><?= e($subtitle) ?></p>
                     <?php if (!empty($button_url) && !empty($button_text)): ?>
                         <a class="btn btn-primary btn-lg" href="<?= e($button_url) ?>"><?= e($button_text) ?></a>

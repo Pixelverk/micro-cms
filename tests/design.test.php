@@ -293,4 +293,80 @@ t('the menu editor keeps its row controls usable while the whole row drags', fun
     assert_contains('preventOnFilter: false', $js, 'and keep their own mouse behaviour');
 });
 
+t('the theme and the admin offer a skip link to a marked main landmark', function () {
+    $render = (string) file_get_contents(CMS_PATH . '/core/render.php');
+    assert_contains('function render_skip_link', $render);
+    assert_contains('class="skip-link" href="#main-content"', $render);
+
+    $layouts = glob(CMS_PATH . '/theme/layouts/*.php') ?: [];
+    assert_true(count($layouts) > 0, 'the theme ships layouts');
+
+    $without = [];
+    foreach ($layouts as $layout) {
+        if (!str_contains((string) file_get_contents($layout), 'id="main-content"')) {
+            $without[] = basename($layout);
+        }
+    }
+
+    assert_count(0, $without, 'layouts with no main landmark: ' . implode(', ', $without));
+
+    $adminLayout = (string) file_get_contents(CMS_PATH . '/admin/partials/layout.php');
+    assert_contains('class="skip-link"', $adminLayout, 'the admin has a skip link');
+    assert_contains('<main id="main-content">', $adminLayout, 'and a matching target');
+});
+
+t('every dialog is a labelled modal that the helper can manage', function () {
+    foreach ([
+        'admin/partials/confirm.php',
+        'admin/partials/image-picker.php',
+        'admin/utilities.php',
+        'admin/messages.php',
+        'admin/media/index.php',
+    ] as $file) {
+        $markup = (string) file_get_contents(CMS_PATH . '/' . $file);
+
+        assert_contains('role="dialog"', $markup, "{$file} names its dialogs");
+        assert_contains('aria-modal="true"', $markup, "{$file} marks them modal");
+        assert_contains('aria-labelledby', $markup, "{$file} labels them");
+    }
+
+    $helper = (string) file_get_contents(CMS_PATH . '/admin/assets/main.js');
+
+    foreach (['function openDialog', 'function closeDialog', "'Escape'", "'Tab'"] as $needle) {
+        assert_contains($needle, $helper, "the dialog helper handles {$needle}");
+    }
+});
+
+t('the editor\'s glyph-only controls carry names', function () {
+    $template = (string) file_get_contents(CMS_PATH . '/admin/partials/content-editor-templates.php');
+
+    foreach ([
+        'move-up'       => 'editor_move_up',
+        'move-down'     => 'editor_move_down',
+        'duplicate-btn' => 'editor_duplicate',
+        'remove-btn'    => 'common_remove',
+    ] as $class => $key) {
+        assert_contains('class="' . $class . '"', $template, "{$class} is still there");
+        assert_contains("admin_trans('{$key}')", $template, "{$class} has an accessible name");
+    }
+
+    // An inline icon is decoration; the control around it carries the name.
+    assert_contains('aria-hidden="true"', icon('eye', 16), 'icons are hidden from AT');
+    assert_contains('focusable="false"', icon('eye', 16), 'and cannot take focus');
+});
+
+t('status feedback is announced and the landmarks are named', function () {
+    $toasts = (string) file_get_contents(CMS_PATH . '/admin/partials/toasts.php');
+    assert_contains('id="toast-container" role="status"', $toasts, 'admin toasts are a live region');
+
+    $form = (string) file_get_contents(CMS_PATH . '/theme/partials/form.php');
+    assert_contains('class="message" role="status"', $form, 'public form feedback is a live region');
+
+    $sidebar = (string) file_get_contents(CMS_PATH . '/admin/partials/sidebar.php');
+    assert_contains('admin_trans(\'nav_aria_main\')', $sidebar, 'the admin nav is named');
+
+    $header = (string) file_get_contents(CMS_PATH . '/theme/components/site-header.php');
+    assert_contains('aria-label="Main"', $header, 'the public nav is named');
+});
+
 exit(test_summary());

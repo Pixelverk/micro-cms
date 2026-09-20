@@ -55,7 +55,7 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
 
 ?>
 
-<nav class="sidebar">
+<nav class="sidebar" aria-label="<?= e(admin_trans('nav_aria_main')) ?>">
 
     <div class="sidebar-header">
         <a class="sidebar-brand" href="<?= url('admin/dashboard') ?>">

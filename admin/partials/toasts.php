@@ -1,5 +1,5 @@
 <?php if (!empty($_SESSION['toast'])): ?>
-<div id="toast-container"></div>
+<div id="toast-container" role="status"></div>
 
 <script>
 function showToast(message, type = 'info', duration = 4000) {
