@@ -132,7 +132,7 @@ Demo accounts, one per role. The password is the username:
 * Bulk actions on the content list
 * Utilities page: clear or warm the cache, reset analytics, regenerate sitemap, publish due content, run migrations
 * Static-site export: download the cached pages, theme assets and media as a zip
-* Backup download: the database, media and sitemap as a zip
+* Full backup download: the whole site — code, database, media library and sitemap — as a zip, for moving it to another server
 * In-app documentation for editors and theme developers
 * Admin interface in English and Swedish
 

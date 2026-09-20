@@ -64,13 +64,13 @@ These are not up for renegotiation inside a phase:
 
 ## Phase table
 
-No phase is scheduled. Everything the last table held — small fixes and
-tidy-ups, media fallbacks without theme placeholder files, and component
-previews with the Add component dialog — has shipped. What is left is in the
-Backlog below, which is unscheduled: confirm an item before starting it.
+No phase is scheduled. Everything the last tables held has shipped: small fixes
+and tidy-ups, media fallbacks without theme placeholder files, component
+previews with the Add component dialog, and the whole-site backup download. What
+is left is in the Backlog below, which is unscheduled: confirm an item before
+starting it.
 
 ---
-
 
 # Backlog
 
