@@ -369,10 +369,12 @@ function health_checks(): array
 
     // -------------------------------------------------------------- storage
     $directories = [
-        'storage/'       => STORAGE_PATH,
-        'storage/cache/' => STORAGE_PATH . '/cache',
-        'storage/media/' => STORAGE_PATH . '/media',
-        'storage/logs/'  => STORAGE_PATH . '/logs',
+        'storage/'         => STORAGE_PATH,
+        'storage/cache/'   => STORAGE_PATH . '/cache',
+        'storage/media/'   => STORAGE_PATH . '/media',
+        'storage/logs/'    => STORAGE_PATH . '/logs',
+        // Only used while an uploaded content package waits for confirmation.
+        'storage/imports/' => STORAGE_PATH . '/imports',
     ];
 
     foreach ($directories as $label => $directory) {

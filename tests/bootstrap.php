@@ -32,7 +32,7 @@ if ($realStorage !== false && $resolvedTest !== false && str_starts_with((string
 define('STORAGE_PATH', $testStorage);
 define('CMS_SETUP_READONLY', true);
 
-foreach (['', '/cache', '/media', '/logs', '/sessions'] as $dir) {
+foreach (['', '/cache', '/media', '/logs', '/sessions', '/imports'] as $dir) {
     if (!is_dir(STORAGE_PATH . $dir)) {
         mkdir(STORAGE_PATH . $dir, 0775, true);
     }

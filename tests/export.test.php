@@ -159,4 +159,213 @@ t('warm_cache() reports pages it could not write to the cache', function () {
     }
 });
 
+/*
+|--------------------------------------------------------------------------
+| Content package
+|--------------------------------------------------------------------------
+| The theme's demo content ships as these two documents, and the same pair
+| moves live content between installs. The round trip has to be exact, and a
+| package this theme cannot render has to be refused rather than half-imported.
+|
+*/
+
+t('the theme demo package loads and matches the installed demo', function () {
+    $demo = content_package_theme_demo();
+
+    assert_count(0, $demo['errors'], 'the shipped demo files parse: ' . implode('; ', $demo['errors']));
+
+    $merged = content_package_merge($demo['documents']);
+    assert_count(0, $merged['problems'], 'and merge: ' . implode('; ', $merged['problems']));
+
+    $plan = content_package_plan($merged['package']);
+    assert_count(0, $plan['problems'], 'and validate: ' . implode('; ', $plan['problems']));
+
+    // The installer seeds from exactly these files, so the counts have to be
+    // the ones a fresh install has.
+    assert_eq(15, $plan['create']['content'], 'the demo ships 15 items');
+    assert_eq(2, $plan['create']['menus'], 'and two menus');
+    assert_eq('page:home', $plan['homepage']['ref']);
+    assert_true($plan['homepage']['resolves'], 'the homepage resolves inside the package');
+});
+
+t('a package round trip reproduces the site it came from', function () {
+    $beforeContent  = content_package_export_content();
+    $beforeSettings = content_package_export_settings();
+
+    // Replace the content with something else, the way another site would.
+    db()->exec("DELETE FROM taxonomy_term_relationships");
+    db()->exec("DELETE FROM content");
+    db()->exec("DELETE FROM menus");
+    set_setting('site_title', 'Somewhere Else');
+    settings_cache_clear();
+
+    $merged = content_package_merge([$beforeContent, $beforeSettings]);
+    $plan   = content_package_plan($merged['package']);
+
+    assert_count(0, $plan['problems'], implode('; ', $plan['problems']));
+    assert_eq(1, $plan['create']['settings'], 'one setting differs before the import');
+    assert_eq(15, $plan['create']['content']);
+
+    $summary = content_package_import($merged['package']);
+
+    assert_eq(15, $summary['content']);
+    assert_eq(2, $summary['menus']);
+    assert_eq('page:home', $summary['homepage']);
+
+    // Timestamps travel with the package, so the documents come back identical.
+    assert_eq($beforeContent, content_package_export_content(), 'content survives the round trip');
+    assert_eq($beforeSettings, content_package_export_settings(), 'and so do settings');
+
+    $indexed = db()->query("SELECT COUNT(*) FROM content WHERE search_text IS NOT NULL AND search_text != ''")->fetchColumn();
+    assert_eq(15, (int) $indexed, 'the imported content is searchable');
+
+    $homepageId = (int) (load_settings()['homepage_id'] ?? 0);
+    $homepage   = load_content_by_id($homepageId);
+    assert_eq('home', $homepage['slug'] ?? null, 'the homepage points at the imported home page');
+});
+
+t('content and settings import independently', function () {
+    $contentDocument  = content_package_export_content();
+    $settingsDocument = content_package_export_settings();
+
+    // Settings only: the content stays as it is.
+    set_setting('site_title', 'Keep Me');
+    settings_cache_clear();
+
+    $settingsOnly = content_package_merge([$settingsDocument]);
+    assert_true($settingsOnly['package']['has_settings'], 'settings are recognised');
+    assert_false($settingsOnly['package']['has_content'], 'and content is not implied');
+
+    $countBefore = (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn();
+    content_package_import($settingsOnly['package']);
+
+    assert_eq($countBefore, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'no content was touched');
+    assert_eq('Awesome site', get_setting('site_title'), 'the setting was applied');
+
+    // Content only: settings are left alone.
+    set_setting('site_title', 'Keep Me Again');
+    settings_cache_clear();
+
+    $contentOnly = content_package_merge([$contentDocument]);
+    $plan        = content_package_plan($contentOnly['package']);
+
+    assert_count(0, $plan['problems'], implode('; ', $plan['problems']));
+    assert_eq(0, $plan['create']['settings'], 'a content-only import changes no settings');
+
+    content_package_import($contentOnly['package']);
+
+    assert_eq('Keep Me Again', get_setting('site_title'), 'the setting survived a content import');
+    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn());
+});
+
+t('a package this theme cannot render is refused', function () {
+    $document = content_package_export_content();
+
+    // Three things the shipped theme does not have.
+    $document['content'][1]['type'] = 'event';
+    $document['content'][2]['layout'] = 'ghost-layout';
+    $document['content'][3]['body'] = [
+        ['type' => 'ghost-section', 'props' => [], 'children' => []],
+    ];
+
+    $merged = content_package_merge([$document]);
+    $plan   = content_package_plan($merged['package']);
+    $report = implode('; ', $plan['problems']);
+
+    assert_contains("Unknown content type 'event'", $report, 'an unknown content type is named');
+    assert_contains("undeclared layout 'ghost-layout'", $report, 'an undeclared layout is named');
+    assert_contains("missing component 'ghost-section'", $report, 'a missing component is named');
+
+    // A settings key that must never travel.
+    $settings = content_package_export_settings();
+    $settings['settings']['site_url'] = 'https://example.test';
+
+    $settingsPlan = content_package_plan(content_package_merge([$settings])['package']);
+
+    assert_contains("Setting 'site_url' cannot travel", implode('; ', $settingsPlan['problems']), 'an unportable setting is refused');
+
+    // Nothing was written by any of that.
+    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'validation changes nothing');
+});
+
+t('two files defining the same section are refused', function () {
+    $merged = content_package_merge([
+        content_package_export_content(),
+        content_package_export_content(),
+    ]);
+
+    assert_contains('Two files both define content', implode('; ', $merged['problems']));
+
+    $settings = content_package_export_settings();
+    $merged   = content_package_merge([$settings, $settings]);
+
+    assert_contains('Two files both define settings', implode('; ', $merged['problems']));
+});
+
+t('a document that is not a package is rejected', function () {
+    assert_contains('not JSON', content_package_parse('{oops')['error']);
+    assert_contains('Unsupported package format', content_package_parse('{"content": []}')['error']);
+    assert_contains('neither content nor settings', content_package_parse('{"format": 1}')['error']);
+    assert_eq('', content_package_parse('{"format": 1, "settings": {}}')['error'], 'a settings-only file parses');
+});
+
+t('a homepage that cannot be resolved is skipped, not written', function () {
+    $settings = content_package_export_settings();
+    $settings['settings']['homepage'] = 'page:does-not-exist';
+
+    // Settings only, so there is no content in the package to match against.
+    $merged = content_package_merge([$settings]);
+    $plan   = content_package_plan($merged['package']);
+
+    assert_count(0, $plan['problems'], 'an unresolvable homepage is not fatal');
+    assert_false($plan['homepage']['resolves']);
+    assert_true($plan['warnings'] !== [], 'it is reported as a warning');
+
+    $before = (int) (load_settings()['homepage_id'] ?? 0);
+    content_package_import($merged['package']);
+
+    assert_eq($before, (int) (load_settings()['homepage_id'] ?? 0), 'the homepage is left as it was');
+});
+
+t('the two package documents stay separate', function () {
+    $content  = content_package_export_content();
+    $settings = content_package_export_settings();
+
+    assert_eq(CONTENT_PACKAGE_FORMAT, $content['format'] ?? null, 'the content document is versioned');
+    assert_true(count($content['content'] ?? []) >= 15, 'the content travels');
+    assert_eq('page:home', $settings['settings']['homepage'] ?? null, 'and the homepage travels by slug');
+
+    // One button downloads one document, so neither may smuggle in the other.
+    assert_false(isset($content['settings']), 'content carries no settings');
+    assert_false(isset($settings['content']), 'and settings carry no content');
+});
+
+t('a content-only import keeps the homepage pointing at the same page', function () {
+    $before = (int) (load_settings()['homepage_id'] ?? 0);
+    assert_true($before > 0, 'there is a homepage to begin with');
+
+    // Replacing content replaces every id, so the homepage has to be
+    // re-matched by path or '/' starts serving the 404 page.
+    content_package_import(content_package_merge([content_package_export_content()])['package']);
+
+    $after = (int) (load_settings()['homepage_id'] ?? 0);
+    $page  = load_content_by_id($after);
+
+    assert_true($after > 0, 'the homepage survived the import');
+    assert_eq('home', $page['slug'] ?? null, 'and still points at the home page');
+
+    // A package that has no such page clears the setting instead of leaving a
+    // dangling id behind.
+    $without = content_package_export_content();
+    $without['content'] = array_values(array_filter(
+        $without['content'],
+        static fn(array $item): bool => ($item['path'] ?? '') !== 'home'
+    ));
+
+    $summary = content_package_import(content_package_merge([$without])['package']);
+
+    assert_eq('', (string) (load_settings()['homepage_id'] ?? ''), 'the homepage is unset');
+    assert_true($summary['warnings'] !== [], 'and the import says so');
+});
+
 exit(test_summary());

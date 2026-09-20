@@ -84,7 +84,7 @@ Wave 3 is opportunistic and can be dropped.
 | 12 | 2 | A | Media library UX + media usage before delete | S–M | 11 |
 | 13 | 2 | B | Theme integrity check + Health | S–M | — |
 | 14 | 2 | B | Theme asset auto-versioning | S | — |
-| 15 | 2 | B | Starter theme | M | 13 |
+| 15 | 2 | B | Theme demo content as data + reference parity | M | 13 |
 | 16 | 2 | C | Navigation: content-id links, hide, active state, preview | S–M | — |
 | 17 | 2 | C | Redirect search + conflict detection | S | — |
 | 18 | 2 | C | SEO output polish | S | 1 |
@@ -609,12 +609,139 @@ carries a query string. Live: editing `style.css` changed the URL on the next
 render, a cached page kept the old stamp until the cache was cleared, and the
 admin's own stamp still matched its file's mtime.
 
-## 15. Starter theme (B, M)
+## 15. Theme demo content as data + reference parity (B, M)
 
-A minimal working theme (manifest, one layout, header,
-footer, one component, one stylesheet, README) excluded from runtime and export,
-referenced from the developer guide. Verify it passes the phase-13 check and the
-component contract. Reject if it needs runtime selection code.
+**Partly shipped — steps 1 and 2 of 3.** The package format and the importer are
+in. `theme/demo/content.json` and `theme/demo/settings.json` were **generated from
+the old seed through the new exporter**, so no content was retyped by hand, and
+`setup.php` now seeds by importing them: **1047 lines down to 437**, with no
+behavioural change (the whole suite passes untouched). The `content_package_*`
+helpers sit beside the existing export functions, `format: 1` guards both
+documents, and nothing carries an id — parents, taxonomy links and the homepage
+are `<type>:<slug path>` references resolved on import.
+
+Utilities now has a **Content package** panel of two cards, each opening a dialog.
+**Export** explains the two
+documents and offers one button each — `content.json` and `settings.json`, no
+checkboxes and no zip. **Import** asks where a package comes from (uploaded
+files, or the theme's own demo files with the field left empty — the dialog says
+which, and an upload replaces the demo) and what to take, then **Preview import**
+renders the report *inside the reopened dialog* — what would be deleted, created
+and changed — and **Import now** applies it. Uploaded
+files are stashed under `storage/imports/` (deleted on apply, or an hour later) so
+the second step needs no re-upload, and the health report gained
+`storage/imports/`.
+
+The round trip is exact: export, wipe, import reproduces both documents byte for
+byte, search is reindexed and the homepage resolves to the new row. A package
+naming a content type, component, layout or unportable setting this theme does
+not have is refused with the names in the report and nothing written; content and
+settings import independently; an unresolvable homepage is skipped with a warning
+rather than written as a dangling id. A fresh install deliberately does **not**
+write a sitemap — it has no configured origin yet, so it would fill with
+localhost URLs.
+
+**A content-only import now carries the homepage across.** Replacing content
+replaces every id, which used to leave `homepage_id` dangling — and a dangling
+homepage serves the **404 page at `/`**. The importer remembers what the homepage
+was as a `<type>:<path>` reference, re-matches it among the imported rows, and if
+the package has no such page it clears the setting and says so in the preview and
+the toast, instead of leaving `/` broken.
+
+Still to do: **step 3**, the coverage pass.
+
+**Why.** Two things are wrong with treating `theme/` as the worked example. The
+demo content that shows what the theme can do is buried in `setup.php` — about
+500 of its 1047 lines — so a theme developer's data lives away from their theme
+and only the installer can produce it. And the demo does not exercise everything
+the theme implements: it seeds **no categories or tags**, so `blog-archive.php`
+and `taxonomy.php` never render on a fresh install, the blog layout's category
+and tag badges never appear and `taxonomy-archive.css.php` is never used; the
+`landing` layout belongs to no page; and `blog-preview-section` ships a
+hard-coded newsletter form that does nothing (no action, no token) while
+`contact-section` already renders the declared `newsletter` form type properly.
+
+The minimal starter theme this phase used to describe is **dropped**: the
+default theme is the example, and the developer need is met by it being complete,
+reachable and documented. It already mirrors the reference site page for page —
+index, about, contact, faq, pricing, portfolio overview, portfolio item, blog
+home and blog post all map to existing components and layouts.
+
+**Work.** Three ordered steps, each shippable on its own.
+
+1. **A package, split in two.**
+   * `content.json` — `content` (type, slug, title, status, layout/header/footer,
+     meta, body, published_at, and a parent named by **slug**), `taxonomies` with
+     the content that uses them, and `menus`.
+   * `settings.json` — only the settings that describe the site's content: site
+     title, homepage **slug**, default layout/header/footer, per-type URL
+     prefixes, menu-to-location assignments, site description and title suffix.
+   * Both carry `format: 1`. Ids are never carried; parents, taxonomy links and
+     the homepage are resolved by slug on import. Media is deliberately absent —
+     a demo references theme image filenames, which `resolve_image_value()`
+     already handles, so a package stays text.
+   * Excluded **by name**, because a package must never carry them: `site_url`,
+     `timezone`, `admin_default_language`, `media_sizes`, `generate_webp`,
+     `quality_webp`, `strip_metadata`, `contact_email` (environment and ops), and
+     `custom_css`, `header_scripts`, `footer_scripts`, `robots_extra`,
+     `maintenance_mode`, `maintenance_message` (raw and admin-only). Importing a
+     file that carried `site_url` or `timezone` would wreck the install it lands
+     on.
+2. **`content_export()` / `content_import()`** beside the existing export
+   helpers. Export streams the two documents. Import applies the sections it is
+   given — **content, taxonomies and menus as one unit**, settings as the other —
+   and **validates first, refusing the whole import with a report** if the
+   package names a content type, component, layout, header or footer this theme
+   does not have; nothing half-imports. It runs in a transaction, reindexes
+   search, invalidates the cache and rebuilds the sitemap. A **dry run** reports
+   what would be deleted, created and changed, including each setting's old and
+   new value, and resolves the homepage slug against the content that will exist:
+   an unresolved homepage is skipped with a warning rather than written as a
+   dangling id. Menus are wired by the imported assignments when settings come
+   too, and by the existing slug-matching fallback in `get_menu_for_location()`
+   when they do not.
+3. **Wire it up and fill the gaps.**
+   * `theme/demo/content.json` and `theme/demo/settings.json`; `setup.php` seeds
+     by importing them instead of 500 lines of arrays — the same 15 items in the
+     same order, so slugs, URLs and the test suite are unchanged.
+   * Utilities gains **Export** — one download button per document, no zip — and
+     **Import** with two sources: the theme's demo files (choose content, settings
+     or both) or uploaded JSON — one input accepting several files, sections
+     detected from the document keys, a stray or duplicated section refused.
+     Import is
+     two-step: **Preview** validates and reports, then **Import now** applies.
+     Uploads are stashed under `storage/imports/` (random name, deleted on apply
+     or after an hour) so the second step needs no re-upload; the health check's
+     writable-directory list gains that directory. The demo path needs no stash —
+     it re-reads the files.
+   * The coverage pass: categories and tags in the demo content attached to the
+     demo posts, the `landing` layout on a demo page, and the form markup
+     `contact-section` and `blog-preview-section` share extracted into a partial
+     so the blog signup posts to the newsletter form type. The developer guide
+     gains the reference-page-to-demo-page mapping, so "resembles the reference"
+     stays checkable, and says comments are out of scope — the reference's blog
+     comments have no CMS counterpart, which "considered and not planned" already
+     records — so nobody hunts for the missing component.
+
+**Decisions.** A package carries content, taxonomies, menus and that one
+content-facing settings list — never users, media binaries, schema, or
+environment settings, which is what keeps this a content tool rather than a
+site-migration tool. Export produces **two files** matching the theme's layout;
+import takes any subset, which is also how live content moves between installs.
+
+**Verify.** A round trip per section: content only, settings only, and both —
+slugs, types, titles, URLs, taxonomy links, menus, assignments and settings all
+match, and the settings-only case leaves content untouched. A package naming an
+unknown content type, component or layout is refused with the offending names in
+the report and nothing written. Seeding from the JSON produces exactly today's
+15 items — counts, types and slugs — with the search index built. **Every layout
+in the manifest is reachable from some seeded page**, which is what the coverage
+pass buys, and a test can assert it. The phase-13 check stays clean,
+`tests/theme.test.php` and `tests/export.test.php` extend, and the admin flow is
+exercised through the local server: preview, import, reset, and a rejected file.
+
+**Reject if** it becomes a full site-migration tool — users, media binaries,
+schema — or introduces runtime theme selection.
 
 ## 16. Navigation: content-id links, hide, active state, preview (C, S–M)
 
@@ -743,8 +870,8 @@ phase 7.
 # Considered and not planned
 
 * **Plugin/theme marketplace, visual builder, multisite, theme switching** — the
-  product is one install, one theme; the starter theme and integrity check cover
-  the developer need.
+  product is one install, one theme; the theme's demo content and the integrity
+  check cover the developer need.
 * **REST/JSON API, headless, GraphQL, SDKs, CLI** — a whole public surface to
   secure and version; static export covers simple static hosting. No CLI by
   design; migrations run on request and from Utilities.
@@ -774,7 +901,6 @@ Settle each at the start of its phase, not now.
 * **Phase 6:** how far the CSP goes given vendored Quill and raw snippet
   settings.
 * **Phase 9:** custom CSS — a raw setting, or explicitly out (theme owns design)?
-* **Phase 15:** starter theme at `theme-starter/` or `examples/theme-starter/`?
 * **Phase 20:** FTS5 now, or only when a client reports search quality problems?
 * **Phase 27:** hand-rolled SMTP client or documented host relay?
 * **Track D:** when to schedule, and whether per-locale menu labels are needed in v1.

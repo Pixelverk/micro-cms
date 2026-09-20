@@ -3,21 +3,225 @@ declare(strict_types=1);
 
 $pageTitle = admin_trans('nav_utilities');
 
+/*
+|--------------------------------------------------------------------------
+| Content package requests
+|--------------------------------------------------------------------------
+| Import is two steps: the preview says what would happen, and the second
+| request applies it. An upload is stashed between them, so the apply needs
+| only the token; the theme's own demo files are simply read twice.
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * The sections the posted form asked for.
+ *
+ * @return array{content: bool, settings: bool}
+ */
+function utilities_package_sections(): array
+{
+    $wanted = (array) ($_POST['sections'] ?? []);
+
+    return [
+        'content'  => in_array('content', $wanted, true),
+        'settings' => in_array('settings', $wanted, true),
+    ];
+}
+
+/**
+ * Read the chosen source and plan it, without writing anything.
+ *
+ * @param array{content: bool, settings: bool} $sections
+ * @return array{errors: list<string>, plan: array<string, mixed>, package: array<string, mixed>, source: string, files: int, token: string, sections: array{content: bool, settings: bool}}
+ */
+function utilities_import_read(array $sections, string $stashedToken = ''): array
+{
+    $documents = [];
+    $errors    = [];
+    $source    = 'demo';
+    $files     = 0;
+    $token     = '';
+
+    if ($stashedToken !== '') {
+        $read   = content_package_stash_read($stashedToken);
+        $source = 'files';
+        $token  = $stashedToken;
+        $files  = count($read['documents']);
+        $documents = $read['documents'];
+        $errors = $read['errors'];
+    } else {
+        // A fresh upload on the preview request.
+        $uploads = content_package_uploads($_FILES['files'] ?? []);
+
+        if (content_package_uploads_present($uploads)) {
+            $stash     = content_package_stash_store($uploads);
+            $read      = content_package_stash_read($stash['token']);
+            $source    = 'files';
+            $token     = $stash['token'];
+            $files     = $stash['count'];
+            $documents = $read['documents'];
+            $errors    = array_merge($stash['errors'], $read['errors']);
+        } else {
+            $demo      = content_package_theme_demo();
+            $documents = $demo['documents'];
+            $errors    = $demo['errors'];
+        }
+    }
+
+    $available = ['content' => false, 'settings' => false];
+
+    foreach ($documents as $document) {
+        foreach (['content', 'settings'] as $section) {
+            if (isset($document[$section])) {
+                $available[$section] = true;
+            }
+        }
+    }
+
+    if (!$sections['content'] && !$sections['settings']) {
+        $errors[] = 'Choose content, settings, or both.';
+    }
+
+    foreach (['content', 'settings'] as $section) {
+        if ($sections[$section] && !$available[$section]) {
+            $errors[] = "The package carries no {$section}.";
+        }
+    }
+
+    // Keep only what was asked for, then plan the result.
+    $chosen = [];
+
+    foreach ($documents as $document) {
+        if (!$sections['content']) {
+            unset($document['content'], $document['taxonomies'], $document['menus']);
+        }
+
+        if (!$sections['settings']) {
+            unset($document['settings']);
+        }
+
+        if (isset($document['content']) || isset($document['settings'])) {
+            $chosen[] = $document;
+        }
+    }
+
+    $merged = content_package_merge($chosen);
+    $plan   = content_package_plan($merged['package']);
+
+    return [
+        'errors'   => array_merge($errors, $merged['problems']),
+        'plan'     => $plan,
+        'package'  => $merged['package'],
+        'source'   => $source,
+        'files'    => $files,
+        'token'    => $token,
+        // The apply form repeats these, so it imports what was previewed.
+        'sections' => $sections,
+    ];
+}
+
 // ----------------------------
 // Handle POST actions
 // ----------------------------
 $message = '';
 $toastType = 'success';
+$importPreview = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = $_POST['utility_action'] ?? '';
 
     // Allow only known actions
-    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations', 'search_reindex'];
+    $allowedActions = ['clear_cache', 'warm_cache', 'export_static', 'export_backup', 'reset_analytics', 'clear_trash', 'regenerate_sitemap', 'publish_due', 'run_migrations', 'search_reindex', 'export_package', 'import_preview', 'import_apply'];
 
     if (in_array($action, $allowedActions, true)) {
         switch ($action) {
+
+            case 'export_package':
+                // One button, one document, so the request names what it wants.
+                $section = (string) ($_POST['section'] ?? '');
+
+                if ($section === 'content') {
+                    $filename = 'content.json';
+                    $json     = content_package_json(content_package_export_content());
+                } elseif ($section === 'settings') {
+                    $filename = 'settings.json';
+                    $json     = content_package_json(content_package_export_settings());
+                } else {
+                    redirect_with_toast('utilities', 'error', admin_trans('utilities_export_none'));
+                }
+
+                log_activity('utility.content_export', 'utility', null, $filename, ['bytes' => strlen($json)]);
+
+                header('Content-Type: application/json; charset=utf-8');
+                header('Content-Disposition: attachment; filename="' . $filename . '"');
+                header('Content-Length: ' . strlen($json));
+                echo $json;
+                exit;
+
+            case 'import_preview':
+                // The preview is page content, not a toast, so nothing is
+                // redirected: the report renders below the form.
+                content_package_stash_prune();
+                $importPreview = utilities_import_read(utilities_package_sections());
+
+                // A refused preview has nothing to apply, so its stash goes now
+                // rather than waiting for the hourly prune.
+                if ($importPreview['errors'] || $importPreview['plan']['problems']) {
+                    content_package_stash_forget($importPreview['token']);
+                    $importPreview['token'] = '';
+                }
+                break;
+
+            case 'import_apply':
+                $sections = utilities_package_sections();
+                $stashed  = (string) ($_POST['token'] ?? '');
+
+                // The token was checked when it was stashed, so a demo import
+                // (no token) and a stashed one take the same path.
+                $read    = utilities_import_read($sections, $stashed);
+                $problem = array_merge($read['errors'], $read['plan']['problems']);
+
+                if ($problem) {
+                    if ($stashed !== '') {
+                        content_package_stash_forget($stashed);
+                    }
+
+                    redirect_with_toast('utilities', 'error', admin_trans('utilities_import_refused') . ': ' . implode(' ', $problem));
+                }
+
+                try {
+                    $summary = content_package_import($read['package']);
+                } catch (Throwable $exception) {
+                    debug_log('content import failed: ' . $exception->getMessage());
+
+                    if ($stashed !== '') {
+                        content_package_stash_forget($stashed);
+                    }
+
+                    redirect_with_toast('utilities', 'error', admin_trans('utilities_import_failed'));
+                }
+
+                if ($stashed !== '') {
+                    content_package_stash_forget($stashed);
+                }
+
+                log_activity('utility.content_import', 'utility', null, $read['source'], $summary);
+
+                $message = admin_trans('utilities_import_done', [
+                    'content'    => $summary['content'],
+                    'taxonomies' => $summary['taxonomies'],
+                    'menus'      => $summary['menus'],
+                    'settings'   => $summary['settings'],
+                ]);
+
+                // Anything the import had to skip or reset matters as much as
+                // the counts, so it rides along in the same toast.
+                foreach ($summary['warnings'] as $warning) {
+                    $message .= ' ' . $warning;
+                    $toastType = 'error';
+                }
+                break;
 
             case 'clear_cache':
                 invalidate_cache();
@@ -304,6 +508,207 @@ ob_start();
     <input type="hidden" name="utility_action" id="utility-action-input">
 </form>
 
+<?php /* The content package is two cards, each opening a dialog: what to
+         include, and where a package comes from, are decisions for the dialog
+         rather than controls sitting open on the page. */ ?>
+<fieldset class="settings-group">
+    <legend>
+        <?= icon('clipboard-check', 18) ?>
+        <?= e(admin_trans('utilities_group_package')) ?>
+    </legend>
+
+    <div class="utility-grid">
+        <div class="utility-action">
+            <div class="utility-action-head">
+                <span class="tile-icon" aria-hidden="true"><?= icon('download', 20) ?></span>
+                <h3><?= e(admin_trans('utilities_export')) ?></h3>
+            </div>
+            <p><?= e(admin_trans('utilities_export_help')) ?></p>
+            <button type="button" class="btn" data-modal="package-export">
+                <?= icon('download', 16) ?><?= e(admin_trans('utilities_export_open')) ?>
+            </button>
+        </div>
+
+        <div class="utility-action">
+            <div class="utility-action-head">
+                <span class="tile-icon" aria-hidden="true"><?= icon('open-in-browser', 20) ?></span>
+                <h3><?= e(admin_trans('utilities_import')) ?></h3>
+            </div>
+            <p><?= e(admin_trans('utilities_import_help')) ?></p>
+            <button type="button" class="btn" data-modal="package-import">
+                <?= icon('open-in-browser', 16) ?><?= e(admin_trans('utilities_import_open')) ?>
+            </button>
+        </div>
+    </div>
+</fieldset>
+
+<?php /* Export dialog: one document per button, so there is nothing to tick and
+         nothing to zip. */ ?>
+<div id="package-export" class="modal-backdrop" hidden>
+    <div class="modal">
+        <div class="modal-header">
+            <h3><?= e(admin_trans('utilities_export_title')) ?></h3>
+            <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="utility_action" value="export_package">
+
+                <p><?= e(admin_trans('utilities_export_help')) ?></p>
+
+                <div class="field">
+                    <span class="field-label"><?= e(admin_trans('utilities_export_content')) ?></span>
+                    <button type="submit" class="btn" name="section" value="content">
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_export_content_json')) ?>
+                    </button>
+                </div>
+
+                <div class="field">
+                    <span class="field-label"><?= e(admin_trans('utilities_export_settings')) ?></span>
+                    <button type="submit" class="btn" name="section" value="settings">
+                        <?= icon('download', 16) ?><?= e(admin_trans('utilities_export_settings_json')) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<?php
+/* Import dialog. A preview is rendered by the same request that posted it, so
+   the dialog is simply rendered open again — no JavaScript needed to show the
+   report, and the form stays available when a package is refused. */
+$importRefused = $importPreview && ($importPreview['errors'] || $importPreview['plan']['problems']);
+$importReady   = $importPreview && !$importRefused;
+?>
+<div id="package-import" class="modal-backdrop"<?= $importPreview ? ' style="display:flex"' : ' hidden' ?>>
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3><?= e(admin_trans('utilities_import_title')) ?></h3>
+            <button type="button" class="close-modal" aria-label="<?= e(admin_trans('common_close')) ?>">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <?php if (!$importReady): ?>
+                <form method="post" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="utility_action" value="import_preview">
+
+                    <p class="field-note" id="package-import-source" hidden
+                       data-demo="<?= e(admin_trans('utilities_import_source_demo_auto')) ?>"
+                       data-files="<?= e(admin_trans('utilities_import_source_files')) ?>"></p>
+
+                    <div class="field">
+                        <span class="field-label"><?= e(admin_trans('utilities_import_sections')) ?></span>
+                        <label class="field-check">
+                            <input type="checkbox" name="sections[]" value="content" checked>
+                            <span class="field-label"><?= e(admin_trans('utilities_import_section_content')) ?></span>
+                        </label>
+                        <label class="field-check">
+                            <input type="checkbox" name="sections[]" value="settings" checked>
+                            <span class="field-label"><?= e(admin_trans('utilities_import_section_settings')) ?></span>
+                        </label>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="package-files"><?= e(admin_trans('utilities_import_files')) ?></label>
+                        <input class="field-input" type="file" id="package-files" name="files[]" accept="application/json,.json" multiple>
+                        <small><?= e(admin_trans('utilities_import_files_help')) ?></small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary"><?= e(admin_trans('utilities_import_preview')) ?></button>
+                    </div>
+                </form>
+
+                <?php if ($importRefused): ?>
+                    <div class="notice notice-error">
+                        <p><strong><?= e(admin_trans('utilities_import_refused')) ?></strong></p>
+                        <ul>
+                            <?php foreach (array_merge($importPreview['errors'], $importPreview['plan']['problems']) as $problem): ?>
+                                <li><?= e($problem) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <?php $previewPlan = $importPreview['plan']; ?>
+
+                <div class="notice notice-info">
+                    <p>
+                        <?= $importPreview['source'] === 'files'
+                            ? e(admin_trans('utilities_import_source_files', ['count' => $importPreview['files']]))
+                            : e(admin_trans('utilities_import_source_demo')) ?>
+                    </p>
+                    <p>
+                        <?= e(admin_trans('utilities_import_replaces', [
+                            'delete'     => $previewPlan['delete']['content'] + $previewPlan['delete']['taxonomies'] + $previewPlan['delete']['menus'],
+                            'content'    => $previewPlan['create']['content'],
+                            'taxonomies' => $previewPlan['create']['taxonomies'],
+                            'menus'      => $previewPlan['create']['menus'],
+                        ])) ?>
+                    </p>
+                    <p>
+                        <?= e(admin_trans('utilities_import_homepage')) ?>:
+                        <?= e($previewPlan['homepage']['ref'] !== '' ? $previewPlan['homepage']['ref'] . ' — ' . $previewPlan['homepage']['note'] : $previewPlan['homepage']['note']) ?>
+                    </p>
+                </div>
+
+                <h3><?= e(admin_trans('utilities_import_settings_heading')) ?></h3>
+
+                <?php if (!$previewPlan['settings']): ?>
+                    <p class="field-note"><?= e(admin_trans('utilities_import_settings_none')) ?></p>
+                <?php else: ?>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><?= e(admin_trans('utilities_import_settings_heading')) ?></th>
+                                <th><?= e(admin_trans('common_updated')) ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($previewPlan['settings'] as $change): ?>
+                                <tr>
+                                    <td><?= e($change['key']) ?></td>
+                                    <td><?= e($change['from']) ?> &rarr; <?= e($change['to']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+
+                <?php if ($previewPlan['warnings']): ?>
+                    <div class="notice notice-warning">
+                        <p><strong><?= e(admin_trans('utilities_import_warnings')) ?></strong></p>
+                        <ul>
+                            <?php foreach ($previewPlan['warnings'] as $warning): ?>
+                                <li><?= e($warning) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <form method="post" class="form-actions">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="utility_action" value="import_apply">
+                    <input type="hidden" name="token" value="<?= e($importPreview['token']) ?>">
+
+                    <?php foreach (['content', 'settings'] as $section): ?>
+                        <?php if ($importPreview['sections'][$section]): ?>
+                            <input type="hidden" name="sections[]" value="<?= e($section) ?>">
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+
+                    <button type="submit" class="btn-danger"><?= e(admin_trans('utilities_import_now')) ?></button>
+                    <a class="btn btn-muted" href="<?= e(url('admin/utilities')) ?>"><?= e(admin_trans('common_cancel')) ?></a>
+                </form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
 <script>
 const form = document.getElementById('utilities-form');
 const actionInput = document.getElementById('utility-action-input');
@@ -339,6 +744,61 @@ form.querySelectorAll('button[data-action]').forEach(btn => {
         }
     });
 });
+
+/* The content package dialogs. A preview is rendered open by the server, so
+   opening, closing and Escape are all this needs to do. */
+(() => {
+    const close = backdrop => {
+        backdrop.hidden = true;
+        backdrop.style.display = '';
+    };
+
+    document.querySelectorAll('[data-modal]').forEach(opener => {
+        const backdrop = document.getElementById(opener.dataset.modal);
+        if (!backdrop) return;
+
+        opener.addEventListener('click', () => {
+            backdrop.hidden = false;
+            backdrop.style.display = 'flex';
+
+            const focusable = backdrop.querySelector('input, button');
+            if (focusable) focusable.focus();
+        });
+
+        // Clicking the backdrop (but not the dialog) closes it.
+        backdrop.addEventListener('click', event => {
+            if (event.target === backdrop) close(backdrop);
+        });
+
+        backdrop.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', () => close(backdrop));
+        });
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+
+        document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(close);
+    });
+
+    /* Chosen files replace the demo rather than adding to it, and that has to
+       be visible before the preview says which one it read. */
+    const fileInput = document.getElementById('package-files');
+    const sourceLine = document.getElementById('package-import-source');
+
+    if (fileInput && sourceLine) {
+        const paintSource = () => {
+            const count = fileInput.files.length;
+            const text = count ? sourceLine.dataset.files : sourceLine.dataset.demo;
+
+            sourceLine.textContent = text.replace(':count', String(count));
+            sourceLine.hidden = false;
+        };
+
+        fileInput.addEventListener('change', paintSource);
+        paintSource();
+    }
+})();
 </script>
 
 <?php

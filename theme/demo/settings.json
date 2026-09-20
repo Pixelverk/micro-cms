@@ -1,0 +1,19 @@
+{
+    "format": 1,
+    "settings": {
+        "site_title": "Awesome site",
+        "default_layout": "default",
+        "default_header": "site-header",
+        "default_footer": "site-footer",
+        "content_prefixes": {
+            "page": "",
+            "blog_post": "blog",
+            "portfolio_item": "portfolio"
+        },
+        "menu_locations": {
+            "main": "main",
+            "footer": "footer"
+        },
+        "homepage": "page:home"
+    }
+}

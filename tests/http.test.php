@@ -102,7 +102,18 @@ function http(string $method, string $url, bool $useCookies = true, array $post 
     }
 
     if ($post) {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post));
+        // A CURLFile means a multipart upload: curl builds the body from the
+        // array itself, so the values must not be query-encoded first.
+        $multipart = false;
+
+        foreach ($post as $value) {
+            if ($value instanceof CURLFile) {
+                $multipart = true;
+                break;
+            }
+        }
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $multipart ? $post : http_build_query($post));
     }
 
     $response = curl_exec($ch);
@@ -1506,6 +1517,201 @@ t('the dashboard offers only what the signed-in role can open', function () use 
     assert_contains('href="' . url('admin/settings') . '"', $adminDashboard, 'and settings');
     assert_contains('href="' . url('admin/media') . '"', $adminDashboard, 'and media');
     assert_contains('href="' . url('admin/user') . '"', $adminDashboard, 'and users');
+});
+
+t('a content package exports through Utilities', function () use ($base) {
+    http_login($base);
+
+    // The dialog is two download buttons and nothing else: no checkboxes, no zip.
+    [$status, $dialog] = http('GET', $base . '/admin/utilities', true);
+
+    assert_eq(200, $status);
+    assert_contains('name="section" value="content"', $dialog, 'one button exports the content');
+    assert_contains('name="section" value="settings"', $dialog, 'and one exports the settings');
+
+    $token = http_csrf_token($base, '/admin/utilities');
+
+    [$status, $body, $headers] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'export_package',
+        '_token'         => $token,
+        'section'        => 'content',
+    ]);
+
+    assert_eq(200, $status);
+    assert_contains('Content-Disposition: attachment; filename="content.json"', $headers, 'the download is named for the format');
+
+    $document = json_decode($body, true);
+    assert_eq(1, $document['format'] ?? null, 'it is a versioned package');
+    // Earlier tests add content of their own, so the demo is a floor, not the
+    // exact total.
+    assert_true(count($document['content'] ?? []) >= 15, 'every content item travels');
+    assert_contains('"path": "home"', $body, 'the demo pages are in there');
+    assert_not_contains('"settings"', $body, 'and settings stay out of a content-only export');
+
+    [$status, $settings, $settingsHeaders] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'export_package',
+        '_token'         => $token,
+        'section'        => 'settings',
+    ]);
+
+    assert_eq(200, $status);
+    assert_contains('Content-Disposition: attachment; filename="settings.json"', $settingsHeaders);
+    assert_contains('"site_title"', $settings);
+    assert_contains('"homepage": "page:home"', $settings, 'the homepage travels by slug, not id');
+    assert_not_contains('site_url', $settings, 'environment settings never travel');
+
+    // A request that names neither document is refused rather than guessing.
+    [$status] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'export_package',
+        '_token'         => $token,
+    ]);
+
+    assert_eq(302, $status, 'an unnamed export lands back on the page');
+});
+
+t('the theme demo imports through the Utilities preview', function () use ($base) {
+    http_login($base);
+
+    // The dialog has to name its source before anything is previewed, because
+    // uploading files replaces the demo rather than adding to it.
+    [$status, $dialog] = http('GET', $base . '/admin/utilities', true);
+
+    assert_eq(200, $status);
+    assert_contains('id="package-import-source"', $dialog, 'the source is shown up front');
+    assert_contains(
+        'data-demo="' . e(admin_trans('utilities_import_source_demo_auto')) . '"',
+        $dialog,
+        'and the demo is the default source'
+    );
+    assert_contains(
+        'data-files="' . e(admin_trans('utilities_import_source_files')) . '"',
+        $dialog,
+        'while chosen files are stated to replace it'
+    );
+
+    $token = http_csrf_token($base, '/admin/utilities');
+
+    // Preview: the report renders on the page rather than redirecting.
+    [$status, $page] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'import_preview',
+        '_token'         => $token,
+        'sections'       => ['content', 'settings'],
+    ]);
+
+    assert_eq(200, $status);
+    // The report is admin markup, so compare decoded text. Every translation is
+    // also embedded in the page as JSON, so the apply step is asserted by its
+    // own markup rather than by its label.
+    $text = html_entity_decode($page, ENT_QUOTES);
+    assert_contains(admin_trans('utilities_import_source_demo'), $text, 'the source is named');
+    assert_contains('Replaces ', $text, 'and the plan is spelled out');
+    assert_contains('name="token"', $page, 'the apply step is offered');
+    // The apply form repeats the sections, so it imports what was previewed.
+    assert_contains('type="hidden" name="sections[]" value="content"', $page, 'the content section is carried over');
+    assert_contains('type="hidden" name="sections[]" value="settings"', $page, 'and so is settings');
+
+    // Settings are imported with content, so the site title is restored.
+    db()->prepare("UPDATE settings SET value = 'Changed By Hand' WHERE key = 'site_title'")->execute();
+
+    [$status] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'import_apply',
+        '_token'         => $token,
+        'sections'       => ['content', 'settings'],
+        'token'          => '',
+    ]);
+
+    assert_eq(302, $status, 'applying lands back on the page with a toast');
+    assert_eq('Awesome site', get_setting('site_title'), 'the package settings were applied');
+    assert_eq(15, (int) db()->query("SELECT COUNT(*) FROM content")->fetchColumn(), 'and the content replaced');
+});
+
+t('an uploaded package is stashed, previewed and applied', function () use ($base) {
+    http_login($base);
+
+    // A one-page package, so the result is unmistakable.
+    $upload = test_tmp_root() . '/package-upload.json';
+    file_put_contents($upload, json_encode([
+        'format'  => 1,
+        'content' => [[
+            'type'   => 'page',
+            'path'   => 'from-the-upload',
+            'title'  => 'From The Upload',
+            'status' => 'published',
+            'meta'   => ['description' => 'Uploaded through the Utilities page.'],
+            'body'   => [],
+        ]],
+        'menus' => [],
+    ], JSON_UNESCAPED_SLASHES));
+
+    $token = http_csrf_token($base, '/admin/utilities');
+
+    [$status, $page] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'import_preview',
+        '_token'         => $token,
+        'sections'       => ['content'],
+        // The [] is what makes PHP build an array in $_FILES.
+        'files[]'        => new CURLFile($upload, 'application/json', 'content.json'),
+    ]);
+
+    assert_eq(200, $status);
+    $text = html_entity_decode($page, ENT_QUOTES);
+    assert_contains(admin_trans('utilities_import_source_files', ['count' => 1]), $text, 'the upload is the source');
+
+    if (!preg_match('/name="token" value="([a-f0-9]{24})"/', $page, $matches)) {
+        throw new RuntimeException('the preview did not offer a token to apply');
+    }
+
+    assert_true((bool) glob(STORAGE_PATH . '/imports/' . $matches[1] . '/*.json'), 'the upload waits in storage/imports');
+
+    [$status] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'import_apply',
+        '_token'         => $token,
+        'sections'       => ['content'],
+        'token'          => $matches[1],
+    ]);
+
+    assert_eq(302, $status);
+
+    $slugs = db()->query("SELECT slug FROM content ORDER BY id")->fetchAll(PDO::FETCH_COLUMN);
+    assert_eq(['from-the-upload'], $slugs, 'the package replaced the content');
+    assert_false(is_dir(STORAGE_PATH . '/imports/' . $matches[1]), 'and the stash was cleared');
+
+    @unlink($upload);
+});
+
+t('a package this theme cannot render is refused in the preview', function () use ($base) {
+    http_login($base);
+
+    $upload = test_tmp_root() . '/package-bad.json';
+    file_put_contents($upload, json_encode([
+        'format'  => 1,
+        'content' => [[
+            'type'   => 'event',
+            'path'   => 'launch-night',
+            'title'  => 'Launch night',
+            'status' => 'published',
+            'meta'   => [],
+            'body'   => [],
+        ]],
+    ]));
+
+    $token = http_csrf_token($base, '/admin/utilities');
+
+    [$status, $page] = http('POST', $base . '/admin/utilities', true, [
+        'utility_action' => 'import_preview',
+        '_token'         => $token,
+        'sections'       => ['content'],
+        'files[]'        => new CURLFile($upload, 'application/json', 'content.json'),
+    ]);
+
+    assert_eq(200, $status);
+    $text = html_entity_decode($page, ENT_QUOTES);
+    assert_contains(admin_trans('utilities_import_refused'), $text, 'the report refuses the import');
+    assert_contains("Unknown content type 'event'", $text, 'and names what it does not have');
+    assert_not_contains('name="token"', $page, 'so there is no apply step');
+    assert_eq([], glob(STORAGE_PATH . '/imports/*/*.json') ?: [], 'and nothing is left stashed');
+
+    @unlink($upload);
 });
 
 // ---------------------------------------------------------------------------
