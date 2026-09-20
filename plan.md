@@ -441,11 +441,54 @@ shorter. Ask the user to expand on each item before implementation.
 
 ## 12. Media library UX + media usage before delete (A, S–M)
 
-Mostly done from previous work. Add a caption (or drop the dormant `title` column), a type filter,
-drag-and-drop upload, multi-select with bulk delete, AVIF generation when
-Imagick supports it, and the "where is this file used?" warning before delete.
-No crop unless a concrete client asks. Verify with
-`tests/media.test.php` and manual library use.
+**Shipped.** The library already had the file-type tabs (with counts) and search
+over name, alt text and description from earlier work. This phase added:
+
+* **"Where is this file used?" before delete.** `media_usage_map()` makes one
+  pass over content, settings and menus and returns the places each file is
+  referenced; both delete entry points name them in the confirmation. Matching is
+  deliberately narrow — an id is only read from image-typed component props and
+  the image settings, because matching any number would collide with a `limit` of
+  3 or a WebP quality of 80, while a media URL or path is matched anywhere (a
+  base path is a unique `YYYY/MM/random` folder name). Saved versions and form
+  submissions are excluded: they are history, not what the site renders.
+* **Paging and a cheaper listing.** 24 rows a page, filters applied by the
+  database, and variant dimensions read from `sizes_json` instead of a
+  `getimagesize()` on every variant file of every row — one filesystem read per
+  variant per page view, which was the library's real cost.
+* **Bulk delete.** A checkbox per row, a select-all, and a toolbar that appears
+  with the selection; the toolbar is its own form outside the table (rows already
+  contain a delete form, and forms cannot nest) and the checkboxes join it with
+  the `form` attribute. One `media_delete()` serves the single button and the
+  bulk action, so the two cannot drift; the endpoint re-reads every id and
+  applies the same 200-item limit as the content bulk endpoint.
+* **`media.title` dropped** — it was never read or written. `setup.php` no longer
+  creates it and a migration removes it from existing databases.
+
+**Decisions.** Deletion warns and allows in one step: the confirmation names up
+to three places plus the true count. Bulk media deletion confirms first, because
+unlike content it cannot be undone. **Drag-and-drop upload and AVIF generation
+are deliberately out** — WebP already covers current browsers, and multi-file
+upload needs one POST per file. No crop unless a concrete client asks.
+
+**Two things this uncovered, both fixed in passing.** `admin_trans()` replaced
+`:page` before `:pages`, so `common_page_of` rendered "Page 1 of 1s"; placeholders
+are now substituted longest-first, which also fixes the activity log, wrong since
+that page shipped. And `migrate_drop_column()` is best-effort: SQLite only learned
+`DROP COLUMN` in 3.35, and on an older host the column stays rather than aborting
+the registry and stalling every later migration.
+
+**Known, deliberately left.** `media_delete()` reports `invalid_path` when a
+row's folder is already missing, so such a row cannot be removed from the
+library — the orphaned-media scan in phase 24 is the right place to handle that
+class properly. The per-page `media_usage_map()` pass and the tabs' full-column
+scan are both cheap today and can be revisited if a library reaches tens of
+thousands of files.
+
+**Verify.** `tests/media.test.php` (the usage map, `media_delete()`), `tests/http.test.php`
+(the confirmation content, paging, stored variant sizes, bulk delete),
+`tests/admin.test.php` (placeholder order) and `tests/migrate.test.php` (the
+column drop keeps the rows around it); manual library use.
 
 ## 13. Theme integrity check + Health (B, S–M)
 

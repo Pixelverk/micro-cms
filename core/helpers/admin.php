@@ -355,8 +355,13 @@ function admin_trans(string $key, array $replace = []): string
 
     $text = $translations[$locale][$key] ?? $key;
 
-    foreach ($replace as $name => $value) {
-        $text = str_replace(':' . $name, (string)$value, $text);
+    // Longest name first: ':pages' has to be replaced before ':page', or the
+    // shorter one eats its prefix and leaves "1s" behind.
+    $names = array_keys($replace);
+    usort($names, static fn($a, $b): int => strlen((string) $b) <=> strlen((string) $a));
+
+    foreach ($names as $name) {
+        $text = str_replace(':' . $name, (string) $replace[$name], $text);
     }
 
     return $text;

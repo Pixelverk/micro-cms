@@ -70,11 +70,12 @@ function docs_content(): array
                     ['p' => 'Uploads are automatically resized into several widths and converted to WebP where possible, with a JPEG or PNG fallback. The original is kept as well.'],
                     ['p' => 'Selecting a file opens an inspector on the right: the preview, its name, size and upload date, the alt text and description, and an optional replacement file.'],
                     ['p' => 'Choose size/format lists every stored variant with its pixel dimensions, so you can pick the right one before pressing Copy URL. The URL goes on the clipboard ready to paste into content or a template.'],
-                    ['p' => 'There is no usage report yet, so check whether a file is still referenced before deleting it. Media has a search box for finding a file by name, alt text or description.'],
+                    ['p' => 'Deleting a file that content still uses would break that content, so the confirmation names what uses it — content, site settings and menus — before anything is removed. Media has a search box for finding a file by name, alt text or description.'],
                     ['p' => 'Authors may pick from the media library but cannot upload or delete.'],
                 ],
                 'Bulk actions' => [
                     ['p' => 'Tick the boxes on the left of the content list to reveal a toolbar. You can publish, draft, archive, delete, clear cache, or add and remove a tag across the whole selection at once.'],
+                    ['p' => 'The media library works the same way: tick files and delete them together. Deleting media is permanent, so it asks once before removing anything.'],
                     ['p' => 'Authors can only bulk-edit their own items; anything else is skipped and reported.'],
                 ],
                 'Finding things' => [

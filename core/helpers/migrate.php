@@ -223,6 +223,13 @@ function migrate_registry(): array
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id)");
         },
 
+        // media.title was never read or written: alt_text and description are
+        // what the library and the picker use. Dropped rather than turned into a
+        // caption, because nothing renders a caption.
+        '2026_09_20_000017_drop_media_title' => function (PDO $pdo): void {
+            migrate_drop_column($pdo, 'media', 'title');
+        },
+
     ];
 }
 
@@ -238,6 +245,35 @@ function migrate_add_column(PDO $pdo, string $table, string $column, string $def
     }
 
     $pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
+}
+
+/**
+ * Drop a column, where the database can.
+ *
+ * SQLite only learned `ALTER TABLE ... DROP COLUMN` in 3.35. A host running an
+ * older library keeps the column instead: nothing reads it, and letting the
+ * exception escape would abort the whole registry and stall every later
+ * migration on that host.
+ *
+ * @return bool whether the column is gone
+ */
+function migrate_drop_column(PDO $pdo, string $table, string $column): bool
+{
+    $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_COLUMN, 1) ?: [];
+
+    if (!in_array($column, $columns, true)) {
+        return true;
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE {$table} DROP COLUMN {$column}");
+    } catch (Throwable $exception) {
+        debug_log("could not drop {$table}.{$column}: " . $exception->getMessage());
+
+        return false;
+    }
+
+    return true;
 }
 
 function migrate_marker_path(): string

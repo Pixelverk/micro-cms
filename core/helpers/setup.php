@@ -198,7 +198,6 @@ CREATE TABLE media (
     formats_json TEXT NOT NULL,
     lqip_base64 TEXT,
 
-    title TEXT,
     alt_text TEXT,
     description TEXT,
 

@@ -18,6 +18,11 @@ function content_columns(): array
     return db()->query("PRAGMA table_info(content)")->fetchAll(PDO::FETCH_COLUMN, 1) ?: [];
 }
 
+function media_columns(): array
+{
+    return db()->query("PRAGMA table_info(media)")->fetchAll(PDO::FETCH_COLUMN, 1) ?: [];
+}
+
 /**
  * Simulate a database created by an older setup.php: current tables, none of
  * the columns/tables that migrations added, and no marker.
@@ -35,6 +40,21 @@ function simulate_legacy_database(): void
         }
     }
 
+    // media.title is the one column a migration removes, so a legacy database
+    // is simulated by putting it back — with a row that uses it, to prove the
+    // drop keeps the data around it.
+    if (!in_array('title', media_columns(), true)) {
+        $pdo->exec("ALTER TABLE media ADD COLUMN title TEXT");
+    }
+
+    $pdo->exec("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, title, alt_text, description,
+                           created_at, updated_at)
+        VALUES ('legacy.jpg', '2026/03/legacy01', 'image/jpeg', 10, 1, 1, '{}', '{}',
+                NULL, 'Old caption', 'Legacy alt', 'Legacy description', 1, 1)
+    ");
+
     $pdo->exec("DROP TABLE IF EXISTS migrations");
     $pdo->exec("DROP TABLE IF EXISTS login_attempts");
     $pdo->exec("DROP TABLE IF EXISTS form_rate_limits");
@@ -48,6 +68,10 @@ t('a fresh install already has every migrated schema feature', function () {
     foreach (['created_by', 'updated_by', 'search_text'] as $column) {
         assert_true(in_array($column, $columns, true), "content.{$column} should exist on a fresh install");
     }
+
+    // A column a migration removes must be absent from the installer's schema
+    // too, or the two paths end up different.
+    assert_false(in_array('title', media_columns(), true), 'media.title is gone from a fresh install');
 
     // The installer creates these directly; a legacy database gets them from
     // the migration registry instead.
@@ -73,6 +97,7 @@ t('migrate_run() upgrades a legacy database', function () {
     simulate_legacy_database();
 
     assert_false(in_array('created_by', content_columns(), true), 'precondition: the column is gone');
+    assert_true(in_array('title', media_columns(), true), 'precondition: the dormant column is back');
 
     $ran = migrate_run();
 
@@ -82,6 +107,14 @@ t('migrate_run() upgrades a legacy database', function () {
     foreach (['created_by', 'updated_by', 'search_text'] as $column) {
         assert_true(in_array($column, $columns, true), "content.{$column} should be restored");
     }
+
+    assert_false(in_array('title', media_columns(), true), 'media.title is dropped');
+
+    // Dropping a column must not disturb the rows around it.
+    $legacy = db()->query("SELECT original_name, alt_text, description FROM media WHERE base_path = '2026/03/legacy01'")->fetch(PDO::FETCH_ASSOC);
+    assert_true(is_array($legacy), 'the legacy media row survived');
+    assert_eq('Legacy alt', (string) ($legacy['alt_text'] ?? ''), 'and kept its alt text');
+    assert_eq('Legacy description', (string) ($legacy['description'] ?? ''), 'and its description');
 
     $tables = db()->query("SELECT name FROM sqlite_master WHERE type = 'table'")->fetchAll(PDO::FETCH_COLUMN);
     assert_true(in_array('form_rate_limits', $tables, true), 'rate limit table created');

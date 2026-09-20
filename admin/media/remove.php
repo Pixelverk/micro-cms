@@ -15,47 +15,25 @@ if (!$id) {
 
 $pdo = db();
 
-// ----------------------------
-// Fetch record
-// ----------------------------
-$stmt = $pdo->prepare("SELECT base_path FROM media WHERE id = ?");
+// Read the name first: media_delete() removes the row, and the log entry should
+// say which file went.
+$stmt = $pdo->prepare("SELECT original_name FROM media WHERE id = ?");
 $stmt->execute([$id]);
-$media = $stmt->fetch(PDO::FETCH_ASSOC);
+$originalName = $stmt->fetchColumn();
 
-if (!$media) {
+$status = media_delete($id);
+
+if ($status === 'not_found') {
     redirect_with_toast('media', 'error', admin_trans('media_error_not_found'));
 }
 
-$mediaRoot = realpath(STORAGE_PATH . '/media');
-$folder    = realpath($mediaRoot . '/' . $media['base_path']);
-
-if (!$folder || !str_starts_with($folder, $mediaRoot)) {
+if ($status === 'invalid_path') {
     redirect_with_toast('media', 'error', admin_trans('media_error_invalid_path'));
 }
 
 // ----------------------------
-// Delete media folder
-// ----------------------------
-delete_media_directory($folder);
-
-// ----------------------------
-// Cleanup empty parent folders (YYYY/MM)
-// ----------------------------
-$dir = dirname($folder);
-while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
-    @rmdir($dir);
-    $dir = dirname($dir);
-}
-
-// ----------------------------
-// Delete DB record
-// ----------------------------
-$stmt = $pdo->prepare("DELETE FROM media WHERE id = ?");
-$stmt->execute([$id]);
-
-// ----------------------------
 // Done
 // ----------------------------
-log_activity('media.deleted', 'media', (int) $id, (string) ($media['original_name'] ?? ''), []);
+log_activity('media.deleted', 'media', $id, (string) ($originalName ?: ''), []);
 
 redirect_with_toast('media', 'success', admin_trans('media_deleted'));

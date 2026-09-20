@@ -31,7 +31,6 @@ function seed_media(array $overrides = []): int
         'sizes_json'    => '{}',
         'formats_json'  => '{}',
         'lqip_base64'   => null,
-        'title'         => null,
         'alt_text'      => 'A nice photo',
         'description'   => null,
         'created_at'    => $now,
@@ -40,10 +39,10 @@ function seed_media(array $overrides = []): int
 
     $stmt = db()->prepare("
         INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
-                           sizes_json, formats_json, lqip_base64, title, alt_text, description,
+                           sizes_json, formats_json, lqip_base64, alt_text, description,
                            created_at, updated_at)
         VALUES (:original_name, :base_path, :mime_type, :original_size, :width, :height,
-                :sizes_json, :formats_json, :lqip_base64, :title, :alt_text, :description,
+                :sizes_json, :formats_json, :lqip_base64, :alt_text, :description,
                 :created_at, :updated_at)
     ");
     $stmt->execute($row);
@@ -278,6 +277,87 @@ t('render_image() falls back to the original file when there are no variants', f
     ]);
 
     assert_eq('', render_image((string) $pdf));
+});
+
+t('media_usage_map() finds where a file is referenced', function () {
+    $base  = '2026/03/used0001';
+    $spare = '2026/03/spare001';
+
+    $id    = seed_media(['base_path' => $base, 'formats_json' => json_encode(['webp' => ["{$base}/photo-640.webp"]])]);
+    $other = seed_media(['base_path' => $spare, 'formats_json' => '{}']);
+
+    // A page that names $id in an image prop and in the logo setting, and
+    // $other only by path — once pasted into rich text, once in a menu.
+    $body = [
+        ['type' => 'hero-section', 'props' => ['title' => 'Hi', 'subtitle' => 'There', 'image' => (string) $id], 'children' => []],
+        // `limit` is a number too, but it is not an image field, so it must not
+        // be read as a media id.
+        ['type' => 'blog-stories-section', 'props' => ['title' => 'News', 'limit' => (string) $other], 'children' => []],
+        ['type' => 'quill-editor', 'props' => ['content' => '<img src="/media/' . $spare . '/photo-640.jpg">'], 'children' => []],
+    ];
+
+    db()->prepare("
+        INSERT INTO content (type, title, slug, status, meta, body, created_at, updated_at)
+        VALUES ('page', 'Usage Page', 'usage-page', 'published', ?, ?, :now, :now)
+    ")->execute([json_encode(['thumbnail' => (string) $id]), json_encode($body), 'now' => time()]);
+
+    set_setting('logo', (string) $id);
+    // A numeric setting is not a media reference either.
+    set_setting('quality_webp', (string) $id);
+    settings_cache_clear();
+
+    db()->prepare("INSERT INTO menus (label, slug, items, updated_at) VALUES ('Usage Menu', 'usage-menu', ?, :now)")
+        ->execute([json_encode([['label' => 'File', 'url' => '/media/' . $spare . '/photo-640.jpg']]), 'now' => time()]);
+
+    $map = media_usage_map();
+
+    assert_eq(['Page “Usage Page”', 'Site settings (logo)'], $map[$id] ?? [], 'an image prop and a setting');
+    assert_eq(['Page “Usage Page”', 'Menu “Usage Menu”'], $map[$other] ?? [], 'a path in rich text and in a menu');
+
+    // A file nothing points at is absent rather than listed with no places.
+    $unused = seed_media(['base_path' => '2026/03/unused01']);
+    assert_false(isset($map[$unused]));
+});
+
+t('media_delete() removes the row and the folder, and refuses bad input', function () {
+    $now = time();
+
+    $insert = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description,
+                           created_at, updated_at)
+        VALUES (:name, :base, 'image/jpeg', 100, 10, 10, '{}', '{}', NULL, '', NULL, :now, :now)
+    ");
+
+    // A real row with files on disk, in the YYYY/MM folders the uploader makes.
+    $base   = '2026/03/del00001';
+    $folder = STORAGE_PATH . '/media/' . $base;
+    @mkdir($folder, 0777, true);
+    file_put_contents($folder . '/photo-640.jpg', 'x');
+
+    $insert->execute(['name' => 'delete-me.jpg', 'base' => $base, 'now' => $now]);
+    $id = (int) db()->lastInsertId();
+
+    assert_eq('deleted', media_delete($id));
+    assert_false(is_dir($folder), 'the folder is gone');
+
+    $check = db()->prepare("SELECT COUNT(*) FROM media WHERE id = ?");
+    $check->execute([$id]);
+    assert_eq(0, (int) $check->fetchColumn(), 'the row is gone');
+
+    // Empty YYYY/MM parents are tidied up behind it.
+    assert_false(is_dir(STORAGE_PATH . '/media/2026/03'), 'the month folder is removed too');
+
+    assert_eq('not_found', media_delete(999999), 'an unknown id is reported, not deleted');
+    assert_eq('not_found', media_delete($id), 'deleting twice is a no-op');
+
+    // A base path that climbs out of the media directory must never be followed.
+    $insert->execute(['name' => 'escape.jpg', 'base' => '../../storage', 'now' => $now]);
+    $escapeId = (int) db()->lastInsertId();
+
+    assert_eq('invalid_path', media_delete($escapeId), 'a traversal path is refused');
+    $check->execute([$escapeId]);
+    assert_eq(1, (int) $check->fetchColumn(), 'and its row is left alone');
 });
 
 exit(test_summary());

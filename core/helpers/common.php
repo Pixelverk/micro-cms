@@ -529,6 +529,198 @@ function format_date(?int $timestamp, ?string $format = null): string
 */
 
 /**
+ * Where every media file is referenced, keyed by media id.
+ *
+ * One pass over content, settings and menus, so a page can show what a delete
+ * would break without a query per file. A reference is found in two ways:
+ *
+ *  - **by id**, but only where an id is what gets stored: image-typed component
+ *    props and the image settings. Matching any number anywhere would collide
+ *    with ordinary values such as a WebP quality of 80 or a `limit` of 3.
+ *  - **by path**, anywhere at all: a media URL pasted into rich text, a menu
+ *    link, a setting. A base path is a unique `YYYY/MM/random` folder name, so
+ *    finding it inside a longer string is unambiguous.
+ *
+ * Saved versions and form submissions are not scanned: they are history rather
+ * than something the current site renders.
+ *
+ * @return array<int, list<string>> media id => labels of the places using it
+ */
+function media_usage_map(): array
+{
+    $usage = [];
+
+    // Base path => id, for turning a path reference back into a media row.
+    $idsByPath = [];
+
+    foreach (db()->query("SELECT id, base_path FROM media") as $row) {
+        $idsByPath[(string) $row['base_path']] = (int) $row['id'];
+    }
+
+    if ($idsByPath === []) {
+        return $usage;
+    }
+
+    /**
+     * Record a label against a media id, once.
+     */
+    $note = static function (int $id, string $label) use (&$usage): void {
+        if (!in_array($label, $usage[$id] ?? [], true)) {
+            $usage[$id][] = $label;
+        }
+    };
+
+    /**
+     * Record an id that is stored as-is. Only call this for fields where a
+     * number really is a media id.
+     */
+    $noteId = static function (mixed $value, string $label) use ($note): void {
+        if (is_scalar($value) && ctype_digit(trim((string) $value))) {
+            $note((int) trim((string) $value), $label);
+        }
+    };
+
+    /**
+     * Record any media URLs or paths found inside a value of any shape.
+     */
+    $notePaths = static function (mixed $value, string $label) use ($idsByPath, $note, &$notePaths): void {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $notePaths($item, $label);
+            }
+
+            return;
+        }
+
+        if (!is_scalar($value)) {
+            return;
+        }
+
+        if (preg_match_all('#(\d{4}/\d{2}/[A-Za-z0-9]+)#', (string) $value, $matches)) {
+            foreach (array_unique($matches[1]) as $candidate) {
+                if (isset($idsByPath[$candidate])) {
+                    $note($idsByPath[$candidate], $label);
+                }
+            }
+        }
+    };
+
+    // Content: image props by id, anything at all by path.
+    $contentTypes = theme_config()['content_types'] ?? [];
+
+    $rows = db()->query("SELECT type, title, meta, body FROM content WHERE deleted_at IS NULL")->fetchAll();
+
+    foreach ($rows as $row) {
+        $type  = (string) $row['type'];
+        $label = ($contentTypes[$type]['label'] ?? ucfirst($type)) . ' “' . (string) $row['title'] . '”';
+
+        $meta = json_decode((string) $row['meta'], true);
+        $meta = is_array($meta) ? $meta : [];
+        $body = json_decode((string) $row['body'], true);
+        $body = is_array($body) ? $body : [];
+
+        // The meta keys a content type stores an image in: the ones it declares
+        // for the editor, plus the older ones a layout reads directly.
+        $imageMetaKeys = array_unique(array_merge(
+            array_keys($contentTypes[$type]['images'] ?? []),
+            ['thumbnail', 'image', 'author_image', 'gallery', 'og_image']
+        ));
+
+        foreach ($imageMetaKeys as $key) {
+            foreach ((array) ($meta[$key] ?? []) as $value) {
+                $noteId($value, $label);
+            }
+        }
+
+        $notePaths($meta, $label);
+        $notePaths($body, $label);
+
+        // Component props: only a field the schema calls an image holds an id.
+        $walk = static function (array $components) use (&$walk, $noteId, $label): void {
+            foreach ($components as $component) {
+                if (!is_array($component)) {
+                    continue;
+                }
+
+                $name  = (string) ($component['type'] ?? '');
+                $props = is_array($component['props'] ?? null) ? $component['props'] : [];
+
+                if ($name !== '') {
+                    $schema = content_component_definition($name)['schema'] ?? [];
+
+                    foreach ($schema as $field => $rules) {
+                        if (is_array($rules) && ($rules['type'] ?? '') === 'image') {
+                            $noteId($props[$field] ?? null, $label);
+                        }
+                    }
+                }
+
+                $walk(is_array($component['children'] ?? null) ? $component['children'] : []);
+            }
+        };
+
+        $walk($body);
+    }
+
+    // Settings: only the fields that hold an image can hold a media id.
+    $settings = load_settings();
+
+    foreach (['logo', 'favicon', 'default_og_image'] as $key) {
+        $noteId($settings[$key] ?? null, 'Site settings (' . $key . ')');
+    }
+
+    $notePaths(array_filter($settings, 'is_scalar'), 'Site settings');
+
+    // Menus only ever store URLs, so paths are the only thing to match.
+    foreach (list_menus() as $menu) {
+        $notePaths($menu['items'] ?? [], 'Menu “' . (string) $menu['label'] . '”');
+    }
+
+    return $usage;
+}
+
+/**
+ * Delete one media row and the folder holding its files.
+ *
+ * Returns 'deleted', 'not_found' or 'invalid_path'. The folder goes first: a
+ * row left behind would render a broken image on the site, while a folder left
+ * behind is only wasted bytes. The path is resolved against the media directory
+ * so a crafted base_path can never reach outside storage.
+ */
+function media_delete(int $id): string
+{
+    $pdo = db();
+
+    $stmt = $pdo->prepare("SELECT base_path FROM media WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+    $basePath = $stmt->fetchColumn();
+
+    if ($basePath === false) {
+        return 'not_found';
+    }
+
+    $mediaRoot = realpath(STORAGE_PATH . '/media');
+    $folder    = $mediaRoot === false ? false : realpath($mediaRoot . '/' . $basePath);
+
+    if ($folder === false || !str_starts_with($folder, $mediaRoot)) {
+        return 'invalid_path';
+    }
+
+    delete_media_directory($folder);
+
+    // The uploader creates YYYY/MM folders; remove them once they are empty.
+    $dir = dirname($folder);
+    while ($dir !== $mediaRoot && is_dir($dir) && count(scandir($dir)) === 2) {
+        @rmdir($dir);
+        $dir = dirname($dir);
+    }
+
+    $pdo->prepare("DELETE FROM media WHERE id = ?")->execute([$id]);
+
+    return 'deleted';
+}
+
+/**
  * Recursively delete a media folder and everything inside it.
  *
  * Used when media is removed and when a replacement upload supersedes an

@@ -228,6 +228,160 @@ t('uploaded media is served nosniff', function () use ($base) {
     @unlink($file);
 });
 
+t('the media delete confirmation names what uses the file', function () use ($base) {
+    $now = time();
+
+    $used = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description, created_at, updated_at)
+        VALUES ('used-photo.jpg', '2026/03/usedhttp1', 'image/jpeg', 1024, 640, 400,
+                '{}', '{}', NULL, 'alt', NULL, :now, :now)
+    ");
+    $used->execute(['now' => $now]);
+    $usedId = (int) db()->lastInsertId();
+
+    db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description, created_at, updated_at)
+        VALUES ('spare-photo.jpg', '2026/03/sparehttp', 'image/jpeg', 1024, 640, 400,
+                '{}', '{}', NULL, 'alt', NULL, :now, :now)
+    ")->execute(['now' => $now]);
+
+    // One page points at the first file, so deleting it would break the page.
+    db()->prepare("
+        INSERT INTO content (type, title, slug, status, meta, body, created_at, updated_at)
+        VALUES ('page', 'Uses The Photo', 'uses-the-photo', 'published', ?, '[]', :now, :now)
+    ")->execute([json_encode(['thumbnail' => (string) $usedId]), 'now' => $now]);
+
+    http_login($base);
+    [$status, $page] = http('GET', $base . '/admin/media');
+    assert_eq(200, $status);
+
+    assert_contains(
+        admin_trans('media_delete_confirm_used', [
+            'name'  => 'used-photo.jpg',
+            'count' => 1,
+            'list'  => 'Page “Uses The Photo”',
+        ]),
+        $page,
+        'the confirmation names the page that would break'
+    );
+
+    // A file nothing points at keeps the plain confirmation.
+    assert_contains(
+        admin_trans('media_delete_confirm', ['name' => 'spare-photo.jpg']),
+        $page,
+        'an unused file is not warned about'
+    );
+});
+
+t('the media library pages in the database and keeps its filters', function () use ($base) {
+    // 27 PNGs, one named in upper case: enough for a second page, and proof
+    // that the extension filter is case-insensitive like the tabs are.
+    $insert = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description, created_at, updated_at)
+        VALUES (:name, :base, 'image/png', 100, 10, 10, '{}', '{}', NULL, '', NULL, :now, :now)
+    ");
+
+    for ($i = 1; $i <= 27; $i++) {
+        $insert->execute([
+            'name' => sprintf('page-check-%02d.%s', $i, $i === 27 ? 'PNG' : 'png'),
+            'base' => '2026/03/pagechk' . sprintf('%02d', $i),
+            'now'  => time() + $i,
+        ]);
+    }
+
+    http_login($base);
+
+    $rowCount = static fn(string $html): int => substr_count($html, 'data-media=');
+
+    [$status, $first] = http('GET', $base . '/admin/media?type=png');
+    assert_eq(200, $status);
+    assert_eq(24, $rowCount($first), 'one page of rows, not the whole library');
+    assert_contains('Page 1 of 2', $first, 'the pager names the page, not "Page 1 of 1s"');
+    assert_contains('type=png', $first, 'the pager keeps the type filter');
+
+    [$status, $second] = http('GET', $base . '/admin/media?type=png&page=2');
+    assert_eq(200, $status);
+    assert_eq(3, $rowCount($second), 'the rest of the filtered rows');
+    assert_contains('Page 2 of 2', $second);
+});
+
+t('bulk media delete removes only the selected files', function () use ($base) {
+    $now = time();
+
+    $insert = db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description, created_at, updated_at)
+        VALUES (:name, :base, 'image/jpeg', 100, 10, 10, '{}', '{}', NULL, '', NULL, :now, :now)
+    ");
+
+    $ids = [];
+
+    foreach (['bulk-a.jpg', 'bulk-b.jpg', 'bulk-c.jpg'] as $index => $name) {
+        $basePath = '2026/03/bulkdel' . $index;
+        @mkdir(STORAGE_PATH . '/media/' . $basePath, 0777, true);
+        file_put_contents(STORAGE_PATH . '/media/' . $basePath . '/photo.jpg', 'x');
+
+        $insert->execute(['name' => $name, 'base' => $basePath, 'now' => $now + $index]);
+        $ids[$name] = (int) db()->lastInsertId();
+    }
+
+    // Release the read lock before the server writes to the same database.
+    $insert->closeCursor();
+
+    http_login($base);
+
+    [$status, $page] = http('GET', $base . '/admin/media?q=bulk-');
+    assert_eq(200, $status);
+    assert_contains('id="bulk-form"', $page, 'the toolbar is there to act on a selection');
+    assert_eq(3, substr_count($page, 'name="ids[]"'), 'one checkbox per row');
+
+    $token = http_csrf_token($base, '/admin/media?q=bulk-');
+
+    [$status] = http('POST', $base . '/admin/media/bulk', true, [
+        'ids'    => [$ids['bulk-a.jpg'], $ids['bulk-b.jpg']],
+        '_token' => $token,
+    ]);
+    assert_eq(302, $status);
+
+    $remaining = db()->query("
+        SELECT original_name FROM media WHERE original_name LIKE 'bulk-%' ORDER BY original_name
+    ")->fetchAll(PDO::FETCH_COLUMN);
+
+    assert_eq(['bulk-c.jpg'], $remaining, 'the unselected file is left alone');
+    assert_false(is_dir(STORAGE_PATH . '/media/2026/03/bulkdel0'), 'a deleted folder is gone');
+    assert_true(is_dir(STORAGE_PATH . '/media/2026/03/bulkdel2'), 'the untouched folder stays');
+
+    // An empty selection is refused rather than treated as "everything".
+    [$status] = http('POST', $base . '/admin/media/bulk', true, ['ids' => [], '_token' => $token]);
+    assert_eq(302, $status);
+    assert_eq(1, (int) db()->query("SELECT COUNT(*) FROM media WHERE original_name LIKE 'bulk-%'")->fetchColumn());
+
+    // Leave the scratch media directory as it was found.
+    media_delete($ids['bulk-c.jpg']);
+});
+
+t('the media inspector reads variant dimensions from the stored sizes', function () use ($base) {
+    // Deliberately no file on disk: the numbers below can only come from the
+    // row, so a return to probing the filesystem would fail this.
+    db()->prepare("
+        INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
+                           sizes_json, formats_json, lqip_base64, alt_text, description, created_at, updated_at)
+        VALUES ('sizes-check.png', '2026/03/sizeschk', 'image/png', 100, 900, 500, ?, ?, NULL, '', NULL, :now, :now)
+    ")->execute([
+        json_encode([640 => ['width' => 641, 'height' => 361]]),
+        json_encode(['webp' => ['2026/03/sizeschk/sizes-check-640.webp']]),
+        'now' => time(),
+    ]);
+
+    http_login($base);
+    [$status, $page] = http('GET', $base . '/admin/media?q=sizes-check');
+    assert_eq(200, $status);
+    assert_contains('&quot;width&quot;:641', $page, 'the stored size is used rather than the files on disk');
+});
+
 t('HSTS is sent only over HTTPS', function () {
     unset($_SERVER['HTTPS'], $_SERVER['HTTP_X_FORWARDED_PROTO']);
     assert_false(array_key_exists('Strict-Transport-Security', security_headers()), 'plain HTTP gets no HSTS');

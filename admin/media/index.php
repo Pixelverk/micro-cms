@@ -41,27 +41,48 @@ $filterUrl = function (array $overrides = []) use ($type, $search): string {
 };
 
 // ----------------------------
-// Load files
+// Load one page of files
 // ----------------------------
-$sql = "SELECT * FROM media";
+// A library grows without bound, so the list is paged and the filters are
+// applied by the database rather than to a full result set in PHP.
+$perPage = 24;
+$page    = pagination_current_page();
+
+$where  = [];
 $params = [];
 
 if ($search !== '') {
-    $sql .= " WHERE original_name LIKE :q OR alt_text LIKE :q OR description LIKE :q";
+    $where[] = "(original_name LIKE :q OR alt_text LIKE :q OR description LIKE :q)";
     $params['q'] = "%{$search}%";
 }
 
-$sql .= " ORDER BY created_at DESC";
+if ($type !== '') {
+    // The extension is whatever follows the last dot, and LIKE is
+    // case-insensitive, so this matches the tab the editor clicked.
+    $where[] = "original_name LIKE :ext";
+    $params['ext'] = '%.' . $type;
+}
 
-$stmt = $pdo->prepare($sql);
+$whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM media{$whereSql}");
+$countStmt->execute($params);
+$total = (int) $countStmt->fetchColumn();
+
+$stmt = $pdo->prepare(
+    "SELECT * FROM media{$whereSql} ORDER BY created_at DESC LIMIT {$perPage} OFFSET "
+    . pagination_offset($page, $perPage)
+);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if ($type !== '') {
-    $rows = array_filter($rows, static fn(array $row): bool => strtolower(pathinfo((string) $row['original_name'], PATHINFO_EXTENSION)) === $type);
-}
+$result = pagination_result($rows, $total, $page, $perPage);
 
 $mediaFiles = [];
+
+// Where each file is used, so deleting one can say what it would break. Built
+// in one pass for the whole library rather than a query per row.
+$usage = $rows ? media_usage_map() : [];
 
 foreach ($rows as $row) {
     $formats = json_decode($row['formats_json'], true) ?? [];
@@ -88,16 +109,25 @@ foreach ($rows as $row) {
     }
 
     // Dimensions of each stored variant, so the picker can show what you are
-    // about to copy. The paths are relative to the media directory.
+    // about to copy. Read from the row's stored size map rather than the files:
+    // probing every variant on disk cost one read per file per page view.
+    $sizes = json_decode((string) $row['sizes_json'], true);
+    $sizes = is_array($sizes) ? $sizes : [];
+
     $variantSizes = [];
 
     foreach ($formats as $format => $paths) {
         foreach ((array) $paths as $path) {
-            $file = STORAGE_PATH . '/media/' . $path;
-            $dimensions = is_file($file) ? @getimagesize($file) : false;
+            // A variant's filename carries its width (`photo-640.webp`); the file
+            // without one is the full-size copy.
+            $variantWidth = preg_match('/-(\d+)\.[a-z0-9]+$/i', $path, $matches)
+                ? (int) $matches[1]
+                : (int) ($row['width'] ?? 0);
 
-            $variantSizes[$format][$path] = $dimensions
-                ? ['width' => $dimensions[0], 'height' => $dimensions[1]]
+            $entry = $sizes[$variantWidth] ?? null;
+
+            $variantSizes[$format][$path] = is_array($entry) && isset($entry['width'], $entry['height'])
+                ? ['width' => (int) $entry['width'], 'height' => (int) $entry['height']]
                 : null;
         }
     }
@@ -118,6 +148,7 @@ foreach ($rows as $row) {
         'variant_sizes' => $variantSizes,
         'is_image'      => $isImage,
         'extension'     => strtoupper(pathinfo((string) $row['original_name'], PATHINFO_EXTENSION)),
+        'usage'         => $usage[(int) $row['id']] ?? [],
     ];
 }
 
@@ -189,9 +220,26 @@ ob_start();
         <?php endif; ?>
     </div>
 <?php else: ?>
+    <?php /* Bulk actions live in their own form outside the table: every row
+             already holds a delete form, and forms cannot nest. The row
+             checkboxes join it with the form attribute. */ ?>
+    <form id="bulk-form" method="post" action="<?= url('admin/media/bulk') ?>" class="bulk-toolbar js-confirm-form" hidden
+          data-confirm-title="<?= e(admin_trans('media_delete_selected')) ?>"
+          data-confirm="<?= e(admin_trans('media_bulk_confirm')) ?>">
+        <?= csrf_field() ?>
+
+        <span class="bulk-count"><strong id="bulk-count">0</strong> <?= e(admin_trans('bulk_selected')) ?></span>
+
+        <button type="submit" class="btn-small btn-danger"><?= e(admin_trans('media_delete_selected')) ?></button>
+        <button type="button" class="btn-small btn-muted" id="bulk-clear"><?= e(admin_trans('bulk_clear_selection')) ?></button>
+    </form>
+
     <table class="content-table">
         <thead>
             <tr>
+                <th class="col-select">
+                    <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
+                </th>
                 <th class="media-thumb"><?= e(admin_trans('media_preview')) ?></th>
                 <th><?= e(admin_trans('common_name')) ?></th>
                 <th><?= e(admin_trans('common_type')) ?></th>
@@ -203,9 +251,26 @@ ob_start();
         </thead>
         <tbody>
         <?php foreach ($mediaFiles as $file): ?>
+            <?php
+            /* Deleting a file a page still uses breaks that page, so the
+               confirmation names what uses it. Three is enough to make the
+               point; the count says how many there really are. */
+            $usageShown = array_slice($file['usage'], 0, 3);
+            $deleteMessage = $file['usage']
+                ? admin_trans('media_delete_confirm_used', [
+                    'name'  => $file['original_name'],
+                    'count' => count($file['usage']),
+                    'list'  => implode('; ', $usageShown) . (count($usageShown) < count($file['usage']) ? ' …' : ''),
+                ])
+                : admin_trans('media_delete_confirm', ['name' => $file['original_name']]);
+            ?>
             <?php /* The row carries its own record: both the name and the pencil
                        open the same dialog, and the payload is written once. */ ?>
             <tr data-media="<?= e(json_encode($file, JSON_HEX_APOS | JSON_HEX_QUOT)) ?>">
+                <td>
+                    <input type="checkbox" class="bulk-row" name="ids[]" value="<?= (int) $file['id'] ?>"
+                           form="bulk-form" aria-label="<?= e($file['original_name']) ?>">
+                </td>
                 <td class="media-thumb">
                     <?php if ($file['is_image'] && $file['preview_path']): ?>
                         <picture>
@@ -246,7 +311,7 @@ ob_start();
                         <form method="post" action="<?= url('admin/media/remove') ?>"
                               class="inline-form js-confirm-form"
                               data-confirm-title="<?= e(admin_trans('media_delete')) ?>"
-                              data-confirm="<?= e(admin_trans('media_delete_confirm', ['name' => $file['original_name']])) ?>">
+                              data-confirm="<?= e($deleteMessage) ?>">
                             <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= (int) $file['id'] ?>">
                             <button type="submit" class="btn-delete btn-small btn-icon"
@@ -262,6 +327,25 @@ ob_start();
         </tbody>
     </table>
 <?php endif; ?>
+
+<?php
+// Rendered outside the list so an out-of-range page still offers a way back.
+if ((int) $result['pages'] > 1) {
+    ?>
+    <nav class="pagination" aria-label="<?= e(admin_trans('media_pages')) ?>">
+        <?php if ((int) $result['page'] > 1): ?>
+            <a class="btn-secondary btn-small" href="<?= e(pagination_url(url('admin/media'), (int) $result['page'] - 1, ['type' => $type, 'q' => $search])) ?>">&larr; <?= e(admin_trans('common_previous')) ?></a>
+        <?php endif; ?>
+        <span class="text-muted">
+            <?= e(admin_trans('common_page_of', ['page' => (int) $result['page'], 'pages' => (int) $result['pages']])) ?>
+        </span>
+        <?php if ((int) $result['page'] < (int) $result['pages']): ?>
+            <a class="btn-secondary btn-small" href="<?= e(pagination_url(url('admin/media'), (int) $result['page'] + 1, ['type' => $type, 'q' => $search])) ?>"><?= e(admin_trans('common_next')) ?> &rarr;</a>
+        <?php endif; ?>
+    </nav>
+    <?php
+}
+?>
 
 <?php /* One dialog, filled by whichever row's Details button was pressed. A
          modal per row would be simpler to read but would repeat this markup for
@@ -311,7 +395,8 @@ ob_start();
             <form method="post" action="<?= url('admin/media/remove') ?>"
                   class="media-delete js-confirm-form" id="media-view-delete"
                   data-confirm-title="<?= e(admin_trans('media_delete')) ?>"
-                  data-confirm-template="<?= e(admin_trans('media_delete_confirm', ['name' => '__name__'])) ?>">
+                  data-confirm-template="<?= e(admin_trans('media_delete_confirm', ['name' => '__name__'])) ?>"
+                  data-confirm-template-used="<?= e(admin_trans('media_delete_confirm_used', ['name' => '__name__', 'count' => '__count__', 'list' => '__list__'])) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id" id="media-view-delete-id" value="">
                 <button type="submit" class="btn-text media-delete-link"><?= e(admin_trans('media_delete')) ?></button>
@@ -321,6 +406,46 @@ ob_start();
 </div>
 
 <script>
+/* Select-all and the bulk toolbar, mirroring the content list and the inbox. */
+(() => {
+    const all = document.getElementById('bulk-select-all');
+    if (!all) return;
+
+    const boxes = Array.from(document.querySelectorAll('.bulk-row'));
+    const toolbar = document.getElementById('bulk-form');
+    const countEl = document.getElementById('bulk-count');
+    const clearBtn = document.getElementById('bulk-clear');
+
+    const selected = () => boxes.filter(box => box.checked);
+
+    function sync() {
+        const chosen = selected();
+
+        if (toolbar) toolbar.hidden = chosen.length === 0;
+        if (countEl) countEl.textContent = chosen.length;
+
+        all.checked = chosen.length > 0 && chosen.length === boxes.length;
+        all.indeterminate = chosen.length > 0 && chosen.length < boxes.length;
+    }
+
+    boxes.forEach(box => box.addEventListener('change', sync));
+
+    all.addEventListener('change', () => {
+        boxes.forEach(box => { box.checked = all.checked; });
+        sync();
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            boxes.forEach(box => { box.checked = false; });
+            all.checked = false;
+            sync();
+        });
+    }
+
+    sync();
+})();
+
 (() => {
     const backdrop = document.getElementById('media-view');
     const copyButton = document.getElementById('media-view-copy');
@@ -369,8 +494,12 @@ ob_start();
             document.getElementById('media-view-description').value = media.description;
             document.getElementById('media-view-delete-id').value = media.id;
 
-            deleteForm.dataset.confirm = (deleteForm.dataset.confirmTemplate || '')
-                .replace('__name__', media.original_name);
+            deleteForm.dataset.confirm = (media.usage && media.usage.length
+                ? (deleteForm.dataset.confirmTemplateUsed || '')
+                    .replace('__count__', String(media.usage.length))
+                    .replace('__list__', media.usage.slice(0, 3).join('; ') + (media.usage.length > 3 ? ' …' : ''))
+                : (deleteForm.dataset.confirmTemplate || '')
+            ).replace('__name__', media.original_name);
 
             document.getElementById('media-view-preview').innerHTML =
                 media.is_image && media.preview_path

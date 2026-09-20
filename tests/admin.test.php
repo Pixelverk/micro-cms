@@ -139,6 +139,15 @@ t('admin_can_open() answers with the same map the guard uses', function () {
     assert_eq(null, admin_page_capability('dashboard'));
 });
 
+t('admin_trans() substitutes a longer placeholder before a shorter one', function () {
+    // ':page' is a prefix of ':pages'. Replacing it first left "Page 1 of 1s"
+    // in the activity log and the media library.
+    assert_eq('Page 2 of 5', admin_trans('common_page_of', ['page' => 2, 'pages' => 5]));
+
+    // Ordinary placeholders are unaffected.
+    assert_eq('Welcome, Sam 👋', admin_trans('dashboard_welcome', ['name' => 'Sam']));
+});
+
 t('admin_guard() blocks pages the role cannot open', function () {
     // Guarding is what protects a page; it exits for a forbidden page, so this
     // runs in a subprocess.

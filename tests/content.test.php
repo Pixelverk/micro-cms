@@ -360,10 +360,10 @@ function checklist_seed_media(string $altText = 'A library image'): int
 
     $stmt = db()->prepare("
         INSERT INTO media (original_name, base_path, mime_type, original_size, width, height,
-                           sizes_json, formats_json, lqip_base64, title, alt_text, description,
+                           sizes_json, formats_json, lqip_base64, alt_text, description,
                            created_at, updated_at)
         VALUES ('photo.jpg', '2026/03/checklist', 'image/jpeg', 1000, 800, 600,
-                '{}', '{}', NULL, NULL, ?, NULL, ?, ?)
+                '{}', '{}', NULL, ?, NULL, ?, ?)
     ");
     $stmt->execute([$altText, $now, $now]);
 
