@@ -52,8 +52,8 @@ $where  = [];
 $params = [];
 
 if ($search !== '') {
-    $where[] = "(original_name LIKE :q OR alt_text LIKE :q OR description LIKE :q)";
-    $params['q'] = "%{$search}%";
+    $where[] = "(original_name LIKE :q ESCAPE '\\' OR alt_text LIKE :q ESCAPE '\\' OR description LIKE :q ESCAPE '\\')";
+    $params['q'] = '%' . like_escape($search) . '%';
 }
 
 if ($type !== '') {

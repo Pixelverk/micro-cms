@@ -79,8 +79,8 @@ function form_submission_filter(array $filters): array
     // field without knowing the form's shape.
     $search = trim((string) ($filters['q'] ?? ''));
     if ($search !== '') {
-        $where[] = 'data LIKE :search';
-        $params['search'] = '%' . $search . '%';
+        $where[] = "data LIKE :search ESCAPE '\\'";
+        $params['search'] = '%' . like_escape($search) . '%';
     }
 
     return [

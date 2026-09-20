@@ -497,4 +497,12 @@ t('bulk_delete_taxonomies() removes what it can and counts the rest', function (
     assert_eq(2, $again['skipped']);
 });
 
+t('the content list search treats % and _ literally', function () {
+    seed_content(['slug' => 'literal-percent', 'title' => 'Discount 100% Off']);
+
+    assert_true(count(list_content('page', ['q' => '100%'])) >= 1, 'a literal percent is found');
+    assert_count(0, list_content('page', ['q' => '%%']), '%% is not a match-everything wildcard');
+    assert_count(0, list_content('page', ['q' => '__']), '__ is not a match-everything wildcard');
+});
+
 exit(test_summary());

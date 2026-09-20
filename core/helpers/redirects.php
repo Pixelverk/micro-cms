@@ -108,8 +108,8 @@ function redirect_all(array $filters = []): array
     $params = [];
 
     if ($search !== '') {
-        $sql .= " WHERE from_path LIKE :q OR to_path LIKE :q";
-        $params['q'] = '%' . $search . '%';
+        $sql .= " WHERE from_path LIKE :q ESCAPE '\\' OR to_path LIKE :q ESCAPE '\\'";
+        $params['q'] = '%' . like_escape($search) . '%';
     }
 
     $stmt = db()->prepare($sql . " ORDER BY from_path ASC");

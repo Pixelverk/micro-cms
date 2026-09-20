@@ -89,7 +89,7 @@ Wave 3 is opportunistic and can be dropped.
 | 17 | 2 | C | Redirect search + conflict detection | M | — |
 | 18 | 2 | C | SEO output polish | M | 1 |
 | 19 | 2 | B/C | Accessibility pass | S–M | — |
-| 20 | 2 | A | Search hardening | S–M | 1 |
+| 20 | 2 | A | Search hardening | M | 1 |
 | 21 | 2 | A | Version diff and compare | M | — |
 | 22 | 2 | C | Publish webhook | S | — |
 | 23 | 2 | C | RSS/Atom feed | S | — |
@@ -1177,11 +1177,161 @@ anything on screen.
 no-JS half turns into a navigation rebuild, ship the skip link, the single
 heading, the dialogs, the names and the arrow keys, and record the rest.
 
-## 20. Search hardening (A, S–M)
+## 20. Search hardening (A, M)
 
-Admin search over users and form submissions, and a cross-type admin search;
-index meta `author` and taxonomy names. Decide whether to move the front end to
-SQLite FTS5 (see open decisions). Verify with `tests/search.test.php`.
+**Shipped.** Search runs `LIKE` or FTS5, chosen per request.
+`search_fts5_available()` probes by creating a temporary FTS5 table once per
+request, with `search_override_fts5()` as the test seam, and `search_content()`
+dispatches to `search_content_like()` or `search_content_fts()`; both share the
+visibility, type and taxonomy clauses and keep the `published_at DESC, id DESC`
+order. The derived `content_fts` table (`fts5(search_text)`, `rowid =
+content.id`) is created and filled by the read path, updated by
+`search_index_content()`, rebuilt by `search_reindex_all()` and cleared by
+`purge_content()`; an FTS failure is logged and the request falls back to `LIKE`.
+Taxonomy names match at query time through an `EXISTS`, `meta.author` is in
+`search_text`, and `like_escape()` plus `ESCAPE '\'` closed the wildcard hole in
+all eight text searches.
+
+Two things the first cut got wrong, both caught by the tests.
+`search_index_content()` must not probe or build the index: it runs while the
+save's write statements are live, and SQLite refuses the schema change with
+"database table is locked" — so creation moved to the read path and to
+`search_fts_refresh()` after a reindex, and the write path only updates an index
+that already exists. And `content_fts MATCH …` cannot sit inside the
+`OR EXISTS(taxonomy)` expression (FTS5: "unable to use function MATCH in the
+requested context"), so the FTS matcher is a subquery:
+`c.id IN (SELECT rowid FROM content_fts WHERE content_fts MATCH :fts)`.
+
+An existing install picks up author indexing on its next reindex (Utilities →
+Rebuild search index); the derived table appears on the first search. On a host
+without FTS5 nothing changes: `LIKE` answers, and no FTS object is created or
+touched. The residue of "either backend" is asserted and documented rather than
+hidden — FTS5 folds non-ASCII case (`ångström` finds `Ångström`) and matches
+tokens and prefixes, where `LIKE` matches any substring but folds ASCII only.
+
+**Why.** The admin half of this item is already done — every list has its own
+search — so the phase is the front end, where four things are wrong: a query can
+be silently broadened by a wildcard, an author cannot be found, a category or tag
+name works only as a filter, and the matcher assumes one SQLite build. The last
+is now a requirement: **search must work on a host with FTS5 and on one without
+it**, so FTS5 becomes an optional accelerator behind a runtime probe and `LIKE`
+stays the guaranteed baseline.
+
+**Findings (probed on a fresh install).**
+
+* **Admin search is already shipped, and the cross-type search is dropped.**
+  Users (`admin/user/index.php`, over username, first and last name and email),
+  form submissions (`form_submission_filter()`, `q` over the JSON `data`), and
+  the content, media, redirects, category, tag and activity lists each carry
+  their own `?q=` box. A cross-type admin search answers no question the sidebar
+  and the per-list search do not, so it is **out**.
+* **`%` and `_` are wildcards wherever a search binds `LIKE`.** Each binds
+  `'%' . $query . '%'` into `LIKE` with no `ESCAPE`, so the user's characters are
+  treated as patterns. On the seeded site `search_content('%%')` returns 16
+  results and `search_content('__')` 16, where the correct answer is 0. That is
+  the front end plus six admin searches that reach SQL — media, form
+  submissions, redirects, activity, categories and tags — and the unused `q`
+  branch of `content_list_rows()`/`list_content_page()`. The admin **user**
+  search (`stripos`) and the admin **content list** (`mb_strtolower`/
+  `str_contains` in PHP) never bind `LIKE` and were never affected.
+* **`meta.author` is not indexed.** `search_build_text()` takes the title,
+  `meta.description`, `meta.excerpt` and the body; the author field phase 18 made
+  editable is absent. The demo's posts carry "Valerie Luna", "Kelly Rowan" and
+  "Josiah Barclay", and all three queries return 0.
+* **Taxonomy names are filters, not search terms.** `search_content()` joins the
+  taxonomy tables only for `?category=`/`?tag=`. The demo's "Freebies" and
+  "Web Design" return 0; "News" returns 2 only because the word is in the prose.
+* **`LIKE` folds ASCII case only.** SQLite's built-in `LIKE` is
+  case-insensitive for ASCII alone — `'Ångström' LIKE '%ångström%'` is false
+  here, `'Hello' LIKE '%hello%'` is true — which is both the concrete gap behind
+  FTS5 and the reason it is worth having when a host offers it.
+
+**The fallback contract.** FTS5 is optional; `LIKE` is the guarantee.
+
+* **Probe, never assume.** `search_fts5_available()` is memoised for the request
+  and answers by trying `CREATE VIRTUAL TABLE temp.__fts5_probe USING fts5(x)`
+  in a `try`/`catch` — not by version, and not by `PRAGMA compile_options`, which
+  a build may omit. A test-only override forces either answer, so both paths run
+  on one machine. (PHP cannot enable FTS5 from php.ini, Apache or the
+  application; it is fixed when the linked SQLite is built.)
+* **The index is derived, never schema of record.** `setup.php` and
+  `migrate_registry()` stay identical on every host; the `fts5` table is created
+  lazily once the probe says yes, and **without triggers**. A trigger on
+  `content` would reference a missing module on a non-FTS5 host and break every
+  write; a standalone index left behind is inert — verified: SQLite opens the
+  database and reads and writes `content` normally, and only a direct touch of
+  the virtual table fails, which the probe already prevents. `content.id` is
+  `INTEGER PRIMARY KEY AUTOINCREMENT`, so a stale row can never be reattached to
+  a new item.
+* **Same results, same order, either way.** Both backends match the same query,
+  order by `published_at DESC, id DESC`, and build the excerpt and highlight from
+  `search_text`, so a page does not change shape with the host. `bm25` ranking
+  stays out for now: it would make ordering host-dependent, which is the thing
+  this requirement avoids.
+* **A broken index never 500s.** An FTS prepare or execute failure is logged and
+  the request falls back to `LIKE`.
+
+**Work.** Steps 1–3 are the `LIKE`-only hardening and ship on their own; steps
+4–6 add the optional backend on top.
+
+1. **Escape the wildcards.** One `like_escape()` helper in
+   `core/helpers/common.php` (loaded unconditionally, where the users are spread
+   across front and admin helpers) escapes `\`, `%` and `_`, and every user-text
+   `LIKE` gains `ESCAPE '\'`. Deliberate patterns stay: the media extension match
+   and the activity action prefix are built by the code, not typed by a user.
+2. **Index the author.** `search_build_text()` adds `meta.author`. Nothing else
+   is needed — the save path already reindexes, so it cannot go stale.
+3. **Match taxonomy names at query time.** Add an `EXISTS` over
+   `taxonomy_term_relationships`/`taxonomy`, OR-ed with the backend's match, so a
+   term's name finds its content with no filter. Index-time would need a reindex
+   hook in every relationship write — `admin/content/save.php` (which writes the
+   links *after* `save_content()` has already reindexed), `duplicate.php` (same
+   order), `bulk.php`'s add/remove tag, `taxonomy_delete()` and the category/tag
+   rename — and one missed hook is a silently stale index. The `EXISTS` is always
+   current and works under either backend. Trade-off: a hit that matched only a
+   term name has nothing to highlight in its excerpt.
+4. **The backend seam.** `search_fts5_available()` plus a test override,
+   `search_content()` dispatching to `search_content_like()` /
+   `search_content_fts()`, and the shared clauses (visibility, type, taxonomy)
+   assembled once so the two cannot drift.
+5. **The FTS index.** `content_fts USING fts5(search_text)` with
+   `rowid = content.id`. Created with `IF NOT EXISTS` on first use; synced in PHP
+   by `search_index_content()` (delete by rowid, then insert) and rebuilt by
+   `search_reindex_all()` (clear, then repopulate); cleared for a purged item by a
+   small `search_index_remove()`. The MATCH expression is built from the user's
+   query by quoting it as an FTS5 string with internal `"` doubled and a prefix
+   marker on the final token, so punctuation cannot become FTS syntax; tests pin
+   the exact expression and the queries it must match.
+6. **Both paths under test.** Force each backend through the override and run the
+   same contract over both: `%`, `_` and `\` match literally, an author name
+   finds the post, a category name and a tag name find their item, unpublished
+   content never leaks, filters and pagination hold, and the index stays fresh
+   after a save and a rebuild. Plus: a failed probe still answers through `LIKE`,
+   and a database carrying `content_fts` works when the probe is forced false.
+
+**Decisions.** `LIKE` is the baseline and FTS5 an accelerator, chosen by a
+runtime probe; the search API and the page are identical either way. The index is
+standalone and trigger-free, so a database stays portable in both directions and
+no migration depends on the host. Author is prose, so it belongs in
+`search_text`; taxonomy links are relational, so they belong in the query. Both
+backends share the ordering and the excerpt, so "which backend" is invisible
+except for speed and non-ASCII case folding. `bm25` stays out until ranking is
+deliberately wanted.
+
+**Reject if** it becomes a second search system: no triggers, no host-dependent
+schema, no FTS5-only behaviour, no stemming, synonyms or ranking, and no
+cross-type admin search.
+
+**Verify.** `tests/search.test.php` (27): `like_escape()` and `search_fts_query()`
+directly, the probe seam, and a `search_each_backend()` matrix holding both
+backends to one contract — literal `%`, `_` and `\`, an author name, a category
+and a tag name, and the FTS index lifecycle (a save, a rebuild, a purge); plus a
+run with `content_fts` present and the probe forced false.
+`tests/forms.test.php`, `tests/redirects.test.php` and `tests/content.test.php`
+cover the escaped submission, redirect and content-list searches.
+`php tests/run.php` → 440 passed. Through the local server: `/search?q=` returns
+the author and tag hits, `%%` and `__` return nothing, dropping `content_fts` and
+searching again rebuilds it (16 rows), and no FTS fallback was logged.
 
 ## 21. Version diff and compare (A, M)
 
@@ -1312,7 +1462,9 @@ Settle each at the start of its phase, not now.
   Enter-to-open cover the keyboard with script) — and the public form's no-JS
   path, since `form-submit.php` answers JSON to any POST. One small item each, or
   one "public front end without JavaScript" item?
-* **Phase 20:** FTS5 now, or only when a client reports search quality problems?
+* **Phase 20:** settled as dual-backend. FTS5 is used when a runtime probe finds
+  it and `LIKE` answers otherwise; no schema and no migration assumes either
+  build.
 * **Phase 27:** hand-rolled SMTP client or documented host relay?
 * **Track D:** when to schedule, and whether per-locale menu labels are needed in v1.
 

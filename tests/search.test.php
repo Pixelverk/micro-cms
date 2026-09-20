@@ -31,6 +31,23 @@ function search_seed(string $slug, string $title, string $text, string $body = '
     return $id;
 }
 
+/**
+ * Run the same assertions under both backends, so a host with FTS5 and one
+ * without are held to one contract.
+ */
+function search_each_backend(callable $body): void
+{
+    foreach ([false, true] as $fts5) {
+        search_override_fts5($fts5);
+
+        try {
+            $body($fts5);
+        } finally {
+            search_override_fts5(null);
+        }
+    }
+}
+
 t('the installer builds the search index', function () {
     // test_fresh_database() restores a template built by the real installer,
     // so this asserts what a fresh install ships with.
@@ -259,6 +276,110 @@ t('search_item_url() honours URL prefixes and the homepage', function () {
 
 t('search results are never indexable', function () {
     assert_contains('noindex', search_robots());
+});
+
+t('like_escape() makes the LIKE wildcards literal', function () {
+    assert_eq('100\\%', like_escape('100%'));
+    assert_eq('a\\_b', like_escape('a_b'));
+    assert_eq('c\\\\d', like_escape('c\\d'));
+});
+
+t('search_fts_query() quotes the query so FTS operators cannot run', function () {
+    assert_eq('"brown fox"*', search_fts_query('brown fox'));
+    assert_eq('"say ""hi"""*', search_fts_query('say "hi"'));
+    assert_eq('"NEAR("*', search_fts_query('NEAR('));
+});
+
+t('the FTS5 probe can be forced either way', function () {
+    search_override_fts5(false);
+    assert_false(search_fts5_available());
+
+    search_override_fts5(true);
+    assert_true(search_fts5_available());
+
+    search_override_fts5(null);
+    assert_true(is_bool(search_fts5_available()), 'the real probe answers without error');
+});
+
+t('a query containing % or _ matches literally on both backends', function () {
+    search_seed('wildcard-page', 'Wildcard Marker', 'Progress is 100% done, a_b naming');
+
+    search_each_backend(function () {
+        assert_true(search_content('100%')['total'] >= 1, 'a literal percent is found');
+        assert_true(search_content('a_b')['total'] >= 1, 'a literal underscore is found');
+        assert_eq(0, search_content('%%')['total'], '%% is not a match-everything wildcard');
+        assert_eq(0, search_content('__')['total'], '__ is not a match-everything wildcard');
+    });
+});
+
+t('an author name finds the post on both backends', function () {
+    search_seed('author-page', 'Author Marker', 'byline', '', [
+        'meta' => ['description' => 'byline', 'author' => 'Imelda Quist'],
+    ]);
+
+    search_each_backend(function () {
+        assert_true(search_content('Imelda Quist')['total'] >= 1, 'the author is indexed');
+    });
+});
+
+t('a category or tag name finds its item on both backends', function () {
+    $pdo = db();
+    $now = time();
+
+    $id = search_seed('taxname-page', 'TaxName Marker', 'plain text', '');
+
+    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('category', 'page', 'Procedural Zebra', 'proc-zebra', :now, :now)")
+        ->execute(['now' => $now]);
+    $category = (int) $pdo->lastInsertId();
+
+    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('tag', 'page', 'Quiet Lighthouse', 'quiet-lighthouse', :now, :now)")
+        ->execute(['now' => $now]);
+    $tag = (int) $pdo->lastInsertId();
+
+    $pdo->prepare("INSERT INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id) VALUES ('page', :id, :tax)")
+        ->execute(['id' => $id, 'tax' => $category]);
+    $pdo->prepare("INSERT INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id) VALUES ('page', :id, :tax)")
+        ->execute(['id' => $id, 'tax' => $tag]);
+
+    search_each_backend(function () {
+        assert_true(search_content('Procedural Zebra')['total'] >= 1, 'the category name finds it');
+        assert_true(search_content('Quiet Lighthouse')['total'] >= 1, 'the tag name finds it');
+    });
+});
+
+t('LIKE still answers when the FTS index is present but FTS5 is not', function () {
+    search_seed('nofts-page', 'NoFts Marker', 'NoFtsDescription', '');
+
+    search_override_fts5(true);
+    assert_true(search_content('NoFtsDescription')['total'] >= 1, 'the index answers first');
+
+    search_override_fts5(false);
+    assert_true(search_fts_table_exists(), 'the derived index is still in the database');
+    assert_true(search_content('NoFtsDescription')['total'] >= 1, 'LIKE answers anyway');
+
+    search_override_fts5(null);
+});
+
+t('the derived FTS index follows a save, a rebuild and a purge', function () {
+    search_override_fts5(true);
+
+    $id = search_seed('fts-lifecycle', 'Lifecycle Marker', 'LifecycleDescription', '');
+    assert_true(search_content('LifecycleDescription')['total'] >= 1, 'a saved item is searchable');
+
+    // Start from no index at all: a rebuild recreates and fills it.
+    db()->exec('UPDATE content SET search_text = NULL');
+    db()->exec('DROP TABLE IF EXISTS content_fts');
+    search_reindex_all();
+
+    assert_true(search_fts_table_exists(), 'the rebuild recreates the index');
+    assert_true(search_content('LifecycleDescription')['total'] >= 1, 'and fills it');
+
+    purge_content($id);
+    $stmt = db()->prepare('SELECT COUNT(*) FROM content_fts WHERE rowid = :id');
+    $stmt->execute(['id' => $id]);
+    assert_eq(0, (int) $stmt->fetchColumn(), 'a purge drops the index row');
+
+    search_override_fts5(null);
 });
 
 exit(test_summary());

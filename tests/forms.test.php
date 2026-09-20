@@ -315,4 +315,12 @@ t('a notification setting can name several recipients', function () {
     assert_eq([], form_notification_recipients(''));
 });
 
+t('the submission search treats % and _ literally', function () {
+    seed_submission('contact', ['name' => 'One Hundred 100% Certain']);
+
+    assert_true(form_submission_count(['q' => '100%']) >= 1, 'a literal percent is found');
+    assert_eq(0, form_submission_count(['q' => '%%']), '%% is not a match-everything wildcard');
+    assert_eq(0, form_submission_count(['q' => '__']), '__ is not a match-everything wildcard');
+});
+
 exit(test_summary());

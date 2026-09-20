@@ -243,6 +243,23 @@ function e(string|int|null $value): string {
 
 /*
 |--------------------------------------------------------------------------
+| SQL Helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Escape the wildcards in a value about to be placed inside a LIKE.
+ *
+ * Pair it with `ESCAPE '\'` on the clause. Without this, a visitor typing "%"
+ * or "_" turns their search into a pattern — `%%` matched the whole site.
+ */
+function like_escape(string $value): string
+{
+    return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+}
+
+/*
+|--------------------------------------------------------------------------
 | Request Helpers
 |--------------------------------------------------------------------------
 */

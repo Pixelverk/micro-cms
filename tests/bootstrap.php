@@ -99,9 +99,11 @@ function test_fresh_database(): void
     $templatePath = STORAGE_PATH . '/seed-template.sqlite';
 
     // Rebuild when the template is missing or predates what it is built from:
-    // the schema, or the demo files the installer seeds.
+    // the schema, the demo files the installer seeds, or the indexer that fills
+    // content.search_text (the template bakes in its output).
     $sourceTime = max(
         filemtime(CORE_PATH . '/helpers/setup.php'),
+        filemtime(CORE_PATH . '/helpers/search.php'),
         filemtime(CMS_PATH . '/theme/demo/content.json'),
         filemtime(CMS_PATH . '/theme/demo/settings.json')
     );

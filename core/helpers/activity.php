@@ -179,8 +179,8 @@ function list_activity(array $filters = [], int $limit = 50, int $offset = 0): a
     }
 
     if (!empty($filters['search'])) {
-        $where[] = '(summary LIKE :search OR username LIKE :search OR action LIKE :search)';
-        $params['search'] = '%' . $filters['search'] . '%';
+        $where[] = "(summary LIKE :search ESCAPE '\\' OR username LIKE :search ESCAPE '\\' OR action LIKE :search ESCAPE '\\')";
+        $params['search'] = '%' . like_escape((string) $filters['search']) . '%';
     }
 
     if (!empty($filters['since'])) {

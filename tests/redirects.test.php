@@ -348,4 +348,11 @@ t('the audit finds what cannot work and the repair removes only that', function 
     assert_eq(['chain'], array_values(array_unique(array_column(redirect_audit(), 'kind'))), 'only the chain warning remains');
 });
 
+t('the redirect search treats % and _ literally', function () {
+    redirect_save('literal-percent-path', 'about');
+
+    assert_true(count(redirect_all(['q' => 'literal'])) >= 1, 'a normal search still works');
+    assert_count(0, redirect_all(['q' => '%%']), '%% is not a match-everything wildcard');
+});
+
 exit(test_summary());

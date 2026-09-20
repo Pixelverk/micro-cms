@@ -365,8 +365,8 @@ function content_list_rows(string $type, array $filters, array $visible, bool $w
 
     if (!empty($filters['q'])) {
         // Match the title or the indexed body text (search_text).
-        $sql .= " AND (title LIKE :q OR search_text LIKE :q)";
-        $params['q'] = '%' . $filters['q'] . '%';
+        $sql .= " AND (title LIKE :q ESCAPE '\\' OR search_text LIKE :q ESCAPE '\\')";
+        $params['q'] = '%' . like_escape((string) $filters['q']) . '%';
     }
 
     $order = strtoupper((string) ($filters['order'] ?? 'ASC'));
@@ -416,8 +416,8 @@ function list_content_page(string $type, int $page = 1, int $perPage = 10, array
     }
 
     if (!empty($filters['q'])) {
-        $where .= ' AND (title LIKE :q OR search_text LIKE :q)';
-        $params['q'] = '%' . $filters['q'] . '%';
+        $where .= " AND (title LIKE :q ESCAPE '\\' OR search_text LIKE :q ESCAPE '\\')";
+        $params['q'] = '%' . like_escape((string) $filters['q']) . '%';
     }
 
     $count = $pdo->prepare("SELECT COUNT(*) FROM content{$where}");
@@ -1173,6 +1173,12 @@ function purge_content(int $id): bool
 
     if ($deleted->rowCount() < 1) {
         return false;
+    }
+
+    if (function_exists('search_index_remove')) {
+        foreach ($ids as $contentId) {
+            search_index_remove((int) $contentId);
+        }
     }
 
     invalidate_cache();

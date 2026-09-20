@@ -26,8 +26,8 @@ if ($type !== '') {
 }
 
 if ($search !== '') {
-    $sql .= " AND name LIKE :q";
-    $params['q'] = "%{$search}%";
+    $sql .= " AND name LIKE :q ESCAPE '\\'";
+    $params['q'] = '%' . like_escape($search) . '%';
 }
 
 $sql .= " ORDER BY name ASC";
