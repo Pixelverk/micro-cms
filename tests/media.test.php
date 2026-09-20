@@ -189,8 +189,8 @@ t('resolve_image_value() picks a media variant width', function () {
     ]);
 
     assert_contains('photo-1280.webp', resolve_image_value((string) $id, 1200), 'closest variant to the requested width');
-    assert_eq(img('icon-512.png'), resolve_image_value('icon-512.png'), 'theme filenames still resolve through img()');
-    assert_eq('', resolve_image_value('gone.png'), 'a filename the theme does not ship resolves to nothing, not a 404');
+    assert_eq('', resolve_image_value('icon-512.png'), 'the theme ships icons, not content images');
+    assert_eq('', resolve_image_value('gone.png'), 'and a value that is not an image resolves to nothing, not a 404');
     assert_eq('https://example.test/x.jpg', resolve_image_value('https://example.test/x.jpg'));
     assert_eq('', resolve_image_value(''));
 });
@@ -214,18 +214,18 @@ t('render_image() uses picture() for media ids and a bare img otherwise', functi
     assert_contains('class="card-img-top"', $media);
     assert_contains('alt="From the library"', $media, 'the media row supplies the alt');
 
-    // A theme asset must stay a bare <img>. main.js only reveals images inside
+    // A URL must stay a bare <img>. main.js only reveals images inside
     // .image-wrapper picture, so wrapping one would leave it invisible.
-    $asset = render_image('icon-512.png', ['class' => 'img-fluid', 'alt' => 'The app icon']);
+    $asset = render_image('https://example.test/photo.jpg', ['class' => 'img-fluid', 'alt' => 'A photo']);
 
     assert_contains('<img', $asset);
     assert_contains('class="img-fluid"', $asset);
-    assert_contains('alt="The app icon"', $asset);
+    assert_contains('alt="A photo"', $asset);
     assert_not_contains('image-wrapper', $asset);
     assert_not_contains('<picture>', $asset);
 
-    // A filename the theme does not ship — and the `:placeholder` a schema
-    // default uses — is the CMS's placeholder box, never a URL that 404s.
+    // A value that is not a media id and not a URL — the `:placeholder` a
+    // schema default uses, or anything else — is the CMS's placeholder box.
     $missing = render_image('gone.png', ['class' => 'img-fluid', 'alt' => 'Gone']);
 
     assert_contains('<span class="img-fluid image-placeholder"', $missing);
@@ -240,7 +240,7 @@ t('render_image() uses picture() for media ids and a bare img otherwise', functi
     assert_not_contains('ratio=', $square, 'the ratio is never emitted as an attribute');
 
     // A real image never picks the ratio up either.
-    assert_not_contains('ratio', render_image('icon-512.png', ['ratio' => '1']));
+    assert_not_contains('ratio', render_image('https://example.test/photo.jpg', ['ratio' => '1']));
 
     assert_eq('', render_image(''));
     assert_eq('', render_image(null));

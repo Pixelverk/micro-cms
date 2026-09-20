@@ -207,8 +207,8 @@ return [
         // largest is the apple touch icon. Replaced by an uploaded logo or
         // favicon when Settings has one.
         'app' => [
-            'img/icon-192.png',
-            'img/icon-512.png',
+            'icon-192.png',
+            'icon-512.png',
         ],
     ],
 

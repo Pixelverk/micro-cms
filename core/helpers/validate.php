@@ -108,10 +108,11 @@ function validate_email_list(string $value, bool $allowEmpty = true): bool
 }
 
 /**
- * A media id, an absolute URL, or a theme asset filename.
+ * A media id or an absolute URL.
  *
- * The shape every image setting accepts, so a favicon can point at a media id
- * while a theme keeps shipping a plain filename.
+ * The shape every image setting accepts: the site's images are the ones its
+ * editors uploaded, or somewhere else on the web. A bare filename is not one of
+ * those — the theme ships icons and previews, not content pictures.
  */
 function validate_image_reference(string $value, bool $allowEmpty = true): bool
 {
@@ -125,11 +126,7 @@ function validate_image_reference(string $value, bool $allowEmpty = true): bool
         return true;
     }
 
-    if (validate_url($value)) {
-        return true;
-    }
-
-    return (bool) preg_match('#^[a-z0-9._\-/]+\.(jpe?g|png|gif|webp|avif|svg|ico)$#i', $value);
+    return validate_url($value);
 }
 
 function validate_username(string $username): bool

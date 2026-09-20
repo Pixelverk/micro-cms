@@ -79,7 +79,7 @@ Confirm each before starting; none is scheduled.
 * **Content Security Policy** — deferred from old phase 6. Report-only first, then
   nonces for the admin's inline scripts and the deliberate raw header/footer
   snippets. The whole reason it was deferred is that a useful policy needs one of
-  those two.
+  those two. Might just leave this out. No CDN loads, and output is always escaped with e().
 * **Editor live preview** — an iframe over the existing token preview URL, so an
   editor sees the rendered page without leaving the editor.
 * **Theme developer guide outside the app** — publish the in-app guide as a
@@ -156,11 +156,13 @@ Settle each before starting the work it belongs to.
 * Query-driven views and the page cache: the cache key is the path, so every
   cache decision point must know about query parameters (`index.php` firebreak,
   `checkCache()`, the write path). Pagination needed two guards, not one.
-* Two kinds of image, two owners: **images** are theme files under
-  `theme/assets/img/` (developer-owned, `img()`), while **media** are editor
-  uploads in the `media` table (editor-owned, addressed by id). They do not share
-  a filename space, so a media id handed to `img()` 404s; `render_image()` and
-  `resolve_image_value()` accept either and pick the right pipeline.
+* One kind of content image, one owner: **media** are editor uploads in the
+  `media` table, addressed by id (or by an absolute URL somewhere else).
+  `render_image()` and `resolve_image_value()` accept those two and nothing else;
+  a value that is neither renders the CMS placeholder box. The theme ships no
+  content images — only its SVG icons, its component previews and the app icons
+  the manifest falls back to — so there is no `img()` helper and no theme
+  filename space to collide with a media id.
 * Scheduled publishing is request-triggered (at most once a minute via
   `storage/.publish-check`); there is no cron.
 * `theme/theme.php` decides the component palette per content type; `setup.php`

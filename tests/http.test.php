@@ -1750,7 +1750,7 @@ t('the appearance settings reach the rendered page', function () use ($base) {
         save_settings([
             'favicon'          => 'https://example.com/icon.png',
             'site_description' => 'A description from Settings.',
-            'logo'             => 'icon-512.png',
+            'logo'             => 'https://example.com/logo.png',
             'custom_css'       => '.from-settings { color: red; }',
         ]);
 
@@ -1760,7 +1760,7 @@ t('the appearance settings reach the rendered page', function () use ($base) {
         assert_eq(200, $status);
         assert_contains("<link rel='icon' href='https://example.com/icon.png'>", $body, 'the favicon setting wins');
         assert_contains("name='description' content='A description from Settings.'", $body, 'the site description fills in');
-        assert_contains('/theme/assets/img/icon-512.png', $body, 'the logo renders in the header');
+        assert_contains('https://example.com/logo.png', $body, 'the logo renders in the header');
         assert_contains('.from-settings { color: red; }', $body, 'custom CSS is injected');
     } finally {
         save_settings([

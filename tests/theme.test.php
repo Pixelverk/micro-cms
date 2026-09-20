@@ -304,10 +304,11 @@ t('collect_css() de-duplicates by key', function () {
     assert_eq('.a { color: red; }', $collected[0]['content']);
 });
 
-t('theme images resolve through render_image(), not img() directly', function () {
-    // A meta value (meta.thumbnail, gallery rows) can be a media id, which
-    // img() would resolve as a theme asset and 404. render_image() picks
-    // picture() for media ids and a bare <img> for filenames and URLs.
+t('theme markup hands image values to render_image(), never to asset()', function () {
+    // An image value is a media id or a URL, and only render_image() knows
+    // which: a media id needs picture() and its variants. asset() would turn
+    // either into a theme path. (site_logo_url() is already resolved, so a
+    // header may img src it directly.)
     $offenders = [];
 
     $files = array_merge(
@@ -316,12 +317,12 @@ t('theme images resolve through render_image(), not img() directly', function ()
     );
 
     foreach ($files as $file) {
-        if (str_contains((string) file_get_contents($file), 'img($')) {
+        if (preg_match('#asset\(\$(image|img|thumbnail|authorImage)#', (string) file_get_contents($file))) {
             $offenders[] = str_replace(CMS_PATH . '/', '', $file);
         }
     }
 
-    assert_count(0, $offenders, 'img() used directly in: ' . implode(', ', $offenders));
+    assert_count(0, $offenders, 'an image value passed to asset() in: ' . implode(', ', $offenders));
 });
 
 t('the content types that render a thumbnail expose it to the editor', function () {

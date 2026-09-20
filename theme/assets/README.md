@@ -70,30 +70,34 @@ several layouts. See `theme/partials/taxonomy-archive.css.php`.
 
 ## Images
 
-Render a theme image with `render_image($value, $attrs)`:
+Content images belong to the site, not the theme: an editor uploads them to the
+media library, and `render_image($value, $attrs)` draws one.
 
 ```php
 <?= render_image($meta['thumbnail'] ?? '', ['class' => 'card-img-top', 'alt' => $post['title']]) ?>
 ```
 
-`$value` may be a **media id**, a **theme filename**, or an **absolute URL**:
+`$value` is a **media id** or an **absolute URL**:
 
 * a media id renders `picture()` — a responsive `<picture>` with a WebP source,
   `srcset`/`sizes`, a LQIP background and `alt` text from the media record;
-* a filename the theme ships (`icon-512.png`, resolved through `img()`) or an
-  absolute URL renders a plain `<img>`;
-* a filename the theme does not ship renders the CMS's placeholder box instead
-  of a URL that 404s, so a theme never has to carry a stand-in image.
+* an absolute URL renders a plain `<img>`, exactly the markup the theme used
+  before, without picture()'s LQIP wrapper — main.js only un-blurs
+  `.image-wrapper picture img`, so a bare `<img>` inside one would stay invisible;
+* anything else — a component's `:placeholder` default, a value left over from
+  somewhere — renders the CMS's placeholder box rather than a URL that 404s. A
+  theme never has to carry a stand-in image.
 
 The placeholder is a block the theme still sizes and rounds: pass `'ratio' => '1'`
 (any CSS `aspect-ratio` value, default `3 / 2`) for a slot that is not 3:2. Its
 styling ships from core, before the theme's stylesheets, so `.image-placeholder`
 can be restyled in the theme.
 
-Do not call `img()` on a value that may hold a media id — `img()` treats its
-argument as a theme filename, so a media id would resolve to a 404. Use
-`render_image()` for anything an editor can set, and `img()` only for a file you
-know ships with the theme.
+The theme ships no content images: `theme/assets/icons/` holds the SVG glyphs,
+`theme/assets/previews/` the component previews, and `favicon.ico`, `icon-192.png`
+and `icon-512.png` at the top of `theme/assets/` are the app icons the manifest
+and the apple-touch link fall back to. Reference those with `asset()`; there is
+no `img()` helper, because there is no theme image filename to resolve.
 
 `picture($mediaId, $attrs)` and `media_url($id, $width, $format)` are also
 available. Use `media_url()` when an image becomes a URL rather than an element

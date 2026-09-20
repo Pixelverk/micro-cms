@@ -374,42 +374,12 @@ function asset(string $path): string
 }
 
 /**
- * Return a URL to a theme image, respecting base URL and subfolder.
- */
-function img(string $path): string
-{
-    return url("theme/assets/img/" . ltrim($path, '/'));
-}
-
-/**
- * Whether the theme ships the file a theme image filename names.
- *
- * A theme image value is a filename under theme/assets/img/. A value with
- * nothing behind it is not an image: it renders the CMS placeholder instead of
- * a URL that 404s. The documented way to ask for that placeholder is the
- * `:placeholder` value, which is a filename nothing can ship.
- */
-function theme_image_exists(string $filename): bool
-{
-    $filename = ltrim(trim($filename), '/');
-
-    // img() joins the name onto theme/assets/img/, so refuse anything that
-    // could climb back out of the folder.
-    if ($filename === '' || str_contains($filename, '..')) {
-        return false;
-    }
-
-    return is_file(CMS_PATH . '/theme/assets/img/' . $filename);
-}
-
-/**
- * Resolve a media id, an absolute URL, or a theme image filename to a URL.
+ * Resolve a media id or an absolute URL to a URL.
  *
  * The shape every image setting accepts. Callers that need an absolute URL
- * (Open Graph, JSON-LD) pass the result through seo_absolute_url(). A theme
- * filename the theme does not ship resolves to nothing rather than to a URL
- * that 404s; render_image() is the entry point that shows the CMS placeholder
- * for one.
+ * (Open Graph, JSON-LD) pass the result through seo_absolute_url(). Anything
+ * else — a filename, a stray value — is not an image and resolves to nothing;
+ * render_image() is the entry point that shows the CMS placeholder for one.
  */
 function resolve_image_value(string $value, ?int $width = null): string
 {
@@ -427,27 +397,23 @@ function resolve_image_value(string $value, ?int $width = null): string
         return $value;
     }
 
-    if (!theme_image_exists($value)) {
-        return '';
-    }
-
-    return img($value);
+    return '';
 }
 
 /**
  * Render an image value in a template.
  *
- * An image value is a media id, an absolute URL, or a theme filename. A media
- * id gets the responsive picture() block (WebP srcset, LQIP, alt from the media
- * row). A filename or URL gets a plain <img>, exactly the markup the theme used
- * before, so it is never wrapped in picture()'s LQIP wrapper — main.js only
- * un-blurs `.image-wrapper picture img`, and a bare <img> there would stay
- * invisible.
+ * An image value is a media id or an absolute URL; the editor's images are the
+ * media library's. A media id gets the responsive picture() block (WebP srcset,
+ * LQIP, alt from the media row). A URL gets a plain <img>, exactly the markup
+ * the theme used before, so it is never wrapped in picture()'s LQIP wrapper —
+ * main.js only un-blurs `.image-wrapper picture img`, and a bare <img> there
+ * would stay invisible.
  *
- * A theme filename the theme does not ship — including the `:placeholder` a
- * component schema uses as its default — renders the CMS placeholder box.
- * `$attrs['ratio']` is the shape that box takes, since a missing file has no
- * aspect ratio of its own; it defaults to 3:2 and is never emitted on an <img>.
+ * Anything else — the `:placeholder` a component schema uses as its default, or
+ * a value left over from a theme that used to ship the file — renders the CMS
+ * placeholder box. `$attrs['ratio']` is the shape that box takes; it defaults to
+ * 3:2 and is never emitted on an <img>.
  */
 function render_image(mixed $value, array $attrs = []): string
 {
@@ -477,10 +443,10 @@ function render_image(mixed $value, array $attrs = []): string
         }
 
         $url = media_url((int) $value);
-    } elseif (!preg_match('#^https?://#i', $value) && !theme_image_exists($value)) {
-        return image_placeholder($ratio, $attrs);
+    } elseif (preg_match('#^https?://#i', $value)) {
+        $url = $value;
     } else {
-        $url = resolve_image_value($value);
+        return image_placeholder($ratio, $attrs);
     }
 
     if ($url === '') {
