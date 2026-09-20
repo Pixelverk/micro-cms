@@ -57,7 +57,8 @@ function docs_content(): array
                     ['p' => 'If your role is Author you can write and preview drafts, but an editor or administrator has to publish them.'],
                 ],
                 'Versions and undo' => [
-                    ['p' => 'Every meaningful save stores the previous version. Open History from the editor to see what changed, view any earlier version, and restore it.'],
+                    ['p' => 'Every meaningful save stores the previous version. Open History from the editor to see what changed, compare any two versions — or a version with the current state — and restore one.'],
+                    ['p' => 'The compare view shows a line-by-line diff of the title, status, layout, metadata and components, so you can see exactly which values changed before restoring.'],
                     ['p' => 'Restoring is safe: the state you replace is itself saved to history first, so a restore can be undone.'],
                 ],
                 'Deleting and restoring' => [

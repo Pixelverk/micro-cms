@@ -2722,7 +2722,25 @@ button.sidebar-link {
     gap: 0.4rem;
 }
 
-.version-meta,
+/* The Compare and Restore buttons sit side by side. `.actions` wraps by
+   default, which stacked them in the fixed 180px column the report tables use,
+   and the cell did not carry the class that right-aligns and un-wraps the
+   other action columns. The column is left to size itself. */
+.version-table .col-actions {
+    width: auto;
+    text-align: right;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+/* The Restore control is a button inside its POST form. Making the form a flex
+   box removes the line-box strut, so its button is exactly as tall as the
+   Compare link beside it instead of sitting a few pixels off centre. */
+.version-table .actions form {
+    display: flex;
+    margin: 0;
+}
+
 .version-changes {
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -2731,15 +2749,57 @@ button.sidebar-link {
 
 .version-changes .badge { margin-right: 0.25rem; }
 
-.version-meta-list,
-.version-component-list {
+.version-meta-list {
     margin: 0.5rem 0 0;
     padding-left: 1.25rem;
     font-size: 0.9rem;
 }
 
-.version-component-list code {
-    margin-right: 0.4rem;
+/* Compare form: two version selects and a submit, above the result. */
+.version-compare {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+/* These are <label> elements, so the base rule's bottom margin would push the
+   Submit button's baseline below the selects it sits beside. */
+.version-compare-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 16rem;
+    margin-bottom: 0;
+}
+
+/* Unified diff of a flattened version payload. Every line is escaped text, so
+   the only styling is the add/del/same tint over a monospace column. */
+.diff {
+    margin-top: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--code-bg);
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.diff-line {
+    padding: 0.1rem 0.75rem;
+    white-space: pre;
+}
+
+.diff-add { background: var(--success-soft); color: var(--success); }
+.diff-del { background: var(--danger-soft); color: var(--danger); }
+.diff-same { color: var(--text-muted); }
+
+.diff-marker {
+    display: inline-block;
+    width: 1.2ch;
+    user-select: none;
 }
 
 /*   7.4 Notices

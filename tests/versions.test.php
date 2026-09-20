@@ -330,4 +330,91 @@ t('content_version_reason_label() covers the known reasons', function () {
     assert_eq('Saved', content_version_reason_label('anything-else'));
 });
 
+t('version_text_diff() reports equal, added and removed lines', function () {
+    $ops = version_text_diff(['a', 'b', 'c'], ['a', 'x', 'c']);
+
+    assert_eq(['same', 'del', 'add', 'same'], array_column($ops, 'op'));
+    assert_eq(['a', 'b', 'x', 'c'], array_column($ops, 'text'));
+
+    assert_count(0, version_text_diff([], []), 'two empty lists have nothing to report');
+    assert_eq(['add', 'add'], array_column(version_text_diff([], ['a', 'b']), 'op'), 'an empty before is all additions');
+    assert_eq(['del', 'del'], array_column(version_text_diff(['a', 'b'], []), 'op'), 'an empty after is all deletions');
+    assert_eq(['same', 'same'], array_column(version_text_diff(['a', 'b'], ['a', 'b']), 'op'), 'identical lists are all same');
+});
+
+t('version_text_diff() keeps the common lines around an insertion', function () {
+    $ops = version_text_diff(['a', 'b', 'c'], ['a', 'b', 'new', 'c']);
+
+    assert_eq(['same', 'same', 'add', 'same'], array_column($ops, 'op'));
+    assert_eq('new', $ops[2]['text']);
+});
+
+t('version_text_diff() falls back when a pair is too large', function () {
+    $before = array_map(static fn($i) => 'line ' . $i, range(1, 600));
+    $after  = array_map(static fn($i) => 'other ' . $i, range(1, 600));
+
+    $ops = version_text_diff($before, $after);
+
+    assert_eq(1200, count($ops), 'past the cap everything is removed and then added');
+    assert_eq('del', $ops[0]['op']);
+    assert_eq('add', $ops[1199]['op']);
+});
+
+t('content_version_lines() flattens a payload into labelled lines', function () {
+    $payload = content_version_payload([
+        'title'        => 'My page',
+        'status'       => 'published',
+        'layout'       => 'default',
+        'header'       => null,
+        'footer'       => null,
+        'meta'         => ['description' => 'A page', 'author' => 'Valerie'],
+        'body'         => [
+            ['type' => 'hero-section', 'props' => ['title' => 'Hero'], 'children' => [
+                ['type' => 'cta-section', 'props' => ['title' => 'CTA'], 'children' => []],
+            ]],
+        ],
+        'published_at' => null,
+        'scheduled_at' => null,
+    ]);
+
+    $lines = content_version_lines($payload);
+
+    foreach ([
+        'title: My page',
+        'status: published',
+        'meta › author: Valerie',
+        'meta › description: A page',
+        'body[0]: hero-section',
+        'body[0] › title: Hero',
+        'body[0] › children[0]: cta-section',
+        'body[0] › children[0] › title: CTA',
+    ] as $expected) {
+        assert_true(in_array($expected, $lines, true), "missing line: {$expected}");
+    }
+
+    assert_true(
+        array_search('meta › author: Valerie', $lines, true) < array_search('meta › description: A page', $lines, true),
+        'map keys are sorted, so an unchanged value cannot change position'
+    );
+});
+
+t('content_version_lines() is stable and ignores empty meta and body', function () {
+    $first = content_version_payload([
+        'title' => 'T', 'status' => 'draft', 'layout' => null, 'header' => null, 'footer' => null,
+        'meta' => '{"b":2,"a":1}', 'body' => '[]', 'published_at' => null, 'scheduled_at' => null,
+    ]);
+
+    $second = $first;
+    $second['meta'] = '{"a":1,"b":2}';
+
+    assert_eq(content_version_lines($first), content_version_lines($second), 'key order does not move a line');
+
+    $empty = content_version_lines(content_version_payload([
+        'title' => '', 'status' => 'draft', 'layout' => null, 'header' => null, 'footer' => null,
+        'meta' => '{}', 'body' => '[]', 'published_at' => null, 'scheduled_at' => null,
+    ]));
+
+    assert_count(7, $empty, 'the five scalars and two dates, and nothing for an empty meta or body');
+});
+
 exit(test_summary());

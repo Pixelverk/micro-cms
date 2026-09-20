@@ -445,6 +445,208 @@ function content_version_changes(array $old, array $new): array
 }
 
 /**
+ * Decode a payload value that may be a JSON string.
+ */
+function content_version_decode(mixed $value): mixed
+{
+    if (!is_string($value)) {
+        return $value;
+    }
+
+    $decoded = json_decode($value, true);
+
+    return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+}
+
+/**
+ * Printable text for a scalar payload value.
+ */
+function content_version_value_text(mixed $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+
+    if (is_bool($value)) {
+        return $value ? 'true' : 'false';
+    }
+
+    if (is_scalar($value)) {
+        return (string) $value;
+    }
+
+    return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * Flatten a value into labelled lines for the diff.
+ *
+ * Maps are key-sorted so an unchanged value never moves line; list order is
+ * meaningful and stays as stored. The component shape gets its own branch so a
+ * component reads as a heading ("body[0]: hero-section") with its props and
+ * children indented under it.
+ *
+ * @param list<string> $lines
+ */
+function content_version_flatten(mixed $value, string $label, array &$lines, bool $components = false): void
+{
+    if ($components) {
+        if (!is_array($value)) {
+            return;
+        }
+
+        foreach ($value as $index => $component) {
+            if (!is_array($component)) {
+                continue;
+            }
+
+            $childLabel = $label . '[' . $index . ']';
+            $lines[]    = $childLabel . ': ' . content_version_value_text($component['type'] ?? '?');
+
+            $props = $component['props'] ?? [];
+
+            if (is_array($props)) {
+                ksort($props);
+
+                foreach ($props as $name => $propValue) {
+                    content_version_flatten($propValue, $childLabel . ' › ' . $name, $lines);
+                }
+            }
+
+            content_version_flatten($component['children'] ?? [], $childLabel . ' › children', $lines, true);
+        }
+
+        return;
+    }
+
+    if (is_array($value)) {
+        if ($value === []) {
+            $lines[] = $label . ':';
+            return;
+        }
+
+        if (array_keys($value) !== range(0, count($value) - 1)) {
+            ksort($value);
+        }
+
+        foreach ($value as $key => $item) {
+            content_version_flatten($item, $label . ' › ' . $key, $lines);
+        }
+
+        return;
+    }
+
+    $lines[] = $label . ': ' . content_version_value_text($value);
+}
+
+/**
+ * The versioned payload as labelled lines, ready to be diffed.
+ *
+ * @return list<string>
+ */
+function content_version_lines(array $payload): array
+{
+    $lines = [];
+
+    foreach (['title', 'status', 'layout', 'header', 'footer'] as $key) {
+        $lines[] = $key . ': ' . content_version_value_text($payload[$key] ?? null);
+    }
+
+    foreach (['published_at', 'scheduled_at'] as $key) {
+        $value   = $payload[$key] ?? null;
+        $lines[] = $key . ': ' . ($value === null || $value === '' ? '' : format_local_datetime((int) $value, 'Y-m-d H:i'));
+    }
+
+    $meta = content_version_decode($payload['meta'] ?? null);
+
+    if (is_array($meta) && $meta !== []) {
+        content_version_flatten($meta, 'meta', $lines);
+    }
+
+    $body = content_version_decode($payload['body'] ?? null);
+
+    if (is_array($body) && $body !== []) {
+        content_version_flatten($body, 'body', $lines, true);
+    }
+
+    return $lines;
+}
+
+/**
+ * A plain line diff of two lists of lines.
+ *
+ * Longest common subsequence, then a walk back that emits the equal runs as
+ * `same` with the gaps as `del` and `add`. Cost is bounded so a pathological
+ * body cannot exhaust memory: past the cap the honest answer is that everything
+ * changed.
+ *
+ * @param list<string> $before
+ * @param list<string> $after
+ * @return list<array{op: string, text: string}>
+ */
+function version_text_diff(array $before, array $after): array
+{
+    $n = count($before);
+    $m = count($after);
+
+    if ($n * $m > 250000) {
+        $ops = [];
+
+        foreach ($before as $line) {
+            $ops[] = ['op' => 'del', 'text' => $line];
+        }
+
+        foreach ($after as $line) {
+            $ops[] = ['op' => 'add', 'text' => $line];
+        }
+
+        return $ops;
+    }
+
+    // Flat LCS table: one PHP array instead of a row per line.
+    $width = $m + 1;
+    $lcs   = array_fill(0, ($n + 1) * $width, 0);
+
+    for ($i = $n - 1; $i >= 0; $i--) {
+        for ($j = $m - 1; $j >= 0; $j--) {
+            $lcs[$i * $width + $j] = $before[$i] === $after[$j]
+                ? $lcs[($i + 1) * $width + ($j + 1)] + 1
+                : max($lcs[($i + 1) * $width + $j], $lcs[$i * $width + ($j + 1)]);
+        }
+    }
+
+    $ops = [];
+    $i   = 0;
+    $j   = 0;
+
+    while ($i < $n && $j < $m) {
+        if ($before[$i] === $after[$j]) {
+            $ops[] = ['op' => 'same', 'text' => $before[$i]];
+            $i++;
+            $j++;
+        } elseif ($lcs[($i + 1) * $width + $j] >= $lcs[$i * $width + ($j + 1)]) {
+            $ops[] = ['op' => 'del', 'text' => $before[$i]];
+            $i++;
+        } else {
+            $ops[] = ['op' => 'add', 'text' => $after[$j]];
+            $j++;
+        }
+    }
+
+    while ($i < $n) {
+        $ops[] = ['op' => 'del', 'text' => $before[$i]];
+        $i++;
+    }
+
+    while ($j < $m) {
+        $ops[] = ['op' => 'add', 'text' => $after[$j]];
+        $j++;
+    }
+
+    return $ops;
+}
+
+/**
  * Human label for a stored reason code.
  */
 function content_version_reason_label(string $reason): string

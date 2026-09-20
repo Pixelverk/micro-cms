@@ -74,22 +74,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ----------------------------
-// View one version
+// Compare two versions, or a version with the current state
 // ----------------------------
-$viewId  = (int) ($_GET['version'] ?? 0);
-$viewing = null;
+$versions       = list_content_versions($id, 50);
+$currentRow     = content_version_current_row($id);
+$currentPayload = $currentRow ? content_version_payload($currentRow) : [];
 
-if ($viewId > 0) {
-    $candidate = load_content_version($viewId);
-
-    if ($candidate && (int) $candidate['content_id'] === $id) {
-        $viewing = $candidate;
+/**
+ * Resolve one side of the comparison: "current", or a version of this item.
+ *
+ * A version id from another item is ignored rather than trusted, exactly as the
+ * restore path already does.
+ */
+$resolveSide = function (string $raw) use ($id, $currentRow, $currentPayload): ?array {
+    if ($raw === 'current') {
+        return $currentRow
+            ? ['version' => null, 'payload' => $currentPayload, 'label' => admin_trans('versions_current')]
+            : null;
     }
+
+    $versionId = (int) $raw;
+
+    if ($versionId <= 0) {
+        return null;
+    }
+
+    $candidate = load_content_version($versionId);
+
+    if (!$candidate || (int) $candidate['content_id'] !== $id) {
+        return null;
+    }
+
+    return [
+        'version' => $candidate,
+        'payload' => content_version_payload($candidate),
+        'label'   => admin_trans('versions_number', ['number' => (int) $candidate['version']]),
+    ];
+};
+
+$fromRaw = (string) ($_GET['from'] ?? '');
+$toRaw   = (string) ($_GET['to'] ?? '');
+
+$from = $fromRaw !== '' ? $resolveSide($fromRaw) : null;
+$to   = $toRaw !== '' ? $resolveSide($toRaw) : null;
+
+// One side alone means "against the current state".
+if ($from && !$to) {
+    $to = $resolveSide('current');
+} elseif ($to && !$from) {
+    $from = $resolveSide('current');
 }
 
-$versions = list_content_versions($id, 50);
-$currentRow = content_version_current_row($id);
-$currentPayload = $currentRow ? content_version_payload($currentRow) : [];
+// What the two selects show: the active sides, or the newest version against
+// the current state.
+$fromSelected = 'current';
+
+if ($fromRaw !== '') {
+    $fromSelected = $from && $from['version'] ? (int) $from['version']['id'] : 'current';
+} elseif ($versions) {
+    $fromSelected = (int) $versions[0]['id'];
+}
+
+$toSelected = $toRaw !== ''
+    ? ($to && $to['version'] ? (int) $to['version']['id'] : 'current')
+    : 'current';
 
 $editUrl = url('admin/content/edit') . '?type=' . urlencode($type) . '&id=' . $id;
 $historyUrl = url('admin/content/versions') . '?type=' . urlencode($type) . '&id=' . $id;
@@ -112,25 +160,57 @@ ob_start();
     </div>
 </div>
 
-<?php if ($viewing): ?>
+<?php if ($versions): ?>
+    <form method="get" class="version-compare">
+        <input type="hidden" name="type" value="<?= e($type) ?>">
+        <input type="hidden" name="id" value="<?= (int) $id ?>">
+
+        <label class="version-compare-field">
+            <span class="field-label"><?= e(admin_trans('versions_compare_from')) ?></span>
+            <select name="from" class="field-input">
+                <option value="current"<?= $fromSelected === 'current' ? ' selected' : '' ?>><?= e(admin_trans('versions_current')) ?></option>
+                <?php foreach ($versions as $version): ?>
+                    <option value="<?= (int) $version['id'] ?>"<?= (int) $fromSelected === (int) $version['id'] ? ' selected' : '' ?>>
+                        #<?= (int) $version['version'] ?> &middot; <?= e(format_local_datetime((int) $version['created_at'], 'Y-m-d H:i')) ?> &middot; <?= e(content_version_reason_label((string) $version['reason'])) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label class="version-compare-field">
+            <span class="field-label"><?= e(admin_trans('versions_compare_to')) ?></span>
+            <select name="to" class="field-input">
+                <option value="current"<?= $toSelected === 'current' ? ' selected' : '' ?>><?= e(admin_trans('versions_current')) ?></option>
+                <?php foreach ($versions as $version): ?>
+                    <option value="<?= (int) $version['id'] ?>"<?= (int) $toSelected === (int) $version['id'] ? ' selected' : '' ?>>
+                        #<?= (int) $version['version'] ?> &middot; <?= e(format_local_datetime((int) $version['created_at'], 'Y-m-d H:i')) ?> &middot; <?= e(content_version_reason_label((string) $version['reason'])) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <button type="submit" class="btn-primary"><?= e(admin_trans('versions_compare')) ?></button>
+    </form>
+<?php endif; ?>
+
+<?php if ($from && $to): ?>
     <?php
-    $viewChanges = content_version_changes(content_version_payload($viewing), $currentPayload);
+    $pairChanges = content_version_changes($from['payload'], $to['payload']);
+    $diffLines   = version_text_diff(content_version_lines($from['payload']), content_version_lines($to['payload']));
+    $fromVersion = $from['version'];
     ?>
     <div class="card version-view">
         <div class="version-view-header">
-            <h3>
-                <?= e(admin_trans('versions_number', ['number' => (int) $viewing['version']])) ?>
-                <span class="status status-<?= e($viewing['status']) ?>"><?= e(content_status_label($viewing['status'])) ?></span>
-            </h3>
+            <h3><?= e($from['label']) ?> &rarr; <?= e($to['label']) ?></h3>
             <div class="version-view-actions">
-                <?php if (($viewing['reason'] ?? '') === 'autosave'): ?>
-                    <a class="btn-small btn-primary" href="<?= e($editUrl . '&restore_version=' . (int) $viewing['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
-                <?php else: ?>
+                <?php if ($fromVersion && ($fromVersion['reason'] ?? '') === 'autosave'): ?>
+                    <a class="btn-small btn-primary" href="<?= e($editUrl . '&restore_version=' . (int) $fromVersion['id']) ?>"><?= e(admin_trans('editor_autosave_review')) ?></a>
+                <?php elseif ($fromVersion): ?>
                     <form method="post" class="inline-form js-confirm-form"
                           data-confirm-title="<?= e(admin_trans('versions_restore')) ?>"
-                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $viewing['version']])) ?>">
+                          data-confirm="<?= e(admin_trans('versions_restore_confirm', ['number' => (int) $fromVersion['version']])) ?>">
                         <?= csrf_field() ?>
-                        <input type="hidden" name="version_id" value="<?= (int) $viewing['id'] ?>">
+                        <input type="hidden" name="version_id" value="<?= (int) $fromVersion['id'] ?>">
                         <button type="submit" class="btn-small btn-primary"><?= e(admin_trans('versions_restore_this')) ?></button>
                     </form>
                 <?php endif; ?>
@@ -138,18 +218,22 @@ ob_start();
             </div>
         </div>
 
-        <p class="version-meta">
-            <?= e(format_local_datetime((int) $viewing['created_at'], 'Y-m-d H:i')) ?>
-            <?php if (!empty($viewing['username'])): ?>
-                &middot; <?= e($viewing['username']) ?>
-            <?php endif; ?>
-            &middot; <?= e(content_version_reason_label((string) $viewing['reason'])) ?>
-        </p>
+        <ul class="version-meta-list">
+            <?php foreach (['from' => $from, 'to' => $to] as $side): ?>
+                <?php if (!$side['version']) { continue; } ?>
+                <li>
+                    <strong><?= e($side['label']) ?>:</strong>
+                    <?= e(format_local_datetime((int) $side['version']['created_at'], 'Y-m-d H:i')) ?>
+                    <?php if (!empty($side['version']['username'])): ?>&middot; <?= e($side['version']['username']) ?><?php endif; ?>
+                    &middot; <?= e(content_version_reason_label((string) $side['version']['reason'])) ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
 
-        <?php if ($viewChanges): ?>
+        <?php if ($pairChanges): ?>
             <p class="version-changes">
                 <?= e(admin_trans('versions_differs')) ?>:
-                <?php foreach ($viewChanges as $change): ?>
+                <?php foreach ($pairChanges as $change): ?>
                     <span class="badge"><?= e($change) ?></span>
                 <?php endforeach; ?>
             </p>
@@ -157,49 +241,18 @@ ob_start();
             <p class="version-changes"><?= e(admin_trans('versions_identical')) ?></p>
         <?php endif; ?>
 
-        <h4><?= e($viewing['title']) ?></h4>
-
-        <?php
-        $viewMeta = json_decode((string) ($viewing['meta'] ?? '{}'), true);
-        $viewBody = json_decode((string) ($viewing['body'] ?? '[]'), true);
-        ?>
-
-        <?php if (is_array($viewMeta) && $viewMeta): ?>
-            <details>
-                <summary><?= e(admin_trans('versions_metadata')) ?></summary>
-                <ul class="version-meta-list">
-                    <?php foreach ($viewMeta as $key => $value): ?>
-                        <li>
-                            <strong><?= e((string) $key) ?>:</strong>
-                            <?= e(is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE)) ?>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </details>
-        <?php endif; ?>
-
-        <?php if (is_array($viewBody) && $viewBody): ?>
-            <details open>
-                <summary><?= e(admin_trans('common_components')) ?> (<?= count($viewBody) ?>)</summary>
-                <ol class="version-component-list">
-                    <?php foreach ($viewBody as $component): ?>
-                        <li>
-                            <code><?= e((string) ($component['type'] ?? '?')) ?></code>
-                            <?php if (!empty($component['props'])): ?>
-                                <span class="text-muted"><?= e(implode(', ', array_slice(array_keys($component['props']), 0, 6))) ?></span>
-                            <?php endif; ?>
-                        </li>
-                    <?php endforeach; ?>
-                </ol>
-            </details>
-        <?php endif; ?>
+        <div class="diff">
+            <?php foreach ($diffLines as $line): ?>
+                <div class="diff-line diff-<?= e($line['op']) ?>"><span class="diff-marker" aria-hidden="true"><?= $line['op'] === 'add' ? '+' : ($line['op'] === 'del' ? '-' : ' ') ?></span><?= e($line['text']) ?></div>
+            <?php endforeach; ?>
+        </div>
     </div>
 <?php endif; ?>
 
 <?php if (empty($versions)): ?>
     <p class="empty-state"><?= e(admin_trans('versions_empty')) ?></p>
 <?php else: ?>
-    <table class="content-table">
+    <table class="content-table version-table">
         <thead>
             <tr>
                 <th><?= e(admin_trans('versions_version')) ?></th>
@@ -240,10 +293,10 @@ ob_start();
                     <?= e($version['username'] ?? '—') ?>
                     <small class="text-muted"><?= e(format_local_datetime((int) $version['created_at'], 'Y-m-d H:i')) ?></small>
                 </td>
-                <td class="actions">
-                    <a class="btn-small"
-                       href="<?= e($historyUrl . '&version=' . (int) $version['id']) ?>">
-                        <?= e(admin_trans('common_view')) ?>
+                <td class="actions col-actions">
+                    <a class="btn-small btn-secondary"
+                       href="<?= e($historyUrl . '&from=' . (int) $version['id'] . '&to=current') ?>">
+                        <?= e(admin_trans('versions_compare')) ?>
                     </a>
 
                     <?php if (($version['reason'] ?? '') === 'autosave'): ?>
@@ -273,6 +326,7 @@ ob_start();
 <p><?= e(admin_trans('versions_help')) ?></p>
 <ul>
     <li><?= e(admin_trans('versions_restore_help')) ?></li>
+    <li><?= e(admin_trans('versions_compare_help')) ?></li>
     <li><?= e(admin_trans('versions_retention_help', ['count' => content_version_keep()])) ?></li>
 </ul>
 <?php

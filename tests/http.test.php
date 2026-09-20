@@ -2031,6 +2031,64 @@ t('a package this theme cannot render is refused in the preview', function () us
     @unlink($upload);
 });
 
+t('the history page diffs two versions and refuses another item\'s', function () use ($base) {
+    http_login($base);
+
+    $id = http_seed_content('history-diff-page', 'published', time());
+
+    $snapshot = static fn(string $hero): array => [
+        'title'        => 'Diff page',
+        'status'       => 'published',
+        'layout'       => null,
+        'header'       => null,
+        'footer'       => null,
+        'meta'         => [],
+        'body'         => [['type' => 'hero-section', 'props' => ['title' => $hero], 'children' => []]],
+        'published_at' => null,
+        'scheduled_at' => null,
+    ];
+
+    save_content_version($id, $snapshot('Old hero'), ['reason' => 'save', 'live' => false]);
+    $older = list_content_versions($id)[0];
+
+    save_content_version($id, $snapshot('New hero'), ['reason' => 'save', 'live' => false]);
+    $newer = list_content_versions($id)[0];
+
+    [$status, $body] = http(
+        'GET',
+        $base . '/admin/content/versions?type=page&id=' . $id . '&from=' . $older['id'] . '&to=' . $newer['id'],
+        true
+    );
+
+    assert_eq(200, $status);
+    assert_contains('diff-del', $body, 'removed lines are marked');
+    assert_contains('diff-add', $body, 'added lines are marked');
+    assert_contains('diff-same', $body, 'unchanged lines are shown muted');
+    assert_contains('body[0] › title: Old hero', $body, 'the old value is shown');
+    assert_contains('body[0] › title: New hero', $body, 'the new value is shown');
+    assert_contains('name="from"', $body, 'the compare form lists both sides');
+
+    // A version id belonging to another item is ignored, not resolved.
+    $otherId = http_seed_content('history-diff-other', 'published', time());
+    save_content_version($otherId, $snapshot('Other hero'), ['reason' => 'save', 'live' => false]);
+    $otherVersion = list_content_versions($otherId)[0];
+
+    [$status, $body] = http(
+        'GET',
+        $base . '/admin/content/versions?type=page&id=' . $id . '&from=' . $otherVersion['id'],
+        true
+    );
+
+    assert_eq(200, $status);
+    assert_not_contains('diff-del', $body, 'another item\'s version opens no diff');
+    assert_not_contains('Other hero', $body, 'and its content never appears');
+
+    delete_content_versions($id);
+    delete_content_versions($otherId);
+    db()->prepare('DELETE FROM content WHERE id = :id')->execute(['id' => $id]);
+    db()->prepare('DELETE FROM content WHERE id = :id')->execute(['id' => $otherId]);
+});
+
 // ---------------------------------------------------------------------------
 // Shut the server down
 // ---------------------------------------------------------------------------

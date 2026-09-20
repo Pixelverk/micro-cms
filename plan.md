@@ -1335,9 +1335,100 @@ searching again rebuilds it (16 rows), and no FTS fallback was logged.
 
 ## 21. Version diff and compare (A, M)
 
-A plain-PHP textual diff of the body and a two-version compare; the
-field-name badges stay for the list. No diff library. Verify with
-`tests/versions.test.php`.
+**Shipped.** History is a compare view driven by `?from=<id>&to=<id|current>`: a
+two-select form (Current, then versions newest-first) and a Compare link on every
+row, with the pair named in the header, the changed-field badges above the diff
+and a unified line diff below. `version_text_diff()` — LCS over one flat table,
+capped at 250 000 cells with a whole-block fallback — and
+`content_version_lines()` — scalars, then key-sorted meta, then indented
+components as `body[0]: hero-section` — live in `core/helpers/versions.php`.
+Every line is printed with `e()`, because a snapshot carries editor HTML. Both
+sides are validated against the item, so another item's id opens nothing, and
+restore stays a POST offered only when the From side is a real version (an
+autosave still offers the editor instead). The old metadata and component-name
+lists went with it: the diff shows strictly more. `.diff-add`, `.diff-del`,
+`.diff-same`, the compare form and the marker are styled in the admin stylesheet
+for both themes, the new strings are in both language files, and the in-app docs
+say versions can be compared.
+
+**Why.** History can say *that* a version differs and *which* fields differ, but
+never *how*: the single-version view shows a snapshot's title, its metadata
+key/values and its component type names, and the list's Change column is a set of
+badges. Choosing what to restore is blind, and every comparison is
+snapshot-versus-live — two snapshots cannot be put side by side at all.
+
+**What is already there.** `content_version_changes()` names the changed fields
+(shared by the list and the single-version view), `restore_content_version()` and
+its undo, autosave handling and retention. There is no diff code in the project —
+a `grep -i diff` finds only prose — so this is new work with no library to reach
+for, by design.
+
+**Work.**
+
+1. **One line diff, in `versions.php`.** `version_text_diff(array $before, array
+   $after): array` returns an ordered list of `['op' => 'same'|'add'|'del',
+   'text' => string]` from a longest-common-subsequence pass: build the LCS
+   table, walk it back, and emit equal runs as `same` with the gaps as `del` and
+   `add`. The cost is bounded by a cap (`count($before) * count($after)` over
+   ~250 000); past it, fall back to removing everything and adding everything,
+   because a pathological body must not exhaust memory. It lives in
+   `core/helpers/versions.php`, which is already loaded and is its only consumer
+   — no new helper file and no bootstrap change.
+2. **Flatten a payload into labelled lines.** `content_version_lines(array
+   $payload): array` turns the versioned payload into the lines the diff runs
+   over: one per scalar (`title: …`, `status: draft`, `layout: …`, the two
+   dates), one per meta key (`meta › description: …`), and a labelled indented
+   block per component (`body[0] hero-section`, `body[0] › title: …`,
+   `body[0] › children[1] cta-section`). Maps are key-sorted so an unchanged
+   value never moves line, and an empty meta or body contributes nothing.
+3. **A compare view.** Replace the single `?version=` panel with `?from=<id>` and
+   `?to=<id|current>`: the heading names both sides ("Version 3 → Version 5",
+   "Version 3 → Current"), the field badges for that pair sit above it (reusing
+   `content_version_changes()`), and below is the unified line diff —
+   `.diff-add`, `.diff-del`, `.diff-same`. Every line is printed with `e()`: the
+   lines carry editor content, rich-text markup included, so nothing in a
+   snapshot may render as HTML. Each id is validated against this item, exactly
+   as the restore path already does; an id that is not this item's is ignored
+   rather than fatal. Restore stays a separate POST and is offered only when the
+   "from" side is a real version. The diff supersedes the old metadata and
+   component-name lists, which showed less.
+4. **The compare form.** The history page gains a two-select GET form — From and
+   To, listing each version by number, date and reason, with "Current" an option
+   on either side and the default To. The row's View action becomes Compare and
+   links to `from=<id>&to=current`; the Change column keeps its badges unchanged.
+5. **Presentation and words.** `.diff-*` rules in `admin/assets/style.css` (the
+   design test requires every admin class to be defined), the new `versions_*`
+   strings in **both** language files, and the History paragraph in the in-app
+   docs extended to say versions can be compared, not only restored.
+
+**Decisions.** The diff covers the **whole payload**, not only the body: the
+flattener renders scalars, meta and body in one pass, so "which field" and "what
+changed" come from one mechanism and the badges stay a summary of it. One
+**unified** diff rather than a side-by-side table — it fits the admin column and
+needs no JavaScript. A comparison is always `from` → `to` with "current" as a
+pseudo-version, so the live row and a snapshot travel the same code path. Line
+granularity is one flattened value, which keeps a rich-text field as a single
+removed/added line; splitting HTML into block lines is deliberately out, because
+it would hide markup-only changes such as a new link. Unchanged lines are shown
+muted rather than collapsed: a flattened payload is tens of lines, not hundreds.
+
+**Reject if** it becomes a merge tool or adds a dependency: no diff library, no
+three-way merge, no per-character diff, no "apply this hunk", and no writing
+content back from the compare view.
+
+**Verify.** `tests/versions.test.php` (21): `version_text_diff()` on identical,
+inserted, deleted and replaced lines, on empty sides, and past the cap
+(whole-block fallback); `content_version_lines()` for scalars, meta and a nested
+body, including that key order does not move a line and that an empty payload
+contributes nothing. `tests/http.test.php` (96): an authenticated GET of the
+history page with `from`/`to` renders the added and removed component lines and a
+muted unchanged one, a `from` id belonging to another item opens no diff and
+leaks none of its content, and the compare form lists the stored versions.
+`php tests/run.php` → 446 passed. Through the local server with two seeded
+versions: the page rendered "Version 1 → Version 2", the `Content` badge, the
+removed old hero, the added new hero and CTA lines with the unchanged ones muted,
+the From/To selects defaulting to the newest version and Current, and the row
+Compare link.
 
 ## 22. Publish webhook (C, S)
 
