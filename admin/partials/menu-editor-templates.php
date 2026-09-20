@@ -40,22 +40,30 @@
         <div class="children-container menu-children"></div>
 
         <div class="menu-actions">
-            <label class="field-check menu-item-hidden">
+            <?php /* The hidden switch reads as a fourth icon button: an eye while
+                     the item is on the site, a struck-through one while it is not.
+                     It stays a checkbox underneath, so the form posts it and the
+                     row's own state class drives which icon is shown. */ ?>
+            <label class="menu-hidden-toggle" title="<?= e(admin_trans('menu_hidden')) ?>">
                 <input type="checkbox" class="field-input" data-field="hidden">
-                <?= e(admin_trans('menu_hidden')) ?>
+                <span class="off-screen"><?= e(admin_trans('menu_hidden')) ?></span>
+                <span class="menu-hidden-eye" aria-hidden="true">
+                    <?= icon('eye', 16) ?>
+                    <?= icon('eye-slash', 16) ?>
+                </span>
             </label>
 
             <div class="menu-action-buttons">
-                <button type="button" class="add-child" title="<?= e(admin_trans('editor_child')) ?>">
+                <button type="button" class="add-child btn-small btn-icon" title="<?= e(admin_trans('editor_child')) ?>">
                     <?= icon('corner-down-right', 16) ?>
                     <span class="off-screen"><?= e(admin_trans('editor_child')) ?></span>
                 </button>
-                <button type="button" class="duplicate" title="<?= e(admin_trans('editor_duplicate')) ?>">
+                <button type="button" class="duplicate btn-small btn-icon" title="<?= e(admin_trans('editor_duplicate')) ?>">
                     <?= icon('copy', 16) ?>
                     <span class="off-screen"><?= e(admin_trans('editor_duplicate')) ?></span>
                 </button>
-                <button type="button" class="remove" title="<?= e(admin_trans('common_remove')) ?>">
-                    <?= icon('xmark', 16) ?>
+                <button type="button" class="remove btn-delete btn-small btn-icon" title="<?= e(admin_trans('common_remove')) ?>">
+                    <?= icon('trash', 16) ?>
                     <span class="off-screen"><?= e(admin_trans('common_remove')) ?></span>
                 </button>
             </div>

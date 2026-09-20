@@ -399,7 +399,7 @@ if ((int) $result['pages'] > 1) {
                   data-confirm-template-used="<?= e(admin_trans('media_delete_confirm_used', ['name' => '__name__', 'count' => '__count__', 'list' => '__list__'])) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id" id="media-view-delete-id" value="">
-                <button type="submit" class="btn-text media-delete-link"><?= e(admin_trans('media_delete')) ?></button>
+                <button type="submit" class="btn-text btn-text-danger"><?= e(admin_trans('media_delete')) ?></button>
             </form>
         </div>
     </div>

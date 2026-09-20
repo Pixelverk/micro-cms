@@ -298,7 +298,6 @@ a:focus-visible,
 .items-center { align-items: center; }
 
 .gap-sm { gap: 0.5rem; }
-.gap-md { gap: 1rem; }
 .gap-lg { gap: 1.5rem; }
 
 /* 3.3 Text helpers */
@@ -1050,6 +1049,17 @@ header {
     line-height: 0;
 }
 
+/* A destructive action as a text line: it reads as a link rather than competing
+   with the button beside it, which is what a red block would do. */
+.btn-text-danger {
+    color: var(--danger);
+}
+
+.btn-text-danger:hover {
+    color: var(--danger-hover);
+    text-decoration: underline;
+}
+
 .btn:disabled,
 .btn-primary:disabled,
 .btn-secondary:disabled,
@@ -1335,7 +1345,7 @@ html.dark .menu-item .remove {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.6rem;
+    gap: 1rem;
 }
 
 /*   6.2.2 Form fields */
@@ -2021,7 +2031,56 @@ button.header-icon:hover { background: transparent; }
     color: var(--danger);
 }
 
-.menu-item-hidden { margin: 0; }
+/* The hidden switch, drawn as a fourth icon button beside the row actions. The
+   eye swap follows .menu-item-is-hidden, the same class that dims the row and
+   marks its legend, so the three show one state. */
+.menu-hidden-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* It is a <label>, so the global label rule would otherwise give it a bottom
+       margin and sit it above the buttons it should line up with. */
+    margin: 0;
+    padding: 0.3rem;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.menu-hidden-toggle:hover {
+    background: var(--surface-sunken);
+    color: var(--text);
+}
+
+.menu-hidden-toggle svg { display: block; }
+.menu-hidden-toggle .menu-hidden-eye svg:last-child { display: none; }
+
+/* The row's own switch, not one inside it: a child of a hidden item carries no
+   state of its own, so it keeps the plain eye while the note explains that it
+   leaves the site with its parent. */
+.menu-item-is-hidden > .menu-actions .menu-hidden-toggle .menu-hidden-eye svg:first-child { display: none; }
+.menu-item-is-hidden > .menu-actions .menu-hidden-toggle .menu-hidden-eye svg:last-child { display: block; }
+
+/* Hidden reads as the muted half of the pair. */
+.menu-item-is-hidden > .menu-actions .menu-hidden-toggle { opacity: 0.55; }
+
+/* The checkbox is the control but not the thing you see; the label shows focus
+   in its place, because a 1px transparent box has no ring to give. */
+.menu-hidden-toggle .field-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.menu-hidden-toggle:focus-within {
+    box-shadow: 0 0 0 3px var(--ring);
+}
 
 /* A hidden item stays in the editor, dimmed, so a parked branch is not lost.
    Its children go with it when the menu renders, so they are dimmed too and
@@ -2088,10 +2147,8 @@ button.header-icon:hover { background: transparent; }
 }
 
 /* Icon-only row actions: square, with the label as a tooltip. */
-.menu-actions button,
 .menu-item .add-child,
 .menu-item .duplicate,
-.menu-item .remove,
 .actions-right button,
 .add-child-btn {
     display: inline-flex;
@@ -2116,7 +2173,6 @@ button.header-icon:hover { background: transparent; }
     pointer-events: none;
 }
 
-.menu-actions button:hover,
 .menu-item .add-child:hover,
 .menu-item .duplicate:hover,
 .actions-right .duplicate-btn:hover,
@@ -2128,14 +2184,12 @@ button.header-icon:hover { background: transparent; }
     border-color: var(--border-strong);
 }
 
-.menu-item .remove,
 .actions-right .remove-btn {
     background: var(--danger);
     color: #fff;
     border-color: var(--danger);
 }
 
-.menu-item .remove:hover,
 .actions-right .remove-btn:hover {
     background: var(--danger-hover);
     color: #fff;
@@ -2896,17 +2950,6 @@ button.sidebar-link {
 
 .media-modal .form-actions {
     margin-top: 0;
-}
-
-/* Destructive action as a text line: it should read as a link rather than
-   compete with the Save button beside it. */
-.media-delete-link {
-    color: var(--danger);
-    text-decoration: underline;
-}
-
-.media-delete-link:hover {
-    color: var(--danger-hover);
 }
 
 .media-delete {

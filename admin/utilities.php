@@ -338,9 +338,6 @@ ob_start();
         <h2><?= e(admin_trans('nav_utilities')) ?></h2>
         <p><?= e(admin_trans('utilities_intro')) ?></p>
     </div>
-    <div class="page-actions">
-
-    </div>
 </div>
 
 <form id="utilities-form" method="post">

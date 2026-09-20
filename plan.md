@@ -827,7 +827,11 @@ was wrong, measured against a fresh install before touching anything:
   archives, grouped by type; content items keep their slug as a fallback but
   show the resolved link read-only, and only a custom URL is typed. Hidden items
   stay in the tree, dimmed, and an item whose link no longer resolves is flagged
-  where it was created.
+  where it was created. The hidden switch is an **eye button** beside the row's
+  other actions — struck through and muted while hidden — so the row, its legend
+  and the button all read one state; a child of a hidden item keeps the plain eye
+  because it carries no state of its own. A parent's controls sit together in the
+  middle of its row, and the whole row is the drag handle.
 * **Packages stay id-free.** Export strips `content_id` recursively, import
   re-resolves it from `type` + slug once the content has landed, and `hidden`
   travels.
@@ -1108,4 +1112,3 @@ Settle each at the start of its phase, not now.
  * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
  * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 
  * I suppose categories and tags could get the same multi-select delete as the media library has. They don't have any other bulk actions that can be done to them.
- * For the menu editor, the 'hidden' checkbox might be better as a button with an eye icon? That would match the other 3 buttons with icons. The eye can be crossed out and grey when hidden, and just the eye when visible. the title of menu-item will still say 'hidden' and the item will still be greyed out, so that is plenty of feedback.

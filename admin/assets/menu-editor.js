@@ -118,6 +118,10 @@ function bindSortableList(list) {
         // reorder. Nesting stays on the child action: dragging cannot move an
         // item between levels because each list refuses other lists' items.
         filter: '.menu-fields, .menu-actions, input, select, textarea, button, a, label',
+        // Filtered elements are only kept out of the drag; their own mouse
+        // behaviour has to survive. Left on, Sortable calls preventDefault on
+        // their mousedown, and a click on a field then never focuses it.
+        preventOnFilter: false,
         animation: 150,
         ghostClass: 'sortable-ghost',
         fallbackOnBody: true,

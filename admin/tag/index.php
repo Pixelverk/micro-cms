@@ -79,7 +79,7 @@ ob_start();
         <p><?= e(admin_trans('tag_intro')) ?></p>
     </div>
 
-    <div class="page-actions flex gap-md items-center">
+    <div class="page-actions">
 
         <!-- Add -->
         <a href="<?= url('admin/tag/edit') ?>" class="btn-primary">

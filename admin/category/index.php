@@ -70,7 +70,7 @@ ob_start();
         <p><?= e(admin_trans('category_intro')) ?></p>
     </div>
 
-    <div class="page-actions flex gap-md items-center">
+    <div class="page-actions">
 
         <!-- Add New -->
         <a href="<?= url('admin/category/edit') ?>" class="btn-primary">

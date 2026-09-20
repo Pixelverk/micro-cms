@@ -102,7 +102,7 @@ ob_start();
         <h2><?= e(admin_trans('forms_title')) ?></h2>
         <p><?= e(admin_trans('forms_intro')) ?></p>
     </div>
-    <div class="page-actions flex gap-md items-center">
+    <div class="page-actions">
         <label class="flex items-center gap-sm mb-0">
             <span class="nowrap"><?= e(admin_trans('forms_type')) ?></span>
             <select id="messages-type-select">

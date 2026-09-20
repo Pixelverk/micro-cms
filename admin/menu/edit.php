@@ -119,7 +119,7 @@ ob_start();
                 data-confirm-title="<?= e(admin_trans('menu_delete')) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="menu" value="<?= e($menuKey) ?>">
-                <button type="submit" class="btn-secondary"><?= e(admin_trans('menu_delete')) ?></button>
+                <button type="submit" class="btn-text btn-text-danger"><?= e(admin_trans('menu_delete')) ?></button>
             </form>
         <?php endif; ?>
 

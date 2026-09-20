@@ -282,4 +282,15 @@ t('the menu editor only queries a row\'s own controls', function () {
     }
 });
 
+t('the menu editor keeps its row controls usable while the whole row drags', function () {
+    $js = (string) file_get_contents(CMS_PATH . '/admin/assets/menu-editor.js');
+
+    // The whole row is the drag handle and Sortable filters the controls out of
+    // the drag. Left at its default, preventOnFilter also calls preventDefault on
+    // a filtered element's mousedown, so a click on a field never focuses it and
+    // the row reads as dead. The two options have to travel together.
+    assert_contains('filter:', $js, 'controls stay out of the drag');
+    assert_contains('preventOnFilter: false', $js, 'and keep their own mouse behaviour');
+});
+
 exit(test_summary());
