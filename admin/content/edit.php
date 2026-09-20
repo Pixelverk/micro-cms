@@ -638,6 +638,78 @@ ob_start();
             <details <?= $seoHasValues ? 'open' : '' ?>>
                 <summary><?= e(admin_trans('editor_seo_help')) ?></summary>
 
+                <?php
+                /* What a crawler and a social card will show. The values come
+                   from seo_metadata(), so an editor sees the fallbacks the form
+                   cannot show (site title, site description, default social
+                   image); the script at the foot of the page keeps the parts
+                   that follow the fields in step as they are typed. */
+                $previewPage = [
+                    'id'           => $contentData['id'] ?? 0,
+                    'type'         => $type,
+                    'title'        => (string) ($contentData['title'] ?? ''),
+                    'status'       => (string) ($contentData['status'] ?? 'draft'),
+                    'path'         => trim((string) ($url ?? ''), '/'),
+                    'meta'         => $meta,
+                    'published_at' => $contentData['published_at'] ?? null,
+                    'updated_at'   => $contentData['updated_at'] ?? null,
+                ];
+
+                $seoPreview   = seo_metadata($previewPage);
+                $seoPreviewUrl = $seoPreview['canonical'];
+
+                // The URL an unsaved item will get: everything before the slug.
+                $seoPreviewBase = $isEdit
+                    ? substr($url, 0, max(0, strlen($url) - strlen($fullSlug)))
+                    : '/' . ($prefix !== '' ? $prefix . '/' : '');
+
+                $seoSettings = load_settings();
+                ?>
+                <div class="seo-preview" data-seo-preview
+                     data-url-base="<?= e($seoPreviewBase) ?>"
+                     data-site-url="<?= e(seo_site_url()) ?>"
+                     data-site-title="<?= e($seoPreview['site_name']) ?>"
+                     data-title-suffix="<?= e((string) ($seoSettings['seo_title_suffix'] ?? '')) ?>"
+                     data-home="<?= (int) ($contentData['id'] ?? 0) > 0 && (int) ($contentData['id'] ?? 0) === (int) ($seoSettings['homepage_id'] ?? 0) ? '1' : '' ?>"
+                     data-default-description="<?= e($seoPreview['description']) ?>"
+                     data-default-image="<?= e($seoPreview['og_image']) ?>"
+                     data-no-image="<?= e(admin_trans('editor_seo_preview_no_image')) ?>"
+                     data-canonical="<?= e((string) ($meta['canonical'] ?? '')) ?>">
+                    <p class="seo-preview-heading"><?= e(admin_trans('editor_seo_preview')) ?></p>
+
+                    <div class="seo-preview-grid">
+                        <div>
+                            <span class="seo-preview-label"><?= e(admin_trans('editor_seo_preview_search')) ?></span>
+
+                            <div class="seo-snippet">
+                                <span class="seo-snippet-url" data-preview-url><?= e((string) preg_replace('#^https?://#', '', $seoPreviewUrl)) ?></span>
+                                <span class="seo-snippet-title" data-preview-title><?= e($seoPreview['title']) ?></span>
+                                <span class="seo-snippet-text" data-preview-description><?= e($seoPreview['description']) ?></span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="seo-preview-label"><?= e(admin_trans('editor_seo_preview_social')) ?></span>
+
+                            <div class="seo-card">
+                                <div class="seo-card-image" data-preview-image>
+                                    <?php if ($seoPreview['og_image'] !== ''): ?>
+                                        <img src="<?= e($seoPreview['og_image']) ?>" alt="">
+                                    <?php else: ?>
+                                        <span class="seo-card-image-empty"><?= e(admin_trans('editor_seo_preview_no_image')) ?></span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="seo-card-body">
+                                    <span class="seo-card-domain" data-preview-domain><?= e((string) parse_url($seoPreviewUrl, PHP_URL_HOST)) ?></span>
+                                    <span class="seo-card-title" data-preview-card-title><?= e($seoPreview['og_title']) ?></span>
+                                    <span class="seo-card-text" data-preview-card-description><?= e($seoPreview['og_description']) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="seo-fields">
                     <?php foreach (seo_editable_fields() as $key => $field): ?>
                         <?php

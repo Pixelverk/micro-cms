@@ -669,3 +669,108 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.setInterval(autosave, 60000);
 });
+
+// ----------------------------
+// SEO preview
+// ----------------------------
+/* The search snippet and the social card follow the fields as they are typed.
+   The fallbacks the form cannot show — the site title, the site description and
+   the default social image — arrive as data attributes already resolved by
+   seo_metadata(); the title chain below mirrors that function's rule. */
+const seoPreview = document.querySelector('[data-seo-preview]');
+
+if (seoPreview) {
+    const seoField = name => document.getElementById('seo-' + name);
+    const pageTitleField = document.getElementById('title');
+    const slugField = document.getElementById('slug');
+
+    const fieldValue = el => (el && el.value ? el.value : '').trim();
+
+    const setText = (selector, value) => {
+        const el = seoPreview.querySelector(selector);
+        if (el) el.textContent = value;
+    };
+
+    // The URL a search result shows: the canonical override when there is one,
+    // else the address this item is about to have. Shown without the scheme,
+    // the way a search result prints it.
+    function previewUrl() {
+        const canonical = fieldValue(seoField('canonical'));
+        const origin = seoPreview.dataset.siteUrl || '';
+        const path = (seoPreview.dataset.urlBase || '/') + fieldValue(slugField);
+
+        return (canonical || origin + path).replace(/^https?:\/\//, '');
+    }
+
+    function syncPreviewImage() {
+        const wrap = seoPreview.querySelector('[data-preview-image]');
+        if (!wrap) return;
+
+        const picked = seoField('og_image')
+            ?.closest('.image-picker-wrapper')
+            ?.querySelector('.image-preview')
+            ?.getAttribute('src');
+
+        const src = picked || seoPreview.dataset.defaultImage || '';
+        const shown = wrap.querySelector('img');
+
+        if (src !== '') {
+            if (shown) {
+                shown.src = src;
+            } else {
+                wrap.replaceChildren(Object.assign(document.createElement('img'), { src, alt: '' }));
+            }
+
+            return;
+        }
+
+        if (shown) {
+            const empty = document.createElement('span');
+            empty.className = 'seo-card-image-empty';
+            empty.textContent = seoPreview.dataset.noImage || '';
+
+            wrap.replaceChildren(empty);
+        }
+    }
+
+    function syncSeoPreview() {
+        const siteTitle = seoPreview.dataset.siteTitle || '';
+        const suffix = seoPreview.dataset.titleSuffix || '';
+        const title = fieldValue(pageTitleField);
+
+        let fallbackTitle = siteTitle;
+
+        if (suffix !== '') {
+            fallbackTitle = title !== '' ? `${title} ${suffix}` : suffix;
+        } else if (title !== '' && seoPreview.dataset.home !== '1') {
+            fallbackTitle = `${title} - ${siteTitle}`;
+        }
+
+        const seoTitle = fieldValue(seoField('seo_title')) || fallbackTitle;
+        const description = fieldValue(seoField('description')) || seoPreview.dataset.defaultDescription || '';
+        const url = previewUrl();
+
+        setText('[data-preview-url]', url);
+        setText('[data-preview-title]', seoTitle);
+        setText('[data-preview-description]', description);
+        setText('[data-preview-card-title]', fieldValue(seoField('og_title')) || seoTitle);
+        setText('[data-preview-card-description]', fieldValue(seoField('og_description')) || description);
+        setText('[data-preview-domain]', url.split('/')[0]);
+
+        syncPreviewImage();
+    }
+
+    [pageTitleField, slugField, seoField('seo_title'), seoField('description'), seoField('canonical'), seoField('og_title'), seoField('og_description')]
+        .forEach(field => field && field.addEventListener('input', syncSeoPreview));
+
+    // The media picker writes the field itself, so its choice is read after the
+    // fact instead of from an event on the field.
+    document.getElementById('image-grid')?.addEventListener('click', () => setTimeout(syncSeoPreview, 0));
+
+    seoField('og_image')
+        ?.closest('.image-picker-wrapper')
+        ?.querySelectorAll('.clear-image-btn')
+        .forEach(button => button.addEventListener('click', () => setTimeout(syncSeoPreview, 0)));
+
+    syncSeoPreview();
+}

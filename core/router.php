@@ -74,6 +74,15 @@ function route_request($path): array
         exit;
     }
 
+    // The web app manifest, virtual for the same reason: it is built from
+    // Settings, so there is no file to keep in step with them.
+    if ($path === 'site.webmanifest') {
+        header('Content-Type: application/manifest+json; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+        echo seo_manifest_json();
+        exit;
+    }
+
     // Search results (query-driven, never cached or indexed)
     if ($path === 'search') {
         return route_search_request();

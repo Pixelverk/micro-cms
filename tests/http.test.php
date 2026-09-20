@@ -308,6 +308,44 @@ t('a hidden item leaves the menu and stays in the editor', function () use ($bas
     save_menu(['label' => $menu['label'], 'slug' => 'main', 'items' => $original]);
 });
 
+t('the manifest is served and the pages link to it', function () use ($base) {
+    [$status, $body, $headers] = http('GET', $base . '/site.webmanifest');
+
+    assert_eq(200, $status, 'the manifest is served');
+    assert_contains('application/manifest+json', $headers, 'with the manifest content type');
+
+    $manifest = json_decode($body, true);
+
+    assert_true(is_array($manifest), 'and it parses as JSON');
+    assert_true(!empty($manifest['name']), 'it names the site');
+    assert_eq('/', $manifest['start_url']);
+    assert_eq('standalone', $manifest['display']);
+    assert_true(!empty($manifest['icons']), 'and lists icons');
+
+    // The icons it points at have to be reachable.
+    foreach ($manifest['icons'] as $icon) {
+        $path = parse_url($icon['src'], PHP_URL_PATH) ?: '';
+        [$iconStatus] = http('GET', $base . $path);
+        assert_eq(200, $iconStatus, 'icon ' . $path . ' loads');
+    }
+
+    // A rendered page and a post both link to it, and only a post has times.
+    [, $page] = http('GET', $base . '/about');
+    assert_contains("rel='manifest'", $page, 'the page links the manifest');
+    assert_contains("rel='apple-touch-icon'", $page, 'and the apple icon');
+    assert_contains("name='theme-color'", $page, 'and the browser colour');
+    assert_not_contains('article:published_time', $page, 'a page has no publication time');
+
+    [, $post] = http('GET', $base . '/blog/welcome-to-our-blog');
+    assert_contains("property='article:published_time'", $post, 'a post says when it was published');
+    assert_contains("property='article:section'", $post, 'and which section it is in');
+
+    // Virtual documents never belong in the sitemap.
+    [, $sitemap] = http('GET', $base . '/sitemap.xml');
+    assert_not_contains('site.webmanifest', $sitemap, 'the manifest is not in the sitemap');
+    assert_not_contains('robots.txt', $sitemap, 'nor is robots.txt');
+});
+
 t('categories and tags delete in bulk from their lists', function () use ($base) {
     http_login($base);
 

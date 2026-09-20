@@ -218,7 +218,11 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
     }
 
     foreach ((array) ($theme['icons'] ?? []) as $key => $icon) {
-        $assetReferences['icons.' . $key][] = (string) $icon;
+        // icons.app is a list of the square PNGs an installed site uses; the
+        // rest name one file each.
+        foreach (is_array($icon) ? $icon : [$icon] as $entry) {
+            $assetReferences['icons.' . $key][] = (string) $entry;
+        }
     }
 
     foreach ($assetReferences as $key => $values) {

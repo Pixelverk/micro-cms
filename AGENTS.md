@@ -102,8 +102,10 @@ Beyond what tests check:
   the `.off-screen` accessibility helper. These only render in their matching
   state, so a static grep finding no uses is not evidence that they are dead.
   Only prune structural utilities that duplicate another rule.
-* `theme/assets/favicon.png` is kept deliberately as an example asset, even
-  though the theme links `favicon.ico`. Do not prune it as unused.
+* `theme/assets/img/icon-192.png` and `icon-512.png` are the placeholder app
+  icons the web manifest falls back to (see `icons.app` in the manifest); keep
+  them square PNGs. The theme's `favicon.ico` is a browser favicon only — an
+  `.ico` is not a usable manifest or apple-touch icon.
 
 ## Common changes
 

@@ -233,6 +233,20 @@ function static_export_entries(): array
         ];
     }
 
+    // The virtual documents. Served per request on a live site, they would be
+    // missing from an export unless they are written out with everything else.
+    if (is_file(STORAGE_PATH . '/sitemap.xml')) {
+        $entries[] = ['name' => 'sitemap.xml', 'source' => STORAGE_PATH . '/sitemap.xml'];
+    }
+
+    if (function_exists('robots_txt')) {
+        $entries[] = ['name' => 'robots.txt', 'content' => robots_txt()];
+    }
+
+    if (function_exists('seo_manifest_json')) {
+        $entries[] = ['name' => 'site.webmanifest', 'content' => seo_manifest_json()];
+    }
+
     return $entries;
 }
 

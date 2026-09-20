@@ -188,6 +188,12 @@ return [
     'meta' => [
         'viewport' => 'width=device-width, initial-scale=1.0',
         'charset'  => 'UTF-8',
+        // The colour the browser tints its chrome with, and the splash colour an
+        // installed site starts from. Settings can override the first.
+        'theme_color'      => '#212529',
+        'background_color' => '#ffffff',
+        // Optional: used when the visitor's system is in dark mode.
+        'theme_color_dark' => '',
     ],
 
     /*
@@ -197,6 +203,13 @@ return [
     */
     'icons' => [
         'favicon' => 'favicon.ico',
+        // Square PNGs an installed site uses: the manifest lists them, and the
+        // largest is the apple touch icon. Replaced by an uploaded logo or
+        // favicon when Settings has one.
+        'app' => [
+            'img/icon-192.png',
+            'img/icon-512.png',
+        ],
     ],
 
     /*

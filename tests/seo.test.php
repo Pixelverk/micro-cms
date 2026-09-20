@@ -433,4 +433,125 @@ t('the social image field is wired to the media picker', function () {
     assert_contains('data-image-picker', $editor, 'the field gets the picker behaviour hook');
 });
 
+// ---------------------------------------------------------------------------
+// App icons, the manifest and article metadata
+// ---------------------------------------------------------------------------
+
+t('the theme provides the icons an installed site needs', function () {
+    $icons = seo_icon_candidates();
+
+    assert_true($icons !== [], 'the shipped theme offers icons');
+
+    // Nothing generated: each one is a real file the theme ships.
+    foreach ($icons as $icon) {
+        assert_true($icon['width'] > 0 && $icon['height'] > 0, 'every icon knows its size');
+        assert_contains('image/', $icon['type'], 'and its type');
+        assert_contains('/theme/assets/', $icon['src'], 'and points at a theme file');
+    }
+
+    $app = seo_app_icons();
+
+    assert_eq('192x192', $app[0]['sizes'], 'the first manifest icon is the 192 one');
+    assert_eq('512x512', $app[1]['sizes'], 'and the second is the 512 one');
+
+    $apple = seo_icon_at($icons, 180);
+    assert_eq(192, $apple['width'], 'the apple icon is the smallest one big enough');
+});
+
+t('a manifest is built from the site settings and stays valid without icons', function () {
+    set_setting('site_title', 'Manifest Site');
+    set_setting('site_description', 'A site about manifests.');
+    set_setting('theme_color', '#123456');
+    settings_cache_clear();
+
+    $manifest = seo_manifest();
+
+    assert_eq('Manifest Site', $manifest['name']);
+    assert_eq('A site about manifests.', $manifest['description']);
+    assert_eq('#123456', $manifest['theme_color'], 'Settings wins over the theme colour');
+    assert_eq('standalone', $manifest['display']);
+    assert_eq('/', $manifest['start_url']);
+    assert_true(!empty($manifest['icons']), 'the icons are listed');
+
+    $decoded = json_decode(seo_manifest_json(), true);
+    assert_true(is_array($decoded), 'the manifest is valid JSON');
+    assert_eq($manifest['name'], $decoded['name'], 'and round-trips');
+
+    // An empty setting falls back to the colour the theme declares.
+    set_setting('theme_color', '');
+    settings_cache_clear();
+
+    $bare = seo_manifest();
+    assert_eq('#212529', (string) ($bare['theme_color'] ?? ''), 'the theme colour is the fallback');
+    assert_true(isset($bare['icons']), 'and the theme icons are still there');
+});
+
+t('the head offers the manifest, the apple icon and the browser colour', function () {
+    set_setting('site_url', 'https://example.com');
+    set_setting('theme_color', '#0f172a');
+    settings_cache_clear();
+
+    $head = seo_app_head_tags();
+
+    // url() is root-relative unless the deployment configures a base URL, which
+    // is a valid href for a manifest link either way.
+    assert_contains("rel='manifest'", $head);
+    assert_contains("href='/site.webmanifest'", $head);
+    assert_contains("rel='apple-touch-icon'", $head);
+    assert_contains("<meta name='theme-color' content='#0f172a'>", $head);
+
+    // A theme may declare a dark-mode colour; an empty one must not be emitted.
+    assert_not_contains('prefers-color-scheme', $head, 'no dark tag until a theme asks for one');
+});
+
+t('articles carry their times, author, section and tags', function () {
+    $post = load_content_by_slug('blog/welcome-to-our-blog');
+    assert_true($post !== null, 'the demo post exists');
+
+    $post['meta'] = array_merge($post['meta'] ?? [], ['author' => 'Ada Lovelace']);
+    $head = seo_head_tags($post);
+
+    assert_contains("property='article:published_time'", $head);
+    assert_contains("property='article:modified_time'", $head);
+    assert_contains("property='article:author' content='Ada Lovelace'", $head);
+    assert_contains("property='article:section'", $head);
+    assert_contains("property='article:tag'", $head);
+
+    // The times are ISO 8601 in UTC.
+    preg_match("/article:published_time' content='([^']+)'/", $head, $matches);
+    assert_eq(gmdate('c', (int) $post['published_at']), $matches[1] ?? '', 'published time is ISO 8601 UTC');
+
+    // A page is not an article, so none of it is emitted.
+    $page = load_content_by_slug('about');
+    $pageHead = seo_head_tags($page);
+
+    assert_not_contains('article:published_time', $pageHead, 'a page has no publication time');
+    assert_not_contains('article:tag', $pageHead, 'and no tags');
+});
+
+t('the creator falls back to the site handle, and is overridable per item', function () {
+    set_setting('twitter_site', '@site');
+    settings_cache_clear();
+
+    $page = load_content_by_slug('about');
+    $page['meta'] = array_diff_key($page['meta'] ?? [], ['twitter_creator' => '']);
+
+    assert_contains("name='twitter:creator' content='@site'", seo_head_tags($page), 'the site handle is the fallback');
+
+    $page['meta']['twitter_creator'] = '@writer';
+
+    $head = seo_head_tags($page);
+    assert_contains("name='twitter:creator' content='@writer'", $head, 'the item wins');
+    assert_contains("name='twitter:site' content='@site'", $head, 'and the site handle stays');
+});
+
+t('the author field is editable and reaches the head', function () {
+    assert_true(isset(seo_editable_fields()['author']), 'the editor offers an author');
+    assert_true(isset(seo_editable_fields()['twitter_creator']), 'and a creator handle');
+
+    $meta = seo_collect_meta(['meta_author' => 'Grace Hopper'], []);
+
+    assert_eq('Grace Hopper', $meta['author'] ?? '', 'a posted author is kept');
+});
+
 exit(test_summary());

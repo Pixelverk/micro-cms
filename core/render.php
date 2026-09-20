@@ -54,6 +54,10 @@ function render_page(array $page): array
         $head .= "<link rel='icon' href='" . e($favicon) . "'>\n";
     }
 
+    // What an installed site needs: the manifest, the apple touch icon, and the
+    // colour the browser tints its chrome with.
+    $head .= seo_app_head_tags();
+
     // Styles
     foreach ($theme['styles'] ?? [] as $style) {
         $head .= "<link rel='stylesheet' href='" . asset($style) . "'>\n";

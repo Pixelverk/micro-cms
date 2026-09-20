@@ -87,7 +87,7 @@ Wave 3 is opportunistic and can be dropped.
 | 15 | 2 | B | Theme demo content as data + reference parity | M | 13 |
 | 16 | 2 | C | Navigation: content links, hide, server-side active state | M | — |
 | 17 | 2 | C | Redirect search + conflict detection | M | — |
-| 18 | 2 | C | SEO output polish | S | 1 |
+| 18 | 2 | C | SEO output polish | M | 1 |
 | 19 | 2 | B/C | Accessibility pass | S | — |
 | 20 | 2 | A | Search hardening | S–M | 1 |
 | 21 | 2 | A | Version diff and compare | M | — |
@@ -937,11 +937,88 @@ the chain and the legitimate entries remain. `php tests/run.php` → 412 passed.
 **Reject if** it becomes a URL-management suite: no regex source matching, no
 bulk import of redirect lists, no hit analytics beyond the existing counter.
 
-## 18. SEO output polish (C, S)
+## 18. SEO output polish (C, M)
 
-Web manifest, `theme-color`, `apple-touch-icon`, a social-sharing preview in the
-editor, `article:published_time` and `twitter:creator`. Depends on phase 1 for
-404/JSON-LD/sitemap correctness. Verify with `tests/seo.test.php`.
+**Shipped.** The output was already thorough — title, description, canonical,
+robots, Open Graph, Twitter, JSON-LD behind `schema => true`, paging prev/next
+and the favicon link, with eight per-item fields and four SEO settings — so this
+filled gaps rather than rebuilding it. Probed against a fresh install, six were
+real:
+
+* **Nothing said the site could be installed.** No manifest, no `theme-color`,
+  no `apple-touch-icon`, and the theme's only icon was a 75×75 `.ico`, which is
+  not a usable app icon.
+* **An article never said when or by whom.** `og:type` was already `article` for
+  a post, but no `article:*` tag was emitted — although the page array already
+  carried `published_at`, `updated_at`, `categories` and `tags`.
+* **No `twitter:creator`**, only the site handle.
+* **`meta.author` had no way in.** The blog layout rendered it and the JSON-LD
+  emitted it as a Person, but no admin field set it, so an editor could not add
+  or change an author.
+* **Nothing previewed any of it**, so an editor could not see the title,
+  description or image a crawler would actually get.
+* **The static export dropped virtual documents.** It wrote `sitemap.xml` but
+  not `robots.txt`, and a manifest served the same way would have gone with it.
+  (`AGENTS.md` also still described `theme/assets/favicon.png`, deleted in
+  4f38adc.)
+
+**What shipped.**
+
+* **A manifest at `/site.webmanifest`**, served virtually like `robots.txt` and
+  built from Settings (name, short name, description, colours, `start_url`,
+  `scope`, `display`, icons). The head gained `<link rel="manifest">`, `<link
+  rel="apple-touch-icon">` and `<meta name="theme-color">`, the last with a dark
+  scheme variant when a theme declares `meta.theme_color_dark`.
+* **Icons are taken, not generated.** An uploaded logo or favicon contributes its
+  media variants at their *recorded* pixel sizes, then the theme's `icons.app`
+  files, biggest first: `seo_app_icons()` offers 192 and 512 and the apple icon is
+  the one nearest 180. A manifest with no usable icon is still a valid manifest.
+  The theme ships `img/icon-192.png` and `icon-512.png` in its usual placeholder
+  style and declares them, plus `meta.theme_color` and `meta.background_color`;
+  `theme_manifest_problems()` understands the new list.
+* **Article metadata** for anything with `og:type=article`: `article:published_time`
+  and `article:modified_time` as ISO 8601 UTC, then `article:author`,
+  `article:section` (first category) and one `article:tag` per tag — all from the
+  page array, so no extra query. `twitter:creator` follows it, per item with the
+  site handle as the fallback.
+* **Author and Twitter/X creator fields** in the SEO panel, so `meta.author` is
+  editable and the blog layout, the JSON-LD Person and `article:author` read one
+  value.
+* **A live preview** in the SEO panel: a search snippet and a social card,
+  rendered server-side from `seo_metadata()` so the fallbacks an editor cannot
+  see in the form are the ones shown, then following the title, slug, SEO and
+  social text, canonical and picked image as they change.
+* **The export keeps its virtual documents**: `robots.txt`, `site.webmanifest`
+  and `sitemap.xml` are written out, so the robots.txt an export now ships no
+  longer points at a missing sitemap.
+* Docs: the editor guide covers the preview and the two new fields, the theme
+  guide covers `icons.app`, `meta.theme_color`, `meta.background_color`,
+  `meta.theme_color_dark` and the virtual manifest.
+
+**Decisions.** Icons come from what the site already has — **existing media
+variants, then theme files** — rather than a generation step or a new upload.
+`twitter:creator` and the author are **per-item fields** with the site handle as
+the creator's fallback, which avoids a users-table migration and makes the
+existing JSON-LD author editable. The preview shows **both the search snippet and
+the social card, live**, from the resolved values. The static export writes
+**both** the manifest and `robots.txt`. The manifest stays a virtual document
+like `robots.txt`, because the settings behind it are the site owner's, and the
+head stays assembled in `core/helpers/seo.php`. Deliberately out of scope:
+keywords, per-page robots.txt, sitemap pinging, and any ranking tooling.
+
+**Verify.** `tests/seo.test.php` (29 checks) covers the icon candidates and the
+192/512/apple picks, the manifest built from Settings with the theme colour as
+the fallback and valid JSON, the head tags, the Article set on a post and its
+absence on a page, ISO 8601 UTC times, the creator fallback and per-item
+override, and the new fields through `seo_collect_meta()`. `tests/http.test.php`
+fetches the manifest and every icon it declares, checks the content type, the
+links in a rendered page and a post, the article tags on the post only, and that
+the virtual documents stay out of the sitemap. In the browser, Chrome's
+`Page.getAppManifest` parsed the served manifest with **no errors**, both icons
+loaded at their declared sizes, and the editor preview was driven with real
+clicks and typing: the title and description follow the fields, a renamed page
+title flows into the fallback, and picking and clearing a social image swaps the
+card image and its empty state.
 
 ## 19. Accessibility pass (B/C, S)
 
@@ -1110,4 +1187,5 @@ Settle each at the start of its phase, not now.
 
  * There is no need for the theme to have placeholders in assets/img. Generic fallback or placeholder images can be provided by the CMS, or a css skeleton can be used instead when media is missing.
  * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
+ * The content editor should have a button to add a new component, which brings up the component list in a modal, preferrably with preview and info. It can go beneath the current components, as a ghost/outline area.
  * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 

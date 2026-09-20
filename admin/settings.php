@@ -68,6 +68,12 @@ $settingFields = [
         'help'    => 'settings_twitter_help',
         'default' => '',
     ],
+    'theme_color' => [
+        'type'    => 'text',
+        'label'   => 'settings_theme_color',
+        'help'    => 'settings_theme_color_help',
+        'default' => '',
+    ],
     'robots_extra' => [
         'type'    => 'textarea',
         'label'   => 'settings_robots_extra',
@@ -245,7 +251,7 @@ $settingGroups = [
         'label'   => 'settings_group_seo',
         'icon'    => 'open-in-browser',
         'columns' => 2,
-        'fields'  => ['seo_title_suffix', 'default_og_image', 'twitter_site', 'robots_extra'],
+        'fields'  => ['seo_title_suffix', 'default_og_image', 'twitter_site', 'theme_color', 'robots_extra'],
     ],
     'media' => [
         'label'   => 'settings_group_media',
