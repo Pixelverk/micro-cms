@@ -269,4 +269,17 @@ t('every admin page supplies a help panel', function () {
     assert_count(0, $without, 'pages without a help panel: ' . implode(', ', $without));
 });
 
+t('the menu editor only queries a row\'s own controls', function () {
+    $js = (string) file_get_contents(CMS_PATH . '/admin/assets/menu-editor.js');
+
+    // A menu row contains other rows. The hidden switch sits after the children
+    // container, so querySelector('[data-field="hidden"]') on a parent finds its
+    // first child's switch and binds the parent's listener to the wrong node —
+    // which is exactly how "hide this item" silently stopped working for parents.
+    // Row-own controls are queried with :scope.
+    foreach (["querySelector('[data-field=", "querySelectorAll('.field-input')"] as $unscoped) {
+        assert_not_contains($unscoped, $js, "row controls need :scope: {$unscoped}");
+    }
+});
+
 exit(test_summary());

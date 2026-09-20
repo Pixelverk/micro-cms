@@ -31,28 +31,34 @@
             <input type="hidden" class="field-input" data-field="content_id" value="">
         </div>
 
-        <label class="field-check menu-item-hidden">
-            <input type="checkbox" class="field-input" data-field="hidden">
-            <?= e(admin_trans('menu_hidden')) ?>
-        </label>
-
         <p class="menu-item-warning" data-item-warning hidden></p>
+
+        <?php /* Shown when an ancestor is hidden: this row is not hidden itself,
+                 but it leaves the site with the branch it belongs to. */ ?>
+        <p class="menu-item-note" data-item-note hidden></p>
 
         <div class="children-container menu-children"></div>
 
         <div class="menu-actions">
-            <button type="button" class="add-child" title="<?= e(admin_trans('editor_child')) ?>">
-                <?= icon('corner-down-right', 16) ?>
-                <span class="off-screen"><?= e(admin_trans('editor_child')) ?></span>
-            </button>
-            <button type="button" class="duplicate" title="<?= e(admin_trans('editor_duplicate')) ?>">
-                <?= icon('copy', 16) ?>
-                <span class="off-screen"><?= e(admin_trans('editor_duplicate')) ?></span>
-            </button>
-            <button type="button" class="remove" title="<?= e(admin_trans('common_remove')) ?>">
-                <?= icon('xmark', 16) ?>
-                <span class="off-screen"><?= e(admin_trans('common_remove')) ?></span>
-            </button>
+            <label class="field-check menu-item-hidden">
+                <input type="checkbox" class="field-input" data-field="hidden">
+                <?= e(admin_trans('menu_hidden')) ?>
+            </label>
+
+            <div class="menu-action-buttons">
+                <button type="button" class="add-child" title="<?= e(admin_trans('editor_child')) ?>">
+                    <?= icon('corner-down-right', 16) ?>
+                    <span class="off-screen"><?= e(admin_trans('editor_child')) ?></span>
+                </button>
+                <button type="button" class="duplicate" title="<?= e(admin_trans('editor_duplicate')) ?>">
+                    <?= icon('copy', 16) ?>
+                    <span class="off-screen"><?= e(admin_trans('editor_duplicate')) ?></span>
+                </button>
+                <button type="button" class="remove" title="<?= e(admin_trans('common_remove')) ?>">
+                    <?= icon('xmark', 16) ?>
+                    <span class="off-screen"><?= e(admin_trans('common_remove')) ?></span>
+                </button>
+            </div>
         </div>
     </fieldset>
 </template>

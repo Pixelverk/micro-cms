@@ -62,6 +62,7 @@ foreach ($theme['content_types'] ?? [] as $typeKey => $typeConfig) {
     }
 
     $pickerGroups[] = [
+        'key'     => (string) $typeKey,
         'label'   => (string) ($typeConfig['label'] ?? ucfirst((string) $typeKey)),
         'options' => $options,
     ];
@@ -83,8 +84,16 @@ foreach (['category' => admin_trans('nav_categories'), 'tag' => admin_trans('nav
     }
 
     if ($options) {
-        $pickerGroups[] = ['label' => $kindLabel, 'options' => $options];
+        $pickerGroups[] = ['key' => $kind, 'label' => $kindLabel, 'options' => $options];
     }
+}
+
+// The second select is filled from this, so a type can be picked without a
+// round trip to the server.
+$pickerOptions = [];
+
+foreach ($pickerGroups as $group) {
+    $pickerOptions[$group['key']] = $group['options'];
 }
 
 // The editor shows hidden items too — dimmed — so a parked branch stays visible,
@@ -171,29 +180,23 @@ ob_start();
             <section class="menu-panel">
                 <h3><?= e(admin_trans('menu_add_items')) ?></h3>
 
-                <div class="field">
-                    <label class="field-label" for="new-item-link"><?= e(admin_trans('menu_from_content')) ?></label>
-                    <select id="new-item-link" class="field-input">
-                        <option value=""><?= e(admin_trans('menu_select_content')) ?></option>
+                <div class="field menu-add-block">
+                    <span class="field-label"><?= e(admin_trans('menu_from_content')) ?></span>
+                    <select id="new-item-kind" class="field-input">
+                        <option value=""><?= e(admin_trans('menu_select_type')) ?></option>
                         <?php foreach ($pickerGroups as $group): ?>
-                            <optgroup label="<?= e($group['label']) ?>">
-                                <?php foreach ($group['options'] as $option): ?>
-                                    <option value="<?= e($option['type'] . ':' . $option['slug']) ?>"
-                                            data-type="<?= e($option['type']) ?>"
-                                            data-id="<?= (int) $option['id'] ?>"
-                                            data-slug="<?= e($option['slug']) ?>"
-                                            data-label="<?= e($option['label']) ?>"
-                                            data-url="<?= e($option['path']) ?>">
-                                        <?= e($option['label'] . ' — ' . $option['path']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
+                            <option value="<?= e($group['key']) ?>">
+                                <?= e($group['label']) ?> (<?= count($group['options']) ?>)
+                            </option>
                         <?php endforeach; ?>
                     </select>
-                    <button type="button" id="add-link-item" class="btn-secondary"><?= e(admin_trans('common_add')) ?></button>
+                    <select id="new-item-link" class="field-input" aria-label="<?= e(admin_trans('menu_select_content')) ?>" disabled>
+                        <option value=""><?= e(admin_trans('menu_select_content')) ?></option>
+                    </select>
+                    <button type="button" id="add-link-item" class="btn-secondary" disabled><?= e(admin_trans('common_add')) ?></button>
                 </div>
 
-                <div class="field">
+                <div class="field menu-add-block">
                     <label class="field-label" for="new-item-url"><?= e(admin_trans('menu_custom_url')) ?></label>
                     <input type="text" id="new-item-url" class="field-input" placeholder="https://example.com">
                     <input type="text" id="new-item-label" class="field-input" placeholder="<?= e(admin_trans('common_label')) ?>">
@@ -227,6 +230,7 @@ $pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
 
 <script>
     window.initialMenuItems = <?= json_encode($editorItems) ?>;
+    window.menuLinkOptions  = <?= json_encode($pickerOptions) ?>;
 
     // Selecting a menu navigates to it; the panel is part of the save form, so
     // the choice is made with a plain GET rather than a nested form.

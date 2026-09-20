@@ -7,6 +7,41 @@ const t = (key, fallback) => window.adminTranslations?.[key] || fallback;
 const container = document.getElementById('menu-items-container');
 const template = document.getElementById('menu-item-template');
 const initialItems = window.initialMenuItems || [];
+const linkOptions = window.menuLinkOptions || {};
+
+const kindSelect = document.getElementById('new-item-kind');
+const linkSelect = document.getElementById('new-item-link');
+const addLinkButton = document.getElementById('add-link-item');
+
+// ----------------------------
+// Pick what to link to: a type first, then an item of that type
+// ----------------------------
+function loadLinkChoices() {
+    const options = linkOptions[kindSelect.value] || [];
+
+    linkSelect.innerHTML = '';
+    linkSelect.appendChild(new Option(t('menu_select_content', 'Choose an item'), ''));
+
+    options.forEach(item => {
+        const option = new Option(`${item.label} — ${item.path}`, `${item.type}:${item.slug}`);
+
+        option.dataset.type = item.type;
+        option.dataset.id = item.id;
+        option.dataset.slug = item.slug;
+        option.dataset.label = item.label;
+        option.dataset.url = item.path;
+
+        linkSelect.appendChild(option);
+    });
+
+    linkSelect.disabled = options.length === 0;
+    addLinkButton.disabled = true;
+}
+
+kindSelect.addEventListener('change', loadLinkChoices);
+linkSelect.addEventListener('change', () => {
+    addLinkButton.disabled = linkSelect.value === '';
+});
 
 // ----------------------------
 // Create a menu item node
@@ -14,8 +49,11 @@ const initialItems = window.initialMenuItems || [];
 function createMenuItem(data = {}) {
     const node = template.content.firstElementChild.cloneNode(true);
 
-    // Populate fields
-    node.querySelectorAll('.field-input').forEach(input => {
+    // Populate this row's own fields. The row's controls are queried with
+    // :scope — a plain querySelector would search the children too, and the
+    // hidden switch sits after the children container, so a parent row would
+    // bind to its first child's controls instead of its own.
+    node.querySelectorAll(':scope > .menu-fields .field-input, :scope > .menu-actions .field-input').forEach(input => {
         const key = input.dataset.field;
         if (!key) return;
 
@@ -44,12 +82,12 @@ function createMenuItem(data = {}) {
     }
 
     // Update legend on input change
-    node.querySelector('[data-field="label"]').addEventListener('input', () => {
+    node.querySelector(':scope > .menu-fields [data-field="label"]').addEventListener('input', () => {
         updateMenuItemLegend(node);
     });
 
-    node.querySelector('[data-field="hidden"]').addEventListener('change', () => {
-        updateMenuItemLegend(node);
+    node.querySelector(':scope > .menu-actions [data-field="hidden"]').addEventListener('change', () => {
+        refreshHiddenState();
     });
 
     // A cloned row brings its own children container, which needs to be
@@ -75,7 +113,11 @@ function bindSortableList(list) {
 
     list._menuSortable = new Sortable(list, {
         group: { name: SORTABLE_GROUP, pull: false, put: false },
-        handle: '.menu-item-title',
+        // The whole row is the handle; anything you can click or type in is
+        // filtered out, so a button press or a text selection never turns into a
+        // reorder. Nesting stays on the child action: dragging cannot move an
+        // item between levels because each list refuses other lists' items.
+        filter: '.menu-fields, .menu-actions, input, select, textarea, button, a, label',
         animation: 150,
         ghostClass: 'sortable-ghost',
         fallbackOnBody: true,
@@ -93,10 +135,10 @@ function bindSortableList(list) {
 // server, so their slug is kept for the fallback but never shown, and the row
 // displays where the item points instead.
 function applyMenuItemKind(node) {
-    const isCustom = (node.querySelector('[data-field="type"]')?.value || 'url') === 'url';
+    const isCustom = (node.querySelector(':scope > .menu-fields [data-field="type"]')?.value || 'url') === 'url';
 
-    const input = node.querySelector('[data-field="slug"]');
-    const value = node.querySelector('[data-link-value]');
+    const input = node.querySelector(':scope > .menu-fields [data-field="slug"]');
+    const value = node.querySelector(':scope > .menu-fields [data-link-value]');
 
     if (input) input.hidden = !isCustom;
     if (value) {
@@ -104,7 +146,7 @@ function applyMenuItemKind(node) {
         value.textContent = node.dataset.url || input?.value || '';
     }
 
-    const warning = node.querySelector('[data-item-warning]');
+    const warning = node.querySelector(':scope > [data-item-warning]');
     if (warning) {
         const broken = node.dataset.broken === '1';
         warning.hidden = !broken;
@@ -116,15 +158,44 @@ function applyMenuItemKind(node) {
 // Update <legend> label
 // ----------------------------
 function updateMenuItemLegend(node) {
-    const label = node.querySelector('[data-field="label"]')?.value || t('menu_item', 'Menu Item');
-    const hidden = node.querySelector('[data-field="hidden"]')?.checked;
+    const label = node.querySelector(':scope > .menu-fields [data-field="label"]')?.value || t('menu_item', 'Menu Item');
+    const hidden = node.classList.contains('menu-item-is-hidden');
     const legend = node.querySelector('.menu-item-title');
 
     if (legend) {
         legend.textContent = hidden ? `${label} (${t('menu_hidden', 'Hidden')})` : label;
     }
+}
 
-    node.classList.toggle('menu-item-is-hidden', !!hidden);
+// ----------------------------
+// Hidden state, down the branch
+// ----------------------------
+// Hiding an item takes its whole branch off the site, so the rows underneath say
+// so: they are dimmed like a hidden item, and each carries the reason. A child's
+// own switch is left alone — it keeps meaning "this item", not "this branch".
+function refreshHiddenState() {
+    const walk = (list, inherited) => {
+        [...list.children].forEach(item => {
+            if (!item.classList.contains('menu-item')) return;
+
+            const own = !!item.querySelector(':scope > .menu-actions [data-field="hidden"]')?.checked;
+            const under = inherited && !own;
+
+            item.classList.toggle('menu-item-is-hidden', own);
+            item.classList.toggle('menu-item-under-hidden', under);
+            updateMenuItemLegend(item);
+
+            const note = item.querySelector(':scope > [data-item-note]');
+            if (note) {
+                note.hidden = !under;
+                note.textContent = under ? t('menu_hidden_with_parent', 'Hidden with its parent') : '';
+            }
+
+            walk(item.querySelector(':scope > .children-container'), inherited || own);
+        });
+    };
+
+    walk(container, false);
 }
 
 // ----------------------------
@@ -139,13 +210,13 @@ bindSortableList(container);
 // ----------------------------
 // Add top-level page item
 // ----------------------------
-document.getElementById('add-link-item').addEventListener('click', async () => {
-    const pageSelect = document.getElementById('new-item-link');
+addLinkButton.addEventListener('click', async () => {
+    const pageSelect = linkSelect;
 
     if (!pageSelect.value) {
         await window.confirmModal({
             title: t('menu_error_no_page_title', 'Missing selection'),
-            message: t('menu_error_no_page', 'Select a page first.'),
+            message: t('menu_error_no_page', 'Choose something to link to first.'),
             simple: true,
         });
         return;
@@ -166,6 +237,7 @@ document.getElementById('add-link-item').addEventListener('click', async () => {
 
     container.appendChild(createMenuItem(itemData));
     pageSelect.value = '';
+    addLinkButton.disabled = true;
     renumberMenuItems();
 });
 
@@ -263,7 +335,7 @@ function extractMenuItemData(el) {
     const data = {};
     const children = [];
 
-    el.querySelectorAll(':scope > .menu-fields .field-input').forEach(input => {
+    el.querySelectorAll(':scope > .menu-fields .field-input, :scope > .menu-actions .field-input').forEach(input => {
         const key = input.dataset.field;
         if (!key) return;
 
@@ -291,6 +363,7 @@ function extractMenuItemData(el) {
 // ----------------------------
 function renumberMenuItems() {
     renumberContainer(container, '');
+    refreshHiddenState();
 }
 
 function renumberContainer(parent, prefix) {
@@ -298,7 +371,7 @@ function renumberContainer(parent, prefix) {
 
     items.forEach((item, i) => {
         const path = prefix === '' ? `items[${i}]` : `${prefix}[children][${i}]`;
-        item.querySelectorAll(':scope > .menu-fields .field-input').forEach(input => {
+        item.querySelectorAll(':scope > .menu-fields .field-input, :scope > .menu-actions .field-input').forEach(input => {
             const key = input.dataset.field;
             input.name = `${path}[${key}]`;
         });
