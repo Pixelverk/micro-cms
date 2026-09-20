@@ -82,6 +82,13 @@ t('static URLs are rewritten relative to the page depth', function () {
         static_rewrite_urls("<img srcset='/media/a.webp 320w, /media/b.webp 640w'>", '', '')
     );
 
+    // Theme assets are stamped with their file mtime, so the rewritten URL
+    // keeps its query string; the exported file has no query either way.
+    assert_contains(
+        "href='theme/assets/style.css?v=1700000000'",
+        static_rewrite_urls("<link href='/theme/assets/style.css?v=1700000000'>", '', '')
+    );
+
     // An external URL that merely contains /media/ must survive untouched.
     $external = "<img src='https://cdn.example.com/media/hero.webp'>";
     assert_contains("src='https://cdn.example.com/media/hero.webp'", static_rewrite_urls($external, '', ''));

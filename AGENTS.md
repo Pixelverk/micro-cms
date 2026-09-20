@@ -116,9 +116,9 @@ and `render`. Add the name to `theme.php` under the relevant
 fallback when the theme has no file of that name.
 
 Component CSS/JS is collected per request, de-duplicated by component name, and
-injected after the theme stylesheets. If you edit a theme stylesheet or script,
-bump its `?v=` counter in `theme.php` (admin assets are stamped automatically
-with `admin_asset()`).
+injected after the theme stylesheets. Theme and admin asset URLs are stamped
+with the file's modification time (`asset()`, `admin_asset()`), so editing a
+stylesheet or script needs no version bump.
 
 ### Content model
 

@@ -423,4 +423,68 @@ t('the shipped theme has no manifest problems', function () {
     assert_count(0, $summary, implode('; ', $summary));
 });
 
+t('asset() stamps theme assets with their modification time', function () {
+    $style = CMS_PATH . '/theme/assets/style.css';
+    assert_true(is_file($style), 'the theme stylesheet exists');
+
+    assert_eq(url('theme/assets/style.css') . '?v=' . filemtime($style), asset('style.css'), 'a plain name is stamped');
+
+    $icons = CMS_PATH . '/theme/assets/vendor/bootstrap-icons/bootstrap-icons.css';
+    assert_eq(
+        url('theme/assets/vendor/bootstrap-icons/bootstrap-icons.css') . '?v=' . filemtime($icons),
+        asset('vendor/bootstrap-icons/bootstrap-icons.css'),
+        'a nested path is stamped too'
+    );
+
+    // A CDN or any absolute URL is not ours to version.
+    assert_eq('https://cdn.example.test/style.css', asset('https://cdn.example.test/style.css'));
+    assert_eq('//cdn.example.test/style.css', asset('//cdn.example.test/style.css'));
+
+    // A hand-written counter is replaced by the stamp, never appended to.
+    $stamped = asset('style.css?v=5');
+    assert_eq(asset('style.css'), $stamped, 'the old counter is dropped');
+    assert_not_contains('?v=5', $stamped);
+
+    // A file that is not there gets the plain URL rather than a version that
+    // points at nothing.
+    assert_eq(url('theme/assets/nope.css'), asset('nope.css'));
+});
+
+t('a versioned asset URL follows the file it points at', function () {
+    $file = test_tmp_root() . '/versioned-asset.css';
+    file_put_contents($file, 'a');
+
+    touch($file, 1_700_000_000);
+    clearstatcache(true, $file);
+    assert_eq('/x.css?v=1700000000', version_asset_url('/x.css', $file));
+
+    // Editing the file has to produce a new URL, or the browser keeps the copy
+    // it cached.
+    touch($file, 1_700_000_100);
+    clearstatcache(true, $file);
+    assert_eq('/x.css?v=1700000100', version_asset_url('/x.css', $file), 'a newer file means a new URL');
+
+    unlink($file);
+    clearstatcache(true, $file);
+    assert_eq('/x.css', version_asset_url('/x.css', $file), 'a missing file is not stamped');
+});
+
+t('a rendered page versions its stylesheets and scripts', function () {
+    $html = render_page(load_content_by_slug('about'))['body'];
+
+    foreach (['style.css', 'utilities.css', 'layout.css', 'main.js'] as $asset) {
+        $file = CMS_PATH . '/theme/assets/' . $asset;
+
+        assert_contains(
+            "theme/assets/{$asset}?v=" . filemtime($file),
+            $html,
+            "{$asset} should be stamped in the rendered head"
+        );
+    }
+
+    // The old hand counters are gone from the manifest.
+    assert_not_contains('?v=5', $html);
+    assert_not_contains('?v=4', $html);
+});
+
 exit(test_summary());

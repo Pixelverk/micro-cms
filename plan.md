@@ -574,9 +574,40 @@ cannot report it. That case stays a blank 500.
 
 ## 14. Theme asset auto-versioning (B, S)
 
-Stamp theme CSS/JS URLs with file
-modification time the way `admin_asset()` already does, then drop the manual
-`?v=` counters. Verify in `tests/theme.test.php` and by editing `style.css`.
+**Shipped.** `asset()` now stamps theme asset URLs with the file's modification
+time, exactly as `admin_asset()` already did for the admin UI, and the three
+hand-maintained `?v=` counters are gone from `theme/theme.php`. Because
+`asset()` has only four production callers, this versions CSS, JS, the theme
+logo **and** the favicon in one change, with no call site touched. Both
+functions now stamp through one small helper, `version_asset_url()`, so the rule
+cannot drift between them.
+
+**Why.** `admin_asset()` already stamped admin URLs, but theme assets relied on
+someone remembering to bump a counter in the manifest — and `AGENTS.md` told
+theme developers to do exactly that. Forgetting meant visitors kept a stale
+stylesheet.
+
+**Details worth knowing.** `asset()` strips any query before resolving the path,
+so an old `?v=5` entry is replaced by the stamp rather than doubled. External
+URLs pass through untouched. A missing file gets the plain URL, not a version
+that points at nothing. The `admin_asset()` docblock and `AGENTS.md` were
+corrected — both had described the removed counters.
+
+**Decisions.** `img()` is **not** stamped, so theme images keep clean URLs and
+`og:image` and media fallbacks are unaffected. Cached pages are **not**
+re-invalidated when a theme file changes: a cached page keeps the stamp it was
+rendered with until it expires or is cleared (demonstrated, not just asserted) —
+making the cache revalidate against asset mtimes is a separate mechanism.
+
+**Verify.** `tests/theme.test.php`: a plain and a nested asset are stamped,
+absolute URLs pass through, an old `?v=` is replaced rather than doubled, a
+missing file is unstamped, `version_asset_url()` follows a file that changes
+(and drops the stamp when it disappears), and a rendered page carries the stamp
+for every stylesheet and script. `tests/export.test.php` covers the stamped URL
+surviving static-export rewriting, which now matters because every rendered URL
+carries a query string. Live: editing `style.css` changed the URL on the next
+render, a cached page kept the old stamp until the cache was cleared, and the
+admin's own stamp still matched its file's mtime.
 
 ## 15. Starter theme (B, M)
 

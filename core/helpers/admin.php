@@ -370,17 +370,13 @@ function admin_trans(string $key, array $replace = []): string
 /**
  * URL for an admin asset, stamped with its modification time.
  *
- * Admin assets are not covered by the theme's manual ?v= counters, so without
- * this a browser happily serves a stale main.js against freshly rendered HTML
- * (which is exactly how a fixed confirm-dialog bug reappeared from cache).
+ * Without the stamp a browser happily serves a stale main.js against freshly
+ * rendered HTML (which is exactly how a fixed confirm-dialog bug reappeared
+ * from cache).
  */
 function admin_asset(string $path): string
 {
-    $full = CMS_PATH . '/' . ltrim($path, '/');
+    $relative = ltrim($path, '/');
 
-    if (!is_file($full)) {
-        return url($path);
-    }
-
-    return url($path) . '?v=' . filemtime($full);
+    return version_asset_url(url($relative), CMS_PATH . '/' . $relative);
 }

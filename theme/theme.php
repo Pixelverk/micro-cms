@@ -207,11 +207,14 @@ return [
     | style.css holds theme tokens and theme-wide rules. Per-component CSS is
     | collected by core/render.php and injected after both, so a component can
     | always override this layer.
+    |
+    | Each URL is stamped with its file's modification time (asset()), so an
+    | edit needs no version bump here.
     */
     'styles' => [
         'layout.css',
-        'utilities.css?v=5',
-        'style.css?v=5',
+        'utilities.css',
+        'style.css',
         'vendor/bootstrap-icons/bootstrap-icons.css',
     ],
 
@@ -219,10 +222,11 @@ return [
     |--------------------------------------------------------------------------
     | Scripts
     |--------------------------------------------------------------------------
+    | src is stamped the same way as the stylesheets above.
     */
     'scripts' => [
         [
-            'src'   => 'main.js?v=4',
+            'src'   => 'main.js',
             'defer' => true,
         ],
     ],
