@@ -314,8 +314,10 @@ function docs_content(): array
                 'Redirects' => [
                     ['p' => 'Redirects keep old URLs working. Add one when a page moves, or use the recent-404s list to catch links that are already broken. Saving a redirect clears its cached page, so it applies immediately.'],
                     ['p' => 'The add form is one row: the old path, the new path, and whether the redirect is permanent (301) or temporary (302). Pressing "Redirect this" in the 404 list fills the form for you.'],
-                    ['p' => 'Renaming the slug of a published page creates its 301 automatically. Drafts do not, because their URL was never public.'],
-                    ['p' => 'A handful of paths belong to the CMS and cannot be redirected: the admin area, media, search, the form endpoints, sitemap.xml and robots.txt.'],
+                    ['p' => 'A redirect is refused when it would take a working URL away: a path the CMS serves (the admin area, media, search, the form endpoints, sitemap.xml, robots.txt), a page or archive that is live, a path that already redirects (edit that entry instead), or one that would close a loop.'],
+                    ['p' => 'Renaming the slug of a published page creates its 301 automatically. Drafts do not, because their URL was never public. Renaming a page back removes the entry that would now hide it, and publishing a page on a redirected path clears that redirect, so a live path is never shadowed.'],
+                    ['p' => 'A target that is itself a redirect still works, but it costs the visitor a second hop; the list marks it, and Check redirects lists it as a chain. That check also finds entries that cannot work at all — loops, self-targets, routes and hidden pages — and can remove them in one go.'],
+                    ['p' => 'Search above the list filters on both the old and the new path.'],
                 ],
                 'robots.txt' => [
                     ['p' => '/robots.txt is generated rather than stored, so it cannot go stale: it allows every crawler and points at the sitemap on the address set in Site URL. Add your own rules under Settings and they are appended exactly as written, which is where Disallow lines belong.'],

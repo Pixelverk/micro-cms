@@ -537,6 +537,32 @@ t('a redirect answers with 301 and its target', function () use ($base) {
     redirect_delete($id);
 });
 
+t('a redirect that would hide a live page is refused, and the page still serves', function () use ($base) {
+    test_clear_cache_files();
+
+    // The admin's own check, and the storage layer behind it.
+    assert_true(
+        in_array('shadows', array_column(redirect_conflicts('about', 'contact'), 'rule'), true),
+        'the conflict is detected'
+    );
+
+    $refused = false;
+
+    try {
+        redirect_save('about', 'contact');
+    } catch (RuntimeException $exception) {
+        $refused = true;
+    }
+
+    assert_true($refused, 'and the save is refused');
+
+    [$status, $page] = http('GET', $base . '/about/', false);
+
+    assert_eq(200, $status, 'the page answers for itself');
+    assert_not_contains('X-Cache: HIT', (string) $page, 'and is rendered, not redirected');
+    assert_not_contains('Location: /contact/', (string) $page);
+});
+
 t('robots.txt is generated with an absolute sitemap line and custom rules', function () use ($base) {
     save_settings(['robots_extra' => "Disallow: /private/\r\nDisallow: /drafts/"]);
 

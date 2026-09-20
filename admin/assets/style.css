@@ -1607,6 +1607,12 @@ html.dark .menu-item .remove {
     color: var(--warning);
 }
 
+/* A redirect target that is itself a redirect: it works, it just costs a hop. */
+.status-warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
 .status-failed {
     background: var(--danger-soft);
     color: var(--danger);

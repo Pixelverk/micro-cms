@@ -86,7 +86,7 @@ Wave 3 is opportunistic and can be dropped.
 | 14 | 2 | B | Theme asset auto-versioning | S | — |
 | 15 | 2 | B | Theme demo content as data + reference parity | M | 13 |
 | 16 | 2 | C | Navigation: content links, hide, server-side active state | M | — |
-| 17 | 2 | C | Redirect search + conflict detection | S | — |
+| 17 | 2 | C | Redirect search + conflict detection | M | — |
 | 18 | 2 | C | SEO output polish | S | 1 |
 | 19 | 2 | B/C | Accessibility pass | S | — |
 | 20 | 2 | A | Search hardening | S–M | 1 |
@@ -864,11 +864,74 @@ the site and present in the editor — markup, so the no-JS case is covered.
 `php tests/run.php` → 403 passed. Verified in the browser too: the active
 colours, and the editor's picker, hidden switch and read-only links.
 
-## 17. Redirect conflict detection (C, S)
+## 17. Redirect search + conflict detection (C, S)
 
-Add a way for the redirects list to reject loops, self-targets,
-duplicates that shadow real content, and chains. Verify with
-`tests/redirects.test.php`.
+**Shipped.** `redirect_save()` used to write whatever it was given; the admin page
+checked only that the old path was non-empty, unreserved and that the target
+looked like a URL. Probed against a fresh install, six things went wrong:
+
+* **A redirect could shadow live content.** `redirect_save('about', 'contact')`
+  succeeded while the About page existed, and because a redirect is served before
+  routing (`core/bootstrap/front.php`) the live page became unreachable.
+* **Reserved paths got through the helper.** The admin form refused `admin`, but
+  `redirect_save('admin', 'dashboard')` stored it — and `/admin/` then 301s away,
+  locking the editor out of the CMS with no way back through the UI.
+* **Self-targets** (`loop-a → loop-a`) were stored, so the request redirected to
+  itself forever, and **mutual loops** (`loop-b ↔ loop-c`) with it.
+* **Renaming a page twice bricked it.** Renaming `about` → `about-us` and back
+  left `about → about-us` *and* `about-us → about`: `/about/` was live but still
+  redirected away, into a loop.
+* **A duplicate old path silently replaced** the existing redirect.
+
+**What shipped.**
+
+* **One validator at the choke point.** `redirect_conflicts(from, to, ignoreId)`
+  returns `{rule, detail}` rows — the shape the publish checklist already uses —
+  for `empty`, `reserved`, `shadows`, `self`, `loop` and `existing`. The admin
+  form renders one sentence per rule (`redirects_rule_*`), and `redirect_save()`
+  refuses the breaking ones itself, so no caller — present or future — can write
+  a redirect the front end cannot serve. Replacing the entry that already owns a
+  path stays the storage layer's job; the add form reports it instead.
+* **A live path always outranks a redirect.** `save_content()` now clears any
+  redirect that owns the path being published, *before* recording a move's 301 —
+  which turns the rename-back loop into a working page and also covers publishing
+  a page on a redirected path. `redirect_forget_path()` is that one rule.
+* **Search.** The list filters on the old and the new path (`?q=`, the same
+  `.content-search` markup as the media and content lists), with its own
+  "nothing matches" state and Clear.
+* **Chains are visible, not forbidden:** a target that is itself a redirect is
+  flagged in the row with its hop count (`2 hops`) and listed in the check.
+  Every chain walk goes through one `redirect_target_map()`, so a page costs one
+  query, not one per hop.
+* **Check and repair.** "Check redirects" reports what cannot work — self,
+  loop, shadows, reserved — and what merely costs a hop — chains — and removes
+  the broken ones on confirmation (chains are kept: they work). That is how an
+  install already carrying one of the rows above gets clean without SQLite.
+
+**Decisions.** A redirect is a repair for a URL that no longer exists, so the
+validator refuses anything that would take a working URL away, and a path that
+already redirects is edited rather than silently replaced. Chains are allowed and
+flagged instead of collapsed: a second hop is a wart, not a break, and rewriting
+a target someone typed is a surprise. Redirects stay **out of the content
+package** — they belong to a site's history, not its content. The 404 list keeps
+driving new entries.
+
+**Verify.** `tests/redirects.test.php` (13): reserved, shadows (page, post,
+archive, portfolio item), self, three-step and shorter loops, a draft and a
+trashed path still being free to redirect, `redirect_save` refusing all three
+kinds itself while still replacing in place, the rename-away-and-back case
+leaving the page reachable with nothing to repair, publishing clearing a
+redirect, search on either path, and the audit reporting all five kinds while the
+repair removes exactly the broken entries and keeps the chain.
+`tests/http.test.php` proves a redirect answers 301 before routing and that one
+refused for shadowing leaves `/about/` serving 200. Verified in the browser too:
+the refusal messages name the rule and the page it would hide, the list flags a
+chain at `2 hops`, search narrows to it, the check reports five findings,
+"Remove 5 broken redirect(s)" goes through the confirm modal, and afterwards only
+the chain and the legitimate entries remain. `php tests/run.php` → 412 passed.
+
+**Reject if** it becomes a URL-management suite: no regex source matching, no
+bulk import of redirect lists, no hit analytics beyond the existing counter.
 
 ## 18. SEO output polish (C, S)
 
@@ -1045,3 +1108,4 @@ Settle each at the start of its phase, not now.
  * Theme components should probably come with some sort of preview image, that way the CMS user will know what they look like when they add them in the content editor.
  * Right now the setup script fills the db with seed data that fits the default theme. When the CMS is used with a client theme in the future it will be impossible to provide seed content that fits. At that point the setup script should only handle db creation, tables and a default user, and it will probably only need to run once during the site build. In the future, a theme might be able to have a "sample data" file and the CMS would have an import feature. That might fit well with the planned import/export of site data. 
  * I suppose categories and tags could get the same multi-select delete as the media library has. They don't have any other bulk actions that can be done to them.
+ * For the menu editor, the 'hidden' checkbox might be better as a button with an eye icon? That would match the other 3 buttons with icons. The eye can be crossed out and grey when hidden, and just the eye when visible. the title of menu-item will still say 'hidden' and the item will still be greyed out, so that is plenty of feedback.

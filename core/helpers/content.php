@@ -691,6 +691,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
     // ----------------------------
     // Determine whether to update or insert
     // ----------------------------
+    $oldRow = null;
+
     if ($id) {
         $existingId = $id;
     } else {
@@ -794,19 +796,6 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
             throw $exception;
         }
 
-        // A published item that moved keeps its old URL alive with a 301, so a
-        // slug or parent change never strands a link.
-        $pathChanged = $oldRow
-            && ((string) $oldRow['slug'] !== $slug || (string) $oldRow['parent_id'] !== (string) $parentId);
-
-        if ($pathChanged && $status === 'published' && function_exists('redirect_record_slug_change')) {
-            redirect_record_slug_change(
-                $type,
-                ['id' => (int) $existingId, 'slug' => (string) $oldRow['slug'], 'parent_id' => $oldRow['parent_id']],
-                ['id' => (int) $existingId, 'slug' => $slug, 'parent_id' => $parentId]
-            );
-        }
-
     } else {
         // A trashed item keeps its URL. SQLite's UNIQUE(type, parent_id, slug)
         // treats a NULL parent as distinct, so guard top-level slugs by hand.
@@ -893,6 +882,31 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
     // ----------------------------
     // Housekeeping
     // ----------------------------
+    // A live path outranks a redirect. Renaming a page back, or creating one on a
+    // path an old entry still owns, has to clear that entry: the front end serves
+    // a redirect before it routes, so leaving it would hide the page.
+    if ($status === 'published' && function_exists('redirect_forget_path') && function_exists('redirect_content_path')) {
+        redirect_forget_path(redirect_content_path($type, [
+            'id'        => $idToReturn,
+            'slug'      => $slug,
+            'parent_id' => $parentId,
+        ]));
+    }
+
+    // A published item that moved keeps its old URL alive with a 301, so a slug
+    // or parent change never strands a link. Recorded after the cleanup above, or
+    // renaming a page back would look like a loop and be refused.
+    $pathChanged = $oldRow !== null && $existingId
+        && ((string) $oldRow['slug'] !== $slug || (string) $oldRow['parent_id'] !== (string) $parentId);
+
+    if ($pathChanged && $status === 'published' && function_exists('redirect_record_slug_change')) {
+        redirect_record_slug_change(
+            $type,
+            ['id' => (int) $existingId, 'slug' => (string) $oldRow['slug'], 'parent_id' => $oldRow['parent_id']],
+            ['id' => (int) $existingId, 'slug' => $slug, 'parent_id' => $parentId]
+        );
+    }
+
     if (function_exists('search_index_content')) {
         search_index_content($idToReturn);
     }
