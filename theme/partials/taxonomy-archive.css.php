@@ -47,7 +47,9 @@ collect_css($collectedCss, 'layout:taxonomy-archive', <<<'CSS'
 /* Items list */
 .taxonomy-archive-page .taxonomy-items {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    /* auto-fill keeps the empty tracks, so a lone entry is one card wide
+       instead of the width of the whole row. */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
     list-style: none;
     padding: 0;

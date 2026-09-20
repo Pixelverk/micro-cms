@@ -148,6 +148,46 @@ t('the theme ships its icons as SVG files, and inlines the one a component asks 
     assert_eq('', theme_icon(''));
 });
 
+t('round portraits are sized by their own slot, not by the column', function () {
+    $member = (string) file_get_contents(CMS_PATH . '/theme/components/team-member.php');
+    $blog   = (string) file_get_contents(CMS_PATH . '/theme/layouts/blog.php');
+    $testimonial = (string) file_get_contents(CMS_PATH . '/theme/components/testimonial-section.php');
+    $card   = (string) file_get_contents(CMS_PATH . '/theme/components/blog-card.php');
+    $css    = (string) file_get_contents(CMS_PATH . '/theme/assets/style.css');
+
+    // A media image renders a picture() block that fills its parent, so the slot
+    // is what decides how wide a portrait is: every round one has to have one.
+    foreach ([
+        'team-member' => [$member, 'team-portrait'],
+        'blog post author' => [$blog, 'avatar avatar-lg'],
+        'testimonial' => [$testimonial, 'class="avatar'],
+        'blog card author' => [$card, 'class="avatar'],
+    ] as $what => [$markup, $slot]) {
+        assert_contains($slot, $markup, "{$what} has its own slot");
+    }
+
+    foreach (['.team-portrait', '.avatar', '.avatar-lg'] as $rule) {
+        assert_contains($rule, $css, "{$rule} is sized in the theme");
+    }
+});
+
+t('the archive grid keeps every card the same width', function () {
+    $css = (string) file_get_contents(CMS_PATH . '/theme/partials/taxonomy-archive.css.php');
+
+    // auto-fit collapses the empty tracks, so one entry stretches across the row.
+    assert_contains('auto-fill', $css, 'a lone entry is still one card wide');
+    assert_not_contains('auto-fit', $css);
+});
+
+t('a floating field label has no placeholder text under it', function () {
+    $form = (string) file_get_contents(CMS_PATH . '/theme/partials/form.php');
+
+    // Bootstrap's floating label stands in for the placeholder; a real
+    // placeholder would be drawn underneath it.
+    assert_contains('placeholder=" "', $form, 'the label is the only text in an empty field');
+    assert_contains('fieldset', (string) file_get_contents(CMS_PATH . '/theme/assets/style.css') . 'fieldset', 'a fieldset is a group, not a box');
+});
+
 t('component cards keep the heading order of the page they sit in', function () {
     $render = function (string $name, array $props): string {
         $js = [];

@@ -66,7 +66,7 @@ return [
                     <div class="text-center">
                         <div class="fs-4 mb-4 fst-italic">"<?= e($quote)?>"</div>
                         <div class="d-flex align-items-center justify-content-center">
-                            <?= render_image($img ?? '', ['class' => 'rounded-circle me-3', 'alt' => $name ?? '', 'ratio' => '1']) ?>
+                            <div class="avatar me-3"><?= render_image($img ?? '', ['class' => 'rounded-circle', 'alt' => $name ?? '', 'ratio' => '1']) ?></div>
                             <div class="fw-bold">
                                 <?= e($name)?>
                                 <span class="fw-bold text-primary mx-1">/</span>

@@ -7,6 +7,17 @@
     line-height: 1.5;
 }
 
+/* A fieldset is a group, not a box: the browser draws a border and clips the
+   legend inside it. Bootstrap's reboot does the same. */
+fieldset {
+    border: 0;
+    min-width: 0;
+}
+
+legend {
+    margin-bottom: 0.25rem;
+}
+
 .inner {
     max-width: 1100px;
     margin: 0 auto;
@@ -43,17 +54,30 @@
     opacity: 1;
 }
 
-/* The CMS image placeholder (core ships the box and its ratio). It fills the
-   slot by default; the one shape that is not a slot is the round avatar, which
-   the theme sizes so a 40px face does not become a full-width disc. */
-.image-placeholder.rounded-circle {
+/* Round portraits are as wide as the reference picture, not as wide as the
+   column they sit in. One pinned track, not flex: a flex item with nothing in
+   it takes its height from the text line, and an auto grid track sizes to its
+   content, so an empty placeholder box would come out the wrong shape. The slot
+   is the size, and the picture fills it. */
+.avatar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    flex: 0 0 auto;
     width: 40px;
-    max-width: 100%;
 }
 
-/* A team portrait is the one round image that is large. */
-.image-placeholder.rounded-circle.img-fluid {
+/* A blog post's author picture is the larger one. */
+.avatar-lg {
+    width: 50px;
+}
+
+/* A team portrait is the large round slot. */
+.team-portrait {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     width: 150px;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 /* Icons are inline SVG (theme_icon(); the artwork lives in theme/assets/icons/).

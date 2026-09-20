@@ -47,8 +47,8 @@ return [
         $imageAlt = (string) ($props['name'] ?? '');
     }
 
-    // Square: the portrait is rendered as a circle.
-    $imageAttrs = ['class' => 'img-fluid rounded-circle mb-4 px-4', 'ratio' => '1'];
+    // Square: the portrait slot is a circle of the reference's 150px.
+    $imageAttrs = ['class' => 'img-fluid rounded-circle mb-4', 'ratio' => '1'];
 
     if ($imageAlt !== '') {
         $imageAttrs['alt'] = $imageAlt;
@@ -56,7 +56,7 @@ return [
     ?>
     <div class="col mb-5 mb-xl-0">
         <div class="text-center">
-            <?= render_image($imageValue, $imageAttrs) ?>
+            <div class="team-portrait"><?= render_image($imageValue, $imageAttrs) ?></div>
             <h2 class="h5 fw-bolder"><?= e($props['name'] ?? '') ?></h2>
             <div class="fst-italic text-muted"><?= e($props['role'] ?? '') ?></div>
         </div>

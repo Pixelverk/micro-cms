@@ -178,10 +178,43 @@
 .form-floating > .form-control { height: calc(3.5rem + 2px); padding: 1rem 0.75rem; }
 .form-floating > textarea.form-control { height: 10rem; }
 .form-floating > label { position: absolute; top: 0; left: 0; height: 100%; padding: 1rem 0.75rem; color: #6c757d; pointer-events: none; transform-origin: 0 0; transition: opacity .15s, transform .15s; }
-.form-floating > .form-control:focus ~ label, .form-floating > .form-control:not(:placeholder-shown) ~ label { opacity: .65; transform: scale(.85) translateY(-.5rem) translateX(.15rem); }
+.form-floating > select.form-control { padding-top: 1.625rem; padding-bottom: 0.625rem; }
+.form-floating > .form-control:focus ~ label, .form-floating > .form-control:not(:placeholder-shown) ~ label, .form-floating > select.form-control ~ label { opacity: .65; transform: scale(.85) translateY(-.5rem) translateX(.15rem); }
 .form-check { display: block; min-height: 1.5rem; padding-left: 1.5em; }
-.form-check-input { float: left; margin-left: -1.5em; }
 .form-check-label { cursor: pointer; }
+
+/* Bootstrap's check and radio: the native controls are replaced so they take
+   the theme colour like every other control. */
+.form-check-input {
+    float: left;
+    /* Inputs do not inherit type by default; 1em above should follow the text
+       around it, the way Bootstrap's reboot makes it. */
+    font-family: inherit;
+    font-size: inherit;
+    width: 1em;
+    height: 1em;
+    margin-top: 0.25em;
+    margin-left: -1.5em;
+    vertical-align: top;
+    appearance: none;
+    background-color: #fff;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+.form-check-input[type="checkbox"] { border-radius: 0.25em; }
+.form-check-input[type="radio"] { border-radius: 50%; }
+.form-check-input:checked {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+}
+.form-check-input:checked[type="checkbox"] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+.form-check-input:checked[type="radio"] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+}
 .input-group { display: flex; flex-wrap: wrap; align-items: stretch; width: 100%; }
 .input-group > .form-control { flex: 1 1 auto; width: 1%; min-width: 0; }
 

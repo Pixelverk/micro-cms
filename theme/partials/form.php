@@ -226,9 +226,10 @@ $formField = static function (array $cfg, string $name, string $formId): array {
         <?php else: ?>
             <div class="form-floating mb-3">
                 <?php if ($field['type'] === 'textarea'): ?>
-                    <textarea class="form-control" id="<?= e($field['id']) ?>" name="<?= e($field['name']) ?>" placeholder="<?= e($field['label']) ?>" style="height: 10rem" <?= $field['required'] ?>></textarea>
+                    <?php /* The label floats into the field, so the placeholder stays a blank. */ ?>
+                    <textarea class="form-control" id="<?= e($field['id']) ?>" name="<?= e($field['name']) ?>" placeholder=" " style="height: 10rem" <?= $field['required'] ?>></textarea>
                 <?php else: ?>
-                    <input class="form-control" id="<?= e($field['id']) ?>" type="<?= e($field['type']) ?>" name="<?= e($field['name']) ?>" placeholder="<?= e($field['label']) ?>" <?= $field['required'] ?> />
+                    <input class="form-control" id="<?= e($field['id']) ?>" type="<?= e($field['type']) ?>" name="<?= e($field['name']) ?>" placeholder=" " <?= $field['required'] ?> />
                 <?php endif; ?>
                 <label for="<?= e($field['id']) ?>"><?= e($field['label']) ?></label>
             </div>

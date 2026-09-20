@@ -70,7 +70,7 @@ return [
             <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
                 <div class="d-flex align-items-end justify-content-between">
                     <div class="d-flex align-items-center">
-                        <?= render_image($img2 ?? '', ['class' => 'rounded-circle me-3', 'alt' => '...', 'ratio' => '1']) ?>
+                        <div class="avatar me-3"><?= render_image($img2 ?? '', ['class' => 'rounded-circle', 'alt' => '...', 'ratio' => '1']) ?></div>
                         <div class="small">
                             <div class="fw-bold">Kelly Rowan</div>
                             <div class="text-muted">March 12, 2023 &middot; 6 min read</div>
