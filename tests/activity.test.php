@@ -115,8 +115,13 @@ t('list_activity() paginates and reports the total', function () {
         VALUES ('content.updated', 'content', :summary, :created_at)
     ");
 
+    // One timestamp for the whole loop: calling time() per row can cross a
+    // second boundary, and two rows sharing created_at make "newest first" a
+    // tie the id then decides.
+    $now = time();
+
     for ($i = 1; $i <= 12; $i++) {
-        $insert->execute(['summary' => "Item {$i}", 'created_at' => time() - $i]);
+        $insert->execute(['summary' => "Item {$i}", 'created_at' => $now - $i]);
     }
 
     $first = list_activity([], 5, 0);
