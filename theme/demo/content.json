@@ -930,80 +930,87 @@
                     "type": "url",
                     "label": "Home",
                     "target": "_self",
-                    "children": [],
-                    "slug": "/"
+                    "slug": "/",
+                    "children": []
                 },
                 {
                     "type": "page",
                     "label": "About",
                     "target": "_self",
-                    "children": [],
-                    "slug": "about"
+                    "slug": "about",
+                    "children": []
                 },
                 {
                     "type": "page",
                     "label": "Contact",
                     "target": "_self",
-                    "children": [],
-                    "slug": "contact"
+                    "slug": "contact",
+                    "children": []
                 },
                 {
                     "type": "page",
                     "label": "Pricing",
                     "target": "_self",
-                    "children": [],
-                    "slug": "pricing"
+                    "slug": "pricing",
+                    "children": []
                 },
                 {
                     "type": "page",
                     "label": "FAQ",
                     "target": "_self",
-                    "children": [],
-                    "slug": "faq"
+                    "slug": "faq",
+                    "children": []
                 },
                 {
                     "type": "url",
                     "label": "Blog",
                     "target": "_self",
+                    "slug": "#",
                     "children": [
                         {
-                            "type": "url",
+                            "type": "page",
                             "label": "Blog Home",
                             "target": "_self",
-                            "children": [],
-                            "slug": "/blog"
+                            "slug": "blog",
+                            "children": []
                         },
                         {
-                            "type": "url",
+                            "type": "blog_post",
                             "label": "Blog Post",
                             "target": "_self",
-                            "children": [],
-                            "slug": "/blog/welcome-to-our-blog"
+                            "slug": "welcome-to-our-blog",
+                            "children": []
+                        },
+                        {
+                            "type": "category",
+                            "label": "News archive",
+                            "target": "_self",
+                            "slug": "news",
+                            "children": []
                         }
-                    ],
-                    "slug": "#"
+                    ]
                 },
                 {
                     "type": "url",
                     "label": "Portfolio",
                     "target": "_self",
+                    "slug": "#",
                     "children": [
                         {
-                            "type": "url",
+                            "type": "page",
                             "label": "Portfolio Overview",
                             "target": "_self",
-                            "children": [],
-                            "slug": "/portfolio"
+                            "slug": "portfolio",
+                            "children": []
                         },
                         {
-                            "type": "url",
+                            "type": "portfolio_item",
                             "label": "Portfolio Item",
                             "target": "_self",
-                            "children": [],
-                            "slug": "/portfolio/project-one"
+                            "slug": "project-one",
+                            "children": []
                         }
-                    ],
-                    "slug": "#"
+                    ]
                 }
             ]
         }

@@ -246,6 +246,68 @@ t('every layout the theme ships is reachable on the front end', function () use 
     assert_not_contains('navbar', $landing, 'a landing page does not');
 });
 
+t('the navigation marks the current page and its section', function () use ($base) {
+    // Markup, not script: a visitor without JavaScript sees the same thing.
+    [$status, $about] = http('GET', $base . '/about/', false);
+
+    assert_eq(200, $status);
+    assert_true(
+        (bool) preg_match('/<a class="nav-link active"[^>]*>\s*About\s*</s', $about),
+        'the current page is the active link'
+    );
+    assert_eq(1, substr_count($about, 'aria-current="page"'), 'exactly one link is the current page');
+    assert_not_contains('link.style.fontWeight', $about, 'the old inline-style script is gone');
+
+    // The blog post marks itself and the section it sits in.
+    [$status, $post] = http('GET', $base . '/blog/welcome-to-our-blog/', false);
+
+    assert_eq(200, $status);
+    assert_eq(1, substr_count($post, 'aria-current="page"'), 'the post is the current page');
+    assert_true(
+        (bool) preg_match('/<a class="nav-link active dropdown-toggle"/', $post),
+        'and Blog, the section it belongs to, is active'
+    );
+
+    // The footer carries the same state.
+    [$status, $privacy] = http('GET', $base . '/privacy/', false);
+
+    assert_eq(200, $status);
+    assert_contains('class="link-light small active"', $privacy, 'the footer marks its own page too');
+});
+
+t('a hidden item leaves the menu and stays in the editor', function () use ($base) {
+    $menu     = get_menu('main');
+    $original = $menu['items'];
+
+    $withHidden = static function (bool $hidden) use ($original): array {
+        return array_merge($original, [[
+            'type'     => 'page',
+            'label'    => 'Parked Link',
+            'slug'     => 'pricing',
+            'hidden'   => $hidden,
+            'children' => [],
+        ]]);
+    };
+
+    save_menu(['label' => $menu['label'], 'slug' => 'main', 'items' => $withHidden(true)]);
+
+    [, $page] = http('GET', $base . '/', false);
+    assert_not_contains('Parked Link', $page, 'a hidden item is not rendered');
+
+    // The editor keeps it, so a parked branch is still editable.
+    http_login($base);
+    [, $editor] = http('GET', $base . '/admin/menu/edit?menu=main', true);
+    assert_contains('Parked Link', $editor, 'the editor still shows it');
+
+    // Unhide, and it is back on the site.
+    save_menu(['label' => $menu['label'], 'slug' => 'main', 'items' => $withHidden(false)]);
+    [, $page] = http('GET', $base . '/', false);
+    assert_contains('Parked Link', $page, 'unhiding brings it back');
+
+    // Leave the demo menu exactly as it was found.
+    save_menu(['label' => $menu['label'], 'slug' => 'main', 'items' => $original]);
+});
+
 t('every response carries the security baseline', function () use ($base) {
     foreach (['/' => 'front page', '/admin/login' => 'admin page'] as $path => $label) {
         [, , $headers] = http('GET', $base . $path, false);

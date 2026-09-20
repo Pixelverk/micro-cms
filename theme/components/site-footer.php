@@ -93,8 +93,16 @@ CSS,
                 <div class="col-auto">
                     <?php foreach ($menu['items'] as $index => $item): ?>
                         <?php if ($index > 0): ?><span class="text-white mx-1">&middot;</span><?php endif; ?>
-                        <?php $href = ($item['type'] ?? 'url') === 'page' ? url($item['slug'] ?? '') : ($item['slug'] ?? '#'); ?>
-                        <a class="link-light small" href="<?= e($href) ?>" target="<?= e($item['target'] ?? '_self') ?>"><?= e($item['label'] ?? '') ?></a>
+                        <?php $href = (string) ($item['url'] ?? ''); ?>
+                        <?php if ($href === ''): ?>
+                            <?php /* A link that no longer resolves is text, not a 404. */ ?>
+                            <span class="link-light small"><?= e($item['label'] ?? '') ?></span>
+                        <?php else: ?>
+                            <a class="link-light small<?= !empty($item['active']) ? ' active' : '' ?>"
+                               href="<?= e($href) ?>"
+                               target="<?= e($item['target'] ?? '_self') ?>"
+                               <?php if (!empty($item['current'])): ?>aria-current="page"<?php endif; ?>><?= e($item['label'] ?? '') ?></a>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </div>

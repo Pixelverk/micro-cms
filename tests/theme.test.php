@@ -33,6 +33,10 @@ t('utilities.css carries the shared class layer', function () {
     foreach (['.order-first', '.order-lg-last'] as $selector) {
         assert_contains($selector, $css, "utilities.css should define {$selector}");
     }
+
+    // Menus mark the current page on the server; without this rule the markup
+    // would carry the state and show nothing for it.
+    assert_contains('.nav-link.active', $css, 'the active nav state has to be visible');
 });
 
 t('style.css holds the theme surface, not the utility layer', function () {

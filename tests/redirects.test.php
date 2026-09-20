@@ -102,6 +102,12 @@ t('changing a published slug keeps the old URL alive', function () {
     assert_eq('new-slug', $found['to_path']);
     assert_eq(301, (int) $found['status']);
 
+    // The rename itself has to land: a redirect is served before routing, so a
+    // page that kept its old slug would be sent away from its own live URL to a
+    // path that does not exist.
+    $moved = load_content_by_id($id);
+    assert_eq('new-slug', $moved['slug'], 'the new slug is written');
+
     // Re-saving the same slug must not add a second one.
     $again = load_content_by_id($id);
 

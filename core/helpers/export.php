@@ -511,7 +511,9 @@ function content_package_export_content(): array
         $menus[] = [
             'label' => (string) $menu['label'],
             'slug'  => (string) $menu['slug'],
-            'items' => $menu['items'],
+            // Ids belong to the site that wrote them. The slug travels, and the
+            // importer resolves it against the content it just landed.
+            'items' => menu_items_strip_ids($menu['items']),
         ];
     }
 
@@ -1065,10 +1067,14 @@ function content_package_import(array $package, array $options = []): array
             ");
 
             foreach ($package['menus'] as $menu) {
+                $items = is_array($menu['items'] ?? null) ? $menu['items'] : [];
+
                 $insertMenu->execute([
                     'label' => (string) $menu['label'],
                     'slug'  => (string) $menu['slug'],
-                    'items' => json_encode($menu['items'] ?? [], JSON_UNESCAPED_SLASHES),
+                    // Content is in place by now, so menu links can point at this
+                    // install's rows instead of the package's slugs alone.
+                    'items' => json_encode(menu_items_attach_ids($items), JSON_UNESCAPED_SLASHES),
                     'now'   => $now,
                 ]);
                 $summary['menus']++;

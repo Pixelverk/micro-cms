@@ -26,6 +26,12 @@ function createMenuItem(data = {}) {
         }
     });
 
+    // The resolved link travels with the row so duplicating an item keeps it.
+    node.dataset.url = data.url || '';
+    node.dataset.broken = data.broken ? '1' : '';
+
+    applyMenuItemKind(node);
+
     // Update legend with label
     updateMenuItemLegend(node);
 
@@ -39,6 +45,10 @@ function createMenuItem(data = {}) {
 
     // Update legend on input change
     node.querySelector('[data-field="label"]').addEventListener('input', () => {
+        updateMenuItemLegend(node);
+    });
+
+    node.querySelector('[data-field="hidden"]').addEventListener('change', () => {
         updateMenuItemLegend(node);
     });
 
@@ -77,12 +87,44 @@ function bindSortableList(list) {
 }
 
 // ----------------------------
+// Custom link or content link?
+// ----------------------------
+// A custom link is typed by hand; content and archive links resolve on the
+// server, so their slug is kept for the fallback but never shown, and the row
+// displays where the item points instead.
+function applyMenuItemKind(node) {
+    const isCustom = (node.querySelector('[data-field="type"]')?.value || 'url') === 'url';
+
+    const input = node.querySelector('[data-field="slug"]');
+    const value = node.querySelector('[data-link-value]');
+
+    if (input) input.hidden = !isCustom;
+    if (value) {
+        value.hidden = isCustom;
+        value.textContent = node.dataset.url || input?.value || '';
+    }
+
+    const warning = node.querySelector('[data-item-warning]');
+    if (warning) {
+        const broken = node.dataset.broken === '1';
+        warning.hidden = !broken;
+        warning.textContent = broken ? t('menu_link_broken', 'This link no longer resolves.') : '';
+    }
+}
+
+// ----------------------------
 // Update <legend> label
 // ----------------------------
 function updateMenuItemLegend(node) {
     const label = node.querySelector('[data-field="label"]')?.value || t('menu_item', 'Menu Item');
+    const hidden = node.querySelector('[data-field="hidden"]')?.checked;
     const legend = node.querySelector('.menu-item-title');
-    if (legend) legend.textContent = label;
+
+    if (legend) {
+        legend.textContent = hidden ? `${label} (${t('menu_hidden', 'Hidden')})` : label;
+    }
+
+    node.classList.toggle('menu-item-is-hidden', !!hidden);
 }
 
 // ----------------------------
@@ -97,8 +139,8 @@ bindSortableList(container);
 // ----------------------------
 // Add top-level page item
 // ----------------------------
-document.getElementById('add-page-item').addEventListener('click', async () => {
-    const pageSelect = document.getElementById('new-item-page');
+document.getElementById('add-link-item').addEventListener('click', async () => {
+    const pageSelect = document.getElementById('new-item-link');
 
     if (!pageSelect.value) {
         await window.confirmModal({
@@ -111,10 +153,14 @@ document.getElementById('add-page-item').addEventListener('click', async () => {
 
     const selectedOption = pageSelect.selectedOptions[0];
     const itemData = {
-        type: 'page',
-        label: selectedOption.text,
-        slug: pageSelect.value,
+        type: selectedOption.dataset.type || 'page',
+        label: selectedOption.dataset.label || selectedOption.text,
+        slug: selectedOption.dataset.slug || '',
+        content_id: selectedOption.dataset.id || '',
         target: '_self',
+        hidden: false,
+        url: selectedOption.dataset.url || '',
+        broken: false,
         children: []
     };
 
@@ -230,6 +276,9 @@ function extractMenuItemData(el) {
 
     el.querySelectorAll(':scope > .children-container > .menu-item')
         .forEach(child => children.push(extractMenuItemData(child)));
+
+    data.url = el.dataset.url || '';
+    data.broken = el.dataset.broken === '1';
 
     if (children.length) data.children = children;
     return data;

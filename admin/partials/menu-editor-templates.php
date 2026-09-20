@@ -10,17 +10,13 @@
                 <input type="text" class="field-input" data-field="label" placeholder="<?= e(admin_trans('common_label')) ?>">
             </label>
 
-            <label class="menu-field menu-field-narrow">
-                <?= e(admin_trans('common_type')) ?>
-                <select class="field-input" data-field="type">
-                    <option value="page"><?= e(admin_trans('common_page')) ?></option>
-                    <option value="url"><?= e(admin_trans('common_url')) ?></option>
-                </select>
-            </label>
-
             <label class="menu-field menu-field-wide">
-                <?= e(admin_trans('menu_slug_or_url')) ?>
+                <?= e(admin_trans('menu_link')) ?>
+                <?php /* A custom link is typed; a content or archive link is resolved,
+                         so the stored slug stays hidden and the row shows where the
+                         item really points. */ ?>
                 <input type="text" class="field-input" data-field="slug" placeholder="<?= e(admin_trans('menu_slug_or_url')) ?>">
+                <span class="menu-link-value" data-link-value></span>
             </label>
 
             <label class="menu-field menu-field-narrow">
@@ -30,7 +26,17 @@
                     <option value="_blank"><?= e(admin_trans('menu_target_new')) ?></option>
                 </select>
             </label>
+
+            <input type="hidden" class="field-input" data-field="type" value="url">
+            <input type="hidden" class="field-input" data-field="content_id" value="">
         </div>
+
+        <label class="field-check menu-item-hidden">
+            <input type="checkbox" class="field-input" data-field="hidden">
+            <?= e(admin_trans('menu_hidden')) ?>
+        </label>
+
+        <p class="menu-item-warning" data-item-warning hidden></p>
 
         <div class="children-container menu-children"></div>
 

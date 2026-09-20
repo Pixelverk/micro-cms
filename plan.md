@@ -85,7 +85,7 @@ Wave 3 is opportunistic and can be dropped.
 | 13 | 2 | B | Theme integrity check + Health | S–M | — |
 | 14 | 2 | B | Theme asset auto-versioning | S | — |
 | 15 | 2 | B | Theme demo content as data + reference parity | M | 13 |
-| 16 | 2 | C | Navigation: content-id links, hide, active state, preview | S–M | — |
+| 16 | 2 | C | Navigation: content links, hide, server-side active state | M | — |
 | 17 | 2 | C | Redirect search + conflict detection | S | — |
 | 18 | 2 | C | SEO output polish | S | 1 |
 | 19 | 2 | B/C | Accessibility pass | S | — |
@@ -781,14 +781,88 @@ exercised through the local server: preview, import, reset, and a rejected file.
 **Reject if** it becomes a full site-migration tool — users, media binaries,
 schema — or introduces runtime theme selection.
 
-## 16. Navigation: content-id links, hide, active state, preview (C, S–M)
+## 16. Navigation: content links, hide, server-side active state (C, M)
 
-Menu items store slugs, so renaming a page silently breaks its menu link; there
-is no hidden flag; active state is JS-only; and the editor has no rendered menu
-preview. Store the content id alongside the slug (resolve at render, fall back to
-slug for existing items), add hide, add a server-side active state with
-`aria-current`, and show a simple preview. Verify with `tests/menus.test.php` and
-`tests/http.test.php`.
+**Shipped.** Menu items are `{type, label, slug, target, hidden, children}` inside
+the `menus.items` JSON blob, so nothing about this needed a schema change. What
+was wrong, measured against a fresh install before touching anything:
+
+* **Active state was client-side and mostly wrong.** The header's `js` set
+  `link.style.fontWeight = '700'` on any `nav a` whose `href` equalled
+  `location.pathname`. It marked `/`, `/about/` and `/pricing/`, missed every
+  URL item (stored as `/blog`, `/blog/…`, `/portfolio` — no trailing slash),
+  missed posts, archives and search entirely, never marked a parent, wrote no
+  `aria-current` and no class, and the public front end may not depend on JS.
+* **A rename was only survived by accident** — through the 301
+  `save_content()` records for a moved page, i.e. a redirect hop on every menu
+  click.
+* **Nested pages linked to the wrong URL**: the picker stored the leaf slug and
+  the header rendered `url($slug)`, so `/services/consulting/` became
+  `/consulting/`.
+* **Only pages could be linked**, which is how the demo's Blog and Portfolio
+  submenus ended up as hand-typed URLs nothing validated.
+
+**What shipped.**
+
+* **Items identify content.** `content_id` (content items) and `hidden` (any
+  item) joined the item shape, and `type` is now a content type key, `url`, or
+  `category` / `tag` for an archive. `admin/menu/save.php` whitelists all of it
+  and writes neither key when it carries no information.
+* **One resolver, at render.** `menu_items_prepare()` resolves each item —
+  `content_url()` (new, with `content_path_rows()`) builds a content URL from
+  the type's prefix and the row's **current** parent chain — drops hidden
+  branches, and marks the active trail. A link with a live id follows a rename;
+  with no id, or an id whose row is gone, unpublished or trashed, it falls back
+  to a live row matching the stored slug, which keeps every menu written before
+  this change working; when neither resolves the item is `broken` and both
+  components render its label as text instead of a dead link.
+* **Active state is markup.** The exact match gets `active` + `aria-current`,
+  its ancestors get `active`, matching ignores the trailing slash and the query
+  string, and an item owns its subpaths — so Blog is active while reading a
+  post, and the site root only ever matches itself. `utilities.css` gained
+  `.nav-link.active`, `.link-light.active` and `.dropdown-item.active` at
+  Bootstrap's colours. The inline-style script is deleted.
+* **The editor offers what exists.** The picker lists every published page,
+  blog post and portfolio item with its real path, plus category and tag
+  archives, grouped by type; content items keep their slug as a fallback but
+  show the resolved link read-only, and only a custom URL is typed. Hidden items
+  stay in the tree, dimmed, and an item whose link no longer resolves is flagged
+  where it was created.
+* **Packages stay id-free.** Export strips `content_id` recursively, import
+  re-resolves it from `type` + slug once the content has landed, and `hidden`
+  travels.
+* **The demo menus** now link to content (blog page, a post, the portfolio page,
+  a project) plus a `News archive` child that demonstrates a taxonomy link.
+
+**A prerequisite bug, found on the way and fixed.** `save_content()`'s UPDATE
+never wrote `slug` — it has been missing since the first commit — while
+`redirect_record_slug_change()` assumed it did. So renaming a page kept the old
+URL *and* recorded a 301 from that still-live URL to the new one, which does not
+exist: **renaming a page bricked it**, because redirects are served before
+routing (`core/bootstrap/front.php`). One column and one bound parameter fix it;
+`tests/redirects.test.php` now asserts the new slug is written, which is the
+assertion whose absence let this survive.
+
+**Decisions.** The id is a *resolution hint*, never a requirement. Broken items
+render as text, not as a 404 link. **No rendered preview in the editor** — the
+item tree is the editor's view and the live site is a click away; the only
+addition is the inline broken-link marker. Labels stay the editor's text and are
+never rewritten from the page title. `content_url()` is now the one place a
+content URL is built: the two archive layouts and the blog list section use it
+instead of assembling prefix + slug themselves, which also gave those links the
+trailing slash and subfolder base they were missing.
+
+**Verify.** `tests/menus.test.php` (17): a renamed page resolves to its new path,
+a nested page to its full path, a trashed page is broken while a legacy item with
+no id still resolves by slug, archive and custom items resolve, the active trail
+marks the page and its section, the root is only active on itself, matching
+ignores slash and query, a hidden branch is pruned but kept for the editor, and a
+package export carries no ids while import resolves them. `tests/http.test.php`
+fetches `/about/`, a post and `/privacy/` and asserts which link is active and
+that exactly one carries `aria-current`, with a hidden item proving absent from
+the site and present in the editor — markup, so the no-JS case is covered.
+`php tests/run.php` → 403 passed. Verified in the browser too: the active
+colours, and the editor's picker, hidden switch and read-only links.
 
 ## 17. Redirect conflict detection (C, S)
 

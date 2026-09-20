@@ -1981,6 +1981,30 @@ button.header-icon:hover { background: transparent; }
 .menu-field-label { flex: 4 1 10rem; }
 .menu-field-wide { flex: 4 1 12rem; }
 
+/* A content or archive link is resolved on the server, so its stored slug stays
+   hidden and the row shows where the item really points. A custom link is typed
+   instead, in the same slot. */
+.menu-link-value {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    overflow-wrap: anywhere;
+}
+
+.menu-item-warning {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--danger);
+}
+
+.menu-item-hidden { margin-top: 0.5rem; }
+
+/* A hidden item stays in the editor, dimmed, so a parked branch is not lost. */
+.menu-item-is-hidden { opacity: 0.6; }
+
 /* `field-sizing: content` shrinks a select to its chosen option; max-width
    stops a long label from spreading the row, and the fallback width keeps the
    row even where field-sizing is not supported. */

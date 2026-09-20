@@ -103,11 +103,7 @@ CSS,
             <?php else: ?>
                 <ul class="list-section-items">
                     <?php foreach ($result['items'] as $item): ?>
-                        <?php
-                        $ctConfig = $theme['content_types'][$type] ?? [];
-                        $prefix   = $settings['content_prefixes'][$type] ?? $ctConfig['url_prefix'] ?? '';
-                        $itemUrl  = url(($prefix ? $prefix . '/' : '') . (string) $item['slug']);
-                        ?>
+                        <?php $itemUrl = content_url($item); ?>
                         <li class="list-section-item">
                             <h3><a class="link-dark" href="<?= e($itemUrl) ?>"><?= e($item['title']) ?></a></h3>
 

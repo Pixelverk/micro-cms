@@ -87,10 +87,11 @@ function docs_content(): array
                     ['p' => 'More → Activity log shows who changed what, when. Entries are written automatically and cannot be edited.'],
                 ],
                 'Menus' => [
-                    ['p' => 'A menu is a list of links — pages or custom URLs — that the theme can print in a location such as the main navigation or the footer.'],
+                    ['p' => 'A menu is a list of links — your content, an archive, or a custom URL — that the theme can print in a location such as the main navigation or the footer.'],
                     ['p' => 'Open Menus and pick the menu you want from the dropdown at the top of the sidebar. Choosing "New menu" clears the selection so the next save creates one; name it in the Menu Label field.'],
                     ['p' => 'Tick the locations the menu should fill. A location holds one menu at a time, so ticking one that already has a menu moves it here, and unticking releases it.'],
-                    ['p' => 'Add pages or custom URLs from the sidebar. Each item has a label, a type, a slug or URL, and a target (same tab or new tab). Drag the grip to reorder, and use the child action to nest an item under the one above it — one level deep.'],
+                    ['p' => 'Add items from the sidebar: pick a page, a blog post, a portfolio item or an archive, and the row shows the URL it will use. Custom URLs are typed by hand instead. Every item has a label, a target (same tab or new tab) and a Hidden switch. Drag the grip to reorder, and use the child action to nest an item under the one above it — one level deep.'],
+                    ['p' => 'A link to content is stored as a reference, so renaming a page moves its menu link with it. Hiding an item takes its children off the site too, while both stay in this editor. An item whose page was deleted, trashed or unpublished is marked as broken, and renders as plain text on the site rather than a dead link.'],
                     ['p' => 'Deleting a menu leaves its locations empty until another menu is assigned to them.'],
                 ],
                 'Settings' => [
@@ -221,6 +222,16 @@ function docs_content(): array
                     ['p' => 'A component declares a menu slot with a field named menu. The editor fills its options from menu_locations, so the theme author keeps only the default:'],
                     ['code' => "// theme/components/site-header.php\n'schema' => [\n    'menu' => ['type' => 'select', 'label' => 'Menu slot', 'default' => 'main'],\n],\n\n// in the render function\n\$menu = get_menu_for_location((string) (\$props['menu'] ?? 'main'));\nforeach (\$menu['items'] as \$item) { /* … */ }"],
                     ['p' => 'The editor can then point the component at any declared slot, and a slot nobody assigned renders nothing. Assign menus to slots under Menus in the admin.'],
+                    ['p' => 'get_menu_for_location() hands back items that are ready to render. Each is type, label, slug, target, hidden and children, plus two keys the resolver adds: url (empty when the link no longer resolves) and broken. type is a content type key, url for a hand-written link, or category / tag for an archive.'],
+                    ['code' => "foreach (\$menu['items'] as \$item) {\n    echo '<a class=\"nav-link' . (!empty(\$item['active']) ? ' active' : '') . '\"'\n       . ' href=\"' . e(\$item['url']) . '\"'\n       . (!empty(\$item['current']) ? ' aria-current=\"page\"' : '') . '>'\n       . e(\$item['label']) . '</a>';\n}"],
+                    ['ul' => [
+                        'content_id is how a content link survives a rename: the id resolves to the row\'s current path, and the stored slug is the fallback for items written before ids existed',
+                        'hidden prunes the whole branch before the items reach the component',
+                        'active marks the page you are on and every item it sits under; current marks the exact page, which is what aria-current belongs on',
+                        'an item with no url is broken — render it as text, not as a link',
+                        'content_url(\$row) builds any content URL from its type prefix and parents; use it instead of assembling one by hand',
+                        'a package never carries content_id: export strips it and import resolves it again from the slug, so a menu from another site points at this one\'s pages',
+                    ]],
                 ],
                 'Styling' => [
                     ['ul' => [

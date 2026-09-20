@@ -29,8 +29,68 @@ foreach ($locations as $locationKey => $locationLabel) {
     }
 }
 
-// Load pages for the add-item panel
-$pages = list_content('page');
+// ----------------------------
+// What an item can point at
+// ----------------------------
+// Every content type the theme declares, then the archives. Each option carries
+// what the editor needs to build the item: the kind, the id the link resolves
+// with, the slug as its fallback, and the path to display.
+$pickerGroups = [];
+
+foreach ($theme['content_types'] ?? [] as $typeKey => $typeConfig) {
+    $rows = list_content((string) $typeKey);
+
+    if (!$rows) {
+        continue;
+    }
+
+    $paths   = content_path_rows((string) $typeKey);
+    $options = [];
+
+    foreach ($rows as $row) {
+        // list_content() returns publishing columns only, so the type the URL
+        // prefix comes from has to be filled in here.
+        $row['type'] = (string) $typeKey;
+
+        $options[] = [
+            'label' => (string) $row['title'],
+            'path'  => content_url($row, $paths),
+            'type'  => (string) $typeKey,
+            'id'    => (int) $row['id'],
+            'slug'  => (string) $row['slug'],
+        ];
+    }
+
+    $pickerGroups[] = [
+        'label'   => (string) ($typeConfig['label'] ?? ucfirst((string) $typeKey)),
+        'options' => $options,
+    ];
+}
+
+foreach (['category' => admin_trans('nav_categories'), 'tag' => admin_trans('nav_tags')] as $kind => $kindLabel) {
+    $stmt = db()->prepare("SELECT name, slug FROM taxonomy WHERE taxonomy_type = ? ORDER BY name COLLATE NOCASE ASC");
+    $stmt->execute([$kind]);
+    $options = [];
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $term) {
+        $options[] = [
+            'label' => (string) $term['name'],
+            'path'  => url($kind . '/' . $term['slug']),
+            'type'  => (string) $kind,
+            'id'    => 0,
+            'slug'  => (string) $term['slug'],
+        ];
+    }
+
+    if ($options) {
+        $pickerGroups[] = ['label' => $kindLabel, 'options' => $options];
+    }
+}
+
+// The editor shows hidden items too — dimmed — so a parked branch stays visible,
+// and an item whose link no longer resolves is flagged.
+$editorContext = ['rows' => [], 'terms' => []];
+$editorItems   = menu_items_resolve($currentMenu['items'] ?? [], $editorContext, true);
 
 // Render
 ob_start();
@@ -112,14 +172,25 @@ ob_start();
                 <h3><?= e(admin_trans('menu_add_items')) ?></h3>
 
                 <div class="field">
-                    <label class="field-label" for="new-item-page"><?= e(admin_trans('menu_from_pages')) ?></label>
-                    <select id="new-item-page" class="field-input">
-                        <option value=""><?= e(admin_trans('menu_select_page')) ?></option>
-                        <?php foreach ($pages as $page): ?>
-                            <option value="<?= e($page['slug']) ?>"><?= e($page['title']) ?></option>
+                    <label class="field-label" for="new-item-link"><?= e(admin_trans('menu_from_content')) ?></label>
+                    <select id="new-item-link" class="field-input">
+                        <option value=""><?= e(admin_trans('menu_select_content')) ?></option>
+                        <?php foreach ($pickerGroups as $group): ?>
+                            <optgroup label="<?= e($group['label']) ?>">
+                                <?php foreach ($group['options'] as $option): ?>
+                                    <option value="<?= e($option['type'] . ':' . $option['slug']) ?>"
+                                            data-type="<?= e($option['type']) ?>"
+                                            data-id="<?= (int) $option['id'] ?>"
+                                            data-slug="<?= e($option['slug']) ?>"
+                                            data-label="<?= e($option['label']) ?>"
+                                            data-url="<?= e($option['path']) ?>">
+                                        <?= e($option['label'] . ' — ' . $option['path']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
                         <?php endforeach; ?>
                     </select>
-                    <button type="button" id="add-page-item" class="btn-secondary"><?= e(admin_trans('common_add')) ?></button>
+                    <button type="button" id="add-link-item" class="btn-secondary"><?= e(admin_trans('common_add')) ?></button>
                 </div>
 
                 <div class="field">
@@ -155,7 +226,7 @@ $pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
 <script type="module" src="<?= url('admin/assets/menu-editor.js') ?>"></script>
 
 <script>
-    window.initialMenuItems = <?= json_encode($currentMenu['items']) ?>;
+    window.initialMenuItems = <?= json_encode($editorItems) ?>;
 
     // Selecting a menu navigates to it; the panel is part of the save form, so
     // the choice is made with a plain GET rather than a nested form.

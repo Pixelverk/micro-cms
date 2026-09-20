@@ -14,9 +14,6 @@ declare(strict_types=1);
 | - &$collectedCss
 |
 */
-$theme    = theme_config();
-$settings = load_settings();
-
 // Archive styling (injected as inline CSS, only on pages that need it)
 require theme('partials/taxonomy-archive.css.php');
 
@@ -44,12 +41,7 @@ if (!$taxonomy) {
         echo '<ul class="taxonomy-items">';
         foreach ($items as $item) {
             $title = htmlspecialchars($item['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8');
-            $slug  = htmlspecialchars($item['slug'] ?? '', ENT_QUOTES, 'UTF-8');
-
-            $type = $item['type'] ?? 'page';
-            $ctConfig = $theme['content_types'][$type] ?? [];
-            $prefix   = $settings['content_prefixes'][$type] ?? $ctConfig['url_prefix'] ?? '';
-            $url      = '/' . ($prefix ? $prefix . '/' : '') . $slug;
+            $url   = htmlspecialchars(content_url($item), ENT_QUOTES, 'UTF-8');
 
             echo '<li class="taxonomy-item">';
 

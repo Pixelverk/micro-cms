@@ -101,4 +101,197 @@ t('of two empty menus, resolution uses the assignment rather than the fallback',
     assert_eq('Header One', $menu['label']);
 });
 
+// ---------------------------------------------------------------------------
+// Resolving links
+// ---------------------------------------------------------------------------
+
+t('a content link follows a renamed page', function () {
+    $id = seed_content(['slug' => 'menu-rename', 'title' => 'Before']);
+
+    $item = ['type' => 'page', 'label' => 'Before', 'slug' => 'menu-rename', 'content_id' => $id, 'children' => []];
+
+    $prepared = menu_items_prepare([$item], '/menu-rename/');
+
+    assert_eq(url('menu-rename'), $prepared[0]['url'], 'the id resolves to the page it names');
+    assert_true($prepared[0]['current'], 'and is the page being served');
+    assert_false($prepared[0]['broken']);
+
+    // Rename it the way the editor does.
+    save_content('page', 'menu-renamed', [
+        'type'         => 'page',
+        'title'        => 'After',
+        'status'       => 'published',
+        'published_at' => time(),
+        'meta'         => [],
+        'body'         => [],
+    ], $id);
+
+    $prepared = menu_items_prepare([$item], '/menu-renamed/');
+
+    assert_eq(url('menu-renamed'), $prepared[0]['url'], 'the id follows the page, not the stored slug');
+    assert_false($prepared[0]['broken'], 'so the link still works');
+});
+
+t('a nested page resolves to its full path', function () {
+    $parent = seed_content(['slug' => 'menu-parent', 'title' => 'Parent']);
+    $child  = seed_content(['slug' => 'menu-child', 'title' => 'Child', 'parent_id' => $parent]);
+
+    // The stored slug is the leaf, which used to be the whole URL.
+    $item = ['type' => 'page', 'label' => 'Child', 'slug' => 'menu-child', 'content_id' => $child, 'children' => []];
+
+    $prepared = menu_items_prepare([$item]);
+
+    assert_eq(url('menu-parent/menu-child'), $prepared[0]['url'], 'the parent path is part of the URL');
+});
+
+t('an item without an id still resolves by its slug', function () {
+    // What every menu written before ids existed looks like.
+    $item = ['type' => 'page', 'label' => 'About', 'slug' => 'about', 'children' => []];
+
+    $prepared = menu_items_prepare([$item]);
+
+    assert_eq(url('about'), $prepared[0]['url']);
+    assert_false($prepared[0]['broken'], 'a legacy item is not reported as broken');
+});
+
+t('a link to a page that is gone is broken, not a dead URL', function () {
+    $id = seed_content(['slug' => 'menu-trashed', 'title' => 'Trashed']);
+
+    $item = ['type' => 'page', 'label' => 'Trashed', 'slug' => 'menu-trashed', 'content_id' => $id, 'children' => []];
+
+    assert_false(menu_items_prepare([$item])[0]['broken'], 'precondition: it resolves first');
+
+    trash_content($id);
+
+    $prepared = menu_items_prepare([$item]);
+
+    assert_true($prepared[0]['broken'], 'a trashed page leaves the link broken');
+    assert_eq('', $prepared[0]['url'], 'and nothing to link to');
+});
+
+t('an archive link resolves, and a term that is gone is broken', function () {
+    $live  = menu_items_prepare([['type' => 'category', 'label' => 'News', 'slug' => 'news', 'children' => []]]);
+    $gone  = menu_items_prepare([['type' => 'category', 'label' => 'Ghost', 'slug' => 'not-a-term', 'children' => []]]);
+
+    assert_eq(url('category/news'), $live[0]['url'], 'the demo taxonomy term resolves');
+    assert_false($live[0]['broken']);
+    assert_true($gone[0]['broken'], 'an unknown term is broken');
+});
+
+t('a custom URL is taken as written', function () {
+    $prepared = menu_items_prepare([
+        ['type' => 'url', 'label' => 'Elsewhere', 'slug' => 'https://example.com/x', 'children' => []],
+        ['type' => 'url', 'label' => 'Group', 'slug' => '#', 'children' => []],
+    ]);
+
+    assert_eq('https://example.com/x', $prepared[0]['url']);
+    assert_false($prepared[0]['broken']);
+    assert_eq('#', $prepared[1]['url'], 'a hash keeps a group unclickable');
+});
+
+// ---------------------------------------------------------------------------
+// Active state
+// ---------------------------------------------------------------------------
+
+t('the active trail marks the page and the section it sits in', function () {
+    $items = [[
+        'type'     => 'url',
+        'label'    => 'Blog',
+        'slug'     => '#',
+        'children' => [
+            ['type' => 'page', 'label' => 'Blog Home', 'slug' => 'blog', 'children' => []],
+            ['type' => 'blog_post', 'label' => 'A post', 'slug' => 'welcome-to-our-blog', 'children' => []],
+        ],
+    ], [
+        'type'  => 'page',
+        'label' => 'About',
+        'slug'  => 'about',
+        'children' => [],
+    ]];
+
+    $prepared = menu_items_prepare($items, '/blog/welcome-to-our-blog/');
+
+    assert_true($prepared[0]['active'], 'the section is active');
+    assert_false($prepared[0]['current'], 'but it is not the page itself');
+    assert_true($prepared[0]['children'][1]['current'], 'the page it names is current');
+    assert_false($prepared[1]['active'], 'a page elsewhere is not active');
+});
+
+t('the site root is only ever active on itself', function () {
+    $items = [['type' => 'url', 'label' => 'Home', 'slug' => '/', 'children' => []]];
+
+    assert_true(menu_items_prepare($items, '/')[0]['active'], 'active on the front page');
+    assert_false(menu_items_prepare($items, '/about/')[0]['active'], 'not active on every other page');
+});
+
+t('matching ignores the trailing slash and the query string', function () {
+    $items = [['type' => 'url', 'label' => 'Blog', 'slug' => '/blog', 'children' => []]];
+
+    assert_true(menu_items_prepare($items, '/blog/')[0]['current'], 'slash or no slash is the same page');
+    assert_true(menu_items_prepare([['type' => 'url', 'label' => 'Search', 'slug' => '/search', 'children' => []]], '/search?q=launch')[0]['current'], 'the query is not part of the path');
+});
+
+// ---------------------------------------------------------------------------
+// Hidden items
+// ---------------------------------------------------------------------------
+
+t('a hidden item takes its children with it', function () {
+    $items = [
+        ['type' => 'page', 'label' => 'Visible', 'slug' => 'about', 'children' => []],
+        ['type' => 'page', 'label' => 'Parked', 'slug' => 'pricing', 'hidden' => true, 'children' => [
+            ['type' => 'page', 'label' => 'Parked child', 'slug' => 'faq', 'children' => []],
+        ]],
+    ];
+
+    $prepared = menu_items_prepare($items, '/pricing/');
+
+    assert_count(1, $prepared, 'the hidden branch is gone');
+    assert_eq('Visible', $prepared[0]['label']);
+
+    // The editor still needs to see it.
+    $context = ['rows' => [], 'terms' => []];
+    assert_count(2, menu_items_resolve($items, $context, true), 'the editor keeps hidden items');
+});
+
+// ---------------------------------------------------------------------------
+// Packages
+// ---------------------------------------------------------------------------
+
+t('a package carries menu links without ids, and import resolves them', function () {
+    save_menu([
+        'label' => 'Package Menu',
+        'slug'  => 'package-menu',
+        'items' => [[
+            'type'       => 'page',
+            'label'      => 'About',
+            'slug'       => 'about',
+            'content_id' => (int) db()->query("SELECT id FROM content WHERE slug = 'about' AND type = 'page'")->fetchColumn(),
+            'children'   => [],
+        ]],
+    ]);
+
+    $document = content_package_export_content();
+    $exported = null;
+
+    foreach ($document['menus'] as $menu) {
+        if ($menu['slug'] === 'package-menu') {
+            $exported = $menu;
+        }
+    }
+
+    assert_true($exported !== null, 'the menu is in the package');
+    assert_false(array_key_exists('content_id', $exported['items'][0]), 'ids never travel');
+    assert_eq('about', $exported['items'][0]['slug'], 'the slug does');
+
+    // Send it back to this install: the link has to point at its own row.
+    $context = ['rows' => [], 'terms' => []];
+    $attached = menu_items_attach_ids($exported['items']);
+
+    assert_true(!empty($attached[0]['content_id']), 'import resolves the id from the slug');
+
+    $prepared = menu_items_prepare($attached);
+    assert_eq(url('about'), $prepared[0]['url']);
+    assert_false($prepared[0]['broken']);
+});
+
 exit(test_summary());

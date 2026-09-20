@@ -63,24 +63,14 @@ return [
 CSS,
 
 /** --------------------------------------------
- * Component JS  (optional)
- * -------------------------------------------- */
-'js' => <<<JS
-const currentPage = window.location.pathname;
-document.querySelectorAll('nav a').forEach(link => {
-    if (link.getAttribute('href') === currentPage) {
-        link.style.fontWeight = '700';
-    }
-});
-JS,
-
-/** --------------------------------------------
  * Render function
  * -------------------------------------------- */
 'render' => function (array $props, $page) {
     $id = 'header-' . uniqid();
     extract($props, EXTR_SKIP);
 
+    // Items arrive resolved: URL, whether the link still points at something,
+    // and which one is the page being served.
     $menu = get_menu_for_location((string) ($props['menu'] ?? 'main'));
 
     $renderItems = function (array $items, bool $nested = false) use (&$renderItems): void {
@@ -88,19 +78,30 @@ JS,
             $children = is_array($item['children'] ?? null) ? $item['children'] : [];
             $hasChildren = $children !== [];
             $itemId = 'menu-item-' . uniqid() . '-' . $index;
-            $href = ($item['type'] ?? 'url') === 'page'
-                ? url($item['slug'] ?? '')
-                : ($item['slug'] ?? '#');
+            $href = (string) ($item['url'] ?? '');
             $classes = $nested ? 'dropdown-submenu' : 'nav-item';
             if ($hasChildren) $classes .= ' dropdown';
+
+            $linkClasses = ($nested ? 'dropdown-item' : 'nav-link')
+                . (!empty($item['active']) ? ' active' : '')
+                . ($hasChildren ? ' dropdown-toggle' : '');
+
+            // A link that no longer resolves renders as text rather than as a
+            // 404 — but a group still has to open its children.
+            $isLink = $href !== '' || $hasChildren;
             ?>
             <li class="<?= e($classes) ?>">
-                <a class="<?= $nested ? 'dropdown-item' : 'nav-link' ?><?= $hasChildren ? ' dropdown-toggle' : '' ?>"
-                   href="<?= e($href) ?>"
-                   target="<?= e($item['target'] ?? '_self') ?>"
-                   <?php if ($hasChildren): ?>id="<?= e($itemId) ?>" role="button" data-bs-toggle="dropdown" aria-expanded="false"<?php endif; ?>>
-                    <?= e($item['label'] ?? '') ?>
-                </a>
+                <?php if ($isLink): ?>
+                    <a class="<?= e($linkClasses) ?>"
+                       href="<?= e($href !== '' ? $href : '#') ?>"
+                       target="<?= e($item['target'] ?? '_self') ?>"
+                       <?php if (!empty($item['current'])): ?>aria-current="page"<?php endif; ?>
+                       <?php if ($hasChildren): ?>id="<?= e($itemId) ?>" role="button" data-bs-toggle="dropdown" aria-expanded="false"<?php endif; ?>>
+                        <?= e($item['label'] ?? '') ?>
+                    </a>
+                <?php else: ?>
+                    <span class="<?= e($linkClasses) ?>"><?= e($item['label'] ?? '') ?></span>
+                <?php endif; ?>
                 <?php if ($hasChildren): ?>
                     <ul class="dropdown-menu"<?= $nested ? ' aria-labelledby="' . e($itemId) . '"' : '' ?>>
                         <?php $renderItems($children, true); ?>

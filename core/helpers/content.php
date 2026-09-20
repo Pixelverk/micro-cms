@@ -424,7 +424,7 @@ function list_content_page(string $type, int $page = 1, int $perPage = 10, array
     $count->execute($params);
     $total = (int) $count->fetchColumn();
 
-    $sql = "SELECT id, slug, title, type, meta, published_at, created_at, updated_at
+    $sql = "SELECT id, slug, parent_id, title, type, meta, published_at, created_at, updated_at
             FROM content{$where}
             ORDER BY published_at DESC, id DESC
             LIMIT {$perPage} OFFSET " . pagination_offset($page, $perPage);
@@ -739,6 +739,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
 
         $stmt = $pdo->prepare("
             UPDATE content SET
+                slug          = :slug,
                 parent_id     = :parent_id,
                 title         = :title,
                 status        = :status,
@@ -755,6 +756,7 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
         ");
         $stmt->execute([
             'id'           => $existingId,
+            'slug'         => $slug,
             'parent_id'    => $parentId,
             'title'        => $data['title'],
             'status'       => $status,
@@ -920,6 +922,68 @@ function build_full_slug(array $item, array $allItems): string {
         if (!$found) break; // just in case
     }
     return implode('/', $path);
+}
+
+/**
+ * The URL prefix a content type is served under.
+ *
+ * The Settings value wins, then the type's manifest entry, which is the same
+ * order the router, the sitemap and the search index resolve it in.
+ */
+function content_url_prefix(string $type): string
+{
+    $settings = load_settings();
+    $theme    = theme_config();
+
+    return (string) ($settings['content_prefixes'][$type] ?? $theme['content_types'][$type]['url_prefix'] ?? '');
+}
+
+/**
+ * Rows of one content type, with just what building a full slug path needs.
+ *
+ * Trashed rows are excluded; drafts are not, because a published child still
+ * lives under its parent's slug.
+ *
+ * @return list<array{id: int, type: string, slug: string, parent_id: int|null}>
+ */
+function content_path_rows(string $type): array
+{
+    $stmt = db()->prepare("
+        SELECT id, type, slug, parent_id
+        FROM content
+        WHERE type = :type
+          AND deleted_at IS NULL
+        ORDER BY id ASC
+    ");
+    $stmt->execute(['type' => $type]);
+
+    $rows = [];
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $row['id']        = (int) $row['id'];
+        $row['parent_id'] = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
+        $rows[]           = $row;
+    }
+
+    return $rows;
+}
+
+/**
+ * The public URL of a content row: its type's prefix, then its parents' slugs.
+ *
+ * The one place that knows how a content URL is put together, so a menu item,
+ * an archive listing and a card cannot each build it slightly differently.
+ *
+ * @param array<string, mixed> $row A content row, or any array with type, slug and parent_id.
+ * @param list<array<string, mixed>> $allRows Rows of the same type; loaded when omitted.
+ */
+function content_url(array $row, array $allRows = []): string
+{
+    $type   = (string) ($row['type'] ?? '');
+    $prefix = content_url_prefix($type);
+    $path   = build_full_slug($row, $allRows !== [] ? $allRows : content_path_rows($type));
+
+    return url(($prefix !== '' ? $prefix . '/' : '') . $path);
 }
 
 /**
