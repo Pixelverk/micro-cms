@@ -308,6 +308,127 @@ t('a hidden item leaves the menu and stays in the editor', function () use ($bas
     save_menu(['label' => $menu['label'], 'slug' => 'main', 'items' => $original]);
 });
 
+t('categories and tags delete in bulk from their lists', function () use ($base) {
+    http_login($base);
+
+    $pdo = db();
+
+    // Terms of this test's own, so the assertion does not depend on what the
+    // package tests before it left in the table.
+    $make = static function (string $kind, string $slug) use ($pdo): int {
+        $pdo->prepare("
+            INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at)
+            VALUES (:kind, 'blog_post', :name, :slug, :now, :now)
+        ")->execute(['kind' => $kind, 'name' => ucfirst(str_replace('-', ' ', $slug)), 'slug' => $slug, 'now' => time()]);
+
+        return (int) $pdo->lastInsertId();
+    };
+
+    $exists = static fn(int $id): bool => (bool) db()->query("SELECT COUNT(*) FROM taxonomy WHERE id = {$id}")->fetchColumn();
+
+    $first  = $make('category', 'bulk-http-one');
+    $second = $make('category', 'bulk-http-two');
+    $tag    = $make('tag', 'bulk-http-tag');
+
+    // The list offers the toolbar and a checkbox per row.
+    [$status, $page] = http('GET', $base . '/admin/category', true);
+
+    assert_eq(200, $status);
+    assert_contains('id="bulk-form"', $page, 'the bulk toolbar is on the page');
+    assert_contains('class="bulk-row" name="ids[]"', $page, 'every row offers a checkbox');
+    assert_contains('form="bulk-form"', $page, 'which joins the toolbar form');
+
+    $token = http_csrf_token($base, '/admin/category');
+
+    [$status] = http('GET', $base . '/admin/category/bulk', true);
+    assert_eq(405, $status, 'the endpoint only answers POST');
+
+    [$status] = http('POST', $base . '/admin/category/bulk', true, ['_token' => $token]);
+    assert_eq(302, $status);
+    assert_true($exists($first) && $exists($second), 'an empty selection deletes nothing');
+
+    // Two categories go; an id that does not resolve is skipped, not fatal.
+    [$status] = http('POST', $base . '/admin/category/bulk', true, [
+        '_token' => $token,
+        'ids'    => [$first, $second, 999999],
+    ]);
+
+    assert_eq(302, $status);
+    assert_false($exists($first), 'the first category is gone');
+    assert_false($exists($second), 'and the second');
+    assert_true($exists($tag), 'the tag was not touched by the category endpoint');
+
+    [, $page] = http('GET', $base . '/admin/category', true);
+    $text = html_entity_decode($page, ENT_QUOTES);
+    assert_contains('2 item(s) removed', $text, 'the toast reports how many went');
+    assert_contains('1 skipped', $text, 'and what was skipped');
+
+    // The single-row button still goes through the same delete.
+    $row = $make('category', 'bulk-http-row');
+
+    [$status] = http('POST', $base . '/admin/category/remove', true, [
+        '_token' => $token,
+        'id'     => $row,
+    ]);
+
+    assert_eq(302, $status);
+    assert_false($exists($row), 'the row button deletes its own term');
+
+    [, $page] = http('GET', $base . '/admin/category', true);
+    assert_contains('deleted', html_entity_decode($page, ENT_QUOTES), 'and reports it');
+
+    // The tag endpoint takes its own kind, and only its own.
+    [$status] = http('POST', $base . '/admin/tag/bulk', true, [
+        '_token' => http_csrf_token($base, '/admin/tag'),
+        'ids'    => [$tag],
+    ]);
+
+    assert_eq(302, $status);
+    assert_false($exists($tag), 'the tag is gone');
+});
+
+t('the taxonomy bulk endpoint needs the capability', function () use ($base, $cookieJar) {
+    db()->exec("
+        INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at)
+        VALUES ('category', 'blog_post', 'Bulk Guard', 'bulk-guard', " . time() . ", " . time() . ")
+    ");
+
+    $id = (int) db()->lastInsertId();
+
+    db()->prepare("
+        INSERT OR IGNORE INTO users (username, email, password_hash, role, created_at)
+        VALUES ('http-author-tax', 'http-author-tax@example.com', :hash, 'author', :now)
+    ")->execute(['hash' => password_hash('author-tax-pass', PASSWORD_DEFAULT), 'now' => time()]);
+
+    file_put_contents($cookieJar, '');
+
+    [, $loginPage] = http('GET', $base . '/admin/login');
+    preg_match('/name="_token" value="([^"]+)"/', $loginPage, $matches);
+
+    http('POST', $base . '/admin/login', true, [
+        'username' => 'http-author-tax',
+        'password' => 'author-tax-pass',
+        '_token'   => $matches[1],
+    ]);
+
+    [$status, $page] = http('GET', $base . '/admin/category', true);
+
+    assert_true($status !== 200, 'an author cannot open the categories page at all');
+    assert_not_contains('id="bulk-form"', $page, 'so the toolbar is not reachable');
+
+    http('POST', $base . '/admin/category/bulk', true, [
+        '_token' => $base ? http_csrf_token($base, '/admin/dashboard') : '',
+        'ids'    => [$id],
+    ]);
+
+    assert_true(
+        (bool) db()->query("SELECT COUNT(*) FROM taxonomy WHERE id = {$id}")->fetchColumn(),
+        'and cannot delete through it either'
+    );
+
+    db()->prepare("DELETE FROM taxonomy WHERE id = :id")->execute(['id' => $id]);
+});
+
 t('every response carries the security baseline', function () use ($base) {
     foreach (['/' => 'front page', '/admin/login' => 'admin page'] as $path => $label) {
         [, , $headers] = http('GET', $base . $path, false);

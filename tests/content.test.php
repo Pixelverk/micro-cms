@@ -426,4 +426,75 @@ t('content_collect_images() keeps, clears and reindexes image meta', function ()
     assert_false(array_key_exists('gallery', $cleared), 'an emptied gallery is removed');
 });
 
+// ---------------------------------------------------------------------------
+// Taxonomy delete
+// ---------------------------------------------------------------------------
+
+t('deleting a term takes its links with it', function () {
+    $pdo = db();
+
+    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('category', 'blog_post', 'Bulk One', 'bulk-one', :now, :now)")
+        ->execute(['now' => time()]);
+    $first = (int) $pdo->lastInsertId();
+
+    $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('category', 'blog_post', 'Bulk Two', 'bulk-two', :now, :now)")
+        ->execute(['now' => time()]);
+    $second = (int) $pdo->lastInsertId();
+
+    // One post carries both, so the links have something to be removed from.
+    $post = (int) $pdo->query("SELECT id FROM content WHERE type = 'blog_post' LIMIT 1")->fetchColumn();
+
+    $link = $pdo->prepare("INSERT INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id) VALUES ('blog_post', ?, ?)");
+
+    foreach ([$first, $second] as $term) {
+        $link->execute([$post, $term]);
+    }
+
+    assert_eq('Bulk One', taxonomy_delete('category', $first), 'the term name comes back');
+    assert_eq('', taxonomy_delete('category', $first), 'deleting it twice reports nothing to delete');
+
+    assert_eq(
+        0,
+        (int) $pdo->query("SELECT COUNT(*) FROM taxonomy_term_relationships WHERE taxonomy_id = {$first}")->fetchColumn(),
+        'its links are gone with it'
+    );
+    assert_eq(
+        1,
+        (int) $pdo->query("SELECT COUNT(*) FROM taxonomy_term_relationships WHERE taxonomy_id = {$second}")->fetchColumn(),
+        'the other term keeps its own'
+    );
+
+    // A term of another kind is not touched by a mismatched kind.
+    assert_eq('', taxonomy_delete('tag', $second), 'the kind has to match');
+});
+
+t('bulk_delete_taxonomies() removes what it can and counts the rest', function () {
+    $pdo = db();
+
+    $ids = [];
+
+    foreach (['bulk-three', 'bulk-four'] as $slug) {
+        $pdo->prepare("INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at) VALUES ('tag', 'blog_post', :name, :slug, :now, :now)")
+            ->execute(['name' => ucfirst($slug), 'slug' => $slug, 'now' => time()]);
+        $ids[] = (int) $pdo->lastInsertId();
+    }
+
+    $result = bulk_delete_taxonomies('tag', array_merge($ids, [999999, 0]));
+
+    assert_eq(2, $result['removed'], 'the terms that existed are removed');
+    assert_eq(2, $result['skipped'], 'the ids that did not resolve are counted, not fatal');
+
+    assert_eq(
+        0,
+        (int) $pdo->query("SELECT COUNT(*) FROM taxonomy WHERE id IN ({$ids[0]}, {$ids[1]})")->fetchColumn(),
+        'nothing is left behind'
+    );
+
+    // A second run has nothing to do, and says so.
+    $again = bulk_delete_taxonomies('tag', $ids);
+
+    assert_eq(0, $again['removed']);
+    assert_eq(2, $again['skipped']);
+});
+
 exit(test_summary());

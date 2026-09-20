@@ -76,6 +76,7 @@ function docs_content(): array
                 'Bulk actions' => [
                     ['p' => 'Tick the boxes on the left of the content list to reveal a toolbar. You can publish, draft, archive, delete, clear cache, or add and remove a tag across the whole selection at once.'],
                     ['p' => 'The media library works the same way: tick files and delete them together. Deleting media is permanent, so it asks once before removing anything.'],
+                    ['p' => 'Categories and tags are the same, with delete as the only bulk action: tick the terms on their list and remove them together. The content that used them is kept and simply loses the term.'],
                     ['p' => 'Authors can only bulk-edit their own items; anything else is skipped and reported.'],
                 ],
                 'Finding things' => [

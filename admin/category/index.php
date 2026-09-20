@@ -114,9 +114,26 @@ ob_start();
         <p class="empty-state-title"><?= e(admin_trans('category_empty')) ?></p>
     </div>
 <?php else: ?>
+<?php /* Bulk actions live in their own form outside the table: every row
+         already holds a delete form, and forms cannot nest. The row
+         checkboxes join it with the form attribute. */ ?>
+    <form id="bulk-form" method="post" action="<?= e(url('admin/category/bulk')) ?>" class="bulk-toolbar js-confirm-form" hidden
+          data-confirm-title="<?= e(admin_trans('category_delete_selected')) ?>"
+          data-confirm="<?= e(admin_trans('category_bulk_confirm')) ?>">
+        <?= csrf_field() ?>
+
+        <span class="bulk-count"><strong id="bulk-count">0</strong> <?= e(admin_trans('bulk_selected')) ?></span>
+
+        <button type="submit" class="btn-small btn-danger"><?= e(admin_trans('category_delete_selected')) ?></button>
+        <button type="button" class="btn-small btn-muted" id="bulk-clear"><?= e(admin_trans('bulk_clear_selection')) ?></button>
+    </form>
+
     <table class="content-table">
         <thead>
             <tr>
+                <th class="col-select">
+                    <input type="checkbox" id="bulk-select-all" aria-label="<?= e(admin_trans('bulk_select_all')) ?>">
+                </th>
                 <th><?= e(admin_trans('common_name')) ?></th>
                 <th><?= e(admin_trans('common_slug')) ?></th>
                 <th><?= e(admin_trans('common_description')) ?></th>
@@ -128,6 +145,10 @@ ob_start();
         <tbody>
         <?php foreach ($categories as $cat): ?>
             <tr>
+                <td class="col-select">
+                    <input type="checkbox" class="bulk-row" name="ids[]" value="<?= (int) $cat['id'] ?>"
+                           form="bulk-form" aria-label="<?= e($cat['name']) ?>">
+                </td>
                 <td><?= e($cat['name']) ?></td>
                 <td><code><?= e($cat['slug']) ?></code></td>
                 <td><?= e($cat['description']) ?></td>
@@ -159,6 +180,46 @@ ob_start();
         </tbody>
     </table>
 <?php endif; ?>
+
+<script>
+/* Select-all and the bulk toolbar, mirroring the media library and the content list. */
+(() => {
+    const all = document.getElementById('bulk-select-all');
+    if (!all) return;
+
+    const boxes = Array.from(document.querySelectorAll('.bulk-row'));
+    const toolbar = document.getElementById('bulk-form');
+    const countEl = document.getElementById('bulk-count');
+    const clearBtn = document.getElementById('bulk-clear');
+
+    const selected = () => boxes.filter(box => box.checked);
+
+    function sync() {
+        const chosen = selected();
+
+        toolbar.hidden = chosen.length === 0;
+        countEl.textContent = chosen.length;
+
+        all.checked = chosen.length > 0 && chosen.length === boxes.length;
+        all.indeterminate = chosen.length > 0 && chosen.length < boxes.length;
+    }
+
+    boxes.forEach(box => box.addEventListener('change', sync));
+
+    all.addEventListener('change', () => {
+        boxes.forEach(box => { box.checked = all.checked; });
+        sync();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        boxes.forEach(box => { box.checked = false; });
+        all.checked = false;
+        sync();
+    });
+
+    sync();
+})();
+</script>
 
 <?php
 $content = ob_get_clean();

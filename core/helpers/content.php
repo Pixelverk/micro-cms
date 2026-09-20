@@ -1372,6 +1372,8 @@ function save_taxonomy(string $kind, array $post): void
 
     log_activity($id ? 'taxonomy.updated' : 'taxonomy.created', 'taxonomy', $id ?: null, $name, []);
 
+    invalidate_cache();
+
     redirect_with_toast($kind, 'success', $message);
 }
 
@@ -1386,14 +1388,39 @@ function remove_taxonomy(string $kind, int $id): void
         redirect_with_toast($kind, 'error', 'Invalid ' . $kind . '.');
     }
 
-    $pdo = db();
+    $name = taxonomy_delete($kind, $id);
 
+    if ($name === '') {
+        redirect_with_toast($kind, 'error', ucfirst($kind) . ' not found.');
+    }
+
+    // A term shows on its archive page and on every item that carries it.
+    invalidate_cache();
+
+    redirect_with_toast($kind, 'success', ucfirst($kind) . ' "' . $name . '" deleted.');
+}
+
+/**
+ * Delete one term and the links to it.
+ *
+ * The work behind the row button, the bulk toolbar and anything else that
+ * removes a term, so those paths cannot drift. It does not redirect, which is
+ * what lets a bulk run call it in a loop. Returns the term's name, or '' when
+ * there was nothing to delete.
+ */
+function taxonomy_delete(string $kind, int $id): string
+{
+    if ($id <= 0) {
+        return '';
+    }
+
+    $pdo  = db();
     $stmt = $pdo->prepare("SELECT id, name FROM taxonomy WHERE id = ? AND taxonomy_type = ?");
     $stmt->execute([$id, $kind]);
     $term = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$term) {
-        redirect_with_toast($kind, 'error', ucfirst($kind) . ' not found.');
+        return '';
     }
 
     // Relationships first, so no orphans survive the term.
@@ -1402,7 +1429,38 @@ function remove_taxonomy(string $kind, int $id): void
 
     log_activity('taxonomy.deleted', 'taxonomy', $id, (string) $term['name'], ['kind' => $kind]);
 
-    redirect_with_toast($kind, 'success', ucfirst($kind) . ' "' . $term['name'] . '" deleted.');
+    return (string) $term['name'];
+}
+
+/**
+ * Delete several terms of one kind.
+ *
+ * Ids that no longer resolve are counted as skipped rather than failing the
+ * run: a term somebody else removed first is not an error.
+ *
+ * @param list<int> $ids
+ * @return array{removed: int, skipped: int}
+ */
+function bulk_delete_taxonomies(string $kind, array $ids): array
+{
+    $removed = 0;
+    $skipped = 0;
+
+    foreach ($ids as $id) {
+        if (taxonomy_delete($kind, (int) $id) !== '') {
+            $removed++;
+        } else {
+            $skipped++;
+        }
+    }
+
+    // Once for the run: the cache holds archive pages and listings that carried
+    // these terms.
+    if ($removed > 0) {
+        invalidate_cache();
+    }
+
+    return ['removed' => $removed, 'skipped' => $skipped];
 }
 
 /*
