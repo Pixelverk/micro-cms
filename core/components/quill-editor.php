@@ -10,6 +10,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Rich Text',
+'description' => "A rich-text block: headings, paragraphs, lists and links.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

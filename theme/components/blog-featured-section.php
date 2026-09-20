@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Blog Featured Post Section',
+'description' => "The newest or a chosen post, image beside the text.",
 'schema' => [
     'title' => ['type' => 'text', 'label' => 'Section Title', 'required' => true, 'default' => 'Company Blog'],
     'post_id' => ['type' => 'text', 'label' => 'Featured Post ID (optional)', 'required' => false, 'default' => ''],

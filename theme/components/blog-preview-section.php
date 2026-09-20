@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Blog preview Section',
+'description' => "A centred title and intro above three post previews.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

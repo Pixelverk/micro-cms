@@ -282,6 +282,45 @@ t('the menu editor only queries a row\'s own controls', function () {
     }
 });
 
+t('the content editor puts SEO & social under both columns', function () {
+    $editor = (string) file_get_contents(CMS_PATH . '/admin/content/edit.php');
+
+    $columns = strpos($editor, 'class="editor-columns"');
+    $sidebar = strpos($editor, 'id="sidebar-container"');
+    $seo     = strpos($editor, 'class="card seo-card"');
+    $formEnd = strrpos($editor, '</form>');
+
+    assert_true($columns !== false && $sidebar !== false && $seo !== false && $formEnd !== false, 'the editor has the columns and both cards');
+    assert_true($columns < $sidebar && $sidebar < $seo && $seo < $formEnd, 'the sidebar is inside the columns, and SEO & social is after them inside the form');
+    assert_contains('<div class="seo-panel">', $editor, 'the fields and the preview are one panel');
+
+    // The fields are always on screen, and the card is the last thing a reader
+    // reaches: no disclosure control anywhere in the editor.
+    assert_not_contains('<details', $editor, 'the SEO card does not collapse');
+
+    // The fields are a grid, and the card takes the row the columns leave.
+    $css = (string) file_get_contents(CMS_PATH . '/admin/assets/style.css');
+
+    assert_contains('.seo-card', $css);
+    assert_contains('.editor-columns', $css);
+    assert_contains('flex-wrap: wrap', $css, 'the editor row wraps so the card can sit below it');
+    assert_contains('grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))', $css, 'the SEO fields read as a grid');
+
+    // The details column scrolls with the page; only it carries that class.
+    $sidebarRule = substr($css, (int) strpos($css, '.sidebar-container'), 220);
+    assert_not_contains('position: sticky', $sidebarRule, 'the content editor column does not stick');
+});
+
+t('the component editor keeps the Add area under the last component', function () {
+    $js = (string) file_get_contents(CMS_PATH . '/admin/assets/content-editor.js');
+
+    // The Add area is a child of the component container, so a new component has
+    // to go in above it, and only components may sort — otherwise one ends up
+    // below the area that adds them.
+    assert_contains('appendComponent(', $js, 'components are inserted through one helper');
+    assert_contains("draggable: '.component'", $js, 'the Add area is never sorted');
+});
+
 t('the menu editor keeps its row controls usable while the whole row drags', function () {
     $js = (string) file_get_contents(CMS_PATH . '/admin/assets/menu-editor.js');
 
@@ -332,6 +371,7 @@ t('every dialog is a labelled modal that the helper can manage', function () {
     foreach ([
         'admin/partials/confirm.php',
         'admin/partials/image-picker.php',
+        'admin/partials/component-picker.php',
         'admin/utilities.php',
         'admin/messages.php',
         'admin/media/index.php',

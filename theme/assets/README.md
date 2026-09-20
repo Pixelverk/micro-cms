@@ -141,6 +141,22 @@ says what shape that box is. Only image fields are filled this way, so a cleared
 text field stays empty; declare no default if an empty image should render
 nothing.
 
+## Component previews
+
+The editor's Add component dialog shows every component this content type offers
+as a tile. Two optional things make a tile useful:
+
+* `'description' => 'One line'` in the component array, next to `label`, says
+  what the component is for;
+* a preview image at `theme/assets/previews/<component>.<ext>`, named after the
+  component file — the same folder holds previews for a `core/components/`
+  component, because it is the theme that shows them. `png`, `jpg`, `jpeg`,
+  `webp` and `svg` are looked for in that order.
+
+A component with neither still appears, on a neutral tile, so a theme with no
+previews works. The Health page warns about a preview file that matches no
+component and about one in a format the picker does not read.
+
 ## Vendored third-party code
 
 External libraries are committed, never loaded from a CDN:

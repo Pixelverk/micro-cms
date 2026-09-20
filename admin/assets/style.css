@@ -1853,7 +1853,7 @@ button.header-icon:hover { background: transparent; }
 /* What a search result and a social card will make of the fields. Sizes are the
    ones those two actually use, so the text length means something. */
 .seo-preview {
-    margin-bottom: 1.25rem;
+    margin: 0;
 }
 
 .seo-preview-heading {
@@ -1969,10 +1969,10 @@ button.header-icon:hover { background: transparent; }
 }
 
 .seo-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem 1.25rem;
+    align-content: start;
 }
 
 .seo-fields textarea { min-height: 4rem; }
@@ -2631,14 +2631,50 @@ button.sidebar-link {
     min-width: 0;
 }
 
+/* The editor's two columns, with anything full-width under them. */
+.content-editor-form {
+    flex-wrap: wrap;
+}
+
+/* The component list and the details column, side by side. */
+.editor-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    flex: 1 0 100%;
+    min-width: 0;
+}
+
+/* SEO & social is as wide as both columns, below them. */
+.seo-card {
+    flex: 1 0 100%;
+}
+
+/* The fields as a grid, with the preview beside them. */
+.seo-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* Below this the two columns of the panel are too narrow to read; the preview
+   drops under the fields. */
+@media (max-width: 1100px) {
+    .seo-panel {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .component {
     min-width: 0;
     flex-grow: 1;
 }
 
+/* The content editor's details column. It scrolls with the page: the component
+   list beside it is the thing being worked on, and a column that followed the
+   reader would sit over the SEO card below. */
 .sidebar-container {
-    position: sticky;
-    top: 1.5rem;
     height: fit-content;
     max-width: 350px;
 }
@@ -2688,13 +2724,112 @@ button.sidebar-link {
     height:100%;
 }
 
-.draggable-component {
-    padding: 0.5rem 1rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: grab;
+/* The Add component target: a wide area under the last component rather than a
+   button, because it is where a component is chosen from. The shape reads as a
+   drop target; the label and help say what it selects. */
+.component-add-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 1.75rem 1rem;
+    font-family: inherit;
+    font-size: inherit;
+    /* The bare button rule keeps labels on one line; this one wraps. */
+    white-space: normal;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    cursor: pointer;
+    transition: border-color var(--transition-fast) var(--ease),
+                background-color var(--transition-fast) var(--ease),
+                color var(--transition-fast) var(--ease);
+}
+
+.component-add-zone:hover {
+    color: var(--text);
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+.component-add-icon {
+    color: var(--primary);
+}
+
+.component-add-title {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text);
+}
+
+.component-add-help {
+    max-width: 40rem;
+    font-size: 0.85rem;
+}
+
+/* 7.2.1 Add component dialog */
+
+.component-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.component-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.5rem;
+    font-family: inherit;
+    font-size: inherit;
+    /* The bare button rule keeps labels on one line; a tile's description wraps. */
+    white-space: normal;
+    text-align: left;
+    color: var(--text);
     background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    cursor: pointer;
+    transition: border-color var(--transition-fast) var(--ease), box-shadow var(--transition-fast) var(--ease);
+}
+
+.component-tile:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* The preview slot keeps its shape whether or not a preview file exists; with
+   none, the hatched tile is what the editor sees. */
+.component-tile-preview {
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-sunken);
+    background-image: repeating-linear-gradient(45deg, rgba(15, 23, 42, 0.05) 0 6px, transparent 6px 12px);
+}
+
+.component-tile-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.component-tile-label {
+    font-weight: var(--font-weight-semibold);
+}
+
+.component-tile-description {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.35;
 }
 
 
@@ -3465,12 +3600,8 @@ body.sidebar-collapsed .sidebar-icon {
     }
 
     /* The component editor's 350px details column cannot fit beside the
-       component list here; let the row wrap and give the column full width.
-       `.flex-row` is used only by that form. */
-    .flex-row {
-        flex-wrap: wrap;
-    }
-
+       component list here; give the column full width. The row itself already
+       wraps (`.content-editor-form`), so the SEO card stays below both. */
     .sidebar-container {
         flex: 0 0 100%;
         width: 100%;

@@ -31,10 +31,10 @@ function docs_content(): array
                     ['p' => 'On a narrow screen the sidebar becomes a drawer and the top bar keeps only the menu and account controls.'],
                 ],
                 'Creating and editing content' => [
-                    ['p' => 'Open Content, choose the type (Page, Blog Post, Portfolio Item), then Add. The editor has three parts: components in the middle, details on the right, and the component palette below.'],
+                    ['p' => 'Open Content, choose the type (Page, Blog Post, Portfolio Item), then Add. The editor has two parts: components in the middle and the details on the right.'],
                     ['ul' => [
                         'Title and Slug: the slug is the URL. It is generated from the title but you can adjust it.',
-                        'Components: add from the palette, drag to reorder, duplicate or remove with the toolbar on each component.',
+                        'Components: Add component opens the library, where each component shows what it is for and what it looks like. Drag a component by its title bar to reorder it, or use its toolbar to duplicate or remove it.',
                         'Nested components: some components accept children. Drop them into the inner area of the parent.',
                         'Categories and Tags: attach as many tags as you like; one category per item.',
                         'Parent: nest a page under another to build a URL like /services/consulting/.',
@@ -134,7 +134,7 @@ function docs_content(): array
     'name' => 'My Theme',
     'schema' => true,
     'layouts' => ['default' => 'Default', 'blog' => 'Blog Post'],\n    'headers' => ['site-header' => 'Default Header'],\n    'footers' => ['site-footer' => 'Default Footer'],\n    'defaults' => ['layout' => 'default', 'header' => 'site-header', 'footer' => 'site-footer'],\n    'menu_locations' => ['main' => 'Main Menu', 'footer' => 'Footer Menu'],\n    'content_types' => [\n        'page' => [\n            'label' => 'Page',\n            'default_layout' => 'default',\n            'available_components' => ['hero-section', 'cta-section'],\n            'url_prefix' => '',\n        ],\n    ],\n    'form_types' => [ /* contact, newsletter … */ ],\n    'styles' => ['utilities.css', 'style.css'],\n    'scripts' => [['src' => 'main.js', 'defer' => true]],\n    'icons' => ['favicon' => 'favicon.ico', 'app' => ['img/icon-192.png', 'img/icon-512.png']],\n];"],
-                    ['p' => 'Content types drive the admin: the sidebar, the component palette and URL prefixes all come from here.'],
+                    ['p' => 'Content types drive the admin: the sidebar, the component library and URL prefixes all come from here.'],
                     ['p' => "schema => true emits JSON-LD structured data in the head; the homepage also gets an Organization entry. icons.favicon and icons.logo are the fallbacks for the matching Settings fields."],
                     ['p' => "meta.theme_color is the colour a phone browser tints its chrome with, and meta.background_color the splash colour an installed site starts from; Settings can override the first. meta.theme_color_dark adds a dark-scheme variant when set."],
                     ['p' => "icons.app lists the square PNGs an installed site uses: the manifest offers them and the largest is the apple touch icon. An uploaded logo or favicon takes their place when Settings has one, so a theme only needs these as its fallback."],
@@ -146,8 +146,10 @@ function docs_content(): array
                 ],
                 'Writing a component' => [
                     ['p' => 'A component is a single file in theme/components/ that returns an array. The render function receives props, the page, and the collected CSS/JS arrays.'],
-                    ['code' => "<?php\nreturn [\n    'label' => 'Call To Action',\n    'schema' => [\n        'title' => ['type' => 'text', 'label' => 'Title', 'default' => 'Hello'],\n        'body'  => ['type' => 'quill', 'label' => 'Body'],\n    ],\n    'children' => 'none',\n    'allowed_children' => [],\n    'css' => <<<CSS\n.cta { padding: 3rem 2rem; text-align: center; }\nCSS,\n    'js' => <<<JS\n// runs after DOMContentLoaded\nJS,\n    'render' => function (array \$props, array \$page, array &\$collectedJs = [], array &\$collectedCss = []) {\n        \$title = \$props['title'] ?? '';\n        ?>\\n        <section class=\"cta\"><h2><?= e(\$title) ?></h2></section>\n        <?php\n    },\n];"],
+                    ['code' => "<?php\nreturn [\n    'label' => 'Call To Action',\n    'description' => 'A closing call to action on a dark band.',\n    'schema' => [\n        'title' => ['type' => 'text', 'label' => 'Title', 'default' => 'Hello'],\n        'body'  => ['type' => 'quill', 'label' => 'Body'],\n    ],\n    'children' => 'none',\n    'allowed_children' => [],\n    'css' => <<<CSS\n.cta { padding: 3rem 2rem; text-align: center; }\nCSS,\n    'js' => <<<JS\n// runs after DOMContentLoaded\nJS,\n    'render' => function (array \$props, array \$page, array &\$collectedJs = [], array &\$collectedCss = []) {\n        \$title = \$props['title'] ?? '';\n        ?>\\n        <section class=\"cta\"><h2><?= e(\$title) ?></h2></section>\n        <?php\n    },\n];"],
                     ['ul' => [
+                        "label is the component's name in the editor; description is the one line the Add component library shows under it",
+                        "a preview image at theme/assets/previews/<component>.<ext> is what the library shows; without one the tile is a neutral placeholder",
                         "schema field types: text, textarea, number, color, checkbox, url, email, select, quill, image",
                         "an image field gets the media-library picker; render its value with render_image(\$props['image'] ?? '', ['class' => 'img-fluid']) so a media id, a theme filename and a URL all work",
                         "an image field's default fills a new component and comes back when the editor clears the field; ':placeholder' is the value that means the CMS's placeholder box, and 'ratio' in the attrs says what shape it is",

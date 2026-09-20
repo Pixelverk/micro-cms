@@ -112,12 +112,14 @@ Beyond what tests check:
 
 ### Add a theme component
 
-`theme/components/<name>.php` returns an array with `label`, `schema`,
-`children` (`'any'` | `'none'` | `'some'`), `allowed_children`, `css`, `js`,
-and `render`. Add the name to `theme.php` under the relevant
-`content_types[...]['available_components']`. Schema input types are listed in
-`admin/partials/content-editor-templates.php`. `core/components/` is the
-fallback when the theme has no file of that name.
+`theme/components/<name>.php` returns an array with `label`, `description` (the
+one line the Add component library shows), `schema`, `children` (`'any'` |
+`'none'` | `'some'`), `allowed_children`, `css`, `js`, and `render`. Add the name
+to `theme.php` under the relevant `content_types[...]['available_components']`,
+and a preview image at `theme/assets/previews/<name>.<ext>` if the library tile
+should show one — that folder is read for core components too. Schema input types
+are listed in `admin/partials/content-editor-templates.php`. `core/components/`
+is the fallback when the theme has no file of that name.
 
 Component CSS/JS is collected per request, de-duplicated by component name, and
 injected after the theme stylesheets. Theme and admin asset URLs are stamped

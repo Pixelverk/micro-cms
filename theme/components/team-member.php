@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Team Member',
+'description' => "One person: portrait, name and role.",
 
 'schema' => [
     'name' => [

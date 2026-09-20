@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Blog News Section',
+'description' => "Recent posts in a column, with a sidebar card.",
 'schema' => [
     'title' => ['type' => 'text', 'label' => 'Section Title', 'required' => true, 'default' => 'News'],
     'limit' => ['type' => 'text', 'label' => 'Number of Posts', 'required' => true, 'default' => '3'],

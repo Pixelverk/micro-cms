@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Testimonial Section',
+'description' => "A centred quote and who said it.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

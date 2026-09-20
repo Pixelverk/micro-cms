@@ -116,6 +116,43 @@ t('every theme component follows the component contract', function () {
     }
 });
 
+t('every component the library offers is described and previewed', function () {
+    $config  = theme_config();
+    $headers = array_keys($config['headers'] ?? []);
+    $footers = array_keys($config['footers'] ?? []);
+    $offered = [];
+
+    foreach ($config['content_types'] as $definition) {
+        foreach (($definition['available_components'] ?? []) as $name) {
+            // The layout owns the header and footer; they are never tiles.
+            if (!in_array($name, $headers, true) && !in_array($name, $footers, true)) {
+                $offered[$name] = true;
+            }
+        }
+    }
+
+    assert_true($offered !== [], 'the theme offers components to add');
+
+    $incomplete = [];
+
+    foreach (array_keys($offered) as $name) {
+        if (trim((string) (content_component_definition($name)['description'] ?? '')) === '') {
+            $incomplete[] = "{$name} has no description";
+        }
+
+        if (component_preview_url($name) === '') {
+            $incomplete[] = "{$name} has no preview";
+        }
+    }
+
+    assert_count(0, $incomplete, implode('; ', $incomplete));
+
+    // The convention is a name, not a path: the picker builds the URL itself.
+    assert_contains('theme/assets/previews/hero-section.svg', component_preview_url('hero-section'));
+    assert_eq('', component_preview_url('not-a-component'), 'no preview file, no URL');
+    assert_eq('', component_preview_url('../../config'), 'a path is not a component name');
+});
+
 t('no CDN references remain in the admin or theme', function () {
     $offenders = [];
 
@@ -281,13 +318,25 @@ function theme_fixture(array $files): string
     $root = test_tmp_root() . '/theme-fixture';
 
     // Start from nothing: a file left behind by the previous fixture would be
-    // scanned again and change the result.
+    // scanned again and change the result. Previews sit in a subfolder, so the
+    // clearing has to go all the way down.
     foreach (['layouts', 'components', 'partials', 'assets'] as $directory) {
-        foreach (glob($root . '/' . $directory . '/*') ?: [] as $file) {
-            @unlink($file);
+        $path = $root . '/' . $directory;
+
+        if (!is_dir($path)) {
+            continue;
         }
 
-        @rmdir($root . '/' . $directory);
+        $entries = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($entries as $entry) {
+            $entry->isDir() ? @rmdir($entry->getPathname()) : @unlink($entry->getPathname());
+        }
+
+        @rmdir($path);
     }
 
     foreach ($files as $relative => $contents) {
@@ -397,6 +446,9 @@ t('a broken theme manifest names everything that does not resolve', function () 
         'components/broken-section.php' => "<?php\nreturn [\n    'label' => 'Broken',\n    'allowed_children' => ['ghost-child'],\n    'schema' => [\n        'menu' => ['type' => 'select', 'default' => 'sidebar'],\n        'content_type' => ['type' => 'select', 'default' => 'event'],\n    ],\n    'render' => function () { require theme('partials/gone.php'); },\n];\n",
         'partials/pager.php'            => "<?php\n// pager\n",
         'assets/style.css'              => "/* styles */\n",
+        // A leftover from a rename, and one in a format the picker skips.
+        'assets/previews/old-section.svg' => "<svg/>\n",
+        'assets/previews/broken-section.gif' => "GIF89a\n",
     ]);
 
     $theme = [
@@ -462,6 +514,12 @@ t('a broken theme manifest names everything that does not resolve', function () 
     assert_eq('warn', theme_problem_status($problems, 'assets', 'favicon.ico'));
 
     assert_contains('partials/gone.php', theme_problem_messages($problems, 'partials'), 'a missing partial is fatal');
+
+    // Previews: a file matching no component, and one the picker cannot read.
+    $previews = theme_problem_messages($problems, 'previews');
+    assert_contains('old-section.svg matches no component', $previews);
+    assert_contains('broken-section.gif', $previews, 'an unreadable image type is reported');
+    assert_eq('warn', theme_problem_status($problems, 'previews', 'old-section.svg'), 'a leftover preview only warns');
 
     $forms = theme_problem_messages($problems, 'forms');
     assert_contains("'wibble'", $forms, 'an unknown field type is reported');

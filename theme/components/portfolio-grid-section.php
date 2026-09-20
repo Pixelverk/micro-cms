@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Portfolio Work Grid Section',
+'description' => "A two-column grid of projects with their images.",
 'schema' => [
     'title' => ['type' => 'text', 'label' => 'Section Title', 'required' => true, 'default' => 'Our Work'],
     'subtitle' => ['type' => 'text', 'label' => 'Section Subtitle', 'required' => false, 'default' => 'Company portfolio'],

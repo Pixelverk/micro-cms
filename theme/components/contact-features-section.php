@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Contact Features Section',
+'description' => "A row of up to four feature cards, for contact details.",
 
 'schema' => [],
 

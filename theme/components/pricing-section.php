@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Pricing Section',
+'description' => "Three plans side by side, one marked as featured.",
 
 'schema' => [
     'title' => [

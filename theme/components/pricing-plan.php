@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Pricing Plan',
+'description' => "One plan: a price, a feature list and a button.",
 
 'schema' => [
     'name' => [

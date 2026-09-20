@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Portfolio Call To Action Section',
+'description' => "A closing call to action for the portfolio pages.",
 'schema' => [
     'title' => ['type' => 'text', 'label' => 'CTA Title', 'required' => true, 'default' => "Let's build something together"],
     'button_url' => ['type' => 'text', 'label' => 'Button URL', 'required' => true, 'default' => '#'],

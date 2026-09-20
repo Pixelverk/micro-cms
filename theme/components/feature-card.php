@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Feature Card',
+'description' => "One feature: icon, heading and a short text.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

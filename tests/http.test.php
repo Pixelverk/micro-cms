@@ -1524,6 +1524,30 @@ t('an editor autosave stores a draft version without saving the content', functi
     db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
 });
 
+t('the editor offers the component library as a dialog, not a drag palette', function () use ($base) {
+    http_login($base);
+
+    [$status, $editor] = http('GET', $base . '/admin/content/edit?type=page');
+
+    assert_eq(200, $status);
+
+    // The Add button and the dialog it opens.
+    assert_contains('data-modal="component-picker"', $editor, 'the Add component button opens the dialog');
+    assert_contains('class="component-add-zone"', $editor, 'the Add area is a wide target under the components');
+    assert_contains('id="component-picker"', $editor);
+    assert_contains('role="dialog"', $editor);
+    assert_contains('aria-labelledby="component-picker-title"', $editor);
+
+    // Tiles carry what the old palette could not: what it is for, and what it
+    // looks like. Both come from the component and the previews folder.
+    assert_contains('data-component-type="hero-section"', $editor);
+    assert_contains('The opening band: heading, text, buttons and an image.', $editor, 'the tile shows the description');
+    assert_contains('theme/assets/previews/hero-section.svg', $editor, 'the tile shows the preview');
+
+    // The name-only list is gone.
+    assert_not_contains('draggable-component', $editor);
+});
+
 t('an autosave draft can be dismissed from the editor', function () use ($base) {
     http_login($base);
 

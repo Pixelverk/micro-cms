@@ -8,6 +8,7 @@ return [
  * --------------------------------------------
  */
 'label' => 'About Feature Section',
+'description' => "A section image beside a heading and a paragraph.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

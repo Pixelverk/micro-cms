@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Policy Content',
+'description' => "Long-form policy text, built from rich-text blocks.",
 
 'schema' => [],
 

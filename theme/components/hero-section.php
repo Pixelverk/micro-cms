@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Hero Section',
+'description' => "The opening band: heading, text, buttons and an image.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

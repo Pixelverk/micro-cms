@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Feature Section',
+'description' => "A heading beside a two-by-two grid of feature cards.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

@@ -1736,6 +1736,40 @@ function content_component_definition(string $name): array
 }
 
 /**
+ * The URL of a component's preview image, or '' when the theme ships none.
+ *
+ * The convention is one folder and one name: theme/assets/previews/<component>
+ * with any of the image extensions below, so a theme adds a preview by dropping
+ * a file next to the others rather than by editing every component. Core
+ * components look in the same folder, because it is the theme that shows them.
+ */
+function component_preview_url(string $name): string
+{
+    static $cache = [];
+
+    if (array_key_exists($name, $cache)) {
+        return $cache[$name];
+    }
+
+    $cache[$name] = '';
+
+    // A component name is a slug; anything else is not ours to look up.
+    if ($name === '' || !preg_match('/^[a-z0-9-]+$/', $name)) {
+        return $cache[$name];
+    }
+
+    foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $extension) {
+        $relative = "previews/{$name}.{$extension}";
+
+        if (is_file(CMS_PATH . '/theme/assets/' . $relative)) {
+            return $cache[$name] = asset($relative);
+        }
+    }
+
+    return $cache[$name];
+}
+
+/**
  * Collect the presentation-image meta a content type declares.
  *
  * The theme lists them under the content type's `images` key (for example a

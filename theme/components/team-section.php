@@ -8,6 +8,7 @@ return [
  * --------------------------------------------
  */
 'label' => 'Team Section',
+'description' => "A row of team members under a heading.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

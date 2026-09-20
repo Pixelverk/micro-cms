@@ -206,6 +206,21 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
         }
     }
 
+    // ------------------------------------------------------------ previews
+    // The component picker looks for theme/assets/previews/<component> with one
+    // of a few image extensions. Either half being wrong is invisible in the
+    // editor — the tile just stays blank — so it is worth a warning.
+    foreach (glob($themePath . '/assets/previews/*') ?: [] as $file) {
+        $base = basename($file);
+        $name = pathinfo($file, PATHINFO_FILENAME);
+
+        if (!isset($componentFiles[$name])) {
+            $add('previews', 'warn', "assets/previews/{$base} matches no component");
+        } elseif (!in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'webp', 'svg'], true)) {
+            $add('previews', 'warn', "assets/previews/{$base} is not an image type the picker shows");
+        }
+    }
+
     // -------------------------------------------------------------- assets
     $assetReferences = [];
 

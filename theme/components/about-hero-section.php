@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'About Hero Section',
+'description' => "A centred page hero: heading, lead line and a button.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

@@ -4,6 +4,7 @@
 return [
 
 'label' => 'FAQ Item',
+'description' => "One question and answer, as an accordion row.",
 
 'schema' => [
     'question' => [

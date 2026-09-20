@@ -64,47 +64,13 @@ These are not up for renegotiation inside a phase:
 
 ## Phase table
 
-| # | Track | Phase | Size | Depends on |
-| --- | --- | --- | --- | --- |
-| 1 | A/B | Component previews and the Add component dialog | M | — |
-
-Each phase is independent and can be dropped without affecting the others.
-
----
-
-## 1. Component previews and the Add component dialog (A/B, M)
-
-**Why.** The editor's component palette is a column of draggable labels, so an
-editor chooses a component from its name alone and adds one by dragging — awkward
-on a phone and impossible by keyboard. Previews and an Add dialog are two halves
-of the same gap.
-
-**Work.**
-1. Extend the component contract with optional `description` (one line) and
-   `preview` (an image). `content_component_definition()` passes them through,
-   and `theme_manifest_problems()` reports a missing preview file as a **warn**,
-   so a theme without previews still passes.
-2. Add an outline "Add component" area beneath the current components in the
-   content editor. It opens a dialog listing the components this content type
-   offers, with label, description, preview and an Add button; the chosen
-   component is appended and the dialog closes. The dialog reuses the shared
-   helper from old phase 19 (focus, Tab, Escape, focus restore).
-3. Decide whether the existing drag palette stays (for reordering and desktop
-   drag-add) or the dialog replaces it.
-4. Ship previews for the default theme's components if they can be authored
-   without a generation step; otherwise the dialog shows a neutral tile.
-5. Strings in both languages, admin CSS, and the theme guide's component
-   contract.
-
-**Verify.** `tests/content.test.php` (the definition carries the new keys),
-`tests/design.test.php` (the dialog markup and wiring),
-`tests/http.test.php` (the editor renders the Add area and the dialog), a manual
-keyboard add.
-
-**Reject if** it needs a build step, a screenshot service, or a second component
-registry.
+No phase is scheduled. Everything the last table held — small fixes and
+tidy-ups, media fallbacks without theme placeholder files, and component
+previews with the Add component dialog — has shipped. What is left is in the
+Backlog below, which is unscheduled: confirm an item before starting it.
 
 ---
+
 
 # Backlog
 
@@ -176,11 +142,8 @@ Utilities Export/Import cards. It is not a non-goal.
 
 # Open decisions
 
-Settle each at the start of its phase, not now.
+Settle each before starting the work it belongs to.
 
-* **Phase 1:** where do previews live — `theme/components/previews/<name>.png`, a
-  path declared in the component, or another convention? And does the drag
-  palette stay beside the dialog?
 * **Backlog:** is a Content Security Policy wanted at all, and if so how far —
   report-only, or report-only plus nonces for the admin's inline scripts?
 * **Track D:** schedule the multi-language work when a real client needs a second

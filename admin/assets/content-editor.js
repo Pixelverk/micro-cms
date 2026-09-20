@@ -8,6 +8,13 @@ const container = document.getElementById('components-container');
 const availableComponents = window.availableComponents || {};
 const initialComponents = window.initialComponents || [];
 
+// The Add component area is the container's last child, so a new component goes
+// in above it: the area always sits under the last component. insertBefore()
+// with no reference appends, which is what happens if the area is not there.
+function appendComponent(node) {
+    container.insertBefore(node, container.querySelector('.component-add-zone'));
+}
+
 // Templates
 const componentTemplate = document.getElementById('component-template');
 const fieldTemplate = document.getElementById('field-template');
@@ -198,11 +205,11 @@ function createComponent(type, data = {}) {
 // ----------------------------
 if (Array.isArray(initialComponents)) {
     initialComponents.forEach(data => {
-        container.appendChild(createComponent(data.type, data));
+        appendComponent(createComponent(data.type, data));
     });
 } else if (initialComponents && typeof initialComponents === 'object') {
     Object.values(initialComponents).forEach(data => {
-        container.appendChild(createComponent(data.type, data));
+        appendComponent(createComponent(data.type, data));
     });
 }
 
@@ -261,15 +268,16 @@ container.addEventListener('click', async e => {
     // Move up
     if (e.target.classList.contains('move-up')) {
         const prev = comp.previousElementSibling;
-        if (prev) prev.before(comp);
+        if (prev && prev.classList.contains('component')) prev.before(comp);
         renumberComponents();
         return;
     }
 
-    // Move down
+    // Move down. The Add area is the last child of the same container, and a
+    // component never moves below it.
     if (e.target.classList.contains('move-down')) {
         const next = comp.nextElementSibling;
-        if (next) next.after(comp);
+        if (next && next.classList.contains('component')) next.after(comp);
         renumberComponents();
         return;
     }
@@ -429,6 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function bindSortable(el) {
     new Sortable(el, {
         handle: '.component-title',
+        // The Add area is a child too, and must stay last: only components sort.
+        draggable: '.component',
         animation: 150,
         ghostClass: 'sortable-ghost',
         onEnd: () => {
@@ -440,28 +450,44 @@ function bindSortable(el) {
 // bind sortable on initial page load
 bindSortable(container);
 
-// drag and drop adding of components
-const paletteItems = document.querySelectorAll('.draggable-component');
+// ----------------------------
+// Add component dialog
+// ----------------------------
+// Adding is a choice from tiles (label, description, preview) rather than a
+// drag from a name-only list. The shared dialog helper owns focus, Escape and
+// returning focus to the button that opened it.
+const componentPicker = document.getElementById('component-picker');
 
-paletteItems.forEach(item => {
-    item.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('component-type', item.dataset.type);
-        e.dataTransfer.effectAllowed = 'copy';
+if (componentPicker) {
+    const openers = document.querySelectorAll('[data-modal="component-picker"]');
+
+    openers.forEach(opener => {
+        opener.addEventListener('click', () => openDialog(componentPicker, opener));
     });
-});
 
-container.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-});
+    componentPicker.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', () => closeDialog(componentPicker));
+    });
 
-container.addEventListener('drop', e => {
-    e.preventDefault();
-    const type = e.dataTransfer.getData('component-type');
-    if (!type) return;
-    container.appendChild(createComponent(type));
-    renumberComponents();
-});
+    componentPicker.addEventListener('click', event => {
+        if (event.target === componentPicker) closeDialog(componentPicker);
+    });
+
+    componentPicker.querySelectorAll('[data-component-type]').forEach(tile => {
+        tile.addEventListener('click', () => {
+            const node = createComponent(tile.dataset.componentType);
+
+            if (node.nodeType !== 1) return;
+
+            appendComponent(node);
+            renumberComponents();
+            closeDialog(componentPicker);
+
+            // The editor is looking at the dialog, so show what it added.
+            node.scrollIntoView({ block: 'center' });
+        });
+    });
+}
 
 // ----------------------------
 // Image Picker Modal Logic

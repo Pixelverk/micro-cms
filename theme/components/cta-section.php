@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'CTA Section',
+'description' => "A full-width call to action on a dark band.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

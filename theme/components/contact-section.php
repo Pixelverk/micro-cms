@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Contact Section',
+'description' => "A contact panel: icon, message and a form.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

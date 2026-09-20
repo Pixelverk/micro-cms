@@ -9,6 +9,11 @@ return [
 'label' => 'Sample Component',
 
 /** --------------------------------------------
+ * One line the component picker shows under the label (optional)
+ * -------------------------------------------- */
+'description' => 'What this component is for, in a sentence.',
+
+/** --------------------------------------------
  * CMS-Editable Schema
  * -------------------------------------------- */
 'schema' => [

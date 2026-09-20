@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Blog Card',
+'description' => "One post as a card: image, title, excerpt and author.",
 
 /** --------------------------------------------
  * CMS-Editable Schema

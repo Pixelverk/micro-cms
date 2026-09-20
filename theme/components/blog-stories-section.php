@@ -4,6 +4,7 @@
 return [
 
 'label' => 'Blog Featured Stories Section',
+'description' => "A row of three featured post cards.",
 'schema' => [
     'title' => ['type' => 'text', 'label' => 'Section Title', 'required' => true, 'default' => 'Featured Stories'],
     'limit' => ['type' => 'text', 'label' => 'Number of Stories', 'required' => true, 'default' => '3'],

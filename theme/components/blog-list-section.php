@@ -7,6 +7,7 @@ return [
  * User-facing name/label
  * -------------------------------------------- */
 'label' => 'Paginated List',
+'description' => "A paginated list of one content type, with a heading.",
 
 /** --------------------------------------------
  * CMS-Editable Schema
