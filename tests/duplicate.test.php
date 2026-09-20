@@ -206,7 +206,7 @@ function dup_seed_source(string $slug, string $title, string $status = 'publishe
 }
 
 t('duplicating creates a draft copy and redirects to its editor', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-source', 'Dup Source');
 
@@ -241,7 +241,7 @@ t('duplicating creates a draft copy and redirects to its editor', function () us
 });
 
 t('duplicating copies taxonomy relationships', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-tax-source', 'Dup Tax Source');
 
@@ -258,7 +258,7 @@ t('duplicating copies taxonomy relationships', function () use ($base) {
 });
 
 t('a taken slug gets the next available suffix', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-taken', 'Dup Taken');
     seed_content(['type' => 'page', 'slug' => 'dup-taken-copy', 'title' => 'Occupied', 'status' => 'draft']);
@@ -273,7 +273,7 @@ t('a taken slug gets the next available suffix', function () use ($base) {
 });
 
 t('a slug held by a trashed item is not reused', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-trashed', 'Dup Trashed');
 
@@ -294,7 +294,7 @@ t('a slug held by a trashed item is not reused', function () use ($base) {
 });
 
 t('duplicating twice produces distinct titles', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-twice', 'Dup Twice');
 
@@ -315,7 +315,7 @@ t('duplicating twice produces distinct titles', function () use ($base) {
 });
 
 t('duplicating is refused without a valid token', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-no-token', 'Dup No Token');
 
@@ -346,7 +346,7 @@ t('an author may duplicate their own content but not someone else\'s', function 
         'status' => 'draft',
     ]);
 
-    // Owned by the seeded demo administrator, not the author under test.
+    // Owned by the seeded administrator, not the author under test.
     db()->prepare("UPDATE content SET created_by = 1 WHERE id = :id")->execute(['id' => $foreignId]);
     // Give the author's own item an owner too, so the check is symmetrical.
     db()->prepare("UPDATE content SET created_by = :author WHERE id = :id")->execute(['author' => $authorId, 'id' => $ownId]);
@@ -377,7 +377,7 @@ t('an author may duplicate their own content but not someone else\'s', function 
 });
 
 t('duplicating is audited and cannot be done over GET', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     db()->exec("DELETE FROM activity_log");
 
@@ -398,7 +398,7 @@ t('duplicating is audited and cannot be done over GET', function () use ($base) 
 });
 
 t('a failing write redirects with an error instead of a 500', function () use ($base) {
-    dup_login($base, 'demo', 'demo');
+    dup_login($base, 'admin', 'admin');
 
     $sourceId = dup_seed_source('dup-db-failure', 'Dup Db Failure');
 

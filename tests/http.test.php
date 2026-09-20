@@ -129,7 +129,7 @@ function http(string $method, string $url, bool $useCookies = true, array $post 
     return [$status, substr($response, $headerSize), substr($response, 0, $headerSize)];
 }
 
-function http_login(string $base, string $username = 'demo', string $password = 'demo'): void
+function http_login(string $base, string $username = 'admin', string $password = 'admin'): void
 {
     global $cookieJar;
 
@@ -1012,7 +1012,7 @@ t('bulk actions are audited', function () use ($base) {
 });
 
 t('the admin renders in the language of the signed-in user', function () use ($base) {
-    db()->prepare("UPDATE users SET ui_language = 'sv' WHERE username = 'demo'")->execute();
+    db()->prepare("UPDATE users SET ui_language = 'sv' WHERE username = 'admin'")->execute();
 
     http_login($base);
 
@@ -1037,7 +1037,7 @@ t('the admin renders in the language of the signed-in user', function () use ($b
     [, $after] = http('GET', $base . '/admin/utilities');
     assert_contains('Okänd åtgärd', $after, 'toast messages are translated');
 
-    db()->prepare("UPDATE users SET ui_language = 'en' WHERE username = 'demo'")->execute();
+    db()->prepare("UPDATE users SET ui_language = 'en' WHERE username = 'admin'")->execute();
     http_login($base);
 });
 

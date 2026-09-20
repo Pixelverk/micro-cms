@@ -33,7 +33,7 @@ t('log_activity() writes an entry with the current actor', function () {
     assert_eq('content', $entry['object_type']);
     assert_eq(42, (int) $entry['object_id']);
     assert_eq('About Us', $entry['summary']);
-    assert_eq('demo', $entry['username'], 'the actor is recorded');
+    assert_eq('admin', $entry['username'], 'the actor is recorded');
     assert_eq(1, (int) $entry['user_id']);
 
     $meta = json_decode((string) $entry['meta'], true);

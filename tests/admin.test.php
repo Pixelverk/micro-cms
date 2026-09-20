@@ -191,25 +191,25 @@ t('can_edit_content() restricts authors to their own items', function () {
 });
 
 t('the last administrator cannot be demoted or deleted', function () {
-    // Normalise: the seeded demo user should be the only admin to start with.
-    $demoId = (int) db()->query("SELECT id FROM users WHERE username = 'demo'")->fetchColumn();
-    db()->prepare("UPDATE users SET role = 'author' WHERE id != :demo")->execute(['demo' => $demoId]);
+    // Normalise: the seeded administrator should be the only admin to start with.
+    $adminId = (int) db()->query("SELECT id FROM users WHERE username = 'admin'")->fetchColumn();
+    db()->prepare("UPDATE users SET role = 'author' WHERE id != :admin")->execute(['admin' => $adminId]);
 
-    assert_true(admin_is_last_admin($demoId), 'demo is the last admin');
+    assert_true(admin_is_last_admin($adminId), 'the seeded administrator is the last admin');
 
     // Add a second admin: now demotion is allowed.
     db()->prepare("INSERT INTO users (username, email, password_hash, role, created_at) VALUES ('admin2', 'a2@example.com', 'x', 'admin', :now)")
         ->execute(['now' => time()]);
 
-    assert_false(admin_is_last_admin($demoId), 'with two admins, demotion is allowed');
+    assert_false(admin_is_last_admin($adminId), 'with two admins, demotion is allowed');
 
     // A non-admin is never "the last admin".
     $authorId = login_as_role('author');
     assert_false(admin_is_last_admin($authorId));
 
-    // Restore the seeded admin: other suites (http) log in as demo and expect
+    // Restore the seeded admin: other suites (http) sign in as it and expect
     // administrator capabilities.
-    db()->prepare("UPDATE users SET role = 'admin' WHERE id = :demo")->execute(['demo' => $demoId]);
+    db()->prepare("UPDATE users SET role = 'admin' WHERE id = :admin")->execute(['admin' => $adminId]);
     db()->prepare("DELETE FROM users WHERE username = 'admin2'")->execute();
 });
 

@@ -197,7 +197,7 @@ function test_php(array $lines): array
     return [$output, $exitCode];
 }
 
-function test_login_session(int $userId = 1, string $username = 'demo'): void
+function test_login_session(int $userId = 1, string $username = 'admin'): void
 {
     $_SESSION = [
         'user_id'    => $userId,

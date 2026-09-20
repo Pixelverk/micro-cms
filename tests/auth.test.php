@@ -10,32 +10,32 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 test_fresh_database();
 
-t('the seeded demo account can log in', function () {
+t('the seeded administrator can log in', function () {
     $_SESSION = [];
-    assert_true(login('demo', 'demo'));
+    assert_true(login('admin', 'admin'));
     assert_eq(1, current_user_id(), 'session must hold the numeric user id');
-    assert_eq('demo', current_username());
-    assert_eq('demo', current_user()['username']);
+    assert_eq('admin', current_username());
+    assert_eq('admin', current_user()['username']);
 });
 
 t('a fresh install ships one account per role', function () {
     $roles = [];
 
-    foreach (['demo', 'editor', 'author'] as $username) {
+    foreach (['admin', 'editor', 'author'] as $username) {
         $_SESSION = [];
 
         assert_true(login($username, $username), "{$username} signs in with its own name as the password");
         $roles[$username] = current_user()['role'];
     }
 
-    assert_eq(['demo' => 'admin', 'editor' => 'editor', 'author' => 'author'], $roles, 'each account carries its role');
+    assert_eq(['admin' => 'admin', 'editor' => 'editor', 'author' => 'author'], $roles, 'each account carries its role');
 });
 
 t('login issues a per-browser preview token', function () {
     $_SESSION = [];
     unset($_COOKIE[preview_cookie_name()]);
 
-    login('demo', 'demo');
+    login('admin', 'admin');
 
     $token = $_COOKIE[preview_cookie_name()] ?? '';
 
@@ -46,7 +46,7 @@ t('login issues a per-browser preview token', function () {
 
 t('a wrong password does not authenticate', function () {
     $_SESSION = [];
-    assert_false(login('demo', 'nope'));
+    assert_false(login('admin', 'nope'));
     assert_eq(null, current_user_id());
 });
 
@@ -64,7 +64,7 @@ t('current_user() is null without a session', function () {
 
 t('legacy username sessions still resolve', function () {
     // Sessions created before identities moved to numeric ids held a username.
-    $_SESSION = ['user_id' => 'demo'];
+    $_SESSION = ['user_id' => 'admin'];
     assert_eq(1, current_user_id(), 'legacy string id must resolve');
 });
 
@@ -82,24 +82,24 @@ t('throttle locks after the configured number of failures', function () {
 
     $max = config('security.login_max_attempts');
 
-    assert_false(throttle_is_locked('demo'), 'starts unlocked');
+    assert_false(throttle_is_locked('admin'), 'starts unlocked');
 
     for ($i = 0; $i < $max; $i++) {
-        throttle_fail('demo');
+        throttle_fail('admin');
     }
 
-    assert_true(throttle_is_locked('demo'), 'should lock after max failures');
-    assert_true(throttle_seconds_remaining('demo') > 0, 'remaining lockout should be positive');
+    assert_true(throttle_is_locked('admin'), 'should lock after max failures');
+    assert_true(throttle_seconds_remaining('admin') > 0, 'remaining lockout should be positive');
 });
 
 t('a successful login clears the throttle', function () {
     db()->exec("DELETE FROM login_attempts");
     $_SERVER['REMOTE_ADDR'] = '10.0.0.10';
 
-    throttle_fail('demo');
+    throttle_fail('admin');
     $_SESSION = [];
-    assert_true(login('demo', 'demo'), 'login should succeed');
-    assert_false(throttle_is_locked('demo'), 'throttle should be cleared');
+    assert_true(login('admin', 'admin'), 'login should succeed');
+    assert_false(throttle_is_locked('admin'), 'throttle should be cleared');
 });
 
 t('throttle keys are per address', function () {
@@ -107,12 +107,12 @@ t('throttle keys are per address', function () {
 
     $_SERVER['REMOTE_ADDR'] = '10.0.0.11';
     for ($i = 0; $i < config('security.login_max_attempts'); $i++) {
-        throttle_fail('demo');
+        throttle_fail('admin');
     }
-    assert_true(throttle_is_locked('demo'));
+    assert_true(throttle_is_locked('admin'));
 
     $_SERVER['REMOTE_ADDR'] = '10.0.0.12';
-    assert_false(throttle_is_locked('demo'), 'another address must not inherit the lockout');
+    assert_false(throttle_is_locked('admin'), 'another address must not inherit the lockout');
 
     $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 });
@@ -179,12 +179,12 @@ t('a reset token is single use and changes the password', function () {
     password_reset_complete($reset, 'brand-new-password-1');
 
     assert_eq(null, password_reset_find($raw), 'a spent token is refused');
-    assert_true(login('demo', 'brand-new-password-1'), 'the new password works');
-    assert_false(login('demo', 'demo'), 'the old password no longer does');
+    assert_true(login('admin', 'brand-new-password-1'), 'the new password works');
+    assert_false(login('admin', 'admin'), 'the old password no longer does');
 
     // Leave the seeded password in place for the rest of the suite.
     db()->prepare("UPDATE users SET password_hash = :hash WHERE id = 1")
-        ->execute(['hash' => password_hash('demo', PASSWORD_DEFAULT)]);
+        ->execute(['hash' => password_hash('admin', PASSWORD_DEFAULT)]);
 });
 
 t('the reset request rate limit counts every request per address', function () {
@@ -208,7 +208,7 @@ t('a completed reset invalidates sessions opened with the old password', functio
     $_SESSION = [];
     unset($_COOKIE[preview_cookie_name()]);
 
-    login('demo', 'demo');
+    login('admin', 'admin');
     $oldFingerprint = (string) ($_SESSION['auth_fingerprint'] ?? '');
     assert_true($oldFingerprint !== '', 'login stores a fingerprint');
 
@@ -229,7 +229,7 @@ t('a completed reset invalidates sessions opened with the old password', functio
     assert_contains('signed-out', implode("\n", $output));
 
     db()->prepare("UPDATE users SET password_hash = :hash WHERE id = 1")
-        ->execute(['hash' => password_hash('demo', PASSWORD_DEFAULT)]);
+        ->execute(['hash' => password_hash('admin', PASSWORD_DEFAULT)]);
 });
 
 exit(test_summary());

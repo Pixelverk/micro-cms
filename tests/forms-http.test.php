@@ -99,8 +99,8 @@ function inbox_login(string $base): void
     }
 
     [$status] = inbox_http('POST', $base . '/admin/login', true, [
-        'username' => 'demo',
-        'password' => 'demo',
+        'username' => 'admin',
+        'password' => 'admin',
         '_token'   => $matches[1],
     ]);
 

@@ -107,8 +107,8 @@ function pag_login(string $base): void
     }
 
     [$status] = pag_http('POST', $base . '/admin/login', true, [
-        'username' => 'demo',
-        'password' => 'demo',
+        'username' => 'admin',
+        'password' => 'admin',
         '_token'   => $matches[1],
     ]);
 

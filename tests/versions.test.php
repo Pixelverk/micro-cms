@@ -110,7 +110,7 @@ t('the snapshot records who made the change', function () {
     $versions = list_content_versions($id);
 
     assert_eq(1, (int) $versions[0]['created_by']);
-    assert_eq('demo', $versions[0]['username'], 'the author is joined for display');
+    assert_eq('admin', $versions[0]['username'], 'the author is joined for display');
 });
 
 t('load_content_version() refuses to cross content items', function () {
