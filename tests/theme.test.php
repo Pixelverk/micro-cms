@@ -27,6 +27,12 @@ t('utilities.css carries the shared class layer', function () {
     foreach (['.container', '.row', '.col-lg-6', '.py-5', '.d-flex', '.card', '.btn', '.navbar', '.accordion-button'] as $selector) {
         assert_contains($selector, $css, "utilities.css should define {$selector}");
     }
+
+    // about-feature-section's "Image Position: right" is these two classes, so
+    // dropping them from the layer silently turns the option into a no-op.
+    foreach (['.order-first', '.order-lg-last'] as $selector) {
+        assert_contains($selector, $css, "utilities.css should define {$selector}");
+    }
 });
 
 t('style.css holds the theme surface, not the utility layer', function () {
@@ -66,6 +72,30 @@ t('component-specific rules are not in the shared layer', function () {
     // contact-section and blog-preview-section render the shared form partial.
     assert_contains('.theme-form .message', (string) file_get_contents(CMS_PATH . '/theme/partials/form.php'));
     assert_contains('.bg-featured-blog', (string) file_get_contents(CMS_PATH . '/theme/components/blog-featured-section.php'));
+});
+
+t('the about feature section puts its image on either side', function () {
+    $component = require CMS_PATH . '/theme/components/about-feature-section.php';
+    $js = [];
+    $collected = [];
+
+    $render = function (string $position) use ($component, &$js, &$collected): string {
+        ob_start();
+        $component['render']([
+            'title'          => 'Section',
+            'text'           => 'Text',
+            'image'          => '600x400.png',
+            'image_position' => $position,
+        ], [], $js, $collected);
+
+        return (string) ob_get_clean();
+    };
+
+    $right = $render('right');
+    $left  = $render('left');
+
+    assert_contains('order-first order-lg-last', $right, 'the right-hand variant flips the image column');
+    assert_not_contains('order-lg-last', $left, 'the left-hand variant leaves the markup order alone');
 });
 
 t('every theme component follows the component contract', function () {

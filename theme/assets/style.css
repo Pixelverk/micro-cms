@@ -1,5 +1,7 @@
+/* Reset. No font-family here: a rule on * applies directly to every element and
+   would beat the stack body declares, so text would fall back to the browser's
+   generic sans-serif instead of the system UI font. */
 * {
-    font-family: sans-serif;
     margin: 0;
     padding: 0;
     line-height: 1.5;

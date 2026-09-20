@@ -24,6 +24,11 @@ A hand-written, Bootstrap-compatible subset: `.container`, `.row`,
 `.col-lg-*`, `.gx-*`, spacing (`.py-5`, `.mb-3`, …), flex helpers, `.card`,
 `.btn`, `.form-control`, `.navbar`, `.dropdown`, `.accordion`, `.badge`.
 
+Heading sizes and weights are Bootstrap's too (`h1` 2.5rem and medium, `h2`
+2rem, `line-height: 1.2`). That is deliberate: the demo mirrors the Start
+Bootstrap reference page for page, so a heading left to the browser default —
+2rem and bold — reads as a theme bug rather than a choice.
+
 **These class names are a public API.** Components reference them directly, so
 renaming or removing one is a breaking change. Add new helpers here only when
 more than one component needs them.
@@ -33,6 +38,11 @@ more than one component needs them.
 Design tokens (`:root` custom properties), the base reset, typography and
 element defaults. Keep it free of layout utilities (those go in
 `utilities.css`) and component-specific selectors (those go in the component).
+
+The reset zeroes margins and sets `line-height: 1.5`, but deliberately declares
+no `font-family`: a rule on `*` applies directly to every element, so it would
+beat the stack `body` declares and drop the site to the browser's generic
+sans-serif. Set fonts on `body`, and let inheritance do the rest.
 
 ### Component CSS
 

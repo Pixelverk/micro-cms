@@ -7,11 +7,22 @@ component($headerComponent, [], $page, $collectedJs, $collectedCss);
 
 $meta = $page['meta'] ?? [];
 $description = $meta['description'] ?? $meta['excerpt'] ?? '';
+
+// The gallery is what the project page shows, in the order the editor set it:
+// the first image spans the page and the rest sit two to a row. The thumbnail
+// is the listing image the portfolio grid and cards use, so it only stands in
+// when there is no gallery to show.
 $images = $meta['gallery'] ?? [];
-if (!is_array($images)) $images = [$images];
-$cover = $meta['thumbnail'] ?? $meta['image'] ?? ($images[0] ?? '');
-if ($cover !== '') array_unshift($images, $cover);
-$images = array_values(array_unique(array_filter($images)));
+
+if (!is_array($images)) {
+    $images = [$images];
+}
+
+$images = array_values(array_filter($images));
+
+if (!$images) {
+    $images = array_values(array_filter([(string) ($meta['thumbnail'] ?? $meta['image'] ?? '')]));
+}
 ?>
 <main>
     <section class="py-5">

@@ -515,6 +515,7 @@
                 "thumbnail": "600x400.png",
                 "gallery": [
                     "1300x700.png",
+                    "600x400.png",
                     "600x400.png"
                 ],
                 "project_url": "#"
@@ -530,7 +531,7 @@
             ],
             "published_at": 1789885037,
             "created_at": 1789885037,
-            "updated_at": 1789885037
+            "updated_at": 1789891731
         },
         {
             "type": "portfolio_item",
@@ -545,6 +546,7 @@
                 "thumbnail": "600x400.png",
                 "gallery": [
                     "1300x700.png",
+                    "600x400.png",
                     "600x400.png"
                 ],
                 "project_url": "#"
@@ -560,7 +562,7 @@
             ],
             "published_at": 1789885037,
             "created_at": 1789885037,
-            "updated_at": 1789885037
+            "updated_at": 1789891731
         },
         {
             "type": "page",

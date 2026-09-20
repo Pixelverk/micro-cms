@@ -45,34 +45,6 @@ return [
 'allowed_children' => [], // only used if children='some'
 
 /** --------------------------------------------
- * Component CSS (optional)
- * -------------------------------------------- */
-'css' => <<<CSS
-.about-hero {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-}
-
-.about-hero .text-center {
-    text-align: center;
-}
-
-.about-hero h1 {
-    font-size: clamp(2.25rem, 4vw, 3.5rem);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    margin-bottom: 1rem;
-}
-
-.about-hero .lead {
-    font-size: 1.25rem;
-    font-weight: 400;
-    color: #6c757d;
-    margin-bottom: 1.5rem;
-}
-CSS,
-
-/** --------------------------------------------
  * Render function
  * -------------------------------------------- */
 'render' => function (array $props, array $page, array &$collectedJs = [], array &$collectedCss = []) {

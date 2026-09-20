@@ -37,6 +37,9 @@
 .align-items-end { align-items: flex-end !important; }
 .justify-content-center { justify-content: center !important; }
 .justify-content-between { justify-content: space-between !important; }
+/* Column order. about-feature-section puts the image first in the markup, and
+   flips it to the right of the text from the lg breakpoint up. */
+.order-first { order: -1 !important; }
 .gap-3 { gap: 1rem !important; }
 .ms-auto { margin-left: auto !important; }
 .m-0 { margin: 0 !important; }
@@ -91,10 +94,30 @@
 .fs-5 { font-size: 1.25rem !important; }
 .display-4 { font-size: calc(1.475rem + 2.7vw); font-weight: 300; line-height: 1.2; }
 .display-5 { font-size: calc(1.425rem + 2.1vw); font-weight: 300; line-height: 1.2; }
-.h2, h2 { font-size: 2rem; }
-.h3, h3 { font-size: 1.75rem; }
+/* Headings, at Bootstrap's scale. The theme is measured against the reference
+   the demo mirrors: an h1 left to the browser default is 2rem and bold, where
+   the reference is 2.5rem and medium — visible on every page, and the reason a
+   bare `<h2 class="h5">` looked heavier here than in the reference. */
+.h1, h1 { font-size: calc(1.375rem + 1.5vw); }
+.h2, h2 { font-size: calc(1.325rem + 0.9vw); }
+.h3, h3 { font-size: calc(1.3rem + 0.6vw); }
+.h4, h4 { font-size: calc(1.275rem + 0.3vw); }
 .h5, h5 { font-size: 1.25rem; }
 .h6, h6 { font-size: 1rem; }
+
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+@media (min-width: 1200px) {
+    .h1, h1 { font-size: 2.5rem; }
+    .h2, h2 { font-size: 2rem; }
+    .h3, h3 { font-size: 1.75rem; }
+    .h4, h4 { font-size: 1.5rem; }
+}
 
 .navbar { position: relative; display: flex; align-items: center; padding: 0.5rem 0; }
 .navbar > .container { display: flex; align-items: center; justify-content: space-between; }
@@ -207,6 +230,7 @@
     .col-lg-10 { width: 83.333333%; }
     .offset-lg-1 { margin-left: 8.333333%; }
     .row-cols-lg-4 > * { width: 25%; }
+    .order-lg-last { order: 6 !important; }
     .mb-lg-0 { margin-bottom: 0 !important; }
     .mt-lg-5 { margin-top: 3rem !important; }
     .py-lg-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }

@@ -663,11 +663,28 @@ The demo stayed exporter-written — `tests/bootstrap.php` rebuilds the seed
 template when `theme/demo/*.json` change, and counts in the suite derive from the
 demo rather than from a hard-coded 15.
 
-The installer now also seeds **one account per role** — `demo` (administrator),
+The installer now also seeds **one account per role** — `admin` (administrator),
 `editor` and `author`, each password its username, listed in `README.md` — so the
 capability matrix can be tried from every point of view on a fresh install.
 Users are still never part of a content package: they are schema-side seed data,
 not content.
+
+**Parity fixes after shipping.** Comparing the rendered demo against the
+reference turned up three theme bugs, all fixed: the shared layer had no `h1`
+rule, so every page heading fell back to the browser's 2rem and bold instead of
+the reference's 2.5rem medium (the whole heading block now mirrors Bootstrap's,
+including `line-height: 1.2`); the universal reset in `style.css` declared
+`font-family: sans-serif` on `*`, which applies to every element and silently
+overrode the stack `body` declares; and the portfolio layout forced the project's
+listing *thumbnail* into the full-width slot, so a 600×400 image sat left-aligned
+in a 1044px column while the wide shot was squeezed into a half column — the
+gallery drives that page now, and the projects carry a wide cover plus two
+supporting images like the reference's project page. A fourth: the shared layer
+never defined `.order-first` / `.order-lg-last`, so the about feature section's
+**Image Position: right** option rendered exactly like `left` — a prop promising
+something the stylesheet could not do. Both classes are in now, at the
+breakpoint Bootstrap uses, and `tests/theme.test.php` renders the component both
+ways so the option cannot quietly become a no-op again.
 
 **Why.** Two things were wrong with treating `theme/` as the worked example. The
 demo content that shows what the theme can do was buried in `setup.php` — about
