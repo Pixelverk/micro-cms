@@ -39,6 +39,24 @@ We want to present the user with html whenever they visit an url, it's not rocke
 
 ---
 
+## Documentation
+
+This file is the overview. Each audience has its own guide with the detail:
+
+* [`USERS.md`](USERS.md) – for editors and administrators: publishing, media,
+  menus, forms, taxonomies, settings and the utilities.
+* [`THEME_DEVELOPERS.md`](THEME_DEVELOPERS.md) – for building a theme: the
+  manifest, components, layouts, taxonomies, forms, menus, images and styling.
+* [`DEVELOPERS.md`](DEVELOPERS.md) – for working on the CMS itself: the request
+  lifecycle, modules, data model, admin and testing.
+* [`AGENTS.md`](AGENTS.md) – the rules and conventions a change must respect.
+* [`plan.md`](plan.md) – the plan of record: what is next, and what shipped.
+
+The same editor and theme-developer material is available inside the CMS at
+**Help → Documentation** (`/admin/docs`).
+
+---
+
 ## Workflow
 
 1. Build your components and place them in `theme/components/`.
