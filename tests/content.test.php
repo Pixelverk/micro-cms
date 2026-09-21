@@ -220,6 +220,55 @@ t('publishing_check() respects its once-a-minute marker', function () {
 });
 
 // ---------------------------------------------------------------------------
+// Rich-text-only content types
+// ---------------------------------------------------------------------------
+
+t('a rich-text content type resolves the component it writes', function () {
+    $types = theme_config()['content_types'];
+
+    assert_eq(
+        ['component' => 'quill-editor', 'field' => 'content'],
+        content_rich_text_editor($types['blog_post']),
+        'a post is written with the rich-text component its palette names'
+    );
+
+    assert_eq(null, content_rich_text_editor($types['page']), 'a component type has no single rich-text field');
+});
+
+t('the body of a rich-text content type is exactly its one component', function () {
+    $blog = theme_config()['content_types']['blog_post'];
+    $component = [
+        'type'     => 'quill-editor',
+        'props'    => ['content' => '<p>Kept</p>', 'extra' => 'dropped'],
+        'children' => [['type' => 'anything', 'props' => [], 'children' => []]],
+    ];
+
+    assert_eq(
+        [['type' => 'quill-editor', 'props' => ['content' => '<p>Kept</p>'], 'children' => []]],
+        content_rich_text_body($blog, [$component]),
+        'only the declared field survives, and the extra component is dropped'
+    );
+
+    // A hand-made POST with a second component is reduced to the one field: the
+    // editor could never hydrate the rest.
+    $twoComponents = [
+        $component,
+        ['type' => 'hero-section', 'props' => ['title' => 'Extra'], 'children' => []],
+    ];
+
+    assert_eq(
+        [['type' => 'quill-editor', 'props' => ['content' => '<p>Kept</p>'], 'children' => []]],
+        content_rich_text_body($blog, $twoComponents),
+        'a second component cannot reach the stored body'
+    );
+
+    // A component content type keeps the tree the editor posted.
+    $body = [['type' => 'hero-section', 'props' => ['title' => 'Hi'], 'children' => []]];
+
+    assert_eq($body, content_rich_text_body(theme_config()['content_types']['page'], $body));
+});
+
+// ---------------------------------------------------------------------------
 // Pre-publish checklist
 // ---------------------------------------------------------------------------
 

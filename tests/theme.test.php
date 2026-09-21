@@ -638,6 +638,43 @@ t('the shipped theme has no manifest problems', function () {
     assert_count(0, $summary, implode('; ', $summary));
 });
 
+t('every rich-text content type resolves to a component that can write it', function () {
+    $types = theme_config()['content_types'] ?? [];
+
+    foreach ($types as $type => $config) {
+        if (($config['editor'] ?? '') !== 'rich-text') {
+            continue;
+        }
+
+        $editor = content_rich_text_editor($config);
+
+        assert_true($editor !== null, "{$type} declares a component with a quill field");
+
+        $schema = content_component_definition($editor['component'])['schema'] ?? [];
+
+        assert_eq('quill', $schema[$editor['field']]['type'] ?? null, "{$type} writes the component's quill field");
+    }
+
+    // The shipped theme uses the mode, or the check above would be vacuous.
+    assert_true(
+        (($types['blog_post']['editor'] ?? '') === 'rich-text') && (($types['portfolio_item']['editor'] ?? '') === 'rich-text'),
+        'the shipped theme edits blog posts and portfolio items as rich text'
+    );
+});
+
+t('a rich-text type that cannot name its component is reported', function () {
+    $theme = theme_config();
+    // A copy of the manifest, so the shipped theme object itself is untouched.
+    $theme['content_types']['blog_post']['available_components'] = ['hero-section'];
+    $theme['content_types']['page']['editor'] = 'wysiwyg';
+
+    $problems = theme_manifest_problems($theme, theme(), load_settings());
+    $messages = theme_problem_messages($problems, 'components');
+
+    assert_contains("blog_post.editor is 'rich-text'", $messages, 'a rich-text type with no quill component fails');
+    assert_contains("page.editor is 'wysiwyg'", $messages, 'an unknown editor mode is reported');
+});
+
 t('asset() stamps theme assets with their modification time', function () {
     $style = CMS_PATH . '/theme/assets/style.css';
     assert_true(is_file($style), 'the theme stylesheet exists');

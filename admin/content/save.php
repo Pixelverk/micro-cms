@@ -237,7 +237,13 @@ if ($footer !== '') $contentData['footer'] = $footer; else unset($contentData['f
 // Rebuild nested components from POST
 // ----------------------------
 $postedComponents = $_POST['components'] ?? [];
-$postedComponents = array_filter($postedComponents, fn($c) => !empty($c['type']));
+// A component is anything that names a type or carries props. A request from a
+// stale editor may post only a rich-text field, and dropping it here would drop
+// the one component there is.
+$postedComponents = array_filter(
+    $postedComponents,
+    static fn($c) => is_array($c) && (($c['type'] ?? '') !== '' || ($c['props'] ?? []) !== [])
+);
 
 function setNestedComponent(array &$tree, array $parts, array $comp): void {
     $index = array_shift($parts);
@@ -270,6 +276,11 @@ function reindexRecursive(array $array): array {
 }
 
 $contentData['body'] = reindexRecursive($componentsTree);
+
+// A rich-text-only content type stores exactly the one component its manifest
+// names, whatever the request posted, so the editor's output and the stored
+// body cannot drift apart.
+$contentData['body'] = content_rich_text_body($ctConfig, $contentData['body']);
 
 // ----------------------------
 // Autosave

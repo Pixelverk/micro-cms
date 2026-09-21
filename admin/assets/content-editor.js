@@ -12,6 +12,8 @@ const initialComponents = window.initialComponents || [];
 // in above it: the area always sits under the last component. insertBefore()
 // with no reference appends, which is what happens if the area is not there.
 function appendComponent(node) {
+    if (!container) return;
+
     container.insertBefore(node, container.querySelector('.component-add-zone'));
 }
 
@@ -89,23 +91,13 @@ function createComponent(type, data = {}) {
         fieldNode.querySelector('.field-label').textContent = field.label || name;
         const input = fieldNode.querySelector('.field-input');
 
-        // quill logic 
+        // A rich-text field's hidden input carries the submitted HTML; Quill is
+        // built over it by bootstrapQuillEditors() once the component is added.
         if (fieldType === 'quill') {
-            const editorEl = fieldNode.querySelector('.quill-editor');
             const hiddenInput = fieldNode.querySelector('.quill-hidden');
 
             hiddenInput.name = `components[][props][${name}]`;
             hiddenInput.value = value || '';
-
-            const quill = new Quill(editorEl, {
-                theme: 'snow'
-            });
-
-            quill.root.innerHTML = hiddenInput.value;
-
-            quill.on('text-change', () => {
-                hiddenInput.value = quill.root.innerHTML;
-            });
 
             fieldsContainer.appendChild(fieldNode);
             continue;
@@ -226,24 +218,87 @@ function createComponent(type, data = {}) {
 }
 
 // ----------------------------
-// Load initial components
+// Rich text fields
 // ----------------------------
-if (Array.isArray(initialComponents)) {
-    initialComponents.forEach(data => {
-        appendComponent(createComponent(data.type, data));
-    });
-} else if (initialComponents && typeof initialComponents === 'object') {
-    Object.values(initialComponents).forEach(data => {
-        appendComponent(createComponent(data.type, data));
+// Every rich-text field, whether it belongs to a component or is the only field
+// on the page, is built from #quill-editor-template and initialised by
+// bootstrapQuillEditors() below. The content type's field carries its saved
+// HTML in window.richTextField; a component's is already on its hidden input.
+function initRichTextField() {
+    const field = window.richTextField;
+    const host = document.getElementById('rich-text-container');
+
+    if (!field || !host) return;
+
+    const node = quillTemplate.content.firstElementChild.cloneNode(true);
+    const hiddenInput = node.querySelector('.quill-hidden');
+
+    // The component's type travels with the field, like any other component's.
+    node.dataset.type = field.component;
+    node.insertBefore(Object.assign(document.createElement('input'), {
+        type: 'hidden',
+        className: 'component-type',
+        name: 'components[0][type]',
+        value: field.component,
+    }), node.firstChild);
+
+    hiddenInput.name = field.name;
+    hiddenInput.value = field.value || '';
+
+    host.appendChild(node);
+}
+
+// Every rich-text field, whether it belongs to a component or is the only field
+// on the page, is initialised once: the hidden input it submits through is a
+// sibling, and the marker keeps a re-run from building a second toolbar.
+function bootstrapQuillEditors(root = document) {
+    if (typeof Quill === 'undefined') return;
+
+    root.querySelectorAll('.quill-editor').forEach(editorEl => {
+        if (editorEl.dataset.quillBound) return;
+
+        editorEl.dataset.quillBound = '1';
+
+        const hiddenInput = editorEl.parentElement?.querySelector('.quill-hidden');
+        const quill = new Quill(editorEl, { theme: 'snow' });
+
+        if (!hiddenInput) return;
+
+        quill.root.innerHTML = hiddenInput.value;
+
+        quill.on('text-change', () => {
+            hiddenInput.value = quill.root.innerHTML;
+        });
     });
 }
 
-renumberComponents();
+// Component mode builds the list from what the body holds; a rich-text-only
+// content type has no list, so it only builds its one field.
+if (container) {
+    // ----------------------------
+    // Load initial components
+    // ----------------------------
+    if (Array.isArray(initialComponents)) {
+        initialComponents.forEach(data => {
+            appendComponent(createComponent(data.type, data));
+        });
+    } else if (initialComponents && typeof initialComponents === 'object') {
+        Object.values(initialComponents).forEach(data => {
+            appendComponent(createComponent(data.type, data));
+        });
+    }
+
+    renumberComponents();
+} else {
+    initRichTextField();
+}
+
+bootstrapQuillEditors();
 
 // ----------------------------
 // Event delegation (remove, add-child, move, duplicate)
 // ----------------------------
-container.addEventListener('click', async e => {
+if (container) container.addEventListener('click', async e => {
     const comp = e.target.closest('.component');
     if (!comp) return;
 
@@ -351,7 +406,11 @@ function duplicateComponent(compEl) {
 // ----------------------------
 // Renumber
 // ----------------------------
-function renumberComponents() { renumberContainer(container, ''); }
+function renumberComponents() {
+    if (!container) return;
+
+    renumberContainer(container, '');
+}
 
 function renumberContainer(parent, prefix) {
     parent.querySelectorAll(':scope > .component').forEach((comp, i) => {
@@ -460,6 +519,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // sorting of components 
 function bindSortable(el) {
+    if (!el) return;
+
     new Sortable(el, {
         handle: '.component-title',
         // The Add area is a child too, and must stay last: only components sort.
@@ -506,6 +567,7 @@ if (componentPicker) {
 
             appendComponent(node);
             renumberComponents();
+            bootstrapQuillEditors(node);
             closeDialog(componentPicker);
 
             // The editor is looking at the dialog, so show what it added.

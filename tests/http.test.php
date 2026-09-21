@@ -1524,6 +1524,78 @@ t('an editor autosave stores a draft version without saving the content', functi
     db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
 });
 
+t('a rich-text content type saves the one component it declares', function () use ($base) {
+    http_login($base);
+
+    $id = seed_content([
+        'type'   => 'blog_post',
+        'slug'   => 'http-rich-text',
+        'title'  => 'HTTP rich text',
+        'status' => 'draft',
+        'body'   => [['type' => 'quill-editor', 'props' => ['content' => '<p>First draft</p>'], 'children' => []]],
+    ]);
+
+    // The editor shows the one field and nothing to add, whatever the palette.
+    [, $editor] = http('GET', $base . '/admin/content/edit?type=blog_post&id=' . $id);
+    assert_not_contains('data-modal="component-picker"', $editor, 'there is no Add component button');
+    assert_not_contains('class="component-add-zone"', $editor, 'and no Add area');
+    assert_contains('id="rich-text-container"', $editor, 'the single field is the body');
+    assert_contains('First draft', $editor, 'and it holds the saved rich text');
+
+    // A save from that editor, which posts the one component.
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=blog_post');
+
+    http('POST', $base . '/admin/content/save', true, [
+        '_token'             => $token,
+        'id'                 => $id,
+        'type'               => 'blog_post',
+        'title'              => 'HTTP rich text',
+        'slug'               => 'http-rich-text',
+        'status'             => 'published',
+        'published_at'       => time() - 10,
+        'components'         => [
+            0 => [
+                'type'  => 'quill-editor',
+                'props' => ['content' => '<p>Saved by the editor</p>'],
+            ],
+        ],
+    ]);
+
+    assert_eq(
+        [['type' => 'quill-editor', 'props' => ['content' => '<p>Saved by the editor</p>'], 'children' => []]],
+        load_content_by_id($id)['body'],
+        'the stored body is exactly the one component'
+    );
+
+    // The published page renders it, so nothing in the render path depended on
+    // the component being assembled anywhere else.
+    [$status, $page] = http('GET', $base . '/blog/http-rich-text/');
+    assert_eq(200, $status);
+    assert_contains('Saved by the editor', $page);
+
+    // A request whose body is just the field is still stored as the component,
+    // so a stale editor cannot blank the content.
+    http('POST', $base . '/admin/content/save', true, [
+        '_token'       => $token,
+        'id'           => $id,
+        'type'         => 'blog_post',
+        'title'        => 'HTTP rich text',
+        'slug'         => 'http-rich-text',
+        'status'       => 'published',
+        'published_at' => time() - 10,
+        'components'   => [0 => ['props' => ['content' => '<p>Still here</p>']]],
+    ]);
+
+    assert_eq(
+        [['type' => 'quill-editor', 'props' => ['content' => '<p>Still here</p>'], 'children' => []]],
+        load_content_by_id($id)['body'],
+        'a field-only save keeps the declared component'
+    );
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
 t('the editor offers the component library as a dialog, not a drag palette', function () use ($base) {
     http_login($base);
 

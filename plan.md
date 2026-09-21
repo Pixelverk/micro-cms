@@ -66,9 +66,145 @@ These are not up for renegotiation inside a phase:
 
 No phase is scheduled. Everything the last tables held has shipped: small fixes
 and tidy-ups, media fallbacks without theme placeholder files, component
-previews with the Add component dialog, and the whole-site backup download. What
-is left is in the Backlog below, which is unscheduled: confirm an item before
-starting it.
+previews with the Add component dialog, and the whole-site backup download.
+
+**Shipped:** rich-text-only content types — a content type can declare
+`'editor' => 'rich-text'` and be edited as one rich text field. See below for
+what it built. What is left is in the Backlog, which is unscheduled: confirm an
+item before starting it.
+
+---
+
+## Rich-text-only content types
+
+**Status:** shipped.
+
+### Why
+
+`blog_post` and `portfolio_item` already store exactly one `quill-editor`
+component, so the component machinery adds nothing for them: the editor shows a
+collapsed Rich Text component wrapped in a details/summary, with move, duplicate
+and remove controls, and an "Add component" area whose only tile is the same
+Rich Text block. The theme developer should be able to say a content type is
+just rich text, and the editor then shows one rich text field with none of that.
+
+### How it stays simple
+
+**The stored body does not change.** It stays `[{type, props, children}]` like
+every other content type, so the front end (`render_components()` in the blog
+and portfolio layouts), `search_text`, media usage, the publish checklist,
+versions, autosave and the content export all carry on untouched. Only the
+editor presents that one component differently.
+
+**The manifest says it once.** A content type adds:
+
+```php
+'editor' => 'rich-text',
+```
+
+It is an editor mode, not a schema change, and it defaults to `'components'`
+when absent — so `page`, every component type and every other theme in the wild
+are unaffected. `editor` follows `layout`/`header`/`footer`: a plain string the
+theme owns. The editor stays honest if it is misspelled: an unknown value falls
+back to the component editor (and Health reports it).
+
+**Which rich text is not a new key.** The type's `available_components` names
+it; the editor takes the first listed component whose schema has a `quill`
+field. `theme/theme.php` declares `[... 'available_components' => ['quill-editor'], 'editor' => 'rich-text']`,
+so no component name is repeated and no second source of truth is introduced.
+
+### Editor (`admin/content/edit.php`)
+
+* `content_rich_text_editor($ctConfig)` (new, in `core/helpers/content.php`)
+  returns `['component' => name, 'field' => key]` when the type declares the
+  mode and one of its named components exists with a `quill` field; `null`
+  otherwise. `save.php` and `health.php` use the same helper.
+* In rich-text mode the main column is one card holding a single field: the
+  label from the component's schema and
+  `<input type="hidden" name="components[0][props][<field>]">` beside the Quill
+  host. The component is built from the existing `quill-editor-template` by the
+  editor script, which also names the posted `components[0][type]`, so the form
+  posts the same shape a component editor posts.
+* The card's legend is the component's own label ("Rich Text"), not the generic
+  "Components", and no `#components-container`, add zone or details wrapper is
+  rendered — there is nothing to add, move or remove.
+* Prefill: the value of the body's first component whose type is the declared
+  one; otherwise the first `quill` field anywhere in the body. If neither
+  exists (a type switched to rich text while its items still hold other
+  components) the field starts empty and the first save writes the rich-text
+  shape; the component being dropped is the documented consequence of the
+  declaration, and the change log keeps the old version.
+* Quill assets load whenever `content_rich_text_editor()` returns a component —
+  not only when a palette contains a `quill` field.
+* The image and icon picker partials stay (the sidebar and SEO panel use them).
+  The component picker dialog is not included in this mode.
+* The field markup shares the `quill-editor-template` shape that already exists
+  (a `.quill-editor` host next to a hidden `.quill-hidden` input), so it looks
+  identical to a component rich-text field.
+
+### Editor script (`admin/assets/content-editor.js`)
+
+* Component creation, renumbering, sorting and the add dialog are guarded on the
+  container: `renumberComponents()` becomes a no-op without it, as
+  `attachImagePicker()` already is.
+* One generic Quill bootstrap initialises every `.quill-editor` that is not yet
+  initialised, wiring it to its sibling hidden input. Both a component rich-text
+  field and the new single field go through it; `createComponent()` keeps no
+  Quill branch of its own.
+* `window.initialComponents` stays: it is empty or unused in rich-text mode, and
+  the other payloads are unchanged.
+
+### Save (`admin/content/save.php`)
+
+The editor posts the component's type and its one field, and a guard replaces the
+rebuilt body with exactly the component the manifest names, carrying only its
+declared field values. That keeps the editor's contract (one component), stops a
+hand-made POST with extra components from stranding content, and is where the
+component type is resolved from the manifest. Any other type is otherwise the
+present behaviour.
+
+One thing the implementation had to fix on the way: the rebuild dropped every
+component that did not post a `type`, which is exactly the shape a rich-text
+field has, so a save (and an autosave) stored an empty body. The filter now keeps
+an entry that carries props even without a type. `tests/http.test.php` covers
+both the normal save and a field-only request.
+
+### Health and docs
+
+* `theme_manifest_problems()` gains a `components`-group check: every type whose
+  `editor` is `rich-text` must declare and resolve a component with a `quill`
+  field. A typo in `editor` is reported the same way, instead of silently
+  falling back.
+* `theme/theme.php` documents the key where content types are declared, and the
+  theme developer guide's manifest code block (`admin/partials/docs-content.php`)
+  shows it. `README.md` needs no change.
+
+### Verification
+
+* `php tests/run.php` passes. Extend `tests/content.test.php`:
+  `content_rich_text_editor()` returns `quill-editor`/`content` for a
+  `rich-text` type, `null` for `page`, prefill reads the body's rich text and
+  ignores other components, and `save_content()` keeps the single-component body
+  a rich-text save produces. Extend `tests/theme.test.php` so every rich-text
+  declaration resolves to a component with a `quill` field (the theme's own
+  declaration included).
+* Manual check through the local server with an admin login, which is the part
+  the suite cannot see:
+  * `admin/content/edit?type=blog_post&id=<id>` shows one rich text toolbar and
+    its saved HTML, and no `.component-add-zone`, `.component-title` or
+    component picker; saving it changes nothing in the stored body.
+  * `admin/content/edit?type=page&id=<id>` still shows the component editor and
+    the Add component dialog.
+  * A blog post whose body held two components before the switch loads its rich
+    text and leaves one component after a save.
+
+### Non-goals
+
+* No second rich-text library, no toolbar change, no media insert into rich text
+  (both were dropped deliberately).
+* No new editor mode beyond `components` and `rich-text`.
+* No change to the component editor, the body shape, or how the front end
+  renders a rich-text component.
 
 ---
 
@@ -162,7 +298,7 @@ Settle each before starting the work it belongs to.
   a value that is neither renders the CMS placeholder box. The theme ships no
   content images — only its SVG icons, its component previews and the app icons
   the manifest falls back to — so there is no `img()` helper and no theme
-  filename space to collide with a media id.
+  filename space to collide with a media id anymore.
 * Scheduled publishing is request-triggered (at most once a minute via
   `storage/.publish-check`); there is no cron.
 * `theme/theme.php` decides the component palette per content type; `setup.php`

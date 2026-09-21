@@ -107,8 +107,12 @@ return [
             'default_header' => 'site-header',
             'default_footer' => 'site-footer',
             'available_components' => [
-                'quill-editor', // A post is written, not assembled: rich text is the main tool.
+                'quill-editor',
             ],
+            // A post is written, not assembled: the editor shows this type's one
+            // rich-text component as a single field and offers nothing to add.
+            // The default is 'components', the Add component editor.
+            'editor' => 'rich-text',
             'url_prefix' => 'blog',
             'taxonomy_layout' => 'blog-archive',
             // Presentation images the layout renders. Keys are stored in the
@@ -126,6 +130,7 @@ return [
             'available_components' => [
                 'quill-editor',
             ],
+            'editor' => 'rich-text',
             'url_prefix' => 'portfolio',
             'images' => [
                 'thumbnail' => ['label' => 'Featured image'],

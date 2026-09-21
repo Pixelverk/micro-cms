@@ -261,75 +261,115 @@ $pageFooter = $contentData['footer']
 // ----------------------------
 // Load allowed components
 // ----------------------------
-$allowedComponents = $ctConfig['available_components'] ?? [];
+// A content type that declares 'editor' => 'rich-text' in theme.php is written
+// as one rich-text field: the component its palette names is resolved here, and
+// the palette itself is not loaded because there is nothing to add.
+$richTextEditor = content_rich_text_editor($ctConfig);
 
-$coreComponentFiles = glob(CORE_PATH . '/components/*.php');
-$themeComponentFiles = glob(CMS_PATH . '/theme/components/*.php');
-$componentFiles = array_merge($coreComponentFiles, $themeComponentFiles);
+$allowedComponents = $ctConfig['available_components'] ?? [];
 
 $availableComponents = [];
 
-foreach ($componentFiles as $file) {
-    $name = basename($file, '.php');
+if ($richTextEditor === null) {
+    $coreComponentFiles = glob(CORE_PATH . '/components/*.php');
+    $themeComponentFiles = glob(CMS_PATH . '/theme/components/*.php');
+    $componentFiles = array_merge($coreComponentFiles, $themeComponentFiles);
 
-    if (!empty($allowedComponents) && !in_array($name, $allowedComponents, true)) {
-        continue;
+    foreach ($componentFiles as $file) {
+        $name = basename($file, '.php');
+
+        if (!empty($allowedComponents) && !in_array($name, $allowedComponents, true)) {
+            continue;
+        }
+
+        $component = require $file;
+
+        $schema = $component['schema'] ?? [];
+
+        // A component's "menu" field points at one of the slots declared in
+        // theme.php's menu_locations. The options are filled in here so the
+        // manifest stays the single source of truth for what slots exist.
+        if (isset($schema['menu']) && ($schema['menu']['type'] ?? '') === 'select') {
+            $schema['menu']['options'] = $theme['menu_locations'] ?? [];
+        }
+
+        // A "content_type" field lets a listing choose which content type it
+        // renders. Same rule: the theme manifest decides what can be listed.
+        if (isset($schema['content_type']) && ($schema['content_type']['type'] ?? '') === 'select') {
+            $schema['content_type']['options'] = array_map(
+                static fn(array $config) => $config['label'] ?? 'Unnamed',
+                $theme['content_types'] ?? []
+            );
+        }
+
+        $availableComponents[$name] = [
+            'label'            => $component['label'] ?? $name,
+            'description'      => $component['description'] ?? '',
+            'preview'          => component_preview_url($name),
+            'schema'           => $schema,
+            'children'         => $component['children'] ?? 'any',
+            'allowed_children' => $component['allowed_children'] ?? [],
+        ];
     }
 
-    $component = require $file;
+    // Exclude headers & footers
+    $excludedComponents = array_unique(array_merge(
+        array_keys($availableHeaders),
+        array_keys($availableFooters)
+    ));
 
-    $schema = $component['schema'] ?? [];
+    $availableComponents = array_filter(
+        $availableComponents,
+        fn ($c, $name) => !in_array($name, $excludedComponents, true),
+        ARRAY_FILTER_USE_BOTH
+    );
 
-    // A component's "menu" field points at one of the slots declared in
-    // theme.php's menu_locations. The options are filled in here so the
-    // manifest stays the single source of truth for what slots exist.
-    if (isset($schema['menu']) && ($schema['menu']['type'] ?? '') === 'select') {
-        $schema['menu']['options'] = $theme['menu_locations'] ?? [];
-    }
-
-    // A "content_type" field lets a listing choose which content type it
-    // renders. Same rule: the theme manifest decides what can be listed.
-    if (isset($schema['content_type']) && ($schema['content_type']['type'] ?? '') === 'select') {
-        $schema['content_type']['options'] = array_map(
-            static fn(array $config) => $config['label'] ?? 'Unnamed',
-            $theme['content_types'] ?? []
-        );
-    }
-
-    $availableComponents[$name] = [
-        'label'            => $component['label'] ?? $name,
-        'description'      => $component['description'] ?? '',
-        'preview'          => component_preview_url($name),
-        'schema'           => $schema,
-        'children'         => $component['children'] ?? 'any',
-        'allowed_children' => $component['allowed_children'] ?? [],
-    ];
+    ksort($availableComponents);
 }
 
-// Exclude headers & footers
-$excludedComponents = array_unique(array_merge(
-    array_keys($availableHeaders),
-    array_keys($availableFooters)
-));
+// ----------------------------
+// The one rich-text field
+// ----------------------------
+// What it starts with: the rich text already in the body, so a type switched to
+// this editor keeps what an editor wrote before the switch.
+$richTextLabel = '';
+$richTextValue = '';
 
-$availableComponents = array_filter(
-    $availableComponents,
-    fn ($c, $name) => !in_array($name, $excludedComponents, true),
-    ARRAY_FILTER_USE_BOTH
-);
+if ($richTextEditor !== null) {
+    $richTextLabel = (string) (content_component_definition($richTextEditor['component'])['label'] ?? $richTextEditor['component']);
 
-ksort($availableComponents);
+    foreach ($components as $component) {
+        if (!is_array($component)) {
+            continue;
+        }
+
+        $props  = is_array($component['props'] ?? null) ? $component['props'] : [];
+        $schema = content_component_definition((string) ($component['type'] ?? ''))['schema'] ?? [];
+
+        // The declared component wins; any other component still holding rich
+        // text is the fallback for a type whose rich-text component changed.
+        if (($component['type'] ?? '') === $richTextEditor['component']
+            || ($schema[$richTextEditor['field']]['type'] ?? '') === 'quill') {
+            $richTextValue = (string) ($props[$richTextEditor['field']] ?? '');
+            break;
+        }
+    }
+}
 
 // ----------------------------
 // Render
 // ----------------------------
 // Editor libraries are vendored locally (no CDN, no build step) and must
 // execute before the editor module at the bottom of the page. Sortable powers
-// drag-and-drop on every content type; Quill is only shipped when this type can
-// render a rich-text field.
-$pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
+// drag-and-drop in the Add component editor, so it comes with the palette;
+// Quill comes with a rich-text field, whether that is a component's or the
+// content type's only field.
+if ($richTextEditor === null) {
+    $pageScripts[] = ['src' => 'admin/assets/vendor/sortable/Sortable.min.js'];
+}
 
-$needsQuill = false;
+$needsQuill = $richTextEditor !== null;
+
 foreach ($availableComponents as $availableComponent) {
     foreach ($availableComponent['schema'] as $field) {
         if (($field['type'] ?? '') === 'quill') {
@@ -432,21 +472,33 @@ ob_start();
     <!-- The two columns, with the SEO card below them. -->
     <div class="editor-columns">
 
-    <!-- Components -->
-    <fieldset class="card components-container">
-        <legend><?= e(admin_trans('common_components')) ?></legend>
-        <div id="components-container" class="">
-            <!-- Adding is a wide target under the last component, not a drag from
-                 a name-only list: the dialog has room for what a component is for
-                 and what it looks like. It is the container's last child, so the
-                 editor appends above it. -->
-            <button type="button" class="component-add-zone" data-modal="component-picker">
-                <?= icon('plus', 22, 'component-add-icon') ?>
-                <span class="component-add-title"><?= e(admin_trans('editor_add_component')) ?></span>
-                <span class="component-add-help"><?= e(admin_trans('editor_add_component_help')) ?></span>
-            </button>
-        </div>
-    </fieldset>
+    <!-- The body: one rich-text card, or the component list. -->
+    <?php if ($richTextEditor !== null): ?>
+        <!-- This content type is written, not assembled: one rich text field,
+             no component list and nothing to add. The field is created from
+             #quill-editor-template by admin/assets/content-editor.js, which
+             names the input and fills in the saved HTML. -->
+        <fieldset class="card rich-text-container">
+            <legend><?= e($richTextLabel) ?></legend>
+            <div id="rich-text-container"></div>
+        </fieldset>
+    <?php else: ?>
+        <!-- Components -->
+        <fieldset class="card components-container">
+            <legend><?= e(admin_trans('common_components')) ?></legend>
+            <div id="components-container" class="">
+                <!-- Adding is a wide target under the last component, not a drag from
+                     a name-only list: the dialog has room for what a component is for
+                     and what it looks like. It is the container's last child, so the
+                     editor appends above it. -->
+                <button type="button" class="component-add-zone" data-modal="component-picker">
+                    <?= icon('plus', 22, 'component-add-icon') ?>
+                    <span class="component-add-title"><?= e(admin_trans('editor_add_component')) ?></span>
+                    <span class="component-add-help"><?= e(admin_trans('editor_add_component_help')) ?></span>
+                </button>
+            </div>
+        </fieldset>
+    <?php endif; ?>
 
     <!-- Sidebar -->
     <div id="sidebar-container" class="sidebar-container">
@@ -794,12 +846,18 @@ ob_start();
 <script>
 window.availableComponents = <?= json_encode($availableComponents) ?>;
 window.initialComponents   = <?= json_encode($components) ?>;
+<?php /* The single field: which input the editor fills in, and what it holds. */ ?>
+window.richTextField = <?= $richTextEditor === null ? 'null' : json_encode([
+    'component' => $richTextEditor['component'],
+    'name'      => 'components[0][props][' . $richTextEditor['field'] . ']',
+    'value'     => $richTextValue,
+]) ?>;
 window.mediaImages = <?= json_encode($mediaImagesJs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>;
 window.csrfToken = <?= json_encode(csrf_token()) ?>;
 </script>
 
 <?php include CMS_PATH . '/admin/partials/image-picker.php'; ?>
-<?php include CMS_PATH . '/admin/partials/component-picker.php'; ?>
+<?php if ($richTextEditor === null) include CMS_PATH . '/admin/partials/component-picker.php'; ?>
 <?php include CMS_PATH . '/admin/partials/icon-picker.php'; ?>
 <?php include CMS_PATH . '/admin/partials/content-editor-templates.php'; ?>
 <script type="module" src="<?= admin_asset('admin/assets/content-editor.js') ?>"></script>

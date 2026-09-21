@@ -166,6 +166,39 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
         }
     }
 
+    // A content type edited as rich text writes the one component it names, so
+    // that component must exist and carry the quill field the editor renders.
+    // An editor mode nothing recognises would silently fall back, so it is said
+    // here too.
+    foreach ($contentTypes as $type => $config) {
+        if (!is_array($config)) {
+            continue;
+        }
+
+        $mode = (string) ($config['editor'] ?? '');
+
+        if ($mode === '') {
+            continue;
+        }
+
+        if ($mode !== 'components' && $mode !== 'rich-text') {
+            $add('components', 'warn', "{$type}.editor is '{$mode}', which is not an editor mode; the component editor is used instead");
+            continue;
+        }
+
+        if ($mode !== 'rich-text') {
+            continue;
+        }
+
+        $editor = content_rich_text_editor($config + ['available_components' => []]);
+
+        if ($editor === null) {
+            $add('components', 'fail', "{$type}.editor is 'rich-text', but none of its available_components declares a quill field");
+        } elseif (!isset($componentFiles[$editor['component']])) {
+            $add('components', 'fail', "{$type}.editor is 'rich-text', but its component '{$editor['component']}' has no component file");
+        }
+    }
+
     // What the components the palette reaches declare about themselves.
     foreach (array_keys($available) as $name) {
         if (!isset($componentFiles[$name])) {

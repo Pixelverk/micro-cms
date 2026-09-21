@@ -2717,6 +2717,14 @@ button.sidebar-link {
     min-width: 0;
 }
 
+/* A rich-text-only content type's one field takes the same column, without the
+   component list around it. */
+.rich-text-container {
+    flex: 1;
+    border: 1px solid var(--border);
+    min-width: 0;
+}
+
 /* The editor's two columns, with anything full-width under them. */
 .content-editor-form {
     flex-wrap: wrap;
