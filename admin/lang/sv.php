@@ -342,6 +342,8 @@ return [
     'editor_no_parent' => '— Ingen förälder (toppnivå) —',
     'editor_scheduled_publish' => 'Schemalagd publicering',
     'editor_seo_preview' => 'Förhandsvisning',
+    'editor_seo_preview_search_card' => 'Sökförhandsvisning',
+    'editor_seo_preview_social_card' => 'Social förhandsvisning',
     'editor_seo_preview_search' => 'Sökresultat',
     'editor_seo_preview_social' => 'Socialt kort',
     'editor_seo_preview_no_image' => 'Ingen bild',

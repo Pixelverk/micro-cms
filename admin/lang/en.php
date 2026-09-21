@@ -342,6 +342,8 @@ return [
     'editor_no_parent' => '— No parent (top level) —',
     'editor_scheduled_publish' => 'Scheduled Publish',
     'editor_seo_preview' => 'Preview',
+    'editor_seo_preview_search_card' => 'Search preview',
+    'editor_seo_preview_social_card' => 'Social preview',
     'editor_seo_preview_search' => 'Search result',
     'editor_seo_preview_social' => 'Social card',
     'editor_seo_preview_no_image' => 'No image',

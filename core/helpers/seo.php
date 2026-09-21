@@ -423,17 +423,47 @@ function seo_json_ld(array $page): string
 function seo_editable_fields(): array
 {
     return [
-        'seo_title'       => ['type' => 'text',     'label' => 'SEO title',        'max' => 70,  'help' => 'Shown in the browser tab and search results. Falls back to the title.'],
-        'description'     => ['type' => 'textarea', 'label' => 'Meta description', 'max' => 160, 'help' => 'Roughly 160 characters.'],
-        'canonical'       => ['type' => 'text',     'label' => 'Canonical URL',    'help' => 'Only needed when this content duplicates another URL.'],
-        'robots_extra'    => ['type' => 'text',     'label' => 'Robots override',  'help' => 'Leave blank for "index, follow". Example: noindex, follow'],
-        'og_title'        => ['type' => 'text',     'label' => 'Social title',     'max' => 70],
-        'og_description'  => ['type' => 'textarea', 'label' => 'Social description', 'max' => 200],
-        'og_image'        => ['type' => 'media',    'label' => 'Social image',     'help' => 'Used for Open Graph and Twitter cards.'],
-        'author'          => ['type' => 'text',     'label' => 'Author',           'max' => 70, 'help' => 'Shown on the post and in article metadata.'],
-        'twitter_site'    => ['type' => 'text',     'label' => 'Twitter/X handle', 'max' => 30, 'help' => 'Optional, e.g. @example. Falls back to the site handle in Settings.'],
-        'twitter_creator' => ['type' => 'text',     'label' => 'Twitter/X creator', 'max' => 30, 'help' => 'The writer, when that is not the site account. e.g. @example.'],
+        'seo_title'       => ['type' => 'text',     'label' => 'SEO title',        'max' => 70,  'help' => 'Shown in the browser tab and search results. Falls back to the title.', 'group' => 'search'],
+        'description'     => ['type' => 'textarea', 'label' => 'Meta description', 'max' => 160, 'help' => 'Roughly 160 characters.', 'group' => 'search'],
+        'canonical'       => ['type' => 'text',     'label' => 'Canonical URL',    'help' => 'Only needed when this content duplicates another URL.', 'group' => 'search'],
+        'robots_extra'    => ['type' => 'text',     'label' => 'Robots override',  'help' => 'Leave blank for "index, follow". Example: noindex, follow', 'group' => 'search'],
+        'og_title'        => ['type' => 'text',     'label' => 'Social title',     'max' => 70, 'group' => 'social'],
+        'og_description'  => ['type' => 'textarea', 'label' => 'Social description', 'max' => 200, 'group' => 'social'],
+        'og_image'        => ['type' => 'media',    'label' => 'Social image',     'help' => 'Used for Open Graph and Twitter cards.', 'group' => 'social'],
+        'author'          => ['type' => 'text',     'label' => 'Author',           'max' => 70, 'help' => 'Shown on the post and in article metadata.', 'group' => 'social'],
+        'twitter_site'    => ['type' => 'text',     'label' => 'Twitter/X handle', 'max' => 30, 'help' => 'Optional, e.g. @example. Falls back to the site handle in Settings.', 'group' => 'social'],
+        'twitter_creator' => ['type' => 'text',     'label' => 'Twitter/X creator', 'max' => 30, 'help' => 'The writer, when that is not the site account. e.g. @example.', 'group' => 'social'],
     ];
+}
+
+/**
+ * The editor's fields grouped into the cards it shows, in order.
+ *
+ * `group` on a field is which card it belongs to; this is the one place that
+ * decides what those cards are called and how they are ordered. A field with
+ * no group — or one this does not know — joins the last card, so a field in
+ * seo_editable_fields() can never be silently dropped from the form.
+ *
+ * @return list<array{key: string, label: string, fields: array<string, array<string, mixed>>}>
+ */
+function seo_editable_field_groups(): array
+{
+    $grouped = [
+        'search' => ['key' => 'search', 'label' => 'Search', 'fields' => []],
+        'social' => ['key' => 'social', 'label' => 'Social', 'fields' => []],
+    ];
+
+    foreach (seo_editable_fields() as $name => $field) {
+        $group = (string) ($field['group'] ?? '');
+
+        if (!isset($grouped[$group])) {
+            $group = array_key_last($grouped);
+        }
+
+        $grouped[$group]['fields'][$name] = $field;
+    }
+
+    return array_values($grouped);
 }
 
 /**

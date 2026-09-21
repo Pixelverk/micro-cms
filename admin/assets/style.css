@@ -2730,34 +2730,23 @@ button.sidebar-link {
     flex-wrap: wrap;
 }
 
-/* The component list and the details column, side by side. */
+/* The body column and the details column, side by side. Each card keeps its
+   own height: without align-items a short column would stretch to the taller
+   one and leave a blank card under its last field. */
 .editor-columns {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: 1.5rem;
     flex: 1 0 100%;
     min-width: 0;
 }
 
-/* SEO & social is as wide as both columns, below them. */
-.seo-card {
-    flex: 1 0 100%;
-}
-
-/* The fields as a grid, with the preview beside them. */
-.seo-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    gap: 1.5rem;
-    align-items: start;
-}
-
-/* Below this the two columns of the panel are too narrow to read; the preview
-   drops under the fields. */
-@media (max-width: 1100px) {
-    .seo-panel {
-        grid-template-columns: minmax(0, 1fr);
-    }
+/* What the editor is working on — the component list or the one rich text
+   field — with the content type's own fields and images under it. */
+.editor-main {
+    flex: 1;
+    min-width: 0;
 }
 
 .component {
@@ -3694,8 +3683,9 @@ body.sidebar-collapsed .sidebar-icon {
     }
 
     /* The component editor's 350px details column cannot fit beside the
-       component list here; give the column full width. The row itself already
-       wraps (`.content-editor-form`), so the SEO card stays below both. */
+       component list here; give both columns full width. The row itself
+       already wraps (`.content-editor-form`). */
+    .editor-main,
     .sidebar-container {
         flex: 0 0 100%;
         width: 100%;

@@ -466,6 +466,46 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php
+/* What a crawler and a social card will show, resolved from seo_metadata() so
+   an editor sees the fallbacks the form cannot show (site title, site
+   description, default social image). The sidebar renders both previews and
+   admin/assets/content-editor.js keeps them in step as the fields are typed. */
+$previewPage = [
+    'id'           => $contentData['id'] ?? 0,
+    'type'         => $type,
+    'title'        => (string) ($contentData['title'] ?? ''),
+    'status'       => (string) ($contentData['status'] ?? 'draft'),
+    'path'         => trim((string) ($url ?? ''), '/'),
+    'meta'         => $meta,
+    'published_at' => $contentData['published_at'] ?? null,
+    'updated_at'   => $contentData['updated_at'] ?? null,
+];
+
+$seoPreview    = seo_metadata($previewPage);
+$seoPreviewUrl = $seoPreview['canonical'];
+
+// The URL an unsaved item will get: everything before the slug.
+$seoPreviewBase = $isEdit
+    ? substr($url, 0, max(0, strlen($url) - strlen($fullSlug)))
+    : '/' . ($prefix !== '' ? $prefix . '/' : '');
+
+$seoSettings = load_settings();
+
+// Both previews are driven from the same resolved values, so they carry the
+// same data attributes and differ only in what they show.
+$seoPreviewAttrs = 'data-seo-preview'
+    . ' data-url-base="' . e($seoPreviewBase) . '"'
+    . ' data-site-url="' . e(seo_site_url()) . '"'
+    . ' data-site-title="' . e($seoPreview['site_name']) . '"'
+    . ' data-title-suffix="' . e((string) ($seoSettings['seo_title_suffix'] ?? '')) . '"'
+    . ' data-home="' . ((int) ($contentData['id'] ?? 0) > 0 && (int) ($contentData['id'] ?? 0) === (int) ($seoSettings['homepage_id'] ?? 0) ? '1' : '') . '"'
+    . ' data-default-description="' . e($seoPreview['description']) . '"'
+    . ' data-default-image="' . e($seoPreview['og_image']) . '"'
+    . ' data-no-image="' . e(admin_trans('editor_seo_preview_no_image')) . '"'
+    . ' data-canonical="' . e((string) ($meta['canonical'] ?? '')) . '"';
+?>
+
 <form class="flex flex-row content-editor-form gap-lg" id="save" method="post" action="<?= url('admin/content/save') ?>">
     <?= csrf_field() ?>
     <input type="hidden" name="type" value="<?= e($type) ?>">
@@ -473,8 +513,13 @@ ob_start();
         <input type="hidden" name="id" value="<?= (int)$contentData['id'] ?>">
     <?php endif; ?>
 
-    <!-- The two columns, with the SEO card below them. -->
+    <!-- The two columns, with the SEO field cards in the main column and the
+         previews of what they produce in the sidebar. -->
     <div class="editor-columns">
+
+    <!-- What the editor is working on: the body card, the content type's own
+         fields and its images. -->
+    <div class="editor-main">
 
     <!-- The body: one rich-text card, or the component list. -->
     <?php if ($richTextEditor !== null): ?>
@@ -503,6 +548,134 @@ ob_start();
             </div>
         </fieldset>
     <?php endif; ?>
+
+    <!-- Content-type meta fields declared by the theme -->
+    <?php if ($ctMetaFields): ?>
+        <fieldset class="card">
+            <legend><?= e(admin_trans('editor_details')) ?></legend>
+
+            <div class="seo-fields">
+                <?php foreach ($ctMetaFields as $metaFieldKey => $metaField): ?>
+                    <?php
+                    $metaFieldValue = content_meta_field_value($metaField, $meta[$metaFieldKey] ?? '');
+
+                    include CMS_PATH . '/admin/partials/content-meta-field.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+        </fieldset>
+    <?php endif; ?>
+
+    <!-- Presentation images declared by the content type -->
+    <?php $ctImageFields = is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []; ?>
+    <?php if ($ctImageFields): ?>
+        <fieldset class="card">
+            <legend><?= e(admin_trans('editor_images')) ?></legend>
+
+            <div class="seo-fields">
+                <?php foreach ($ctImageFields as $imageKey => $imageField): ?>
+                    <?php
+                    $imageLabel = (string) ($imageField['label'] ?? $imageKey);
+                    $imageValue = $meta[$imageKey] ?? '';
+
+                    if (!empty($imageField['multiple'])) {
+                        $imageValues = array_values(array_filter(
+                            is_array($imageValue) ? $imageValue : [$imageValue],
+                            static fn($item): bool => (string) $item !== ''
+                        ));
+                        $imageInputName = 'meta_' . $imageKey . '[]';
+                    }
+                    ?>
+
+                    <?php if (empty($imageField['multiple'])): ?>
+                        <label class="field" for="meta-<?= e($imageKey) ?>">
+                            <span class="field-label"><?= e($imageLabel) ?></span>
+                            <div class="image-picker-wrapper">
+                                <input class="field-input" type="text" id="meta-<?= e($imageKey) ?>"
+                                    name="meta_<?= e($imageKey) ?>" value="<?= e((string) $imageValue) ?>" data-image-picker>
+                                <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                <div class="image-picker-actions">
+                                    <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                    <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
+                                </div>
+                            </div>
+                        </label>
+                    <?php else: ?>
+                        <div class="field">
+                            <span class="field-label"><?= e($imageLabel) ?></span>
+                            <div class="gallery-rows" id="gallery-<?= e($imageKey) ?>" data-gallery-name="<?= e($imageInputName) ?>">
+                                <!-- Sentinel row: removing every image still submits the field, so it can be cleared. -->
+                                <input type="hidden" name="<?= e($imageInputName) ?>" value="">
+                                <?php foreach ($imageValues as $imageRow): ?>
+                                    <div class="gallery-row">
+                                        <div class="image-picker-wrapper">
+                                            <input class="field-input" type="text"
+                                                name="<?= e($imageInputName) ?>" value="<?= e((string) $imageRow) ?>" data-image-picker>
+                                            <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                            <div class="image-picker-actions">
+                                                <!-- This row's Remove control is the image's clear action. -->
+                                                <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-small btn-muted remove-gallery-image"><?= e(admin_trans('editor_gallery_remove')) ?></button>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button type="button" class="btn btn-small btn-secondary add-gallery-image" data-gallery="gallery-<?= e($imageKey) ?>"><?= e(admin_trans('editor_gallery_add')) ?></button>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        </fieldset>
+    <?php endif; ?>
+
+    <!-- SEO & social fields, in the cards seo_editable_field_groups() names.
+         What they produce is previewed in the sidebar. -->
+    <?php foreach (seo_editable_field_groups() as $seoGroup): ?>
+        <fieldset class="card">
+            <legend><?= e($seoGroup['label']) ?></legend>
+
+            <div class="seo-fields">
+                <?php foreach ($seoGroup['fields'] as $key => $field): ?>
+                    <?php
+                    $fieldValue = (string) ($meta[$key] ?? '');
+                    $inputName  = 'meta_' . $key;
+                    $fieldId    = 'seo-' . $key;
+                    ?>
+                    <label class="field" for="<?= e($fieldId) ?>">
+                        <span class="field-label"><?= e($field['label']) ?></span>
+
+                        <?php if (($field['type'] ?? 'text') === 'textarea'): ?>
+                            <textarea class="field-input" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                rows="2" <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>
+                            ><?= e($fieldValue) ?></textarea>
+                        <?php elseif (($field['type'] ?? 'text') === 'media'): ?>
+                            <div class="image-picker-wrapper">
+                                <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                    value="<?= e($fieldValue) ?>" data-image-picker>
+                                <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
+                                <div class="image-picker-actions">
+                                    <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
+                                    <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
+                                value="<?= e($fieldValue) ?>"
+                                <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>>
+                        <?php endif; ?>
+
+                        <?php if (!empty($field['help'])): ?>
+                            <small><?= e($field['help']) ?></small>
+                        <?php endif; ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+        </fieldset>
+    <?php endforeach; ?>
+
+    </div>
+    <!-- /editor-main -->
 
     <!-- Sidebar -->
     <div id="sidebar-container" class="sidebar-container">
@@ -638,86 +811,6 @@ ob_start();
             </label>
         </fieldset>
 
-        <!-- Content-type meta fields declared by the theme -->
-        <?php if ($ctMetaFields): ?>
-            <fieldset class="card">
-                <legend><?= e(admin_trans('editor_details')) ?></legend>
-
-                <div class="seo-fields">
-                    <?php foreach ($ctMetaFields as $metaFieldKey => $metaField): ?>
-                        <?php
-                        $metaFieldValue = content_meta_field_value($metaField, $meta[$metaFieldKey] ?? '');
-
-                        include CMS_PATH . '/admin/partials/content-meta-field.php';
-                        ?>
-                    <?php endforeach; ?>
-                </div>
-            </fieldset>
-        <?php endif; ?>
-
-        <!-- Presentation images declared by the content type -->
-        <?php $ctImageFields = is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []; ?>
-        <?php if ($ctImageFields): ?>
-            <fieldset class="card">
-                <legend><?= e(admin_trans('editor_images')) ?></legend>
-
-                <div class="seo-fields">
-                    <?php foreach ($ctImageFields as $imageKey => $imageField): ?>
-                        <?php
-                        $imageLabel = (string) ($imageField['label'] ?? $imageKey);
-                        $imageValue = $meta[$imageKey] ?? '';
-
-                        if (!empty($imageField['multiple'])) {
-                            $imageValues = array_values(array_filter(
-                                is_array($imageValue) ? $imageValue : [$imageValue],
-                                static fn($item): bool => (string) $item !== ''
-                            ));
-                            $imageInputName = 'meta_' . $imageKey . '[]';
-                        }
-                        ?>
-
-                        <?php if (empty($imageField['multiple'])): ?>
-                            <label class="field" for="meta-<?= e($imageKey) ?>">
-                                <span class="field-label"><?= e($imageLabel) ?></span>
-                                <div class="image-picker-wrapper">
-                                    <input class="field-input" type="text" id="meta-<?= e($imageKey) ?>"
-                                        name="meta_<?= e($imageKey) ?>" value="<?= e((string) $imageValue) ?>" data-image-picker>
-                                    <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
-                                    <div class="image-picker-actions">
-                                        <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
-                                        <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
-                                    </div>
-                                </div>
-                            </label>
-                        <?php else: ?>
-                            <div class="field">
-                                <span class="field-label"><?= e($imageLabel) ?></span>
-                                <div class="gallery-rows" id="gallery-<?= e($imageKey) ?>" data-gallery-name="<?= e($imageInputName) ?>">
-                                    <!-- Sentinel row: removing every image still submits the field, so it can be cleared. -->
-                                    <input type="hidden" name="<?= e($imageInputName) ?>" value="">
-                                    <?php foreach ($imageValues as $imageRow): ?>
-                                        <div class="gallery-row">
-                                            <div class="image-picker-wrapper">
-                                                <input class="field-input" type="text"
-                                                    name="<?= e($imageInputName) ?>" value="<?= e((string) $imageRow) ?>" data-image-picker>
-                                                <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
-                                                <div class="image-picker-actions">
-                                                    <!-- This row's Remove control is the image's clear action. -->
-                                                    <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
-                                                </div>
-                                            </div>
-                                            <button type="button" class="btn btn-small btn-muted remove-gallery-image"><?= e(admin_trans('editor_gallery_remove')) ?></button>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <button type="button" class="btn btn-small btn-secondary add-gallery-image" data-gallery="gallery-<?= e($imageKey) ?>"><?= e(admin_trans('editor_gallery_add')) ?></button>
-                            </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-            </fieldset>
-        <?php endif; ?>
-
         <?php if ($publishChecklist): ?>
             <!-- Pre-publish checklist -->
             <fieldset class="card">
@@ -742,125 +835,46 @@ ob_start();
             </fieldset>
         <?php endif; ?>
 
-    </div>
-    <!-- /editor-columns -->
+        <!-- What the SEO fields produce, beside the editor rather than in it. -->
+        <fieldset class="card">
+            <legend><?= e(admin_trans('editor_seo_preview_search_card')) ?></legend>
 
-    <!-- SEO & social. Full width under both columns: the fields read as a grid
-         rather than one long column, and the preview sits beside them. -->
-    <fieldset class="card seo-card">
-        <legend><?= e(admin_trans('editor_seo')) ?></legend>
-
-        <?php
-        /* What a crawler and a social card will show. The values come
-           from seo_metadata(), so an editor sees the fallbacks the form
-           cannot show (site title, site description, default social
-           image); the script at the foot of the page keeps the parts
-           that follow the fields in step as they are typed. */
-        $previewPage = [
-            'id'           => $contentData['id'] ?? 0,
-            'type'         => $type,
-            'title'        => (string) ($contentData['title'] ?? ''),
-            'status'       => (string) ($contentData['status'] ?? 'draft'),
-            'path'         => trim((string) ($url ?? ''), '/'),
-            'meta'         => $meta,
-            'published_at' => $contentData['published_at'] ?? null,
-            'updated_at'   => $contentData['updated_at'] ?? null,
-        ];
-
-        $seoPreview   = seo_metadata($previewPage);
-        $seoPreviewUrl = $seoPreview['canonical'];
-
-        // The URL an unsaved item will get: everything before the slug.
-        $seoPreviewBase = $isEdit
-            ? substr($url, 0, max(0, strlen($url) - strlen($fullSlug)))
-            : '/' . ($prefix !== '' ? $prefix . '/' : '');
-
-        $seoSettings = load_settings();
-        ?>
-        <div class="seo-panel">
-            <div class="seo-fields">
-                <?php foreach (seo_editable_fields() as $key => $field): ?>
-                    <?php
-                    $fieldValue = (string) ($meta[$key] ?? '');
-                    $inputName  = 'meta_' . $key;
-                    $fieldId    = 'seo-' . $key;
-                    ?>
-                    <label class="field" for="<?= e($fieldId) ?>">
-                        <span class="field-label"><?= e($field['label']) ?></span>
-
-                        <?php if (($field['type'] ?? 'text') === 'textarea'): ?>
-                            <textarea class="field-input" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
-                                rows="2" <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>
-                            ><?= e($fieldValue) ?></textarea>
-                        <?php elseif (($field['type'] ?? 'text') === 'media'): ?>
-                            <div class="image-picker-wrapper">
-                                <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
-                                    value="<?= e($fieldValue) ?>" data-image-picker>
-                                <img class="image-preview" alt="<?= e(admin_trans('media_no_image')) ?>">
-                                <div class="image-picker-actions">
-                                    <button type="button" class="select-image-btn"><?= e(admin_trans('media_select_image')) ?></button>
-                                    <button type="button" class="clear-image-btn"><?= e(admin_trans('common_clear')) ?></button>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <input class="field-input" type="text" id="<?= e($fieldId) ?>" name="<?= e($inputName) ?>"
-                                value="<?= e($fieldValue) ?>"
-                                <?= !empty($field['max']) ? 'maxlength="' . (int) $field['max'] . '"' : '' ?>>
-                        <?php endif; ?>
-
-                        <?php if (!empty($field['help'])): ?>
-                            <small><?= e($field['help']) ?></small>
-                        <?php endif; ?>
-                    </label>
-                <?php endforeach; ?>
+            <div class="seo-preview" <?= $seoPreviewAttrs ?>>
+                <div class="seo-snippet">
+                    <span class="seo-snippet-url" data-preview-url><?= e((string) preg_replace('#^https?://#', '', $seoPreviewUrl)) ?></span>
+                    <span class="seo-snippet-title" data-preview-title><?= e($seoPreview['title']) ?></span>
+                    <span class="seo-snippet-text" data-preview-description><?= e($seoPreview['description']) ?></span>
+                </div>
             </div>
+        </fieldset>
 
-            <div class="seo-preview" data-seo-preview
-                 data-url-base="<?= e($seoPreviewBase) ?>"
-                 data-site-url="<?= e(seo_site_url()) ?>"
-                 data-site-title="<?= e($seoPreview['site_name']) ?>"
-                 data-title-suffix="<?= e((string) ($seoSettings['seo_title_suffix'] ?? '')) ?>"
-                 data-home="<?= (int) ($contentData['id'] ?? 0) > 0 && (int) ($contentData['id'] ?? 0) === (int) ($seoSettings['homepage_id'] ?? 0) ? '1' : '' ?>"
-                 data-default-description="<?= e($seoPreview['description']) ?>"
-                 data-default-image="<?= e($seoPreview['og_image']) ?>"
-                 data-no-image="<?= e(admin_trans('editor_seo_preview_no_image')) ?>"
-                 data-canonical="<?= e((string) ($meta['canonical'] ?? '')) ?>">
-                <p class="seo-preview-heading"><?= e(admin_trans('editor_seo_preview')) ?></p>
+        <fieldset class="card">
+            <legend><?= e(admin_trans('editor_seo_preview_social_card')) ?></legend>
 
-                <div class="seo-preview-grid">
-                    <div>
-                        <span class="seo-preview-label"><?= e(admin_trans('editor_seo_preview_search')) ?></span>
-
-                        <div class="seo-snippet">
-                            <span class="seo-snippet-url" data-preview-url><?= e((string) preg_replace('#^https?://#', '', $seoPreviewUrl)) ?></span>
-                            <span class="seo-snippet-title" data-preview-title><?= e($seoPreview['title']) ?></span>
-                            <span class="seo-snippet-text" data-preview-description><?= e($seoPreview['description']) ?></span>
-                        </div>
+            <div class="seo-preview" <?= $seoPreviewAttrs ?>>
+                <div class="seo-card">
+                    <div class="seo-card-image" data-preview-image>
+                        <?php if ($seoPreview['og_image'] !== ''): ?>
+                            <img src="<?= e($seoPreview['og_image']) ?>" alt="">
+                        <?php else: ?>
+                            <span class="seo-card-image-empty"><?= e(admin_trans('editor_seo_preview_no_image')) ?></span>
+                        <?php endif; ?>
                     </div>
 
-                    <div>
-                        <span class="seo-preview-label"><?= e(admin_trans('editor_seo_preview_social')) ?></span>
-
-                        <div class="seo-card">
-                            <div class="seo-card-image" data-preview-image>
-                                <?php if ($seoPreview['og_image'] !== ''): ?>
-                                    <img src="<?= e($seoPreview['og_image']) ?>" alt="">
-                                <?php else: ?>
-                                    <span class="seo-card-image-empty"><?= e(admin_trans('editor_seo_preview_no_image')) ?></span>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="seo-card-body">
-                                <span class="seo-card-domain" data-preview-domain><?= e((string) parse_url($seoPreviewUrl, PHP_URL_HOST)) ?></span>
-                                <span class="seo-card-title" data-preview-card-title><?= e($seoPreview['og_title']) ?></span>
-                                <span class="seo-card-text" data-preview-card-description><?= e($seoPreview['og_description']) ?></span>
-                            </div>
-                        </div>
+                    <div class="seo-card-body">
+                        <span class="seo-card-domain" data-preview-domain><?= e((string) parse_url($seoPreviewUrl, PHP_URL_HOST)) ?></span>
+                        <span class="seo-card-title" data-preview-card-title><?= e($seoPreview['og_title']) ?></span>
+                        <span class="seo-card-text" data-preview-card-description><?= e($seoPreview['og_description']) ?></span>
                     </div>
                 </div>
             </div>
+        </fieldset>
+
         </div>
-    </fieldset>
+        <!-- /sidebar-container -->
+
+    </div>
+    <!-- /editor-columns -->
 
 </form>
 

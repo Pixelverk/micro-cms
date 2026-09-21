@@ -323,6 +323,23 @@ t('seo_collect_meta() trims, caps and clears fields', function () {
     assert_eq('https://example.com/about', $meta['canonical']);
 });
 
+t('the SEO fields are grouped into the cards the editor shows', function () {
+    $groups = seo_editable_field_groups();
+
+    assert_eq(['search', 'social'], array_column($groups, 'key'), 'search comes first, then social');
+    assert_eq('Search', $groups[0]['label']);
+    assert_eq('Social', $groups[1]['label']);
+
+    assert_eq(['seo_title', 'description', 'canonical', 'robots_extra'], array_keys($groups[0]['fields']));
+    assert_eq(['og_title', 'og_description', 'og_image', 'author', 'twitter_site', 'twitter_creator'], array_keys($groups[1]['fields']));
+
+    // Every editable field reaches exactly one card, so a new field cannot be
+    // left out of the form.
+    $grouped = array_merge(...array_column($groups, 'fields'));
+
+    assert_eq(array_keys(seo_editable_fields()), array_keys($grouped), 'the cards hold every editable field, in order');
+});
+
 t('the sitemap lists published content on the configured origin', function () {
     set_setting('site_url', 'https://example.com');
     settings_cache_clear();

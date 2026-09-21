@@ -282,33 +282,89 @@ t('the menu editor only queries a row\'s own controls', function () {
     }
 });
 
-t('the content editor puts SEO & social under both columns', function () {
+t('the content editor keeps the sidebar beside the main column', function () {
     $editor = (string) file_get_contents(CMS_PATH . '/admin/content/edit.php');
 
     $columns = strpos($editor, 'class="editor-columns"');
+    $main    = strpos($editor, '<div class="editor-main">');
+    $mainEnd = strpos($editor, '<!-- /editor-main -->');
     $sidebar = strpos($editor, 'id="sidebar-container"');
-    $seo     = strpos($editor, 'class="card seo-card"');
     $formEnd = strrpos($editor, '</form>');
 
-    assert_true($columns !== false && $sidebar !== false && $seo !== false && $formEnd !== false, 'the editor has the columns and both cards');
-    assert_true($columns < $sidebar && $sidebar < $seo && $seo < $formEnd, 'the sidebar is inside the columns, and SEO & social is after them inside the form');
-    assert_contains('<div class="seo-panel">', $editor, 'the fields and the preview are one panel');
+    assert_true(
+        $columns !== false && $main !== false && $mainEnd !== false && $sidebar !== false && $formEnd !== false,
+        'the editor has the columns, the main column and the sidebar'
+    );
+    assert_true(
+        $columns < $main && $main < $mainEnd && $mainEnd < $sidebar && $sidebar < $formEnd,
+        'the main column comes first, then the sidebar, all inside the form'
+    );
 
-    // The fields are always on screen, and the card is the last thing a reader
-    // reaches: no disclosure control anywhere in the editor.
-    assert_not_contains('<details', $editor, 'the SEO card does not collapse');
+    // The content type's own areas are all in the main column, in that order:
+    // what is written, then details, images, and the SEO field cards.
+    $body     = strpos($editor, 'class="card rich-text-container"');
+    $details  = strpos($editor, 'editor_details');
+    $images   = strpos($editor, 'editor_images');
+    $seoField = strpos($editor, 'seo_editable_field_groups()');
 
-    // The fields are a grid, and the card takes the row the columns leave.
+    foreach (['body' => $body, 'details' => $details, 'images' => $images, 'seo' => $seoField] as $name => $position) {
+        assert_true($position !== false && $position > $main && $position < $mainEnd, "{$name} is inside the main column");
+    }
+
+    assert_true($body < $details && $details < $images && $images < $seoField, 'they run body, details, images, SEO');
+
+    // The SEO fields are one card per group; what they produce is previewed in
+    // the sidebar, underneath the checklist.
+    assert_contains('<?php foreach (seo_editable_field_groups() as $seoGroup): ?>', $editor, 'the SEO fields render one card per declared group');
+
+    $searchPreview = strpos($editor, "editor_seo_preview_search_card");
+    $socialPreview = strpos($editor, "editor_seo_preview_social_card");
+
+    foreach (['search preview' => $searchPreview, 'social preview' => $socialPreview] as $name => $position) {
+        assert_true($position !== false && $position > $sidebar && $position < $formEnd, "{$name} is in the sidebar");
+    }
+
+    assert_true($seoField < $searchPreview, 'the previews come after the fields they belong to');
+    assert_contains('data-preview-title', $editor, 'the search preview is the snippet');
+    assert_contains('data-preview-card-title', $editor, 'the social preview is the social card');
+
+    // The fields are always on screen, and the cards are the last thing a
+    // reader reaches: no disclosure control anywhere in the editor.
+    assert_not_contains('<details', $editor, 'the SEO cards do not collapse');
+
     $css = (string) file_get_contents(CMS_PATH . '/admin/assets/style.css');
 
-    assert_contains('.seo-card', $css);
+    // Each column keeps its own height: stretching a short one to the taller
+    // one is what left a blank card under its last field.
     assert_contains('.editor-columns', $css);
-    assert_contains('flex-wrap: wrap', $css, 'the editor row wraps so the card can sit below it');
+    assert_contains('align-items: flex-start', $css, 'cards do not stretch to the taller column');
+    assert_contains('.editor-main', $css, 'the main column has its own rule');
     assert_contains('grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))', $css, 'the SEO fields read as a grid');
 
     // The details column scrolls with the page; only it carries that class.
     $sidebarRule = substr($css, (int) strpos($css, '.sidebar-container'), 220);
     assert_not_contains('position: sticky', $sidebarRule, 'the content editor column does not stick');
+});
+
+t('the editor is properly nested markup', function () {
+    $form = (string) file_get_contents(CMS_PATH . '/admin/content/edit.php');
+    $form = substr($form, (int) strpos($form, 'content-editor-form'));
+
+    // The columns close before the form does. This is the one the browser hid:
+    // `</form>` implicitly closes an open element, so a missing `</div>` never
+    // showed up as a broken page.
+    $columnsEnd = strpos($form, '<!-- /editor-columns -->');
+    $formEnd    = strpos($form, '</form>');
+
+    assert_true($columnsEnd !== false && $formEnd !== false && $columnsEnd < $formEnd, 'the columns close inside the form');
+    assert_contains("    </div>\n    <!-- /editor-columns -->", $form, 'the columns div itself is closed');
+
+    // Every container the editor opens is closed by the time the form ends.
+    $open  = preg_match_all('/<div[\s>]/', $form);
+    $close = substr_count($form, '</div>');
+
+    assert_eq($open, $close, 'every <div> in the editor is closed');
+    assert_eq(substr_count($form, '<fieldset'), substr_count($form, '</fieldset>'), 'every <fieldset> is closed');
 });
 
 t('the icon field offers the theme\'s icons as a browser', function () {
