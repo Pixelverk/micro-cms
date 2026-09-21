@@ -303,6 +303,10 @@ return [
     'content_error_tags' => 'One or more selected tags no longer exist.',
     'content_error_canonical' => 'The canonical URL must be an absolute address on this site.',
     'content_error_robots' => 'Robots override should look like "noindex, follow".',
+    'content_error_meta_url' => ':label must be an absolute http:// or https:// address.',
+    'content_error_meta_email' => ':label must be a valid email address.',
+    'content_error_meta_number' => ':label must be a number.',
+    'content_error_meta_select' => ':label is not one of the offered choices.',
     // Statuses
     'status_draft' => 'Draft',
     'status_scheduled' => 'Scheduled',
@@ -331,6 +335,7 @@ return [
     'editor_autosave_discard_confirm' => 'Discard this autosaved draft? It cannot be restored afterwards.',
     'editor_autosave_dismissed' => 'Autosaved draft discarded.',
     'editor_info' => 'Info',
+    'editor_details' => 'Details',
     'editor_meta_description' => 'Meta Description',
     'editor_hold_ctrl' => 'Hold Ctrl/Cmd to select multiple',
     'editor_parent' => 'Parent',

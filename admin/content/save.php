@@ -211,6 +211,18 @@ $contentData['meta'] = content_collect_images(
     is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []
 );
 
+// Meta fields the content type declares (a project URL, an excerpt, …).
+$ctMetaFields = content_meta_fields($ctConfig);
+$contentData['meta'] = content_collect_meta_fields($_POST, $contentData['meta'], $ctMetaFields);
+
+foreach ($ctMetaFields as $metaFieldKey => $metaField) {
+    $metaFieldError = content_meta_field_error($metaField, $contentData['meta'][$metaFieldKey] ?? '');
+
+    if ($metaFieldError !== '') {
+        $errors['meta_' . $metaFieldKey] = $metaFieldError;
+    }
+}
+
 $canonical = (string) ($contentData['meta']['canonical'] ?? '');
 if ($canonical !== '' && !seo_validate_canonical($canonical)) {
     $errors['meta_canonical'] = admin_trans('content_error_canonical');

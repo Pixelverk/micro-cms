@@ -518,7 +518,7 @@
                     ":placeholder",
                     ":placeholder"
                 ],
-                "project_url": "#"
+                "project_url": "https://example.com/project-one"
             },
             "body": [
                 {
@@ -549,7 +549,7 @@
                     ":placeholder",
                     ":placeholder"
                 ],
-                "project_url": "#"
+                "project_url": "https://example.com/project-two"
             },
             "body": [
                 {

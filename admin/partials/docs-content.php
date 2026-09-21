@@ -143,6 +143,9 @@ function docs_content(): array
                     ['p' => "A content type can also declare the images an editor may set. Each key becomes a field in the editor's Images panel and is stored in the item's meta array, so a layout reads it back as \$page['meta'][key]:"],
                     ['code' => "'images' => [\n    'thumbnail' => ['label' => 'Featured image'],\n    'gallery'   => ['label' => 'Gallery', 'multiple' => true],\n],"],
                     ['p' => "A value is a media id or an absolute URL. Render it with render_image(), which turns a media id into a responsive picture() and anything else into a plain img."],
+                    ['p' => "Other meta keys the layout reads are declared under fields, and appear in the editor's Details card. A field uses the same vocabulary as a component schema: text, textarea, url, email, number, checkbox, select (with options) and media (one media-library image). url, email, number and select values are checked on save."],
+                    ['code' => "'fields' => [\n    'project_url' => ['type' => 'url', 'label' => 'Project link', 'help' => 'Where \"View project\" points.'],\n    'excerpt'     => ['type' => 'textarea', 'label' => 'Excerpt', 'max' => 200],\n],"],
+                    ['p' => "Both land in the item's meta array, so a layout reads them the same way: \$page['meta']['project_url']."],
                     ['p' => "defaults is the last fallback for a page's layout, header and footer: the page's own value wins, then the content type, then the settings, then this. Everything the manifest names — layouts, headers, footers, components, child names, styles, scripts, icons and form fields — is checked on the Health page, which reports anything that does not resolve."],
                 ],
                 'Writing a component' => [

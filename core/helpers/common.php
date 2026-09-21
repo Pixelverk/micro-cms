@@ -703,10 +703,15 @@ function media_usage_map(): array
         $body = json_decode((string) $row['body'], true);
         $body = is_array($body) ? $body : [];
 
-        // The meta keys a content type stores an image in: the ones it declares
-        // for the editor, plus the older ones a layout reads directly.
+        // The meta keys a content type stores an image in: the images it
+        // declares for the editor, the media fields among its other meta
+        // fields, plus the older keys a layout reads directly.
         $imageMetaKeys = array_unique(array_merge(
             array_keys($contentTypes[$type]['images'] ?? []),
+            array_keys(array_filter(
+                content_meta_fields($contentTypes[$type] ?? []),
+                static fn(array $field): bool => ($field['type'] ?? '') === 'media'
+            )),
             ['thumbnail', 'image', 'author_image', 'gallery', 'og_image']
         ));
 

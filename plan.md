@@ -69,8 +69,9 @@ and tidy-ups, media fallbacks without theme placeholder files, component
 previews with the Add component dialog, and the whole-site backup download.
 
 **Shipped:** rich-text-only content types — a content type can declare
-`'editor' => 'rich-text'` and be edited as one rich text field. See below for
-what it built. What is left is in the Backlog, which is unscheduled: confirm an
+`'editor' => 'rich-text'` and be edited as one rich text field; and content-type
+meta fields — a content type can declare its own meta keys under `'fields'`.
+See both below. What is left is in the Backlog, which is unscheduled: confirm an
 item before starting it.
 
 ---
@@ -205,6 +206,108 @@ both the normal save and a field-only request.
 * No new editor mode beyond `components` and `rich-text`.
 * No change to the component editor, the body shape, or how the front end
   renders a rich-text component.
+
+---
+
+## Content-type meta fields
+
+**Status:** shipped.
+
+### Why
+
+`theme/layouts/portfolio.php` reads `$meta['project_url']` for its "View
+project" link, but nothing declared it, so the editor had no field for it. The
+same held for `excerpt` (read by the blog archive, taxonomy pages and the blog
+sections) and `author_role` (read by the blog layout): meta keys the theme can
+read but cannot ask an editor to fill in. Only two things could reach meta
+before this — the `images` declaration and the core-owned SEO panel — and
+everything else a theme needed was unreachable.
+
+### How it works
+
+**The declaration.** A content type adds `fields`, its own meta keys:
+
+```php
+'fields' => [
+    'project_url' => ['type' => 'url', 'label' => 'Project link', 'help' => 'Where "View project" points.'],
+],
+```
+
+It uses the same vocabulary as a component schema, so a theme author learns one
+set of names: `text`, `textarea`, `url`, `email`, `number`, `checkbox`, `select`
+(with `options`) and `media` (one media-library image). A field takes `label`,
+`help`, `max`, `default` and `required` where they mean something. An entry with
+no `type` is text, and no `label` falls back to the key.
+
+**`images` stays separate.** The user asked for it: the two are different cards
+in the editor (Images, and Details for `fields`), and the existing image
+mechanism with its galleries is untouched. `content_meta_fields()` reads only
+`fields`.
+
+**Where things happen.**
+
+* `core/helpers/content.php` — `content_meta_fields()` normalises the
+  declaration, `content_meta_field_value()` picks the value the form shows, and
+  `content_collect_meta_fields()` shapes what was posted (trimmed, capped at
+  `max`, blank clears the key, a checkbox is true/false, an unposted field is
+  left alone so partial saves keep it).
+* `content_meta_field_error()` in the same file is the type rule the save handler
+  runs: an absolute `http(s)` URL, an email, a number, or one of a select's
+  options. Text, textarea, media and checkbox are not judged.
+* `admin/partials/content-meta-field.php` renders one field — the same markup
+  patterns the SEO panel and the image picker already use, so the media picker
+  in `content-editor.js` picks a `media` field up with no new JavaScript.
+* `admin/content/edit.php` renders a Details card in the sidebar, after Layout
+  and before Images.
+* `admin/content/save.php` collects the fields and adds each type failure to the
+  error list, so an invalid value is refused before anything is written.
+* `core/helpers/common.php` counts a `media` field among the keys
+  `media_usage_map()` scans, so an image held in one is not "unused".
+* Validation messages are `content_error_meta_url`, `..._email`, `..._number`
+  and `..._select` in both language files. `content_broken_links()` already
+  treats any `*_url` meta key as a link, so a dead project link is reported with
+  no further work.
+
+### The shipped theme
+
+* `portfolio_item` declares `project_url` as a `url` field. Because a `url` field
+  has to be absolute, the demo's placeholder value `"#"` was changed to
+  `https://example.com/project-one` and `.../project-two` in
+  `theme/demo/content.json`; a fresh install seeds those.
+* `blog_post` declares `excerpt` (textarea, 200) and `author_role` (text, 70),
+  closing the same gap for the blog archive, taxonomy pages and blog sections.
+* Note for an existing install: content seeded before this change still holds
+  `"#"` for a project link, which the field now rejects. Editing the value is a
+  one-field fix; nothing migrates it.
+
+### Health and docs
+
+* A new **Theme meta fields** group in the report fails on an unknown field type
+  or a `select` with no options — a typo would otherwise silently render a text
+  input.
+* The developer guide documents `fields` beside `images`.
+
+### Verification
+
+* `php tests/run.php` passes. `tests/content.test.php` covers normalising a
+  declaration, the value fallback, collecting (trim, cap, clear, checkbox,
+  unposted) and each type rule. `tests/http.test.php` covers the editor card and
+  the save path: a `#` value is refused and leaves the stored URL alone, a valid
+  one is saved and rendered by the layout. `tests/health.test.php` expects the
+  new group.
+* Manual check through the local server: the portfolio editor shows the Details
+  card with a `type="url"` input holding the saved value, the Images card is
+  unchanged, and the published page renders the link.
+
+### Non-goals
+
+* Folding `images` into `fields` (the user chose to keep them separate).
+* Repeatable `media` fields: a gallery stays the `images` mechanism, and
+  `content_meta_fields()` ignores `multiple`.
+* Per-field required-field blocking in the publish checklist, and per-type form
+  error rendering beside a field: a failed field reports through the existing
+  save-error path.
+* Loosening `validate_url()` for relative, `mailto:` or `tel:` links.
 
 ---
 

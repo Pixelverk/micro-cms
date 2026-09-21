@@ -121,6 +121,21 @@ return [
             'images' => [
                 'thumbnail' => ['label' => 'Featured image'],
             ],
+            // Meta keys the layout reads, edited in the editor's Details card.
+            'fields' => [
+                'excerpt' => [
+                    'type'  => 'textarea',
+                    'label' => 'Excerpt',
+                    'max'   => 200,
+                    'help'  => 'The summary the blog listings and search show.',
+                ],
+                'author_role' => [
+                    'type'  => 'text',
+                    'label' => 'Author role',
+                    'max'   => 70,
+                    'help'  => 'Shown under the author name, e.g. "Content editor".',
+                ],
+            ],
         ],
         'portfolio_item' => [
             'label' => 'Portfolio Item',
@@ -135,6 +150,15 @@ return [
             'images' => [
                 'thumbnail' => ['label' => 'Featured image'],
                 'gallery'   => ['label' => 'Gallery', 'multiple' => true],
+            ],
+            // The layout's "View project" link. A url field is checked on save:
+            // it has to be an absolute http:// or https:// address.
+            'fields' => [
+                'project_url' => [
+                    'type'  => 'url',
+                    'label' => 'Project link',
+                    'help'  => 'Where "View project" points. Leave blank to hide it.',
+                ],
             ],
         ],
     ],

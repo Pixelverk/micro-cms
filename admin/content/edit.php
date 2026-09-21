@@ -126,6 +126,10 @@ $components      = $contentData['body'] ?? [];
 // SEO panel: keep the existing meta array.
 $meta = is_array($contentData['meta'] ?? null) ? $contentData['meta'] : [];
 
+// Meta fields the content type declares (a project URL, an excerpt, …). The
+// theme's own keys, stored beside the SEO ones in the same meta array.
+$ctMetaFields = content_meta_fields($ctConfig);
+
 $scheduledDate = '';
 if (!empty($contentData['scheduled_at'])) {
     $dt = new DateTime(
@@ -633,6 +637,23 @@ ob_start();
                 </select>
             </label>
         </fieldset>
+
+        <!-- Content-type meta fields declared by the theme -->
+        <?php if ($ctMetaFields): ?>
+            <fieldset class="card">
+                <legend><?= e(admin_trans('editor_details')) ?></legend>
+
+                <div class="seo-fields">
+                    <?php foreach ($ctMetaFields as $metaFieldKey => $metaField): ?>
+                        <?php
+                        $metaFieldValue = content_meta_field_value($metaField, $meta[$metaFieldKey] ?? '');
+
+                        include CMS_PATH . '/admin/partials/content-meta-field.php';
+                        ?>
+                    <?php endforeach; ?>
+                </div>
+            </fieldset>
+        <?php endif; ?>
 
         <!-- Presentation images declared by the content type -->
         <?php $ctImageFields = is_array($ctConfig['images'] ?? null) ? $ctConfig['images'] : []; ?>

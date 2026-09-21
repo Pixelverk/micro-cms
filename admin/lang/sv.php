@@ -303,6 +303,10 @@ return [
     'content_error_tags' => 'En eller flera valda etiketter finns inte längre.',
     'content_error_canonical' => 'Den kanoniska URL:en måste vara en absolut adress på denna webbplats.',
     'content_error_robots' => 'Robots-överstyrningen ska se ut som "noindex, follow".',
+    'content_error_meta_url' => ':label måste vara en absolut adress som börjar med http:// eller https://.',
+    'content_error_meta_email' => ':label måste vara en giltig e-postadress.',
+    'content_error_meta_number' => ':label måste vara ett nummer.',
+    'content_error_meta_select' => ':label är inte något av de erbjudna valen.',
     // Statuses
     'status_draft' => 'Utkast',
     'status_scheduled' => 'Schemalagd',
@@ -331,6 +335,7 @@ return [
     'editor_autosave_discard_confirm' => 'Släng detta autosparade utkast? Det kan inte återställas efteråt.',
     'editor_autosave_dismissed' => 'Det autosparade utkastet slängdes.',
     'editor_info' => 'Information',
+    'editor_details' => 'Detaljer',
     'editor_meta_description' => 'Metabeskrivning',
     'editor_hold_ctrl' => 'Håll Ctrl/Cmd för att välja flera',
     'editor_parent' => 'Förälder',

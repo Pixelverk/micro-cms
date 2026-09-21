@@ -269,6 +269,96 @@ t('the body of a rich-text content type is exactly its one component', function 
 });
 
 // ---------------------------------------------------------------------------
+// Content-type meta fields
+// ---------------------------------------------------------------------------
+
+t('a declared meta field gets a type and a label', function () {
+    $fields = content_meta_fields([
+        'fields' => [
+            'project_url' => ['type' => 'url', 'label' => 'Project link'],
+            'subtitle'    => [],
+            'author_role' => ['label' => 'Author role'],
+        ],
+    ]);
+
+    assert_eq('url', $fields['project_url']['type']);
+    assert_eq('Project link', $fields['project_url']['label']);
+
+    // An entry with no type is text, and an unlabelled key becomes its name.
+    assert_eq('text', $fields['subtitle']['type']);
+    assert_eq('Subtitle', $fields['subtitle']['label']);
+    assert_eq('Author role', $fields['author_role']['label']);
+
+    assert_eq([], content_meta_fields([]), 'a content type that declares none has none');
+});
+
+t('the meta field value falls back to the default', function () {
+    $field = ['type' => 'text', 'default' => 'Fallback'];
+
+    assert_eq('Typed', content_meta_field_value($field, 'Typed'));
+    assert_eq('Fallback', content_meta_field_value($field, ''));
+    assert_eq('Fallback', content_meta_field_value($field, null));
+    assert_eq('', content_meta_field_value($field, ['not', 'scalar']));
+});
+
+t('collecting meta fields trims, caps and clears them', function () {
+    $fields = content_meta_fields([
+        'fields' => [
+            'project_url' => ['type' => 'url'],
+            'excerpt'     => ['type' => 'textarea', 'max' => 5],
+            'featured'    => ['type' => 'checkbox'],
+        ],
+    ]);
+
+    $meta = content_collect_meta_fields(
+        ['meta_project_url' => '  https://example.com/x  ', 'meta_excerpt' => '123456789', 'meta_featured' => '1'],
+        [],
+        $fields
+    );
+
+    assert_eq('https://example.com/x', $meta['project_url'], 'trimmed');
+    assert_eq('12345', $meta['excerpt'], 'capped at max');
+    assert_eq(true, $meta['featured'], 'a checked box is true');
+
+    // A blank value clears the key rather than storing an empty string.
+    $cleared = content_collect_meta_fields(['meta_project_url' => '   '], ['project_url' => 'old'], $fields);
+    assert_true(!array_key_exists('project_url', $cleared), 'a blank field unsets the key');
+
+    // An unchecked checkbox submits an empty value.
+    $unchecked = content_collect_meta_fields(['meta_featured' => ''], ['featured' => true], $fields);
+    assert_eq(false, $unchecked['featured'], 'an unchecked box is false');
+
+    // A field the form did not submit is left alone, so partial saves keep it.
+    $untouched = content_collect_meta_fields([], ['project_url' => 'kept'], $fields);
+    assert_eq('kept', $untouched['project_url']);
+});
+
+t('a declared meta field is checked by its type', function () {
+    $url = ['type' => 'url', 'label' => 'Project link'];
+
+    assert_eq('', content_meta_field_error($url, 'https://example.com/x'), 'an absolute address passes');
+    assert_eq('', content_meta_field_error($url, ''), 'blank is not an error');
+    assert_contains('Project link', content_meta_field_error($url, '#'), 'a bare fragment is rejected');
+    assert_contains('Project link', content_meta_field_error($url, '/relative/'), 'a relative path is rejected');
+
+    $email = ['type' => 'email', 'label' => 'Contact'];
+    assert_eq('', content_meta_field_error($email, 'hello@example.com'));
+    assert_contains('Contact', content_meta_field_error($email, 'not-an-email'));
+
+    $number = ['type' => 'number', 'label' => 'Order'];
+    assert_eq('', content_meta_field_error($number, '12'));
+    assert_contains('Order', content_meta_field_error($number, 'twelve'));
+
+    $select = ['type' => 'select', 'label' => 'Size', 'options' => ['s' => 'Small', 'l' => 'Large']];
+    assert_eq('', content_meta_field_error($select, 's'));
+    assert_contains('Size', content_meta_field_error($select, 'xl'), 'a value not offered is rejected');
+
+    // A text field takes anything, and a checkbox is never a validation error.
+    assert_eq('', content_meta_field_error(['type' => 'text', 'label' => 'Note'], 'anything'));
+    assert_eq('', content_meta_field_error(['type' => 'checkbox', 'label' => 'On'], 'yes'));
+});
+
+// ---------------------------------------------------------------------------
 // Pre-publish checklist
 // ---------------------------------------------------------------------------
 

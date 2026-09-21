@@ -1596,6 +1596,63 @@ t('a rich-text content type saves the one component it declares', function () us
     db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
 });
 
+t('a content type meta field is edited and validated', function () use ($base) {
+    http_login($base);
+
+    // An item of its own: other tests save and delete the demo portfolio page.
+    $id = seed_content([
+        'type'   => 'portfolio_item',
+        'slug'   => 'http-project-url',
+        'title'  => 'HTTP project url',
+        'status' => 'draft',
+        'meta'   => ['project_url' => 'https://example.com/stored'],
+    ]);
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=portfolio_item');
+
+    [, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=portfolio_item');
+
+    // The theme declares project_url as a url field, so the editor renders it
+    // with the value the item holds.
+    assert_contains('name="meta_project_url"', $editor, 'the declared meta field is in the form');
+    assert_contains('type="url"', $editor, 'with the control its declared type asks for');
+    assert_contains('https://example.com/stored', $editor, 'showing the saved value');
+
+    $post = [
+        '_token'           => $token,
+        'id'               => $id,
+        'type'             => 'portfolio_item',
+        'title'            => 'HTTP project url',
+        'slug'             => 'http-project-url',
+        'status'           => 'published',
+        'published_at'     => time() - 10,
+        'meta_project_url' => 'https://example.com/one',
+    ];
+
+    // A value the field's type rejects never reaches the database.
+    $invalid = ['meta_project_url' => '#'] + $post;
+    [$status] = http('POST', $base . '/admin/content/save', true, $invalid);
+    assert_eq(302, $status);
+    assert_eq(
+        'https://example.com/stored',
+        load_content_by_id_admin($id)['meta']['project_url'],
+        'an invalid url leaves the stored value alone'
+    );
+
+    http('POST', $base . '/admin/content/save', true, $post);
+
+    $stored = load_content_by_id_admin($id);
+    assert_eq('https://example.com/one', $stored['meta']['project_url'], 'a valid url is saved');
+
+    // The layout renders the link from it.
+    [$status, $page] = http('GET', $base . '/portfolio/http-project-url/');
+    assert_eq(200, $status);
+    assert_contains('href="https://example.com/one"', $page, 'the layout links to the saved project url');
+
+    delete_content_versions($id);
+    db()->prepare("DELETE FROM content WHERE id = :id")->execute(['id' => $id]);
+});
+
 t('the editor offers the component library as a dialog, not a drag palette', function () use ($base) {
     http_login($base);
 

@@ -239,6 +239,30 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
         }
     }
 
+    // ---------------------------------------------------------- meta fields
+    // A content type's `fields` are its own meta keys. A type nothing renders
+    // never reaches the editor, and an unknown type falls back to a text input,
+    // so a typo would quietly give the field the wrong control.
+    $metaFieldTypes = ['text', 'textarea', 'url', 'email', 'number', 'checkbox', 'select', 'media'];
+
+    foreach ($contentTypes as $type => $config) {
+        if (!is_array($config)) {
+            continue;
+        }
+
+        foreach (content_meta_fields($config) as $key => $field) {
+            $fieldType = (string) ($field['type'] ?? 'text');
+
+            if (!in_array($fieldType, $metaFieldTypes, true)) {
+                $add('meta fields', 'fail', "{$type}.fields.{$key} is '{$fieldType}', which is not a meta field type");
+            }
+
+            if ($fieldType === 'select' && !is_array($field['options'] ?? null)) {
+                $add('meta fields', 'fail', "{$type}.fields.{$key} is a select with no options");
+            }
+        }
+    }
+
     // ------------------------------------------------------------ previews
     // The component picker looks for theme/assets/previews/<component> with one
     // of a few image extensions. Either half being wrong is invisible in the
@@ -465,11 +489,12 @@ function health_checks(): array
     $themeProblems = theme_manifest_problems(theme_config(), theme(), load_settings());
 
     $themeGroups = [
-        'layouts'    => ['Theme layouts', 'Every declared layout resolves, and the settings select one that exists.'],
-        'components' => ['Theme components', 'Every declared header, footer, component and child name resolves.'],
-        'assets'     => ['Theme assets', 'Every declared stylesheet, script and icon exists.'],
-        'partials'   => ['Theme partials', 'Every partial a layout or component includes exists.'],
-        'forms'      => ['Theme form fields', 'Every declared form field is well formed.'],
+        'layouts'     => ['Theme layouts', 'Every declared layout resolves, and the settings select one that exists.'],
+        'components'  => ['Theme components', 'Every declared header, footer, component and child name resolves.'],
+        'meta fields' => ['Theme meta fields', 'Every field a content type declares is a type the editor can render.'],
+        'assets'      => ['Theme assets', 'Every declared stylesheet, script and icon exists.'],
+        'partials'    => ['Theme partials', 'Every partial a layout or component includes exists.'],
+        'forms'       => ['Theme form fields', 'Every declared form field is well formed.'],
     ];
 
     foreach ($themeGroups as $group => [$label, $okDetail]) {
