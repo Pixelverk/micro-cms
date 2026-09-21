@@ -302,7 +302,6 @@ return [
     'content_error_category' => 'Kategorin finns inte längre.',
     'content_error_tags' => 'En eller flera valda etiketter finns inte längre.',
     'content_error_canonical' => 'Den kanoniska URL:en måste vara en absolut adress på denna webbplats.',
-    'content_error_robots' => 'Robots-överstyrningen ska se ut som "noindex, follow".',
     'content_error_meta_url' => ':label måste vara en absolut adress som börjar med http:// eller https://.',
     'content_error_meta_email' => ':label måste vara en giltig e-postadress.',
     'content_error_meta_number' => ':label måste vara ett nummer.',

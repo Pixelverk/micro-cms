@@ -148,7 +148,11 @@ t('unpublished states are always noindex', function () {
     assert_eq('index, follow', seo_metadata(seo_page())['robots']);
 });
 
-t('a robots override is honoured but an editor cannot index a draft', function () {
+t('a stored robots override is honoured but an editor cannot index a draft', function () {
+    // The editor offers no robots field: this is meta an import or an older
+    // save left behind. It is still honoured, and still kept safe.
+    assert_true(!isset(seo_editable_fields()['robots_extra']), 'the editor does not offer the override');
+
     $seo = seo_metadata(seo_page(['meta' => ['robots_extra' => 'noindex, follow']]));
     assert_eq('noindex, follow', $seo['robots']);
 
@@ -167,7 +171,7 @@ t('a 404 response is noindex but followable', function () {
     assert_contains('noindex', $seo['robots']);
     assert_contains('follow', $seo['robots']);
 
-    // An editor override cannot make a 404 indexable.
+    // A stored override cannot make a 404 indexable either.
     $seo = seo_metadata(seo_page(['status' => '404', 'meta' => ['robots_extra' => 'index, follow']]));
     assert_contains('noindex', $seo['robots']);
 });
@@ -330,7 +334,7 @@ t('the SEO fields are grouped into the cards the editor shows', function () {
     assert_eq('Search', $groups[0]['label']);
     assert_eq('Social', $groups[1]['label']);
 
-    assert_eq(['seo_title', 'description', 'canonical', 'robots_extra'], array_keys($groups[0]['fields']));
+    assert_eq(['seo_title', 'description', 'canonical'], array_keys($groups[0]['fields']));
     assert_eq(['og_title', 'og_description', 'og_image', 'author', 'twitter_site', 'twitter_creator'], array_keys($groups[1]['fields']));
 
     // Every editable field reaches exactly one card, so a new field cannot be

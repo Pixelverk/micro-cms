@@ -228,11 +228,6 @@ if ($canonical !== '' && !seo_validate_canonical($canonical)) {
     $errors['meta_canonical'] = admin_trans('content_error_canonical');
 }
 
-$robotsExtra = (string) ($contentData['meta']['robots_extra'] ?? '');
-if ($robotsExtra !== '' && !preg_match('/^[a-z]+(,\s*[a-z]+)*$/', $robotsExtra)) {
-    $errors['meta_robots_extra'] = admin_trans('content_error_robots');
-}
-
 // Every field has now been read and validated; stop before writing anything.
 if ($errors) {
     validate_throw($errors, 'content/edit?id=' . (int) $id . '&type=' . urlencode($contentType));

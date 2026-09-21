@@ -302,7 +302,6 @@ return [
     'content_error_category' => 'That category no longer exists.',
     'content_error_tags' => 'One or more selected tags no longer exist.',
     'content_error_canonical' => 'The canonical URL must be an absolute address on this site.',
-    'content_error_robots' => 'Robots override should look like "noindex, follow".',
     'content_error_meta_url' => ':label must be an absolute http:// or https:// address.',
     'content_error_meta_email' => ':label must be a valid email address.',
     'content_error_meta_number' => ':label must be a number.',

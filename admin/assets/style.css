@@ -1832,11 +1832,19 @@ button.header-icon:hover { background: transparent; }
     font-size: 0.85rem;
 }
 
+/* Component fields fill the row: short fields sit beside each other and a
+   field only takes the whole width when there is not room for two. The track is
+   the only thing that decides a field's width. */
 .component-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.85rem 1rem;
+    align-content: start;
 }
+
+/* A grid item defaults to min-width: auto, which lets a wide child (a rich-text
+   toolbar, a long value) push the track open. */
+.component-fields > .field { min-width: 0; }
 
 .component-type { display: none; }
 
@@ -1979,11 +1987,27 @@ button.header-icon:hover { background: transparent; }
 
 .seo-fields small { color: var(--text-muted); }
 
+/* An image field: the value and its own buttons stay on one line, with the
+   picture beside them. The row wraps, so a narrow field puts the picture under
+   the input rather than squeezing both. */
 .image-picker-wrapper {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.5rem 0.75rem;
+}
+
+.image-picker-wrapper > .field-input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    width: auto;
+}
+
+/* The picture does not grow or shrink with the row; the input takes what is
+   left. */
+.image-picker-wrapper > .image-preview {
+    flex: 0 0 auto;
+    margin-bottom: 0;
 }
 
 .image-picker-actions {
@@ -2396,8 +2420,17 @@ button.header-icon:hover { background: transparent; }
    inside the button rather than on the button, which is easy to mishandle in
    the click handler. */
 .menu-actions button svg,
-.menu-actions button svg * {
+.menu-actions button svg *,
+.actions-right button svg,
+.actions-right button svg *,
+.add-child-btn svg,
+.add-child-btn svg * {
     pointer-events: none;
+}
+
+.actions-right button svg,
+.add-child-btn svg {
+    display: block;
 }
 
 .menu-item .add-child:hover,
@@ -3422,6 +3455,10 @@ button.sidebar-link {
     margin-bottom: 0.5rem;
     cursor: pointer;
 }
+
+/* Nothing chosen yet: there is no image to show, and a bare <img> would draw
+   the browser's broken-image placeholder instead. */
+.image-preview:not([src]) { display: none; }
 
 /*   7.14 Form submissions (admin/messages.php) */
 

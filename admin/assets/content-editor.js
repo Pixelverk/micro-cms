@@ -612,7 +612,7 @@ function renderImageGrid(images) {
         }
 
         const el = document.createElement('img');
-        el.src = url;
+        if (url) el.src = url;
         el.alt = img.original_name;
         el.title = img.original_name;
         el.dataset.id = img.id;
@@ -684,7 +684,16 @@ function showImagePickerPreview(input) {
     const media = (window.mediaImages || []).find(m => String(m.id) === String(input.value));
 
     if (media) {
-        preview.src = getPreviewUrl(media);
+        const url = getPreviewUrl(media);
+
+        // A media row with no usable format has nothing to show, and an empty
+        // src draws the browser's broken-image placeholder.
+        if (url) {
+            preview.src = url;
+        } else {
+            preview.removeAttribute('src');
+        }
+
         preview.alt = media.original_name;
     } else {
         preview.removeAttribute('src');

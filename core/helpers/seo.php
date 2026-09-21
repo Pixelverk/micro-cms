@@ -426,7 +426,6 @@ function seo_editable_fields(): array
         'seo_title'       => ['type' => 'text',     'label' => 'SEO title',        'max' => 70,  'help' => 'Shown in the browser tab and search results. Falls back to the title.', 'group' => 'search'],
         'description'     => ['type' => 'textarea', 'label' => 'Meta description', 'max' => 160, 'help' => 'Roughly 160 characters.', 'group' => 'search'],
         'canonical'       => ['type' => 'text',     'label' => 'Canonical URL',    'help' => 'Only needed when this content duplicates another URL.', 'group' => 'search'],
-        'robots_extra'    => ['type' => 'text',     'label' => 'Robots override',  'help' => 'Leave blank for "index, follow". Example: noindex, follow', 'group' => 'search'],
         'og_title'        => ['type' => 'text',     'label' => 'Social title',     'max' => 70, 'group' => 'social'],
         'og_description'  => ['type' => 'textarea', 'label' => 'Social description', 'max' => 200, 'group' => 'social'],
         'og_image'        => ['type' => 'media',    'label' => 'Social image',     'help' => 'Used for Open Graph and Twitter cards.', 'group' => 'social'],
