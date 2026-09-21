@@ -28,7 +28,7 @@ function render_page(array $page): array
     $head .= "<meta name='viewport' content='" . e($meta['viewport'] ?? 'width=device-width, initial-scale=1.0') . "'>\n";
 
     // Title, description, canonical, robots, Open Graph and Twitter tags.
-    // All of it comes from core/helpers/seo.php so defaults stay in one place.
+    // All of it comes from core/modules/seo/seo.php so defaults stay in one place.
     $head .= seo_head_tags($page);
     $head .= seo_json_ld($page);
 

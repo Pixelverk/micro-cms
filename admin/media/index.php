@@ -351,7 +351,7 @@ if ((int) $result['pages'] > 1) {
          modal per row would be simpler to read but would repeat this markup for
          every file in the library. The variant links are made absolute, so a
          copied one works wherever it is pasted. */ ?>
-<div id="media-view" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="media-view-title" data-media-base="<?= e(seo_absolute_url(url('media/'))) ?>" hidden>
+<div id="media-view" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="media-view-title" data-media-base="<?= e(absolute_url(url('media/'))) ?>" hidden>
     <div class="modal modal-lg media-modal" tabindex="-1">
         <div class="modal-header">
             <h3 id="media-view-title">

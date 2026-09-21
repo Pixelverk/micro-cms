@@ -45,7 +45,7 @@ t('the entry list is the install, without the host state', function () {
         foreach ([
             'index.php',
             '.htaccess',
-            'core/helpers/export.php',
+            'core/modules/operations/export.php',
             'admin/utilities.php',
             'admin/assets/style.css',
             'theme/components/hero-section.php',
@@ -142,7 +142,7 @@ t('backup_build() packages the site and leaves the host state out', function () 
 
     foreach ([
         'index.php',
-        'core/helpers/export.php',
+        'core/modules/operations/export.php',
         'theme/components/hero-section.php',
         'storage/data.sqlite',
         'storage/media/backup-test.txt',

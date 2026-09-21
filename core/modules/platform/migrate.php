@@ -150,7 +150,7 @@ function migrate_registry(): array
             $pdo->exec("UPDATE content SET search_text = title WHERE search_text IS NULL OR search_text = ''");
         },
 
-        // Traffic counting (see core/helpers/analytics.php).
+        // Traffic counting (see core/modules/platform/analytics.php).
         '2026_09_17_000010_page_views' => function (PDO $pdo): void {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS page_views (
@@ -176,7 +176,7 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'page_views', 'cache_hit', 'INTEGER NOT NULL DEFAULT 0');
         },
 
-        // Old URLs that must keep working (see core/helpers/redirects.php).
+        // Old URLs that must keep working (see core/modules/content/redirects.php).
         '2026_09_17_000012_redirects' => function (PDO $pdo): void {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS redirects (
@@ -206,7 +206,7 @@ function migrate_registry(): array
             migrate_add_column($pdo, 'form_submissions', 'status', "TEXT NOT NULL DEFAULT 'new'");
         },
 
-        // One-time password reset tokens (see core/auth.php).
+        // One-time password reset tokens (see core/modules/platform/auth.php).
         '2026_09_19_000016_password_resets' => function (PDO $pdo): void {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS password_resets (

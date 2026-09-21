@@ -2,7 +2,7 @@
 <div id="toast-container" role="status"></div>
 
 <script>
-function showToast(message, type = 'info', duration = 4000) {
+function admin_toast(message, type = 'info', duration = 4000) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
@@ -18,7 +18,7 @@ function showToast(message, type = 'info', duration = 4000) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    showToast(
+    admin_toast(
         <?= json_encode($_SESSION['toast']['message'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
         <?= json_encode($_SESSION['toast']['type']) ?>
     );

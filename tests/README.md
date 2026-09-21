@@ -18,12 +18,16 @@ php tests/run.php http
 
 ## What each suite covers
 
-| File | Covers |
+The suite name is the area under test; `php tests/run.php <name>` runs one.
+
+| Area | Suites |
 | --- | --- |
-| `csrf.test.php` | CSRF token generation, comparison, and the signed time-boxed tokens used by cached public forms |
-| `auth.test.php` | Login/logout, numeric identity, legacy sessions, login throttling |
-| `admin.test.php` | Admin capability hook (`admin_guard`/`admin_can`), HTML minification, cache invalidation |
-| `http.test.php` | End-to-end behaviour through `index.php` on a real PHP server: routing, sessions, CSRF enforcement, draft visibility, form submission |
+| Auth and access | `auth`, `admin`, `csrf`, `validate`, `settings`, `config` |
+| Content | `content`, `trash`, `duplicate`, `versions`, `menus`, `redirects`, `search`, `pagination`, `pagination-http` |
+| Media and SEO | `media`, `seo`, `scripts` |
+| Forms | `forms`, `forms-http` |
+| Site and rendering | `theme`, `design`, `http` |
+| Operations | `activity`, `analytics`, `backup`, `export`, `health`, `migrate` |
 
 ## How isolation works
 

@@ -57,7 +57,7 @@ function log_activity(
     }
 
     try {
-        $user = function_exists('current_user') ? current_user() : null;
+        $user = current_user();
 
         $stmt = db()->prepare("
             INSERT INTO activity_log (user_id, username, action, object_type, object_id, summary, meta, ip, created_at)

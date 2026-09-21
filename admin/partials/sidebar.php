@@ -18,41 +18,6 @@ if ($currentType === '') {
 
 $formTypes = $theme['form_types'] ?? [];
 
-/**
- * "active" when the current page is, or is below, $path.
- */
-function is_active(string $path, string $current): string
-{
-    return ($current === $path || str_starts_with($current, $path . '/')) ? 'active' : '';
-}
-
-/**
- * "active" when browsing (or editing) the given content type.
- */
-function is_content_type_active(string $type, string $current, string $currentType): string
-{
-    if (!in_array($current, ['content', 'content/edit'], true)) {
-        return '';
-    }
-
-    return $currentType === $type ? 'active' : '';
-}
-
-/**
- * "active" when viewing the submissions of the given form type.
- */
-function is_form_type_active(string $type, string $current, array $formTypes): string
-{
-    if ($current !== 'messages') {
-        return '';
-    }
-
-    // No ?form= means the first form type is being shown.
-    $active = $_GET['form'] ?? array_key_first($formTypes);
-
-    return $active === $type ? 'active' : '';
-}
-
 ?>
 
 <nav class="sidebar" aria-label="<?= e(admin_trans('nav_aria_main')) ?>">
@@ -67,7 +32,7 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_welcome')) ?></div>
         
-        <a href="<?= url('admin/dashboard') ?>" class="sidebar-link <?= is_active('dashboard', $currentPath) ?>" data-label="Dashboard">
+        <a href="<?= url('admin/dashboard') ?>" class="sidebar-link <?= admin_nav_active('dashboard', $currentPath) ?>" data-label="Dashboard">
             <span class="sidebar-icon"><?= icon('view-grid', 20) ?></span>
             <?= e(admin_trans('nav_dashboard')) ?>
         </a>
@@ -77,7 +42,7 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
         <div class="sidebar-title"><?= e(admin_trans('nav_content')) ?></div>
         <?php foreach ($contentTypes as $type => $config): ?>
             <a href="<?= url('admin/content') . '?type=' . $type ?>"
-               class="sidebar-link <?= is_content_type_active($type, $currentPath, $currentType) ?>"
+               class="sidebar-link <?= admin_nav_content_type_active($type, $currentPath, $currentType) ?>"
                data-label="<?= e($config['label']) ?>"
                >
                <span class="sidebar-icon"><?= icon('post', 20) ?></span>
@@ -91,14 +56,14 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
         <div class="sidebar-title"><?= e(admin_trans('nav_collections')) ?></div>
 
         <?php if (admin_can_open('category')): ?>
-        <a href="<?= url('admin/category') ?>" class="sidebar-link <?= is_active('category', $currentPath) ?>" data-label="Categories">
+        <a href="<?= url('admin/category') ?>" class="sidebar-link <?= admin_nav_active('category', $currentPath) ?>" data-label="Categories">
             <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
             <?= e(admin_trans('nav_categories')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('tag')): ?>
-        <a href="<?= url('admin/tag') ?>" class="sidebar-link <?= is_active('tag', $currentPath) ?>" data-label="Tags">
+        <a href="<?= url('admin/tag') ?>" class="sidebar-link <?= admin_nav_active('tag', $currentPath) ?>" data-label="Tags">
             <span class="sidebar-icon"><?= icon('label', 20) ?></span>
             <?= e(admin_trans('nav_tags')) ?>
         </a>
@@ -113,7 +78,7 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
 
         <?php foreach ($formTypes as $type => $config): ?>
             <a href="<?= url('admin/messages') . '?form=' . e($type) ?>"
-            class="sidebar-link <?= is_form_type_active($type, $currentPath, $formTypes) ?>"
+            class="sidebar-link <?= admin_nav_form_type_active($type, $currentPath, $formTypes) ?>"
             data-label="<?= e($config['label'] ?? ucfirst($type)) ?>"
             >
                 <span class="sidebar-icon"><?= icon('mail-in', 20) ?></span>
@@ -129,21 +94,21 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
         <div class="sidebar-title"><?= e(admin_trans('nav_site')) ?></div>
 
         <?php if (admin_can_open('media')): ?>
-        <a href="<?= url('admin/media') ?>" class="sidebar-link <?= is_active('media', $currentPath) ?>" data-label="Media">
+        <a href="<?= url('admin/media') ?>" class="sidebar-link <?= admin_nav_active('media', $currentPath) ?>" data-label="Media">
             <span class="sidebar-icon"><?= icon('media-image', 20) ?></span>
             <?= e(admin_trans('nav_media')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('menu')): ?>
-        <a href="<?= url('admin/menu/edit') ?>" class="sidebar-link <?= is_active('menu', $currentPath) ?>" data-label="Menus">
+        <a href="<?= url('admin/menu/edit') ?>" class="sidebar-link <?= admin_nav_active('menu', $currentPath) ?>" data-label="Menus">
             <span class="sidebar-icon"><?= icon('menu', 20) ?></span>
             <?= e(admin_trans('nav_menus')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('redirects')): ?>
-        <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= is_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('nav_redirects')) ?>">
+        <a href="<?= url('admin/redirects') ?>" class="sidebar-link <?= admin_nav_active('redirects', $currentPath) ?>" data-label="<?= e(admin_trans('nav_redirects')) ?>">
             <span class="sidebar-icon"><?= icon('open-in-browser', 20) ?></span>
             <?= e(admin_trans('nav_redirects')) ?>
         </a>
@@ -154,20 +119,20 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_reports')) ?></div>
 
-        <a href="<?= url('admin/analytics') ?>" class="sidebar-link <?= is_active('analytics', $currentPath) ?>" data-label="Analytics">
+        <a href="<?= url('admin/analytics') ?>" class="sidebar-link <?= admin_nav_active('analytics', $currentPath) ?>" data-label="Analytics">
             <span class="sidebar-icon"><?= icon('clipboard-check', 20) ?></span>
             <?= e(admin_trans('nav_analytics')) ?>
         </a>
 
         <?php if (admin_can_open('activity')): ?>
-        <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= is_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('nav_activity')) ?>">
+        <a href="<?= url('admin/activity') ?>" class="sidebar-link <?= admin_nav_active('activity', $currentPath) ?>" data-label="<?= e(admin_trans('nav_activity')) ?>">
             <span class="sidebar-icon"><?= icon('clock', 20) ?></span>
             <?= e(admin_trans('nav_activity')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('health')): ?>
-        <a href="<?= url('admin/health') ?>" class="sidebar-link <?= is_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('nav_health')) ?>">
+        <a href="<?= url('admin/health') ?>" class="sidebar-link <?= admin_nav_active('health', $currentPath) ?>" data-label="<?= e(admin_trans('nav_health')) ?>">
             <span class="sidebar-icon"><?= icon('heart-pulse', 20) ?></span>
             <?= e(admin_trans('nav_health')) ?>
         </a>
@@ -179,21 +144,21 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
         <div class="sidebar-title"><?= e(admin_trans('nav_system')) ?></div>
 
         <?php if (admin_can_open('settings')): ?>
-        <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= is_active('settings', $currentPath) ?>" data-label="Settings">
+        <a href="<?= url('admin/settings') ?>" class="sidebar-link <?= admin_nav_active('settings', $currentPath) ?>" data-label="Settings">
             <span class="sidebar-icon"><?= icon('settings', 20) ?></span>
             <?= e(admin_trans('nav_settings')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('user')): ?>
-        <a href="<?= url('admin/user') ?>" class="sidebar-link <?= is_active('user', $currentPath) ?>" data-label="Users">
+        <a href="<?= url('admin/user') ?>" class="sidebar-link <?= admin_nav_active('user', $currentPath) ?>" data-label="Users">
             <span class="sidebar-icon"><?= icon('group', 20) ?></span>
             <?= e(admin_trans('nav_users')) ?>
         </a>
         <?php endif; ?>
 
         <?php if (admin_can_open('utilities')): ?>
-        <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= is_active('utilities', $currentPath) ?>" data-label="Utilities">
+        <a href="<?= url('admin/utilities') ?>" class="sidebar-link <?= admin_nav_active('utilities', $currentPath) ?>" data-label="Utilities">
             <span class="sidebar-icon"><?= icon('wrench', 20) ?></span>
             <?= e(admin_trans('nav_utilities')) ?>
         </a>
@@ -204,7 +169,7 @@ function is_form_type_active(string $type, string $current, array $formTypes): s
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_help')) ?></div>
 
-        <a href="<?= url('admin/docs') ?>" class="sidebar-link <?= is_active('docs', $currentPath) ?>" data-label="<?= e(admin_trans('nav_docs')) ?>">
+        <a href="<?= url('admin/docs') ?>" class="sidebar-link <?= admin_nav_active('docs', $currentPath) ?>" data-label="<?= e(admin_trans('nav_docs')) ?>">
             <span class="sidebar-icon"><?= icon('book', 20) ?></span>
             <?= e(admin_trans('nav_docs')) ?>
         </a>

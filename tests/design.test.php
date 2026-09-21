@@ -405,7 +405,7 @@ t('the menu editor keeps its row controls usable while the whole row drags', fun
 });
 
 t('the theme and the admin offer a skip link to a marked main landmark', function () {
-    $render = (string) file_get_contents(CMS_PATH . '/core/render.php');
+    $render = (string) file_get_contents(CMS_PATH . '/core/modules/render/render.php');
     assert_contains('function render_skip_link', $render);
     assert_contains('class="skip-link" href="#main-content"', $render);
 
@@ -493,6 +493,71 @@ t('status feedback is announced and the landmarks are named', function () {
 
     $header = (string) file_get_contents(CMS_PATH . '/theme/components/site-header.php');
     assert_contains('aria-label="Main"', $header, 'the public nav is named');
+});
+
+t('core modules only depend downward', function () {
+    // The module layering, low to high: a module may call its own functions or
+    // a lower module's, never a higher one. The entry points (core/router.php,
+    // core/bootstrap, admin pages, the theme) are top layer and may call
+    // anything, so they are not checked as callers.
+    $rank = [
+        'platform'   => 0,
+        'media'      => 1,
+        'seo'        => 2,
+        'content'    => 3,
+        'render'     => 4,
+        'forms'      => 4,
+        'admin'      => 4,
+        'operations' => 5,
+    ];
+
+    // The one deliberate upward edge: platform/access.php renders the admin 403.
+    $allowed = ['platform>admin:render_admin_forbidden'];
+
+    $moduleOf = static function (string $relative): string {
+        return preg_match('#^core/modules/([a-z]+)/#', $relative, $m) ? $m[1] : 'top';
+    };
+
+    $files = glob(CMS_PATH . '/core/modules/*/*.php') ?: [];
+
+    // Function => defining file, with comments stripped so a docblock that
+    // names a function is not mistaken for a call.
+    $funcFile = [];
+    foreach ($files as $file) {
+        $rel = str_replace(CMS_PATH . '/', '', $file);
+        if (preg_match_all('/\bfunction\s+([a-zA-Z0-9_]+)/', php_strip_whitespace($file), $m)) {
+            foreach ($m[1] as $fn) {
+                $funcFile[$fn] = $rel;
+            }
+        }
+    }
+
+    $violations = [];
+    foreach ($files as $file) {
+        $rel  = str_replace(CMS_PATH . '/', '', $file);
+        $from = $moduleOf($rel);
+
+        if (preg_match_all('/\b([a-z_][a-z0-9_]*)\s*\(/', php_strip_whitespace($file), $m)) {
+            foreach (array_unique($m[1]) as $fn) {
+                if (!isset($funcFile[$fn])) {
+                    continue;
+                }
+
+                $to = $moduleOf($funcFile[$fn]);
+
+                if ($from === $to || $to === 'top' || $rank[$from] >= $rank[$to]) {
+                    continue;
+                }
+
+                $edge = "{$from}>{$to}:{$fn}";
+                if (!in_array($edge, $allowed, true)) {
+                    $violations[$edge] = true;
+                }
+            }
+        }
+    }
+
+    assert_count(0, $violations, 'upward module dependencies: ' . implode(', ', array_keys($violations)));
 });
 
 exit(test_summary());

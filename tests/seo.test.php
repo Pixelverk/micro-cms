@@ -40,18 +40,18 @@ function seo_reset_settings(): void
 
 seo_reset_settings();
 
-t('seo_site_url() prefers the setting, then the request', function () {
+t('site_origin() prefers the setting, then the request', function () {
     set_setting('site_url', 'https://example.com/');
-    assert_eq('https://example.com', seo_site_url(), 'trailing slash is trimmed');
+    assert_eq('https://example.com', site_origin(), 'trailing slash is trimmed');
 
-    // Without the setting it falls back to the request. seo_site_url()
+    // Without the setting it falls back to the request. site_origin()
     // memoises per request, so each case needs its own process.
     [$plain] = test_php([
         'db()->prepare("DELETE FROM settings WHERE `key` = \'site_url\'")->execute();',
         'settings_cache_clear();',
         '$_SERVER["HTTP_HOST"] = "cms.test";',
         'unset($_SERVER["HTTPS"]);',
-        'echo seo_site_url();',
+        'echo site_origin();',
     ]);
     assert_contains('http://cms.test', implode("\n", $plain), 'plain requests produce http URLs');
 
@@ -60,7 +60,7 @@ t('seo_site_url() prefers the setting, then the request', function () {
         'settings_cache_clear();',
         '$_SERVER["HTTP_HOST"] = "cms.test";',
         '$_SERVER["HTTPS"] = "on";',
-        'echo seo_site_url();',
+        'echo site_origin();',
     ]);
     assert_contains('https://cms.test', implode("\n", $secure), 'HTTPS requests produce https URLs');
 
@@ -71,20 +71,20 @@ t('seo_site_url() prefers the setting, then the request', function () {
 t('a hostile Host header cannot escape the site URL', function () {
     [$output] = test_php([
         '$_SERVER["HTTP_HOST"] = "evil.com/x?y";',
-        'echo seo_site_url();',
+        'echo site_origin();',
     ]);
 
     assert_not_contains('evil.com/x?y', implode("\n", $output), 'host header is validated');
 });
 
-t('seo_absolute_url() builds absolute URLs from paths', function () {
+t('absolute_url() builds absolute URLs from paths', function () {
     set_setting('site_url', 'https://example.com');
     settings_cache_clear();
 
-    assert_eq('https://example.com/about', seo_absolute_url('/about'));
-    assert_eq('https://example.com/about', seo_absolute_url('about'));
-    assert_eq('https://example.com/', seo_absolute_url(''));
-    assert_eq('https://other.test/x', seo_absolute_url('https://other.test/x'), 'absolute URLs pass through');
+    assert_eq('https://example.com/about', absolute_url('/about'));
+    assert_eq('https://example.com/about', absolute_url('about'));
+    assert_eq('https://example.com/', absolute_url(''));
+    assert_eq('https://other.test/x', absolute_url('https://other.test/x'), 'absolute URLs pass through');
 });
 
 t('titles fall back from SEO title to page title to site title', function () {

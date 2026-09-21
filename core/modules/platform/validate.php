@@ -36,12 +36,8 @@ function validate_throw(array $errors, string $redirectPath = 'dashboard'): void
         exit;
     }
 
-    if (function_exists('redirect_with_toast')) {
-        redirect_with_toast($redirectPath, 'error', $message);
-    }
-
-    http_response_code(422);
-    exit($message);
+    // Always redirects (and exits); the JSON branch above is the only other shape.
+    redirect_with_toast($redirectPath, 'error', $message);
 }
 
 /*

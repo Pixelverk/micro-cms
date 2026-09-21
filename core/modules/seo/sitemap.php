@@ -16,7 +16,7 @@ function generate_sitemap(): string
     $homepageId = $settings['homepage_id'] ?? null;
 
     // Canonical origin, from the site_url setting or the current request.
-    $baseUrl = seo_site_url();
+    $baseUrl = site_origin();
 
     $pdo  = db();
     $urls = [];

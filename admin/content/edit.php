@@ -13,6 +13,7 @@ $slug = $_GET['slug'] ?? '';
 // ----------------------------
 $theme    = theme_config();
 $settings = load_settings();
+$homepageSlug = content_homepage_slug();
 
 $contentTypes = $theme['content_types'] ?? [];
 $ctConfig     = $contentTypes[$type] ?? [];
@@ -407,13 +408,13 @@ ob_start();
     <div class="page-actions">
         <?php if ($isEdit): ?>
             <a class="no-underline mr-md"
-                href="<?= url($slug === $settings['homepage_slug'] ? '' : $url) ?>"
+                href="<?= url($slug === $homepageSlug ? '' : $url) ?>"
                 target="_blank">
                 <?= e(admin_trans('editor_visit', ['type' => $typeLabel])) ?>
             </a>
 
             <a class="btn-small btn-preview mr-md"
-                href="<?= e(preview_url(url($slug === $settings['homepage_slug'] ? '' : $url))) ?>"
+                href="<?= e(preview_url(url($slug === $homepageSlug ? '' : $url))) ?>"
                 target="_blank"
                 title="<?= e(admin_trans('editor_preview_title')) ?>">
                 <?= e(admin_trans('common_preview')) ?>
@@ -501,7 +502,7 @@ $seoSettings = load_settings();
 // same data attributes and differ only in what they show.
 $seoPreviewAttrs = 'data-seo-preview'
     . ' data-url-base="' . e($seoPreviewBase) . '"'
-    . ' data-site-url="' . e(seo_site_url()) . '"'
+    . ' data-site-url="' . e(site_origin()) . '"'
     . ' data-site-title="' . e($seoPreview['site_name']) . '"'
     . ' data-title-suffix="' . e((string) ($seoSettings['seo_title_suffix'] ?? '')) . '"'
     . ' data-home="' . ((int) ($contentData['id'] ?? 0) > 0 && (int) ($contentData['id'] ?? 0) === (int) ($seoSettings['homepage_id'] ?? 0) ? '1' : '') . '"'

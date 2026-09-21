@@ -102,7 +102,7 @@ $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log (cre
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_object ON activity_log (object_type, object_id)");
 
 // Traffic counting. No IP addresses are stored; the only visitor-level value
-// is a per-day hash (see core/helpers/analytics.php).
+// is a per-day hash (see core/modules/platform/analytics.php).
 $pdo->exec("
 CREATE TABLE page_views (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +122,7 @@ $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_time ON page_views (viewed
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views (path, viewed_at)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_page_views_visitor ON page_views (visitor_hash, viewed_at)");
 
-// Old URLs that must keep working (see core/helpers/redirects.php).
+// Old URLs that must keep working (see core/modules/content/redirects.php).
 $pdo->exec("
 CREATE TABLE redirects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -366,7 +366,7 @@ foreach ($settings as $key => $value) {
 | from Utilities, so content can be loaded or replaced later.
 */
 
-require_once CORE_PATH . '/helpers/common.php';
+require_once CORE_PATH . '/modules/platform/bootstrap.php';
 bootstrap_core();
 
 $demo = content_package_theme_demo();

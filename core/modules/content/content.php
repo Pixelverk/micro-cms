@@ -3,148 +3,13 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Visibility & preview
+| Content reads and writes
 |--------------------------------------------------------------------------
 |
-| Every read path that serves a page must agree on who may see unpublished
-| content. These helpers are the single source of that rule.
-|
-| Preview has two layers:
-|
-|   1. can_preview_content()  — is this person allowed to preview at all?
-|   2. is_preview_request()   — did they actually ask for it, with a token?
-|
-| Only (2) relaxes the query filters and disables caching. Merely being signed
-| in must never change what a URL returns, or editor traffic would leak into
-| the public HTML cache.
-|
+| Loading, listing, status, saving and URL/link helpers for the content table.
+| Visibility and preview live in core/modules/platform/preview.php; taxonomy
+| and the rest of the model move into this module in a later phase.
 */
-
-/**
- * May the current visitor see drafts / scheduled / archived content?
- *
- * Requires an authenticated user with the preview capability.
- */
-function can_preview_content(): bool
-{
-    if (!function_exists('is_logged_in') || !is_logged_in()) {
-        return false;
-    }
-
-    if (function_exists('admin_can') && !admin_can('content.preview')) {
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * Cookie name holding the per-browser preview token.
- */
-function preview_cookie_name(): string
-{
-    return 'cms_preview';
-}
-
-/**
- * The token that turns a normal URL into a preview URL.
- *
- * It lives in its own cookie rather than the session on purpose: the session
- * id is regenerated on login, which used to leave preview links pointing at a
- * token the server no longer had. A cookie survives that untouched.
- */
-function preview_token(): string
-{
-    static $token = null;
-
-    if (is_string($token) && $token !== '') {
-        return $token;
-    }
-
-    $cookie = $_COOKIE[preview_cookie_name()] ?? null;
-
-    if (is_string($cookie) && preg_match('/^[a-f0-9]{32}$/', $cookie)) {
-        return $token = $cookie;
-    }
-
-    return $token = bin2hex(random_bytes(16));
-}
-
-/**
- * Issue the preview cookie for this browser (called on login).
- */
-function preview_token_issue(?string $token = null): string
-{
-    $token = $token ?? bin2hex(random_bytes(16));
-
-    $_COOKIE[preview_cookie_name()] = $token;
-
-    if (session_status() !== PHP_SESSION_NONE) {
-        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-
-        setcookie(preview_cookie_name(), $token, [
-            'expires'  => time() + (30 * 86400),
-            'path'     => '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-            'secure'   => $secure,
-        ]);
-    }
-
-    return $token;
-}
-
-/**
- * Forget the preview cookie (called on logout).
- */
-function preview_token_clear(): void
-{
-    unset($_COOKIE[preview_cookie_name()]);
-
-    if (session_status() !== PHP_SESSION_NONE) {
-        setcookie(preview_cookie_name(), '', [
-            'expires'  => time() - 3600,
-            'path'     => '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-    }
-}
-
-/**
- * Is this request an explicit, token-bearing preview?
- */
-function is_preview_request(): bool
-{
-    if (!can_preview_content()) {
-        return false;
-    }
-
-    $token = $_GET['preview'] ?? null;
-
-    if (!is_string($token) || $token === '') {
-        return false;
-    }
-
-    $expected = $_COOKIE[preview_cookie_name()] ?? null;
-
-    if (!is_string($expected) || $expected === '') {
-        return false;
-    }
-
-    return hash_equals($expected, $token);
-}
-
-/**
- * Add (or replace) the preview token on a URL.
- */
-function preview_url(string $url): string
-{
-    $token = preview_token();
-    $separator = str_contains($url, '?') ? '&' : '?';
-
-    return $url . $separator . 'preview=' . urlencode($token);
-}
 
 /**
  * An extra WHERE fragment (starting with " AND ") that hides content the
@@ -165,6 +30,8 @@ function content_visibility_sql(): array
     ];
 }
 
+
+
 /**
  * Visibility fragment for the admin: everything except trashed content.
  *
@@ -180,6 +47,28 @@ function content_admin_visibility_sql(bool $trashed = false): array
         ? ['sql' => ' AND deleted_at IS NOT NULL', 'params' => []]
         : ['sql' => ' AND deleted_at IS NULL', 'params' => []];
 }
+
+
+/**
+ * The homepage's slug, or '' when none is set or it no longer resolves.
+ *
+ * Resolved here rather than in load_settings() so the settings module does not
+ * depend on content.
+ */
+function content_homepage_slug(): string
+{
+    $homepageId = (int) get_setting('homepage_id', 0);
+
+    if ($homepageId <= 0) {
+        return '';
+    }
+
+    $page = load_content_by_id($homepageId);
+
+    return (string) ($page['slug'] ?? '');
+}
+
+
 
 
 /*
@@ -311,6 +200,8 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
     return null;
 }
 
+
+
 /**
  * List content items of a given type. Anonymous visitors only ever see
  * published, due content; signed-in editors see everything.
@@ -321,6 +212,8 @@ function list_content(string $type, array $filters = []): array
 {
     return content_list_rows($type, $filters, content_visibility_sql(), false);
 }
+
+
 
 /**
  * Admin listing: drafts and archived items are included, trashed are not
@@ -334,6 +227,8 @@ function list_content_admin(string $type, array $filters = []): array
 
     return content_list_rows($type, $filters, content_admin_visibility_sql($trashed), true);
 }
+
+
 
 /**
  * Shared content listing query.
@@ -379,6 +274,8 @@ function content_list_rows(string $type, array $filters, array $visible, bool $w
 
     return $stmt->fetchAll() ?: [];
 }
+
+
 
 /**
  * A page of published content of one type, with the totals a pager needs.
@@ -442,6 +339,8 @@ function list_content_page(string $type, int $page = 1, int $perPage = 10, array
     return pagination_result($items, $total, $page, $perPage, $baseUrl);
 }
 
+
+
 /**
  * Return recent published content with decoded metadata for theme loops.
  */
@@ -477,6 +376,8 @@ function list_recent_content(string $type, int $limit = 3): array
     return $items;
 }
 
+
+
 /**
  * Load a content item by ID, honouring front-end visibility.
  */
@@ -485,6 +386,8 @@ function load_content_by_id(int $id): ?array
     return content_load_by_id_with_visibility($id, content_visibility_sql());
 }
 
+
+
 /**
  * Load a content item for the admin: unpublished is fine, trashed is not.
  */
@@ -492,6 +395,8 @@ function load_content_by_id_admin(int $id): ?array
 {
     return content_load_by_id_with_visibility($id, content_admin_visibility_sql());
 }
+
+
 
 /**
  * Load a content item whatever its state, trashed included.
@@ -502,6 +407,8 @@ function load_content_by_id_any(int $id): ?array
 {
     return content_load_by_id_with_visibility($id, ['sql' => '', 'params' => []]);
 }
+
+
 
 /**
  * @param array{sql: string, params: array<string, mixed>} $visible
@@ -523,6 +430,8 @@ function content_load_by_id_with_visibility(int $id, array $visible): ?array
 
     return $row ? content_from_row($row) : null;
 }
+
+
 
 /**
  * Shape a stored row for the rest of the app.
@@ -559,6 +468,8 @@ function content_from_row(array $row): array
     ];
 }
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Status model
@@ -579,6 +490,8 @@ function content_statuses(): array
     return ['draft', 'scheduled', 'published', 'archived'];
 }
 
+
+
 /**
  * Human label for a stored status, in the admin language.
  */
@@ -586,6 +499,8 @@ function content_status_label(string $status): string
 {
     return admin_trans('status_' . $status);
 }
+
+
 
 /**
  * Decide the stored status and the published/scheduled timestamps.
@@ -647,6 +562,8 @@ function resolve_content_status(array $data, ?int $now = null): array
         'scheduled_at' => $scheduledAt,
     ];
 }
+
+
 
 /**
  * Save or update a content item to the database
@@ -917,6 +834,8 @@ function save_content(string $type, string $slug, array $data, ?int $id = null, 
     return $idToReturn;
 }
 
+
+
 /**
  * Build full slug path recursively for a single page
  */
@@ -938,6 +857,8 @@ function build_full_slug(array $item, array $allItems): string {
     return implode('/', $path);
 }
 
+
+
 /**
  * The URL prefix a content type is served under.
  *
@@ -951,6 +872,8 @@ function content_url_prefix(string $type): string
 
     return (string) ($settings['content_prefixes'][$type] ?? $theme['content_types'][$type]['url_prefix'] ?? '');
 }
+
+
 
 /**
  * Rows of one content type, with just what building a full slug path needs.
@@ -982,6 +905,8 @@ function content_path_rows(string $type): array
     return $rows;
 }
 
+
+
 /**
  * The public URL of a content row: its type's prefix, then its parents' slugs.
  *
@@ -999,6 +924,8 @@ function content_url(array $row, array $allRows = []): string
 
     return url(($prefix !== '' ? $prefix . '/' : '') . $path);
 }
+
+
 
 /**
  * Is a link one we can resolve against this site?
@@ -1020,7 +947,7 @@ function content_link_is_internal(string $href): bool
 
     if (preg_match('#^https?://#i', $href) === 1) {
         $host     = parse_url($href, PHP_URL_HOST);
-        $siteHost = parse_url(seo_site_url(), PHP_URL_HOST);
+        $siteHost = parse_url(site_origin(), PHP_URL_HOST);
 
         return is_string($host) && $host !== ''
             && is_string($siteHost) && $siteHost !== ''
@@ -1029,6 +956,8 @@ function content_link_is_internal(string $href): bool
 
     return str_starts_with($href, '/');
 }
+
+
 
 /**
  * A link's path, with query, fragment and this install's base path removed.
@@ -1056,6 +985,8 @@ function content_link_normalize(string $href): string
 
     return trim($href, '/');
 }
+
+
 
 /**
  * Does an internal link resolve on the front end?
@@ -1116,6 +1047,8 @@ function content_link_resolves(string $href): bool
 
     return load_content_by_slug($path) !== null;
 }
+
+
 
 /**
  * Internal links in published, non-trashed content that no longer resolve.
@@ -1227,6 +1160,8 @@ function content_broken_links(): array
     return $findings;
 }
 
+
+
 /**
  * Ids of every descendant of $id within $allItems, recursively.
  *
@@ -1249,6 +1184,8 @@ function content_descendant_ids(int $id, array $allItems): array
 
     return $descendants;
 }
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1285,6 +1222,8 @@ function content_tree_rows(string $type): array
     return $rows;
 }
 
+
+
 /**
  * The item and every descendant below it.
  *
@@ -1294,1007 +1233,4 @@ function content_tree_rows(string $type): array
 function content_subtree_ids(int $id, array $rows): array
 {
     return array_merge([$id], content_descendant_ids($id, $rows));
-}
-
-/**
- * Move an item and its descendants to the trash.
- */
-function trash_content(int $id): bool
-{
-    $pdo  = db();
-    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
-    $stmt->execute(['id' => $id]);
-    $type = (string) $stmt->fetchColumn();
-
-    if ($type === '') {
-        return false;
-    }
-
-    $ids = content_subtree_ids($id, content_tree_rows($type));
-    $now = time();
-
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-
-    $update = $pdo->prepare("
-        UPDATE content
-        SET deleted_at = ?, updated_at = ?
-        WHERE id IN ({$placeholders}) AND deleted_at IS NULL
-    ");
-    $update->execute(array_merge([$now, $now], $ids));
-
-    if ($update->rowCount() < 1) {
-        return false;
-    }
-
-    invalidate_cache();
-    save_sitemap();
-
-    return true;
-}
-
-/**
- * Bring an item and its descendants back out of the trash.
- */
-function restore_content(int $id): bool
-{
-    $pdo  = db();
-    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
-    $stmt->execute(['id' => $id]);
-    $type = (string) $stmt->fetchColumn();
-
-    if ($type === '') {
-        return false;
-    }
-
-    $ids = content_subtree_ids($id, content_tree_rows($type));
-    $now = time();
-
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-
-    $update = $pdo->prepare("
-        UPDATE content
-        SET deleted_at = NULL, updated_at = ?
-        WHERE id IN ({$placeholders}) AND deleted_at IS NOT NULL
-    ");
-    $update->execute(array_merge([$now], $ids));
-
-    if ($update->rowCount() < 1) {
-        return false;
-    }
-
-    invalidate_cache();
-    save_sitemap();
-
-    return true;
-}
-
-/**
- * Delete an item and its descendants for good, with their version history.
- */
-function purge_content(int $id): bool
-{
-    $pdo  = db();
-    $stmt = $pdo->prepare("SELECT type FROM content WHERE id = :id LIMIT 1");
-    $stmt->execute(['id' => $id]);
-    $type = (string) $stmt->fetchColumn();
-
-    if ($type === '') {
-        return false;
-    }
-
-    $ids = content_subtree_ids($id, content_tree_rows($type));
-
-    foreach ($ids as $contentId) {
-        if (function_exists('delete_content_versions')) {
-            delete_content_versions((int) $contentId);
-        }
-    }
-
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-
-    // Taxonomy links go with the rows (content ids are unique across types).
-    $pdo->prepare("DELETE FROM taxonomy_term_relationships WHERE content_id IN ({$placeholders})")->execute($ids);
-
-    $deleted = $pdo->prepare("DELETE FROM content WHERE id IN ({$placeholders})");
-    $deleted->execute($ids);
-
-    if ($deleted->rowCount() < 1) {
-        return false;
-    }
-
-    if (function_exists('search_index_remove')) {
-        foreach ($ids as $contentId) {
-            search_index_remove((int) $contentId);
-        }
-    }
-
-    invalidate_cache();
-    save_sitemap();
-
-    return true;
-}
-
-/**
- * Purge everything that has been in the trash longer than the retention.
- *
- * @return int items purged
- */
-function content_purge_trashed(int $days = 30): int
-{
-    $cutoff = time() - (max(1, $days) * 86400);
-
-    return content_purge_ids('deleted_at IS NOT NULL AND deleted_at < :cutoff', ['cutoff' => $cutoff]);
-}
-
-/**
- * How many items are currently in the trash.
- */
-function content_trash_count(): int
-{
-    return (int) db()->query('SELECT COUNT(*) FROM content WHERE deleted_at IS NOT NULL')->fetchColumn();
-}
-
-/**
- * Purge everything in the trash, whatever its age.
- *
- * @return int items purged
- */
-function content_empty_trash(): int
-{
-    return content_purge_ids('deleted_at IS NOT NULL', []);
-}
-
-/**
- * Purge the content rows matching a WHERE clause, with their history.
- *
- * @param array<string, mixed> $params
- * @return int items purged
- */
-function content_purge_ids(string $where, array $params): int
-{
-    $stmt = db()->prepare("SELECT id FROM content WHERE {$where}");
-    $stmt->execute($params);
-    $ids = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-
-    $purged = 0;
-
-    foreach ($ids as $id) {
-        if (purge_content((int) $id)) {
-            $purged++;
-        }
-    }
-
-    return $purged;
-}
-
-/**
- * Opportunistic purge, at most once a day, from the front-end shutdown hook.
- */
-function content_maybe_purge_trash(): void
-{
-    $marker = STORAGE_PATH . '/.trash-purge';
-
-    if (is_file($marker) && (time() - (int) filemtime($marker)) < 86400) {
-        return;
-    }
-
-    @touch($marker);
-
-    try {
-        content_purge_trashed((int) config('trash.retention_days', 30));
-    } catch (Throwable $exception) {
-        debug_log('trash purge failed: ' . $exception->getMessage());
-    }
-}
-
-// taxonomies
-function load_taxonomies_for_content(string $type, int $id): array
-{
-    $pdo = db();
-
-    $stmt = $pdo->prepare("
-        SELECT t.*
-        FROM taxonomy t
-        JOIN taxonomy_term_relationships r
-            ON r.taxonomy_id = t.id
-        WHERE r.content_type = ?
-        AND r.content_id = ?
-        ORDER BY t.name
-    ");
-
-    $stmt->execute([$type, $id]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $out = [
-        'category' => [],
-        'tag'      => [],
-    ];
-
-    foreach ($rows as $row) {
-        $out[$row['taxonomy_type']][] = $row;
-    }
-
-    return $out;
-}
-
-/**
- * Create or update a taxonomy term from posted fields.
- *
- * Categories and tags share one flow; only the taxonomy_type and the
- * user-facing wording differ. Tags additionally require a content type.
- *
- * @param string $kind 'category' or 'tag'
- * @param array<string, mixed> $post
- */
-function save_taxonomy(string $kind, array $post): void
-{
-    $pdo = db();
-    $now = time();
-
-    $id          = !empty($post['id']) ? (int) $post['id'] : null;
-    $name        = trim((string) ($post['name'] ?? ''));
-    $slug        = trim((string) ($post['slug'] ?? ''));
-    $description = trim((string) ($post['description'] ?? ''));
-    $contentType = trim((string) ($post['content_type'] ?? ''));
-
-    if ($name === '') {
-        redirect_with_toast($kind, 'error', 'Name is required.');
-    }
-
-    if ($kind === 'tag' && $contentType === '') {
-        redirect_with_toast($kind, 'error', 'Content type is required.');
-    }
-
-    $slug = sanitize_slug($slug !== '' ? $slug : $name) ?: $kind;
-
-    // Keep the slug unique within this taxonomy type.
-    $baseSlug = $slug;
-    $counter  = 1;
-
-    while (true) {
-        $sql  = "SELECT id FROM taxonomy WHERE taxonomy_type = ? AND slug = ?";
-        $args = [$kind, $slug];
-
-        if ($id) {
-            $sql   .= " AND id != ?";
-            $args[] = $id;
-        }
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($args);
-
-        if (!$stmt->fetch()) {
-            break;
-        }
-
-        $slug = $baseSlug . '-' . $counter++;
-    }
-
-    if ($id) {
-        $stmt = $pdo->prepare("
-            UPDATE taxonomy SET
-                name         = ?,
-                slug         = ?,
-                description  = ?,
-                content_type = ?,
-                updated_at   = ?
-            WHERE id = ?
-            AND taxonomy_type = ?
-        ");
-
-        $stmt->execute([$name, $slug, $description, $contentType, $now, $id, $kind]);
-
-        $message = ucfirst($kind) . ' updated.';
-    } else {
-        $stmt = $pdo->prepare("
-            INSERT INTO taxonomy (
-                taxonomy_type,
-                name,
-                slug,
-                content_type,
-                description,
-                created_at,
-                updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-
-        $stmt->execute([$kind, $name, $slug, $contentType, $description, $now, $now]);
-
-        $message = ucfirst($kind) . ' created.';
-    }
-
-    log_activity($id ? 'taxonomy.updated' : 'taxonomy.created', 'taxonomy', $id ?: null, $name, []);
-
-    invalidate_cache();
-
-    redirect_with_toast($kind, 'success', $message);
-}
-
-/**
- * Delete a taxonomy term and its content relationships.
- *
- * @param string $kind 'category' or 'tag'
- */
-function remove_taxonomy(string $kind, int $id): void
-{
-    if ($id <= 0) {
-        redirect_with_toast($kind, 'error', 'Invalid ' . $kind . '.');
-    }
-
-    $name = taxonomy_delete($kind, $id);
-
-    if ($name === '') {
-        redirect_with_toast($kind, 'error', ucfirst($kind) . ' not found.');
-    }
-
-    // A term shows on its archive page and on every item that carries it.
-    invalidate_cache();
-
-    redirect_with_toast($kind, 'success', ucfirst($kind) . ' "' . $name . '" deleted.');
-}
-
-/**
- * Delete one term and the links to it.
- *
- * The work behind the row button, the bulk toolbar and anything else that
- * removes a term, so those paths cannot drift. It does not redirect, which is
- * what lets a bulk run call it in a loop. Returns the term's name, or '' when
- * there was nothing to delete.
- */
-function taxonomy_delete(string $kind, int $id): string
-{
-    if ($id <= 0) {
-        return '';
-    }
-
-    $pdo  = db();
-    $stmt = $pdo->prepare("SELECT id, name FROM taxonomy WHERE id = ? AND taxonomy_type = ?");
-    $stmt->execute([$id, $kind]);
-    $term = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$term) {
-        return '';
-    }
-
-    // Relationships first, so no orphans survive the term.
-    $pdo->prepare("DELETE FROM taxonomy_term_relationships WHERE taxonomy_id = ?")->execute([$id]);
-    $pdo->prepare("DELETE FROM taxonomy WHERE id = ? AND taxonomy_type = ?")->execute([$id, $kind]);
-
-    log_activity('taxonomy.deleted', 'taxonomy', $id, (string) $term['name'], ['kind' => $kind]);
-
-    return (string) $term['name'];
-}
-
-/**
- * Delete several terms of one kind.
- *
- * Ids that no longer resolve are counted as skipped rather than failing the
- * run: a term somebody else removed first is not an error.
- *
- * @param list<int> $ids
- * @return array{removed: int, skipped: int}
- */
-function bulk_delete_taxonomies(string $kind, array $ids): array
-{
-    $removed = 0;
-    $skipped = 0;
-
-    foreach ($ids as $id) {
-        if (taxonomy_delete($kind, (int) $id) !== '') {
-            $removed++;
-        } else {
-            $skipped++;
-        }
-    }
-
-    // Once for the run: the cache holds archive pages and listings that carried
-    // these terms.
-    if ($removed > 0) {
-        invalidate_cache();
-    }
-
-    return ['removed' => $removed, 'skipped' => $skipped];
-}
-
-/*
-|--------------------------------------------------------------------------
-| Rich-text-only content types
-|--------------------------------------------------------------------------
-|
-| A content type that declares 'editor' => 'rich-text' in theme.php is written
-| as one rich-text field, not assembled from components. The stored body is
-| still the usual list of components, holding exactly the one component the
-| type names, so the front end, search, media usage, versions and export are
-| untouched. The editor, the save handler and the Health page all resolve that
-| component through here, keeping the manifest the single source of truth.
-|
-*/
-
-/**
- * The rich-text component an editor-mode content type writes, or null when the
- * type is not edited as rich text or names no component with a quill field.
- *
- * @param array<string, mixed> $ctConfig one entry of theme.php's content_types
- * @return array{component: string, field: string}|null
- */
-function content_rich_text_editor(array $ctConfig): ?array
-{
-    if (($ctConfig['editor'] ?? '') !== 'rich-text') {
-        return null;
-    }
-
-    foreach ((array) ($ctConfig['available_components'] ?? []) as $name) {
-        $schema = content_component_definition((string) $name)['schema'] ?? [];
-
-        foreach ($schema as $field => $rules) {
-            if (is_array($rules) && ($rules['type'] ?? '') === 'quill') {
-                return ['component' => (string) $name, 'field' => (string) $field];
-            }
-        }
-    }
-
-    return null;
-}
-
-/**
- * The body a rich-text-only content type stores: one component of the declared
- * type, carrying only the fields its schema declares. Any other content type
- * keeps the component tree the editor posted.
- *
- * @param array<string, mixed> $ctConfig one entry of theme.php's content_types
- * @param array<int, mixed>    $body     the components the editor posted
- * @return array<int, mixed>
- */
-function content_rich_text_body(array $ctConfig, array $body): array
-{
-    $editor = content_rich_text_editor($ctConfig);
-
-    if ($editor === null) {
-        return $body;
-    }
-
-    $definition = content_component_definition($editor['component']);
-    $schema     = is_array($definition['schema'] ?? null) ? $definition['schema'] : [];
-
-    // A rich-text save posts only the field the editor built, so its value is
-    // taken by name rather than by position.
-    $posted = [];
-
-    foreach ($body as $component) {
-        foreach ((array) ($component['props'] ?? []) as $field => $value) {
-            $posted[$field] ??= $value;
-        }
-    }
-
-    $props = [];
-
-    foreach ($schema as $field => $rules) {
-        $props[$field] = $posted[$field] ?? '';
-    }
-
-    return [['type' => $editor['component'], 'props' => $props, 'children' => []]];
-}
-
-/*
-|--------------------------------------------------------------------------
-| Pre-publish checklist
-|--------------------------------------------------------------------------
-|
-| Evaluated when content is about to go live. Blocking rules stop the publish
-| (the item is kept as a draft instead); the rest are warnings the editor can
-| choose to ignore. Drafts are never checked, so saving work is never held up.
-|
-*/
-
-/**
- * The widths a component schema field may ask for.
- *
- * A field that declares none is automatic: the editor's grid gives it its
- * natural share of the row.
- *
- * @return list<string>
- */
-function content_component_field_spans(): array
-{
-    return ['full', 'half', 'third'];
-}
-
-/**
- * A component schema with its field widths normalised.
- *
- * The editor turns `span` into a class, so a value the stylesheet does not know
- * is dropped here — the field then behaves as if it had declared nothing. The
- * allowed values live in content_component_field_spans() so the editor, the
- * save path and the Health page all read the same list.
- *
- * @param array<string, mixed> $schema
- * @return array<string, mixed>
- */
-function content_component_field_schema(array $schema): array
-{
-    foreach ($schema as $name => $field) {
-        if (!is_array($field) || !isset($field['span'])) {
-            continue;
-        }
-
-        $span = is_string($field['span']) ? $field['span'] : '';
-
-        if (!in_array($span, content_component_field_spans(), true)) {
-            unset($schema[$name]['span']);
-        }
-    }
-
-    return $schema;
-}
-
-/**
- * A component's own definition, or [] when it does not exist.
- *
- * @return array<string, mixed>
- */
-function content_component_definition(string $name): array
-{
-    static $cache = [];
-
-    if (array_key_exists($name, $cache)) {
-        return $cache[$name];
-    }
-
-    $path = theme("components/{$name}.php");
-
-    if (!is_file($path)) {
-        $path = CORE_PATH . "/components/{$name}.php";
-    }
-
-    if (!is_file($path)) {
-        return $cache[$name] = [];
-    }
-
-    $component = require $path;
-
-    return $cache[$name] = is_array($component) ? $component : [];
-}
-
-/**
- * The URL of a component's preview image, or '' when the theme ships none.
- *
- * The convention is one folder and one name: theme/assets/previews/<component>
- * with any of the image extensions below, so a theme adds a preview by dropping
- * a file next to the others rather than by editing every component. Core
- * components look in the same folder, because it is the theme that shows them.
- */
-function component_preview_url(string $name): string
-{
-    static $cache = [];
-
-    if (array_key_exists($name, $cache)) {
-        return $cache[$name];
-    }
-
-    $cache[$name] = '';
-
-    // A component name is a slug; anything else is not ours to look up.
-    if ($name === '' || !preg_match('/^[a-z0-9-]+$/', $name)) {
-        return $cache[$name];
-    }
-
-    foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $extension) {
-        $relative = "previews/{$name}.{$extension}";
-
-        if (is_file(CMS_PATH . '/theme/assets/' . $relative)) {
-            return $cache[$name] = asset($relative);
-        }
-    }
-
-    return $cache[$name];
-}
-
-/**
- * Collect the presentation-image meta a content type declares.
- *
- * The theme lists them under the content type's `images` key (for example a
- * `thumbnail`, or a `gallery` with `multiple => true`). Values are media ids,
- * theme filenames or absolute URLs, exactly like resolve_image_value().
- *
- * A field the form did not submit is left untouched, so partial saves keep it.
- * A `multiple` field submits an array; the empty sentinel row the editor
- * renders means "remove them all" reaches this function as an array of blanks.
- *
- * @param array<string, mixed> $post
- * @param array<string, mixed> $meta
- * @param array<string, array<string, mixed>> $fields
- * @return array<string, mixed>
- */
-function content_collect_images(array $post, array $meta, array $fields): array
-{
-    foreach ($fields as $key => $field) {
-        $value = $post['meta_' . $key] ?? null;
-
-        if ($value === null) {
-            continue;
-        }
-
-        if (!empty($field['multiple'])) {
-            $values = array_values(array_filter(array_map(
-                static fn($item): string => is_string($item) ? trim($item) : '',
-                is_array($value) ? $value : []
-            ), static fn(string $item): bool => $item !== ''));
-
-            if ($values === []) {
-                unset($meta[$key]);
-            } else {
-                $meta[$key] = $values;
-            }
-
-            continue;
-        }
-
-        $value = is_string($value) ? trim($value) : '';
-
-        if ($value === '') {
-            unset($meta[$key]);
-        } else {
-            $meta[$key] = $value;
-        }
-    }
-
-    return $meta;
-}
-
-/**
- * The meta fields a content type declares for the editor, normalised.
- *
- * The theme lists them under the content type's `fields` key — its own keys
- * stored in the item's meta array, which a layout then reads as
- * `$page['meta'][key]`. This is separate from `images`, which keeps the
- * presentation images in their own card.
- *
- * A declaration uses the same vocabulary as a component schema's fields, so a
- * theme author learns one set of names. Supported: text, textarea, url, email,
- * number, checkbox, select (with `options`) and media (one image, chosen with
- * the media picker). An entry with no `type` is text.
- *
- * @param array<string, mixed> $ctConfig one entry of theme.php's content_types
- * @return array<string, array<string, mixed>> key => field
- */
-function content_meta_fields(array $ctConfig): array
-{
-    $fields = is_array($ctConfig['fields'] ?? null) ? $ctConfig['fields'] : [];
-
-    $normalised = [];
-
-    foreach ($fields as $key => $field) {
-        $field = is_array($field) ? $field : [];
-
-        if (!isset($field['type']) || $field['type'] === '') {
-            $field['type'] = 'text';
-        }
-
-        if (!isset($field['label']) || $field['label'] === '') {
-            $field['label'] = ucfirst(str_replace('_', ' ', (string) $key));
-        }
-
-        $normalised[(string) $key] = $field;
-    }
-
-    return $normalised;
-}
-
-/**
- * What a declared field currently holds, as a string for the form: the saved
- * value, else the field's default, and '' when neither is set.
- */
-function content_meta_field_value(array $field, mixed $value): string
-{
-    if (is_array($value)) {
-        return '';
-    }
-
-    $value = trim((string) $value);
-
-    return $value !== '' ? $value : trim((string) ($field['default'] ?? ''));
-}
-
-/**
- * Collect the meta fields a content type declares from the submitted form.
- *
- * A field the form did not submit is left untouched, so partial saves keep it.
- * A blank value unsets the key rather than storing an empty string. Values are
- * trimmed and capped at the field's `max`; checked checkboxes are read as true
- * and unchecked ones (which a browser submits as an empty value) as false.
- * Whether a value is a valid url, email, number or select choice is the save
- * handler's business — this only shapes what was posted.
- *
- * @param array<string, mixed> $post
- * @param array<string, mixed> $meta
- * @param array<string, array<string, mixed>> $fields  content_meta_fields()
- * @return array<string, mixed>
- */
-function content_collect_meta_fields(array $post, array $meta, array $fields): array
-{
-    foreach ($fields as $key => $field) {
-        $value = $post['meta_' . $key] ?? null;
-
-        if ($value === null) {
-            continue;
-        }
-
-        if (($field['type'] ?? 'text') === 'checkbox') {
-            $meta[$key] = validate_required($value);
-            continue;
-        }
-
-        $value = is_scalar($value) ? trim((string) $value) : '';
-
-        $max = (int) ($field['max'] ?? 0);
-
-        if ($max > 0 && mb_strlen($value) > $max) {
-            $value = mb_substr($value, 0, $max);
-        }
-
-        if ($value === '') {
-            unset($meta[$key]);
-        } else {
-            $meta[$key] = $value;
-        }
-    }
-
-    return $meta;
-}
-
-/**
- * The reason a submitted meta field is not acceptable, or '' when it is.
- *
- * The value passed is what was stored, so a field that was left blank passes:
- * only meta a theme asks for and an editor typed is judged.
- *
- * @param array<string, mixed> $field
- */
-function content_meta_field_error(array $field, mixed $value): string
-{
-    $type  = (string) ($field['type'] ?? 'text');
-    $label = (string) ($field['label'] ?? '');
-
-    if ($type === 'checkbox') {
-        return '';
-    }
-
-    $value = trim((string) $value);
-
-    if ($value === '') {
-        return '';
-    }
-
-    return match ($type) {
-        'url'    => validate_url($value) ? '' : admin_trans('content_error_meta_url', ['label' => $label]),
-        'email'  => filter_var($value, FILTER_VALIDATE_EMAIL) === false ? admin_trans('content_error_meta_email', ['label' => $label]) : '',
-        'number' => is_numeric($value) ? '' : admin_trans('content_error_meta_number', ['label' => $label]),
-        'select' => array_key_exists($value, is_array($field['options'] ?? null) ? $field['options'] : []) ? '' : admin_trans('content_error_meta_select', ['label' => $label]),
-        default  => '',
-    };
-}
-
-/**
- * Evaluate the pre-publish checklist for an item.
- *
- * `meta` and `body` may be decoded arrays or their JSON column strings, so the
- * editor, the save path and the bulk path can each pass what they hold.
- *
- * @param array<string, mixed> $page
- * @return list<array{rule: string, level: string, ok: bool, detail: string}>
- */
-function content_publish_checklist(array $page): array
-{
-    $body = content_checklist_decode($page['body'] ?? []);
-    $meta = content_checklist_decode($page['meta'] ?? []);
-
-    $required = [];
-    $altText  = [];
-    $links    = [];
-
-    content_checklist_walk($body, $required, $altText, $links);
-
-    return [
-        [
-            'rule'   => 'title',
-            'level'  => 'block',
-            'ok'     => trim((string) ($page['title'] ?? '')) !== '',
-            'detail' => '',
-        ],
-        [
-            'rule'   => 'required',
-            'level'  => 'block',
-            'ok'     => $required === [],
-            'detail' => implode('; ', $required),
-        ],
-        [
-            'rule'   => 'image_alt',
-            'level'  => 'warn',
-            'ok'     => $altText === [],
-            'detail' => implode('; ', $altText),
-        ],
-        [
-            'rule'   => 'links',
-            'level'  => 'warn',
-            'ok'     => $links === [],
-            'detail' => implode('; ', $links),
-        ],
-        [
-            'rule'   => 'description',
-            'level'  => 'warn',
-            'ok'     => trim((string) ($meta['description'] ?? '')) !== '',
-            'detail' => '',
-        ],
-    ];
-}
-
-/**
- * The blocking failures in a checklist, if any.
- *
- * @param list<array{rule: string, level: string, ok: bool, detail: string}> $items
- * @return list<array{rule: string, level: string, ok: bool, detail: string}>
- */
-function content_checklist_blockers(array $items): array
-{
-    return array_values(array_filter(
-        $items,
-        static fn(array $item): bool => ($item['level'] ?? '') === 'block' && empty($item['ok'])
-    ));
-}
-
-/**
- * Decode a JSON column, or pass an already-decoded value through.
- *
- * @return array<string, mixed>
- */
-function content_checklist_decode(mixed $value): array
-{
-    if (is_string($value)) {
-        $decoded = json_decode($value, true);
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    return is_array($value) ? $value : [];
-}
-
-/**
- * Walk a component tree, collecting checklist details.
- *
- * @param array<int, mixed> $components
- * @param list<string> $required
- * @param list<string> $altText
- * @param list<string> $links
- */
-function content_checklist_walk(array $components, array &$required, array &$altText, array &$links): void
-{
-    foreach ($components as $component) {
-        if (!is_array($component)) {
-            continue;
-        }
-
-        $name  = (string) ($component['type'] ?? '');
-        $props = is_array($component['props'] ?? null) ? $component['props'] : [];
-
-        if ($name !== '') {
-            $definition = content_component_definition($name);
-            $schema     = is_array($definition['schema'] ?? null) ? $definition['schema'] : [];
-            $label      = (string) ($definition['label'] ?? $name);
-
-            foreach ($schema as $field => $rules) {
-                if (!is_array($rules)) {
-                    continue;
-                }
-
-                if (($rules['required'] ?? false) && !validate_required($props[$field] ?? '')) {
-                    $required[] = $label . ': ' . (string) ($rules['label'] ?? $field);
-                }
-            }
-
-            // An image the theme gives a description field must describe itself.
-            foreach (['image', 'img'] as $imageField) {
-                $imageValue = (string) ($props[$imageField] ?? '');
-
-                if ($imageValue === '') {
-                    continue;
-                }
-
-                $altField = content_checklist_alt_field($schema, $imageField);
-
-                if ($altField === null) {
-                    continue;
-                }
-
-                if (trim((string) ($props[$altField] ?? '')) !== '') {
-                    continue;
-                }
-
-                // A media library image already carries its own alt text.
-                if (ctype_digit($imageValue) && trim((string) (media_by_id((int) $imageValue)['alt_text'] ?? '')) !== '') {
-                    continue;
-                }
-
-                $altText[] = $label . ': ' . (string) ($schema[$altField]['label'] ?? $altField);
-            }
-
-            // A link label with no target renders a dead link.
-            foreach ($schema as $field => $rules) {
-                if (!is_array($rules) || !content_checklist_is_link_field($field, $rules)) {
-                    continue;
-                }
-
-                if (trim((string) ($props[$field] ?? '')) !== '') {
-                    continue;
-                }
-
-                if (content_checklist_link_text($schema, $props, $field) !== '') {
-                    $links[] = $label . ': ' . (string) ($rules['label'] ?? $field);
-                }
-            }
-        }
-
-        $children = is_array($component['children'] ?? null) ? $component['children'] : [];
-        content_checklist_walk($children, $required, $altText, $links);
-    }
-}
-
-/**
- * The alt field a schema pairs with an image field, if any.
- *
- * @param array<string, mixed> $schema
- */
-function content_checklist_alt_field(array $schema, string $imageField): ?string
-{
-    foreach ([$imageField . '_alt', 'alt', 'alt_text'] as $candidate) {
-        if (isset($schema[$candidate])) {
-            return $candidate;
-        }
-    }
-
-    return null;
-}
-
-/**
- * Is this schema field a link target?
- *
- * @param array<string, mixed> $rules
- */
-function content_checklist_is_link_field(string $field, array $rules): bool
-{
-    if (($rules['type'] ?? '') === 'url') {
-        return true;
-    }
-
-    return $field === 'url' || $field === 'href' || str_ends_with($field, '_url');
-}
-
-/**
- * The visible text paired with a link target, or ''.
- *
- * Only same-prefix pairs count (`btn1_url` with `btn1_text`), plus the
- * `url`/`linktext` pair the theme uses for a call to action. A URL with no
- * label (`redirect_url`) is not a visible link, so it is ignored.
- *
- * @param array<string, mixed> $schema
- * @param array<string, mixed> $props
- */
-function content_checklist_link_text(array $schema, array $props, string $field): string
-{
-    $candidates = [];
-
-    if (str_ends_with($field, '_url')) {
-        $prefix = substr($field, 0, -4);
-        $candidates[] = $prefix . '_text';
-        $candidates[] = $prefix . '_label';
-    } elseif ($field === 'url') {
-        $candidates[] = 'linktext';
-    }
-
-    foreach ($candidates as $candidate) {
-        if (isset($schema[$candidate]) && trim((string) ($props[$candidate] ?? '')) !== '') {
-            return (string) $props[$candidate];
-        }
-    }
-
-    return '';
 }

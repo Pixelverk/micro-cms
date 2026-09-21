@@ -437,3 +437,60 @@ function delete_menu(string $slug): bool
     invalidate_cache();
     return $success;
 }
+
+/**
+ * Normalise the posted menu item tree before it is saved.
+ *
+ * `type` is a content type key, 'url' for a hand-written link, or 'category' /
+ * 'tag' for an archive. `content_id` is what lets a link follow a renamed page;
+ * the slug beside it is the fallback. Neither `content_id` nor `hidden` is
+ * written when it carries no information, so a plain item stays plain.
+ */
+function process_menu_items(array $items): array {
+    $theme = theme_config();
+    $kinds = array_merge(
+        ['url', 'category', 'tag'],
+        array_keys($theme['content_types'] ?? [])
+    );
+
+    $result = [];
+
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $type = (string) ($item['type'] ?? 'url');
+
+        // An item whose kind this install does not know is treated as a custom
+        // link rather than silently dropped.
+        if (!in_array($type, $kinds, true)) {
+            $type = 'url';
+        }
+
+        $entry = [
+            'type'     => $type,
+            'label'    => (string) ($item['label'] ?? ''),
+            'slug'     => (string) ($item['slug'] ?? ''),
+            'target'   => ($item['target'] ?? '_self') === '_blank' ? '_blank' : '_self',
+            'children' => [],
+        ];
+
+        $contentId = (int) ($item['content_id'] ?? 0);
+
+        if ($contentId > 0) {
+            $entry['content_id'] = $contentId;
+        }
+
+        if (!empty($item['hidden'])) {
+            $entry['hidden'] = true;
+        }
+
+        if (!empty($item['children']) && is_array($item['children'])) {
+            $entry['children'] = process_menu_items($item['children']);
+        }
+
+        $result[] = $entry;
+    }
+    return $result;
+}

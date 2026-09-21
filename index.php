@@ -17,11 +17,11 @@ $config = require $configFile;
 
 define('STORAGE_PATH', $config['storage_path'] ?? CMS_PATH . '/storage');
 
-// The security baseline goes out before anything can echo. common.php is
-// loaded here because it is required on every response path already; doing it
-// now means the cache firebreak, media, redirects and error pages carry the
-// headers too, not just the fully booted front end and admin.
-require_once CORE_PATH . '/helpers/common.php';
+// The security baseline goes out before anything can echo. The platform
+// bootstrap is loaded here because it is required on every response path
+// already; doing it now means the cache firebreak, media, redirects and error
+// pages carry the headers too, not just the fully booted front end and admin.
+require_once CORE_PATH . '/modules/platform/bootstrap.php';
 send_security_headers();
 
 $logging = ($config['perf_logging'] ?? false) === true;
@@ -66,7 +66,7 @@ $cacheLifetime = (int) ($config['cache_lifetime'] ?? 3600);
 
 // check for performance logging (before the firebreak, so a hit is timed)
 if ($logging) {
-    require CORE_PATH . '/helpers/perf.php';
+    require CORE_PATH . '/modules/platform/perf.php';
 }
 
 /*
@@ -78,7 +78,7 @@ if ($logging) {
 |
 | It only fires without a session cookie. Preview requires a signed-in user,
 | and a signed-in user always has a session, so a cookie-less request can be
-| neither. Anything with a session falls through to checkCache() below, which
+| neither. Anything with a session falls through to check_cache() below, which
 | decides with the real session state after the full boot.
 |--------------------------------------------------------------------------
 */
@@ -101,7 +101,7 @@ if (!str_starts_with($path, '/admin')
     && (int) ($_GET['page'] ?? 1) <= 1
     && !$publishCheckDue
 ) {
-    require_once CORE_PATH . '/helpers/cache.php';
+    require_once CORE_PATH . '/modules/platform/cache.php';
     $cacheFile = cache_file_for($request);
 
     // The database only has to exist: a cache hit reads nothing from it, but a
@@ -112,8 +112,8 @@ if (!str_starts_with($path, '/admin')
     ) {
         // Count the hit with the smallest boot that can do it: the view is
         // appended to a buffer file here and batched into the database later.
-        require_once CORE_PATH . '/helpers/common.php';
-        require_once CORE_PATH . '/helpers/analytics.php';
+        require_once CORE_PATH . '/modules/platform/bootstrap.php';
+        require_once CORE_PATH . '/modules/platform/analytics.php';
         analytics_record_view(null, true);
 
         header('Content-Type: text/html; charset=utf-8');
@@ -138,13 +138,13 @@ if ($databaseNeedsSetup && is_file($dbPath)) {
 
 // check for first run setup
 if ($doSetup) {
-    require CORE_PATH . '/helpers/setup.php';
+    require CORE_PATH . '/bootstrap/setup.php';
 }
 
 // 2. Media
 if (str_starts_with($path, '/media')) {
     require CORE_PATH . '/bootstrap/media.php';
-    serveMedia($request);
+    serve_media($request);
     if ($logging) { stop_logging(); };
     exit;
 }
@@ -152,7 +152,7 @@ if (str_starts_with($path, '/media')) {
 // 3. Admin
 if (str_starts_with($path, '/admin')) {
     require CORE_PATH . '/bootstrap/admin.php';
-    serveAdmin($request);
+    serve_admin($request);
     if ($logging) { stop_logging(); };
     exit;
 }
@@ -160,12 +160,12 @@ if (str_starts_with($path, '/admin')) {
 // 4. Frontend
 require CORE_PATH . '/bootstrap/front.php';
 
-// The front path's single boot point; serveCached()/serveFresh() assume it has
+// The front path's single boot point; serve_cached()/serve_fresh() assume it has
 // run. Only a request that already carries a session cookie can be signed in
 // or previewing, so only that request needs a session. Anonymous visitors stay
 // sessionless: no cookie, no session file, and the firebreak above stays fast
 // on every visit.
-require_once CORE_PATH . '/helpers/common.php';
+require_once CORE_PATH . '/modules/platform/bootstrap.php';
 bootstrap_core();
 
 if (isset($_COOKIE[session_name()])) {
@@ -192,13 +192,13 @@ if (maintenance_mode_enabled() && !is_logged_in()) {
 }
 
 // 4.1 Cached HTML
-if ($file = checkCache($request, $config)) {
-    serveCached($file, $config);
+if ($file = check_cache($request, $config)) {
+    serve_cached($file, $config);
     if ($logging) { stop_logging(true); };
     exit;
 }
 
 // 4.2 Database render
-serveFresh($request);
+serve_fresh($request);
 if ($logging) { stop_logging(); };
 exit;

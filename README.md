@@ -31,7 +31,11 @@ We want to present the user with html whenever they visit an url, it's not rocke
 * `theme/assets/` – Global CSS, JavaScript, and images
 * `storage/` – Cache, logs, media uploads, SQLlite file, sitemap.xml.
 * `admin/` – Admin panel for creating/editing content and managing users
-* `core/` – All the things that make it go
+* `core/modules/` – The engine, one folder per module: `platform` (config, db,
+  auth, access, cache, settings, migrations, validation), `media`, `seo`,
+  `content`, `render`, `forms`, `admin` and `operations`
+* `core/bootstrap/` – Per-entry-point bootstraps and the installer
+* `core/router.php` – Front-end and admin dispatch
 
 ---
 

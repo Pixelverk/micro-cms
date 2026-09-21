@@ -252,7 +252,7 @@ $postedComponents = array_filter(
     static fn($c) => is_array($c) && (($c['type'] ?? '') !== '' || ($c['props'] ?? []) !== [])
 );
 
-function setNestedComponent(array &$tree, array $parts, array $comp): void {
+function set_nested_component(array &$tree, array $parts, array $comp): void {
     $index = array_shift($parts);
     if (!isset($tree[$index])) $tree[$index] = [];
     if (count($parts) === 0) {
@@ -264,25 +264,25 @@ function setNestedComponent(array &$tree, array $parts, array $comp): void {
         return;
     }
     $tree[$index]['children'] ??= [];
-    setNestedComponent($tree[$index]['children'], $parts, $comp);
+    set_nested_component($tree[$index]['children'], $parts, $comp);
 }
 
 $componentsTree = [];
 foreach ($postedComponents as $path => $comp) {
     $parts = explode('-', (string)$path);
-    setNestedComponent($componentsTree, $parts, $comp);
+    set_nested_component($componentsTree, $parts, $comp);
 }
 
-function reindexRecursive(array $array): array {
+function reindex_recursive(array $array): array {
     $result = [];
     foreach ($array as $item) {
-        if (isset($item['children'])) $item['children'] = reindexRecursive($item['children']);
+        if (isset($item['children'])) $item['children'] = reindex_recursive($item['children']);
         $result[] = $item;
     }
     return $result;
 }
 
-$contentData['body'] = reindexRecursive($componentsTree);
+$contentData['body'] = reindex_recursive($componentsTree);
 
 // A rich-text-only content type stores exactly the one component its manifest
 // names, whatever the request posted, so the editor's output and the stored

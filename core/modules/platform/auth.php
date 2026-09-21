@@ -107,17 +107,13 @@ function login(string $username, string $password): bool
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
-        if (function_exists('throttle_fail')) {
-            throttle_fail($username);
-            log_activity('user.login_failed', 'user', null, $username, []);
-        }
+        throttle_fail($username);
+        log_activity('user.login_failed', 'user', null, $username, []);
         return false;
     }
 
     // A valid password clears any pending lockout counter.
-    if (function_exists('throttle_clear')) {
-        throttle_clear($username);
-    }
+    throttle_clear($username);
 
     // Regenerate session ID on login (important)
     session_regenerate_id(true);
@@ -133,9 +129,7 @@ function login(string $username, string $password): bool
 
     // A fresh preview token per login, kept in its own cookie so it survives
     // the session-id regeneration above.
-    if (function_exists('preview_token_issue')) {
-        preview_token_issue();
-    }
+    preview_token_issue();
 
     unset($_SESSION['csrf_token']);
 
@@ -146,9 +140,7 @@ function login(string $username, string $password): bool
         'id'         => $user['id'],
     ]);
 
-    if (function_exists('log_activity')) {
-        log_activity('user.login', 'user', (int) $user['id'], $user['username'], []);
-    }
+    log_activity('user.login', 'user', (int) $user['id'], $user['username'], []);
 
     return true;
 }
@@ -158,13 +150,11 @@ function logout(): void
     $userId = current_user_id();
     $username = current_username();
 
-    if ($userId && function_exists('log_activity')) {
+    if ($userId) {
         log_activity('user.logout', 'user', $userId, $username, []);
     }
 
-    if (function_exists('preview_token_clear')) {
-        preview_token_clear();
-    }
+    preview_token_clear();
 
     $_SESSION = [];
 
@@ -332,9 +322,7 @@ function session_forget_identity(): void
 {
     $_SESSION = [];
 
-    if (function_exists('preview_token_clear')) {
-        preview_token_clear();
-    }
+    preview_token_clear();
 }
 
 // --------------------------------------------------
@@ -470,11 +458,11 @@ function password_reset_complete(array $reset, string $newPassword): void
 
 /**
  * The reset email. In production it goes out with mail(); everywhere else it
- * is appended to storage/logs/forms.log the way core/form-submit.php logs.
+ * is appended to storage/logs/forms.log the way core/modules/forms/submit.php logs.
  */
 function password_reset_mail(array $user, string $rawToken): void
 {
-    $link = seo_absolute_url(url('admin/reset-password')) . '?token=' . urlencode($rawToken);
+    $link = absolute_url(url('admin/reset-password')) . '?token=' . urlencode($rawToken);
     $site = (string) get_setting('site_title', 'Micro CMS');
 
     $subject = 'Reset your password for ' . $site;
@@ -503,5 +491,23 @@ function password_reset_mail(array $user, string $rawToken): void
 
     if (!mail((string) $user['email'], $subject, $body, implode("\r\n", $headers))) {
         debug_log('password reset mail failed for user ' . (int) $user['id']);
+    }
+}
+
+
+
+
+// login status? 
+function is_logged_in(): bool
+{
+    return !empty($_SESSION['user_id']);
+}
+
+
+function require_login(): void
+{
+    if (!is_logged_in()) {
+        redirect('login');
+        exit;
     }
 }

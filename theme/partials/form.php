@@ -27,7 +27,7 @@ declare(strict_types=1);
 | The CSS and JS ship with the first form on the page: collect_css() and
 | collect_js() de-duplicate by key, so no component has to carry them.
 |
-| Submission is core's: core/form-submit.php validates the declared fields,
+| Submission is core's: core/modules/forms/submit.php validates the declared fields,
 | stores the submission and answers JSON. The script below posts with fetch and
 | refreshes an expired token once, because a cached page can outlive it.
 |

@@ -50,16 +50,28 @@ demo content into `storage/` on the next request. Demo logins are `admin` / `adm
 | Path | Role |
 | --- | --- |
 | `index.php` | Single front controller: installer check, then media / admin / front |
-| `core/helpers/*.php` | All shared functions, loaded once by `bootstrap_core()` |
-| `core/render.php` | Layout + component rendering, `<head>` assembly, minify in production |
-| `core/router.php` | Front-end routing, admin dispatch, redirect helpers |
-| `core/bootstrap/{front,admin,media}.php` | Per-entry-point bootstraps |
+| `core/modules/platform/` | Foundation: config, HTTP, sessions, db, cache, settings, auth, access, i18n, migrations, validation |
+| `core/modules/media/` | Media rows, URLs, image value resolution, upload processing |
+| `core/modules/seo/` | Head metadata, manifest, sitemap, robots |
+| `core/modules/content/` | The data model: content, taxonomy, trash, versions, search, redirects, menus, checklist |
+| `core/modules/render/` | Layout + component rendering, `<head>` assembly, images, icons |
+| `core/modules/forms/` | Public submissions and the `/form-submit` / `/form-token` endpoints |
+| `core/modules/admin/` | The admin shell: asset stamping, the 403 page, nav state, media-usage scan |
+| `core/modules/operations/` | Static export, backup, content package, Health |
+| `core/modules/platform/bootstrap.php` | `bootstrap_core()` — the one loader for every module file |
+| `core/router.php` | Front-end routing, admin dispatch |
+| `core/bootstrap/` | Per-entry-point bootstraps (`front`, `admin`, `media`) and the installer (`setup.php`) |
 | `core/components/` | Fallback components; `sample-component.php` documents the contract |
 | `admin/` | One file per page, or `<dir>/index.php`; wrapped by `admin/partials/layout.php` |
 | `theme/theme.php` | Manifest: layouts, headers/footers, content types, form types, styles, scripts |
 | `theme/components/`, `theme/layouts/` | The active theme |
 | `tests/` | Dependency-free harness; `tests/README.md` explains isolation |
 | `storage/` | SQLite DB, cache, logs, sessions, media, sitemap (gitignored) |
+
+Modules are folders under `core/modules/`, loaded by one explicit list in
+`bootstrap_core()` — no manifests, discovery, autoloader or namespaces. They
+depend one way (`platform → media → seo → content → render/forms/admin →
+operations`); `tests/design.test.php` enforces that, so do not reach back up.
 
 ## Request flow
 
@@ -142,8 +154,8 @@ before removing it.
 
 ### Add a schema migration
 
-Add a keyed closure to `migrate_registry()` in `core/helpers/migrate.php`,
-**and** make the same change in `core/helpers/setup.php`. Fresh installs never
+Add a keyed closure to `migrate_registry()` in `core/modules/platform/migrate.php`,
+**and** make the same change in `core/bootstrap/setup.php`. Fresh installs never
 run migrations, so setup.php is the schema source of truth. Migrations must be
 idempotent; a marker file (`storage/.migrations`) skips the registry when it is
 current.
@@ -152,7 +164,7 @@ current.
 
 Create `admin/<page>.php` (or `admin/<page>/index.php`) — paths must be
 lowercase `[a-z0-9/-]`. If the page needs more than "signed in", add its
-capability to `admin_page_capabilities()` in `core/helpers/admin.php` and gate
+capability to `admin_page_capabilities()` in `core/modules/platform/access.php` and gate
 actions with `require_capability()`. Add navigation in
 `admin/partials/sidebar.php`, strings to both language files, and a `$pageHelp`
 block before including the layout.
@@ -176,7 +188,7 @@ block before including the layout.
   cannot be read and a request touching it dies with a *blank 500* — no message,
   no stack trace. This has already cost two debugging sessions:
   `admin/content/duplicate.php` (a new admin page) and
-  `core/helpers/pagination.php` (required by `bootstrap_core()` on every
+  `core/modules/platform/pagination.php` (required by `bootstrap_core()` on every
   request, so it took the whole site down, not just one page).
   Editing an existing file preserves its mode, so this only bites files that are
   **created**. Check before finishing a change:

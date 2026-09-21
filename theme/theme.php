@@ -14,7 +14,7 @@ return [
     |--------------------------------------------------------------------------
     | Structured data
     |--------------------------------------------------------------------------
-    | Emit JSON-LD in <head> (core/helpers/seo.php). The homepage also carries
+    | Emit JSON-LD in <head> (core/modules/seo/seo.php). The homepage also carries
     | an Organization entry.
     */
     'schema' => true,
@@ -247,7 +247,7 @@ return [
     |--------------------------------------------------------------------------
     | utilities.css is the shared class layer (grid, spacing, cards, buttons).
     | style.css holds theme tokens and theme-wide rules. Per-component CSS is
-    | collected by core/render.php and injected after both, so a component can
+    | collected by core/modules/render/render.php and injected after both, so a component can
     | always override this layer.
     |
     | Each URL is stamped with its file's modification time (asset()), so an

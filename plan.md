@@ -34,6 +34,9 @@ These are not up for renegotiation inside a phase:
 * **B — building themes** (the developer-facing side).
 * **C — running a site** (the editor/operator side).
 * **D — multi-language front end** (deferred; design kept in `old-plan.md`).
+* **E — structure refactor** (organisational only: `core/` grouped into modules
+  plus the boundary fixes that make the modules point one way; no behaviour
+  change). Phases M1–M8, then optional M9, in the track at the end of this file.
 
 ## Rules every phase follows
 
@@ -54,7 +57,7 @@ These are not up for renegotiation inside a phase:
      theme *.php -type f ! -perm -o=r` must print nothing (`chmod 644`). A file
      created `600` returns a blank 500.
    * `storage/` must be writable by the web server user.
-   * Schema changes go in **both** `core/helpers/setup.php` (fresh installs) and
+   * Schema changes go in **both** `core/bootstrap/setup.php` (fresh installs) and
      `migrate_registry()` (upgrades), and migrations are idempotent.
    * Removing a component from `available_components` is a content-affecting
      change: check existing content first (an unknown type becomes an HTML
@@ -64,9 +67,11 @@ These are not up for renegotiation inside a phase:
 
 ## Phase table
 
-No phase is scheduled. Everything the last tables held has shipped: small fixes
-and tidy-ups, media fallbacks without theme placeholder files, component
-previews with the Add component dialog, and the whole-site backup download.
+Track E (the structure refactor) has shipped, phase by phase; the track at the
+end of this file is now a record of it. Everything the last tables held has
+shipped too: small fixes and tidy-ups, media fallbacks without theme
+placeholder files, component previews with the Add component dialog, and the
+whole-site backup download.
 
 **Shipped:** rich-text-only content types — a content type can declare
 `'editor' => 'rich-text'` and be edited as one rich text field; content-type
@@ -118,7 +123,7 @@ so no component name is repeated and no second source of truth is introduced.
 
 ### Editor (`admin/content/edit.php`)
 
-* `content_rich_text_editor($ctConfig)` (new, in `core/helpers/content.php`)
+* `content_rich_text_editor($ctConfig)` (new, in `core/modules/content/components.php`)
   returns `['component' => name, 'field' => key]` when the type declares the
   mode and one of its named components exists with a `quill` field; `null`
   otherwise. `save.php` and `health.php` use the same helper.
@@ -248,7 +253,7 @@ mechanism with its galleries is untouched. `content_meta_fields()` reads only
 
 **Where things happen.**
 
-* `core/helpers/content.php` — `content_meta_fields()` normalises the
+* `core/modules/content/meta.php` — `content_meta_fields()` normalises the
   declaration, `content_meta_field_value()` picks the value the form shows, and
   `content_collect_meta_fields()` shapes what was posted (trimmed, capped at
   `max`, blank clears the key, a checkbox is true/false, an unposted field is
@@ -263,7 +268,7 @@ mechanism with its galleries is untouched. `content_meta_fields()` reads only
   and before Images.
 * `admin/content/save.php` collects the fields and adds each type failure to the
   error list, so an invalid value is refused before anything is written.
-* `core/helpers/common.php` counts a `media` field among the keys
+* `core/modules/admin/media-usage.php` counts a `media` field among the keys
   `media_usage_map()` scans, so an image held in one is not "unused".
 * Validation messages are `content_error_meta_url`, `..._email`, `..._number`
   and `..._select` in both language files. `content_broken_links()` already
@@ -346,7 +351,7 @@ to an existing schema keeps the width it always had.
   The grid is switched by the card's own width (`@container`), not the viewport:
   six tracks, then three on a card under 1040px, then one field per row under
   640px.
-* `core/helpers/content.php` owns the allowed values and normalises the schema
+* `core/modules/content/components.php` owns the allowed values and normalises the schema
   once, so the editor script only applies the class it is handed and there is
   one list to change. The shipped theme declares a span only where it is not the
   default — the hero's and CTA's paired fields.
@@ -361,6 +366,410 @@ to an existing schema keeps the width it always had.
 values kept, an unknown one dropped) and for the editor applying the class.
 Through the local server: a component whose schema declares spans renders those
 classes, and one that declares none keeps the automatic flow.
+
+---
+
+# Track E — structure refactor (module-oriented)
+
+**Status:** shipped. Organisational only: files, folders, and where functions live.
+No behaviour change, no new concept beyond the module folders themselves, no
+class, namespace, autoloader, build step or dependency. `core/` is grouped into
+**modules** — one folder per concern, with the single explicit loader grouped to
+match — and the few genuine boundary inversions are fixed so the modules point
+one way.
+
+## Why
+
+* **Three helpers mix unrelated concerns and are too big to navigate.**
+  `core/helpers/common.php` (1293 lines) holds config, security headers,
+  sessions, the loader, theme, escaping, URLs, asset stamping, image rendering,
+  media, dates and auth state. `core/helpers/content.php` (2299 lines) holds
+  CRUD, preview, trash, taxonomy, component schema, meta fields and the publish
+  checklist. `core/helpers/export.php` (1472 lines) holds three features:
+  static-site export, full-site backup and the content package.
+* **Several functions sit in a file that does not own their concept.**
+  `load_taxonomy_archive()`/`taxonomy_per_page()` are in `core/db.php` (a
+  connection file); `maintenance_*()` is in `settings.php`; `form_rate_limit_ok()`
+  is at the bottom of the `core/form-submit.php` endpoint; `processMenuItems()`,
+  `setNestedComponent()`, `reindexRecursive()`, `sanitizeFilename()`,
+  `media_usage_map()` and the `is_active()` family live in the page or partial
+  that happens to call them, leaking generic globals (`is_active`, `showToast`).
+* **The boundaries are undefined, and the code compensates with guards.** With
+  comments stripped, the real cross-file graph shows the cost: **30+
+  `function_exists()` checks** used as availability workarounds
+  (`auth.php` guards `preview_token_*`, `throttle_*`, `log_activity`;
+  `content.php` guards half its collaborators; `validate.php`/`csrf.php` guard
+  `redirect_with_toast`), and genuine inversions where low-level code reaches
+  upward (`settings.php → load_content_by_id()`, `auth.php → seo_absolute_url()`
+  and `admin_roles()`, `admin.php → activity/settings`).
+* **The test bootstrap duplicates the loader.** `tests/bootstrap.php` hand-lists
+  23 `require`s that `bootstrap_core()` already owns, so the two lists drift.
+* **A handful of PHP functions are camelCase** (`checkCache`, `serveFresh`,
+  `showToast`, `sanitizeFilename`, …) where the convention is snake_case.
+* **Comments and docs name paths that will move**, and `tests/README.md`
+  documents 4 of the 30 suites.
+* Two pieces of dead code ride along: `bootstrap_core(bool $withContent)` is
+  never called with `false`, and `load_settings()` sets `homepage_title`, which
+  nothing reads.
+
+## What "module" means here — and what it does not
+
+A **module** is a folder under `core/modules/` plus its lines in the one
+explicit loader. That is the whole contract.
+
+* **No manifests, no discovery, no registry, no autoloader, no namespaces, no
+  classes, no per-module `init.php`.** Functions stay global and keep their
+  prefixes; `bootstrap_core()` keeps one explicit, grouped `require` list.
+* **Modules are an organising contract, not a plugin system.** Nothing is
+  registered, loaded on demand, or swappable. Adding a file to a module still
+  means adding one line to the loader — the same discipline as today.
+* The theme already works this way (`theme/` is a folder with a manifest and a
+  fixed contract); this gives `core/` the same shape without inventing a plugin
+  layer the project's fixed constraints rule out.
+
+## Fixed constraints for this track
+
+* **Output and behaviour are identical.** Same URLs, stored data, markup, CSS
+  classes, language keys and component contract. A move never renames a function
+  unless the phase says so.
+* **`admin/`, `theme/`, `tests/` and `storage/` keep their shape**, except the
+  in-code comment paths a phase updates. No admin page changes URL.
+* **The architectural contract is preserved.** No classes, namespaces,
+  autoloader, composer, build step or dependency. `index.php` still requires the
+  one early file before `send_security_headers()`; `bootstrap_core()` still loads
+  the rest. `.htaccess` blocks `core/` wholesale, so module depth is invisible to
+  it.
+* New or moved files under the web root are world-readable (`644`).
+* One phase ships alone; `php tests/run.php` passes before the next starts.
+
+## Target layout for `core/`
+
+```text
+core/
+├── router.php            dispatch: route_request(), route_admin_request(),
+│                         route_search_request(), load_fallback_404()
+├── bootstrap/            front.php, admin.php, media.php  (entry wiring)
+│                         setup.php — the installer, moved here from helpers/
+├── components/           404.php, quill-editor.php, sample-component.php
+└── modules/
+    ├── platform/         foundation; depends on nothing above it
+    │   ├── bootstrap.php   config(), security headers, session_boot(), bootstrap_core()
+    │   ├── http.php        e(), url(), sanitize_slug(), like_escape(),
+    │   │                   request_wants_json(), debug_log(), redirect(),
+    │   │                   redirect_with_toast(), site_origin(), absolute_url()
+    │   ├── theme.php       theme(), theme_config(), asset(), version_asset_url()
+    │   ├── datetime.php    site_timezone(), format_date(), format_local_datetime()
+    │   ├── db.php          db()
+    │   ├── settings.php    load/get/set/save settings, settings_cache_clear()
+    │   ├── cache.php       cache_file_for(), invalidate_cache(), cache_write(), minify_html()
+    │   ├── migrate.php     migrations + database_is_ready() + database_is_writable()
+    │   ├── validate.php    validate_*()
+    │   ├── throttle.php    throttle_*()
+    │   ├── csrf.php        csrf_*(), form_token_*()
+    │   ├── access.php      roles, capabilities, admin_guard(), can_edit_content()
+    │   ├── i18n.php        admin_languages(), admin_locale(), admin_trans()
+    │   ├── auth.php        users, login/logout, session, is_logged_in(), require_login()
+    │   ├── preview.php     can_preview_content(), preview_token*, is_preview_request()
+    │   ├── activity.php    audit log
+    │   ├── analytics.php   page views
+    │   ├── pagination.php  pagination_*()
+    │   ├── maintenance.php maintenance mode + the 503 response
+    │   ├── zip.php
+    │   └── perf.php        (required on demand by index.php, as today)
+    ├── media/            depends on platform only — a leaf
+    │   ├── media.php       media_by_id/formats/url/is_image, resolve_image_value(),
+    │   │                   media_delete(), delete_media_directory(), media_directory_size()
+    │   └── upload.php      sanitize_filename(), save_resized_image(), generate_lqip()
+    ├── seo/              depends on platform, media
+    │   ├── seo.php         canonical, metadata, robots, head tags, JSON-LD, editable fields
+    │   ├── manifest.php    icons, app icons, manifest, theme colour
+    │   ├── sitemap.php
+    │   └── robots.php
+    ├── content/          depends on platform, media, seo
+    │   ├── content.php     visibility, load/list, status, save, URLs, links
+    │   ├── taxonomy.php    terms + archive loading (incl. from db.php)
+    │   ├── trash.php
+    │   ├── versions.php
+    │   ├── publishing.php
+    │   ├── search.php
+    │   ├── redirects.php
+    │   ├── menus.php       + process_menu_items()
+    │   ├── components.php  component definitions, schema, spans, rich-text mode
+    │   ├── meta.php        meta fields + image collection
+    │   └── checklist.php   publish checklist
+    ├── render/           depends on platform, media, seo, content
+    │   ├── render.php      page/layout/component rendering
+    │   ├── images.php      render_image(), picture(), image_placeholder*()
+    │   ├── theme.php       site_logo_url(), site_favicon_url()
+    │   └── icons.php
+    ├── forms/            depends on platform
+    │   ├── submissions.php form_submission_*(), form_rate_limit_ok()
+    │   ├── submit.php      the /form-submit endpoint (from core/form-submit.php)
+    │   └── token.php       the /form-token endpoint (from core/form-token.php)
+    ├── admin/            depends on platform, media, seo, content
+    │   ├── admin.php       admin_asset(), render_admin_forbidden()
+    │   ├── nav.php         admin_nav_active() family (from admin/partials/sidebar.php)
+    │   └── media-usage.php media_usage_map(), media_referenced_paths(),
+    │                       media_orphans(), media_delete_orphans(),
+    │                       media_delete_missing_rows()
+    └── operations/       operator tools; depends on platform, media, seo, content, render
+        ├── export.php        static-site export + warm_cache()
+        ├── backup.php
+        ├── content-package.php  content_package_*(), utilities_package_*()
+        └── health.php
+```
+
+## Dependency direction
+
+The target is one-way, low to high:
+
+```text
+platform  →  media  →  seo  →  content  →  render
+                                       →  forms (platform only)
+                                       →  admin
+                                       →  operations
+```
+
+| Module | Owns | May depend on |
+| --- | --- | --- |
+| `platform` | app plumbing and cross-cutting primitives | — |
+| `media` | media rows, URLs, uploads, value resolution | platform |
+| `seo` | head metadata, manifest, sitemap, robots | platform, media |
+| `content` | the data model and everything that reads/writes it | platform, media, seo |
+| `render` | turning a page array into HTML | platform, media, seo, content |
+| `forms` | public submissions and their two endpoints | platform |
+| `admin` | the admin shell and operator-facing helpers | platform, media, seo, content |
+| `operations` | export, backup, content package, health | platform, media, seo, content, render |
+
+`core/router.php`, `core/bootstrap/*` and the admin pages under `admin/` are the
+**top layer**: they may call anything. Within `platform`, `cache ⇄ settings` and,
+within `content`, the `content ⇄ redirects/search/versions/menus` pairs stay
+mutually dependent; those are internal to one module and deliberately not
+untangled (see Non-goals).
+
+## Boundary fixes (the cheap inversions)
+
+These are the fixes that make the direction above true. Each is a move of
+existing code plus the removal of guards that only existed because the boundary
+was undefined.
+
+| # | Symptom today | Fix | Functions / sites |
+| --- | --- | --- | --- |
+| B1 | `validate.php`, `csrf.php`, `auth.php`, `content.php` guard calls that are always present on a booted request | move the callee down; delete the guard | `redirect_with_toast` → `platform/http.php` and drop the guard in `validate.php:39`, `csrf.php:82`; `preview_token_*` → `platform/preview.php` and drop the guards in `auth.php:136,165,335` |
+| B2 | `router.php` owns `redirect()`/`redirect_with_toast()`, so five files point at the dispatcher | move both to `platform/http.php`; `router.php` keeps only routing | `redirect`, `redirect_with_toast` |
+| B3 | `settings.php → load_content_by_id()` for two convenience keys | resolve the homepage where it is shown; drop the dead key | `load_settings()` no longer sets `homepage_slug`/`homepage_title`; add `content_homepage_slug()` in `content/`; update `seo.php:142`, `admin/content/edit.php:410,416`, `admin/content/index.php:21` |
+| B4 | `admin.php` is a single file mixing authorization, i18n and the admin shell, so `content → admin` and `auth → admin` | split it by layer | `access.php` + `i18n.php` → `platform/`; `admin_asset()`, `render_admin_forbidden()` → `admin/admin.php`; nav helpers → `admin/nav.php` |
+| B5 | `auth.php ⇄ content.php` via preview tokens | move preview to `platform/preview.php` | `can_preview_content`, `preview_cookie_name`, `preview_token*`, `is_preview_request`, `preview_url` |
+| B6 | `common.php` scans content and menus to map media usage | move the scanning out; leave media read a leaf | `media_usage_map`, `media_referenced_paths`, `media_orphans`, `media_delete_orphans`, `media_delete_missing_rows` → `admin/media-usage.php` (only admin pages call them) |
+| B7 | `common.php` mixes theme, images, media and HTTP | split it into its modules | `http.php`, `theme.php`, `datetime.php` → `platform/`; `media.php` → `media/`; `images.php` → `render/` |
+| B8 | `db.php` loads taxonomy archives | move to `content/taxonomy.php` | `taxonomy_per_page`, `load_taxonomy_archive` |
+| B9 | `auth.php → seo_absolute_url()` for a password-reset link | move generic URL builders to platform | `seo_site_url` → `site_origin()`, `seo_absolute_url` → `absolute_url()` in `platform/http.php`; update `seo.php`, `auth.php` |
+| B10 | `setup.php` is an installer that imports the demo package, so it sits above every module | classify it as entry wiring | move to `core/bootstrap/setup.php`; it still calls `bootstrap_core()` itself |
+| B11 | dead parameter and dead key | remove | `bootstrap_core(bool $withContent)`; `homepage_title` (covered by B3) |
+
+B1–B5 are the ones that remove real coupling; B6–B11 are placement and dead-code
+cleanup that fall out of the same pass.
+
+## Verification bar for every phase
+
+1. `php tests/run.php` passes.
+2. **The function inventory is unchanged** except for names a phase deliberately
+   changes. Before the phase, save
+   `grep -rhoP '^function \K[a-zA-Z0-9_]+' core admin theme | sort` to
+   `tests/.tmp/`; diff it after. A phase that moves code loses no function.
+3. **Rendered output is unchanged.** With the local server running, capture the
+   body of a fixed URL set before and after and diff it: `/`, one page, one blog
+   post, a taxonomy archive, `/search?q=…`, a missing URL (404), and each admin
+   page the phase touches. The suite does not see markup; this does.
+4. `git status` / `git diff --stat` are reviewed. Pure moves use `git mv`; the
+   diff should be a move plus loader lines plus the comments naming the path.
+5. `find admin core theme *.php -type f ! -perm -o=r` prints nothing.
+6. Anything the suite cannot see is checked in the browser through
+   `CMS_CONFIG_FILE="$PWD/tests/config.server.php" php -S 127.0.0.1:8080 tests/router.php`.
+
+From M8 on, once every module is in place, add one more:
+
+7. **Module direction holds.** `tests/design.test.php` gains a source-level
+   `t('modules only depend downward', …)` that maps every function to its module
+   from the file that defines it, strips comments with
+   `php_strip_whitespace()`, and asserts no call goes from a lower module to a
+   higher one (layer order plus a short allowlist for the two deliberate
+   intra-module cycles). It fails if a future change reaches back up.
+
+## Phase table
+
+| Phase | Change | Risk |
+| --- | --- | --- |
+| M1 | Create `core/modules/` and move **platform** (split `common.php`; db, settings, cache, migrate, validate, throttle, csrf, activity, analytics, pagination, maintenance, zip, perf, auth) | medium |
+| M2 | Boundary fixes B1–B6, B9–B11 (guards, redirects, homepage, admin split, preview, media-usage, seo URLs, setup move, dead code) | medium |
+| M3 | Move **content** (and split `content.php`; taxonomy out of `db.php`, B8) | medium |
+| M4 | Move **media**, **seo** | low |
+| M5 | Move **render** | low |
+| M6 | Move **forms** (incl. the two endpoints) | low |
+| M7 | Move **admin**, **operations** | low |
+| M8 | Docs and stale references; add the direction test | low |
+| M9 | Optional, confirmed separately | medium |
+
+---
+
+## M1 — Platform module
+
+**Steps, each shippable alone.**
+
+1. Create `core/modules/platform/` and split `common.php` into `bootstrap.php`
+   (config, security headers, `session_boot()`, `bootstrap_core()`), `http.php`,
+   `theme.php` and `datetime.php`. Keep `bootstrap.php` the single early file:
+   it must still define what `index.php` uses before `bootstrap_core()`
+   (`config()`, `send_security_headers()`, `debug_log()`, `theme()`,
+   `bootstrap_core()`) — which `core/helpers/setup.php` also relies on.
+2. The rest of `common.php` goes straight to its final home in the same step, so
+   no function is ever parked: the media read helpers and `resolve_image_value()`
+   → `media/media.php`; `render_image()`, `picture()` and the placeholder → 
+   `render/images.php`; the usage/orphan scanners → `admin/media-usage.php`;
+   `is_logged_in()`/`require_login()` → `platform/auth.php`. (This is B7.)
+3. Move `db.php`, `settings.php`, `cache.php`, `migrate.php`, `validate.php`,
+   `throttle.php`, `csrf.php`, `activity.php`, `analytics.php`,
+   `pagination.php`, `maintenance.php`, `zip.php`, `perf.php` and `auth.php`
+   into `platform/`.
+4. Update the loader (`bootstrap_core()`), `index.php`, `core/bootstrap/admin.php`,
+   `core/bootstrap/front.php`, `core/helpers/setup.php` and
+   `tests/bootstrap.php`.
+5. Fold in the E1 consolidation: `tests/bootstrap.php` calls `bootstrap_core()`
+   instead of hand-listing helpers, then requires `render.php`/`router.php`.
+
+**Verify.** Tests; function inventory; homepage and admin dashboard render;
+`git mv` shows the platform files moving with their contents intact.
+
+## M2 — Boundary fixes
+
+Apply B1–B6 and B9–B11 (B7 landed with M1's split; B8 waits for M3, when the
+content module exists). Do them as ordered steps, each shipping alone: B2 and B9
+first (they are pure moves with call-site updates), then B1 (guard removal), B3,
+B5, B4, B6, B10, B11.
+
+**Verify.** Tests after each step; the function inventory changes only by the
+three deliberate renames (`seo_site_url` → `site_origin`, `seo_absolute_url` →
+`absolute_url`, plus any M8 naming); grep confirms no `function_exists('redirect_with_toast')`,
+`function_exists('preview_token_` or `function_exists('throttle_` remains;
+password reset still produces a working link (manual, via the log in dev);
+Settings → Maintenance still toggles the 503.
+
+## M3 — Content module
+
+**Change.** Move the content helpers into `core/modules/content/`, splitting
+`content.php` into `content.php` (load/list/save/status/URLs/links),
+`trash.php`, `components.php`, `meta.php`, `checklist.php`, and adding
+`taxonomy.php` (which also absorbs `taxonomy_per_page()` and
+`load_taxonomy_archive()` from `db.php` — B8). Move `versions.php`, `publishing.php`,
+`search.php`, `redirects.php` and `menus.php` in, and move `processMenuItems()`
+from `admin/menu/save.php` into `menus.php`.
+
+**Verify.** Tests (content, http, search, redirects, pagination, seo, versions,
+trash, menus); golden diff includes a taxonomy archive and a token preview;
+menu editor saves.
+
+## M4 — Media and SEO modules
+
+**Change.** Move `media.php` and `upload.php` into `core/modules/media/`
+(media read, `resolve_image_value()`, `media_delete()`, `delete_media_directory()`,
+`media_directory_size()`, and the upload helpers from `admin/media/save.php`).
+Move the SEO helpers into `core/modules/seo/`, splitting `seo.php` into
+`seo.php` and `manifest.php` (the `seo_icon_*`, `seo_app_icons*`,
+`seo_manifest*`, `seo_theme_color`, `seo_app_head_tags` families), and move
+`sitemap.php` and `robots.php` in.
+
+**Verify.** Tests (media, seo, backup, export); a media upload still produces
+variants; `robots.txt`, `sitemap.xml` and `site.webmanifest` still serve through
+the local server; golden diff on a page with `<head>` metadata.
+
+## M5 — Render module
+
+**Change.** Move `core/render.php` → `core/modules/render/render.php`, the
+image helpers (`resolve_image_value` stays in media; `render_image()`, `picture()`,
+`image_placeholder()`, `image_placeholder_css()`) into `render/images.php`, the
+logo/favicon resolvers (`site_logo_url()`, `site_favicon_url()`) into
+`render/theme.php`, and `icons.php` in. Update
+`core/bootstrap/front.php`, `core/bootstrap/admin.php` and `tests/bootstrap.php`
+to the new `render.php` path.
+
+**Verify.** Tests (theme, design, seo); the homepage and every layout render;
+component CSS/JS collection and the image placeholder still appear in `<head>`.
+
+## M6 — Forms module
+
+**Change.** Move `forms.php` → `forms/submissions.php`; move
+`core/form-submit.php` → `forms/submit.php` (with `form_rate_limit_ok()` moved
+into `submissions.php`) and `core/form-token.php` → `forms/token.php`. Update the
+two `require`s in `core/router.php` and the comments in `theme/partials/form.php`
+and `platform/auth.php`.
+
+**Verify.** Tests (forms, forms-http, csrf); a contact submission through the
+local server stores a row and logs the notification in dev; a stale token is
+refreshed by `/form-token`.
+
+## M7 — Admin and operations modules
+
+**Change.** Create `core/modules/admin/` (`admin.php`, `nav.php` — the
+`admin_nav_active()` family from `admin/partials/sidebar.php` — and
+`media-usage.php` from M2). Create `core/modules/operations/` with `export.php`,
+`backup.php`, `content-package.php` (plus `utilities_package_sections()` /
+`utilities_import_read()` from `admin/utilities.php`) and `health.php`.
+
+**Verify.** Tests (admin, design, health, backup, export, settings); the sidebar
+active state is correct on dashboard/content/category/messages; Utilities
+export/backup/import preview all render; admin → Health loads; a fresh install
+still seeds.
+
+## M8 — Docs, names, and the direction test
+
+**Change.**
+* PHP function names to snake_case: `checkCache` → `check_cache`, `serveCached`
+  → `serve_cached`, `serveFresh` → `serve_fresh`, `serveAdmin` → `serve_admin`,
+  `serveMedia` → `serve_media`, `setNestedComponent` → `set_nested_component`,
+  `reindexRecursive` → `reindex_recursive`, `processMenuItems` →
+  `process_menu_items`, `sanitizeFilename` → `sanitize_filename`, `showToast` →
+  `admin_toast`. Browser JavaScript keeps camelCase.
+* Add the module-direction test to `tests/design.test.php` (verification point 7).
+* Update `AGENTS.md` (the "Where things are" table and the `core/helpers/*`
+  references), `README.md` (the `core/` line), `tests/README.md` (its suite table
+  lists 4 of 30), this file's own `core/helpers/setup.php` reference under "Rules
+  every phase follows", and in-code comments naming moved files
+  (`theme/theme.php`, `admin/partials/docs-content.php`, `core/router.php`,
+  `theme/partials/form.php`).
+
+**Why the direction test belongs in the suite:** `tests/design.test.php` is
+already source-level (it greps markup and translation keys), so a structural
+assertion is in keeping, and it is what stops the next change from quietly
+reaching back up out of `platform`.
+
+**Verify.** `grep -rnP '^function [a-z]+[A-Z]' core admin` returns nothing
+(JS excluded); a repo-wide grep for every old path returns nothing outside
+`old-plan.md`; tests pass with the new suite.
+
+## M9 — Optional, confirmed separately
+
+* Split `platform/access.php` further if roles and capabilities outgrow one file.
+* Deduplicate the category and tag admin pages: `bulk.php` is ~87% identical,
+  `edit.php` ~78% and `index.php` ~63%. Extract the shared bulk routine first;
+  treat the list and form pages as a larger job. URLs, markup and language keys
+  stay identical.
+* Factor the two identical `renumberContainer()` copies
+  (`content-editor.js`, `menu-editor.js`) into one shared admin script.
+
+## Non-goals
+
+* No change to output, URLs, stored data, markup, CSS classes, schema, language
+  keys or the component/theme contract.
+* **No plugin system.** No manifests, discovery, registry, autoloader,
+  namespaces or classes. The loader stays one explicit list.
+* No reorganisation of `admin/`, `theme/` or `admin/assets/` (pages, partials,
+  vendor, icons and previews are already grouped; moving admin pages would change
+  URLs).
+* Not untangling the two deliberate intra-module cycles (`cache ⇄ settings`,
+  `content ⇄ redirects/search/versions/menus`), and not forcing `render` and
+  `admin` apart from `content` — those are correct downward edges.
+* No fix of `url()`'s `global $config` read (a real but separate behaviour
+  change) and no cleanup unrelated to a phase.
 
 ---
 

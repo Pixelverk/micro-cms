@@ -41,18 +41,18 @@ return [
 
     'cache_lifetime' => 3600, // seconds
 
-    // How long to keep audit-log entries (see core/helpers/activity.php).
+    // How long to keep audit-log entries (see core/modules/platform/activity.php).
     'activity' => [
         'retention_days' => 180,
     ],
 
-    // How many revisions to keep per content item (see core/helpers/versions.php).
+    // How many revisions to keep per content item (see core/modules/content/versions.php).
     'versions' => [
         'keep' => 20,
     ],
 
     // How long trashed content is kept before it is purged automatically
-    // (see core/helpers/content.php).
+    // (see core/modules/content/content.php).
     'trash' => [
         'retention_days' => 30,
     ],

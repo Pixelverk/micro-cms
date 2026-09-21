@@ -1,6 +1,6 @@
 <?php
 
-function serveMedia($request){
+function serve_media($request){
 
     // Strip "/media" prefix
     $relative = substr($request, strlen('/media'));

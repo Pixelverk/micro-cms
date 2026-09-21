@@ -5,7 +5,7 @@
 | Little Helpers
 |--------------------------------------------------------------------------
 */
-require_once CORE_PATH . '/helpers/common.php';
+require_once CORE_PATH . '/modules/platform/bootstrap.php';
 bootstrap_core();
 
 /*
@@ -13,12 +13,12 @@ bootstrap_core();
 | Core Systems
 |--------------------------------------------------------------------------
 */
-require_once CORE_PATH . '/auth.php';
-require CORE_PATH . '/render.php';
+require_once CORE_PATH . '/modules/platform/auth.php';
+require CORE_PATH . '/modules/render/render.php';
 require CORE_PATH . '/router.php';
 
 
-function serveAdmin($request) {
+function serve_admin($request) {
 
     // Start the session with hardened cookie/session settings
     session_boot();
@@ -35,7 +35,7 @@ function serveAdmin($request) {
 
     // Every admin POST must carry a valid token. The login form is the one
     // exception: there is no session to protect yet, so it relies on the
-    // throttle in core/helpers/throttle.php instead.
+    // throttle in core/modules/platform/throttle.php instead.
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && !admin_is_login_request()) {
         csrf_assert();
     }

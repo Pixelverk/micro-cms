@@ -32,13 +32,13 @@ function route_request($path): array
 
     // Form POST
     if ($path === 'form-submit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        require CORE_PATH . '/form-submit.php';
+        require CORE_PATH . '/modules/forms/submit.php';
         exit;
     }
 
     // Fresh signed tokens for forms rendered inside cached pages
     if ($path === 'form-token') {
-        require CORE_PATH . '/form-token.php';
+        require CORE_PATH . '/modules/forms/token.php';
         exit;
     }
 
@@ -116,6 +116,7 @@ function route_request($path): array
 }
 
 
+
 function load_fallback_404(): array
 {
     // hey, it's a 404
@@ -145,6 +146,7 @@ function load_fallback_404(): array
     $page['status'] = '404';
     return $page;
 }
+
 
 /*
 |--------------------------------------------------------------------------
@@ -193,37 +195,6 @@ function route_admin_request(): void
     redirect_with_toast('dashboard', 'error', 'That admin page does not exist');
 }
 
-/*
-|--------------------------------------------------------------------------
-| Admin redirect helpers
-|--------------------------------------------------------------------------
-*/
-function redirect(string $path): void
-{   
-    header('Location: ' . url('admin/' . $path));
-    exit;
-}
-
-function redirect_with_toast(
-    string $path,
-    string $type,
-    string $message,
-    array $query = []
-): void {
-    $_SESSION['toast'] = [
-        'type'    => $type,
-        'message' => $message,
-    ];
-
-    $location = url('admin/' . trim($path, '/'));
-
-    if ($query) {
-        $location .= '?' . http_build_query($query);
-    }
-
-    header('Location: ' . $location);
-    exit;
-}
 
 /*
 |--------------------------------------------------------------------------

@@ -79,12 +79,7 @@ function csrf_assert(): void
         exit;
     }
 
-    if (function_exists('redirect_with_toast')) {
-        redirect_with_toast('dashboard', 'error', 'Invalid or expired security token. Please try again.');
-    }
-
-    http_response_code(419);
-    exit('Invalid or expired security token.');
+    redirect_with_toast('dashboard', 'error', 'Invalid or expired security token. Please try again.');
 }
 
 /*

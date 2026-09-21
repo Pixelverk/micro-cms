@@ -24,6 +24,7 @@ function admin_roles(): array
     return ['admin', 'editor', 'author'];
 }
 
+
 function admin_role_label(string $role): string
 {
     return match ($role) {
@@ -34,15 +35,17 @@ function admin_role_label(string $role): string
     };
 }
 
+
 /**
  * The role of the signed-in user, or a neutral default when anonymous.
  */
 function admin_role(): string
 {
-    $user = function_exists('current_user') ? current_user() : null;
+    $user = current_user();
 
     return (string) ($user['role'] ?? 'author');
 }
+
 
 /**
  * The capability required to open each admin page (prefix => capability).
@@ -65,6 +68,7 @@ function admin_page_capabilities(): array
         'messages'    => 'forms.view',
     ];
 }
+
 
 /**
  * Capabilities granted to a role.
@@ -131,13 +135,14 @@ function admin_capabilities(?string $role = null): array
     };
 }
 
+
 /**
  * Does the given user (default: the current one) hold a capability?
  */
 function admin_can(string $capability, ?array $user = null): bool
 {
     if ($user === null) {
-        $user = function_exists('current_user') ? current_user() : null;
+        $user = current_user();
     }
 
     // No user at all: nothing is granted, not even author-level defaults.
@@ -147,6 +152,7 @@ function admin_can(string $capability, ?array $user = null): bool
 
     return (bool) (admin_capabilities((string) ($user['role'] ?? ''))[$capability] ?? false);
 }
+
 
 /**
  * Stop the request when the current user lacks a capability.
@@ -165,6 +171,7 @@ function require_capability(string $capability): void
     render_admin_forbidden($capability);
     exit;
 }
+
 
 /**
  * May the current user edit this content item?
@@ -190,10 +197,11 @@ function can_edit_content(array $page): bool
         return true;
     }
 
-    $userId = function_exists('current_user_id') ? current_user_id() : null;
+    $userId = current_user_id();
 
     return $userId !== null && (int) $owner === $userId;
 }
+
 
 /**
  * Is this a request a signed-in user may make for their own account?
@@ -215,11 +223,12 @@ function admin_is_self_service_request(string $page): bool
         return false;
     }
 
-    $current = function_exists('current_user') ? current_user() : null;
+    $current = current_user();
     $currentName = is_array($current) ? (string) ($current['username'] ?? '') : '';
 
     return $target !== '' && $currentName !== '' && $target === $currentName;
 }
+
 
 /**
  * The capability that guards an admin page, or null when it needs none.
@@ -243,6 +252,7 @@ function admin_page_capability(string $page): ?string
     return $required;
 }
 
+
 /**
  * May this user open an admin page? Pages with no capability are open to any
  * signed-in user. Navigation uses this so it never offers a page that 403s.
@@ -253,6 +263,7 @@ function admin_can_open(string $page, ?array $user = null): bool
 
     return $required === null || admin_can($required, $user);
 }
+
 
 /**
  * Abort an admin request when the current page needs a capability the user
@@ -278,6 +289,7 @@ function admin_guard(string $page): void
     exit;
 }
 
+
 /**
  * Prevent locking everyone out: refuse to remove or demote the last admin.
  */
@@ -295,88 +307,4 @@ function admin_is_last_admin(int $userId): bool
     $admins = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
 
     return $admins <= 1;
-}
-
-/**
- * Minimal 403 page.
- */
-function render_admin_forbidden(string $capability): void
-{
-    if (is_file(CMS_PATH . '/admin/partials/layout.php') && function_exists('admin_trans')) {
-        ob_start();
-        ?>
-        <div class="page-header">
-            <div class="page-title">
-                <h2><?= e(admin_trans('error_not_allowed')) ?></h2>
-                <p><?= e(admin_trans('error_not_allowed_help')) ?></p>
-            </div>
-            <div class="page-actions">
-                <a class="btn-small" href="<?= e(url('admin/dashboard')) ?>"><?= e(admin_trans('nav_dashboard')) ?></a>
-            </div>
-        </div>
-        <p class="text-muted text-small">
-            <?= e(admin_trans('error_required_permission')) ?>: <code><?= e($capability) ?></code>
-        </p>
-        <?php
-        $content = ob_get_clean();
-
-        include CMS_PATH . '/admin/partials/layout.php';
-        return;
-    }
-
-    exit('Not allowed');
-}
-
-function admin_languages(): array
-{
-    return [
-        'en' => 'English',
-        'sv' => 'Svenska',
-    ];
-}
-
-function admin_locale(): string
-{
-    $user = current_user();
-    $locale = $user['ui_language'] ?? get_setting('admin_default_language', 'en');
-
-    return array_key_exists($locale, admin_languages()) ? $locale : 'en';
-}
-
-function admin_trans(string $key, array $replace = []): string
-{
-    static $translations = [];
-    $locale = admin_locale();
-
-    if (!isset($translations[$locale])) {
-        $file = CMS_PATH . "/admin/lang/{$locale}.php";
-        $translations[$locale] = is_file($file) ? require $file : [];
-    }
-
-    $text = $translations[$locale][$key] ?? $key;
-
-    // Longest name first: ':pages' has to be replaced before ':page', or the
-    // shorter one eats its prefix and leaves "1s" behind.
-    $names = array_keys($replace);
-    usort($names, static fn($a, $b): int => strlen((string) $b) <=> strlen((string) $a));
-
-    foreach ($names as $name) {
-        $text = str_replace(':' . $name, (string) $replace[$name], $text);
-    }
-
-    return $text;
-}
-
-/**
- * URL for an admin asset, stamped with its modification time.
- *
- * Without the stamp a browser happily serves a stale main.js against freshly
- * rendered HTML (which is exactly how a fixed confirm-dialog bug reappeared
- * from cache).
- */
-function admin_asset(string $path): string
-{
-    $relative = ltrim($path, '/');
-
-    return version_asset_url(url($relative), CMS_PATH . '/' . $relative);
 }

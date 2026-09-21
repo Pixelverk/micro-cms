@@ -23,10 +23,10 @@ declare(strict_types=1);
 */
 
 /**
- * Path of the cache file for a request path (see core/helpers/cache.php).
+ * Path of the cache file for a request path (see core/modules/platform/cache.php).
  */
 
-function checkCache($request, $config)
+function check_cache($request, $config)
 {
     // Search results depend on the query string, which is not part of the
     // cache key, so they are never served from it.
@@ -62,27 +62,27 @@ function checkCache($request, $config)
     return false;
 }
 
-function serveCached($file, $config)
+function serve_cached($file, $config)
 {
     // check for scheduled content items after request is done
     register_shutdown_function('publishing_check');
     register_shutdown_function('content_maybe_purge_trash');
 
-    // checkCache() already validated the method, the file and its age.
+    // check_cache() already validated the method, the file and its age.
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: public, max-age=' . $config['cache_lifetime']);
     header('X-Cache: HIT');
     echo file_get_contents($file);
 
-    // Cache hits are the common case, so they count as views too. checkCache()
+    // Cache hits are the common case, so they count as views too. check_cache()
     // has already ruled out signed-in and preview requests.
     analytics_record_view(null, true);
 }
 
-function serveFresh($request)
+function serve_fresh($request)
 {
     // Rendering only happens on this path, so a cache hit never loads these.
-    require CORE_PATH . '/render.php';
+    require CORE_PATH . '/modules/render/render.php';
     require CORE_PATH . '/router.php';
 
     // check for scheduled content items after request is done

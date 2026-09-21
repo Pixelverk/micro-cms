@@ -49,34 +49,12 @@ $_SERVER['REQUEST_URI'] ??= '/';
 $_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
 $_SERVER['HTTP_USER_AGENT'] ??= 'micro-cms-tests';
 
-require_once CORE_PATH . '/helpers/common.php';
-require CORE_PATH . '/helpers/csrf.php';
-require CORE_PATH . '/helpers/validate.php';
-require CORE_PATH . '/helpers/cache.php';
-require CORE_PATH . '/helpers/pagination.php';
-require CORE_PATH . '/helpers/settings.php';
-require CORE_PATH . '/helpers/content.php';
-require CORE_PATH . '/helpers/forms.php';
-require CORE_PATH . '/helpers/menus.php';
-require CORE_PATH . '/helpers/sitemap.php';
-require CORE_PATH . '/helpers/robots.php';
-require CORE_PATH . '/helpers/publishing.php';
-require CORE_PATH . '/helpers/versions.php';
-require CORE_PATH . '/helpers/search.php';
-require CORE_PATH . '/helpers/export.php';
-require CORE_PATH . '/helpers/migrate.php';
-require CORE_PATH . '/helpers/activity.php';
-require CORE_PATH . '/helpers/analytics.php';
-require CORE_PATH . '/helpers/health.php';
-require CORE_PATH . '/helpers/redirects.php';
-require CORE_PATH . '/helpers/zip.php';
-require CORE_PATH . '/helpers/seo.php';
-require CORE_PATH . '/helpers/icons.php';
-require CORE_PATH . '/helpers/admin.php';
-require CORE_PATH . '/helpers/throttle.php';
-require_once CORE_PATH . '/auth.php';
-require CORE_PATH . '/db.php';
-require CORE_PATH . '/render.php';
+// The loader owns the helper list, so the tests never drift from it. Only the
+// two files bootstrap_core() deliberately leaves out are added here.
+require_once CORE_PATH . '/modules/platform/bootstrap.php';
+bootstrap_core();
+
+require CORE_PATH . '/modules/render/render.php';
 require CORE_PATH . '/router.php';
 
 
@@ -102,8 +80,8 @@ function test_fresh_database(): void
     // the schema, the demo files the installer seeds, or the indexer that fills
     // content.search_text (the template bakes in its output).
     $sourceTime = max(
-        filemtime(CORE_PATH . '/helpers/setup.php'),
-        filemtime(CORE_PATH . '/helpers/search.php'),
+        filemtime(CORE_PATH . '/bootstrap/setup.php'),
+        filemtime(CORE_PATH . '/modules/content/search.php'),
         filemtime(CMS_PATH . '/theme/demo/content.json'),
         filemtime(CMS_PATH . '/theme/demo/settings.json')
     );
@@ -136,7 +114,7 @@ function test_build_seed_template(string $templatePath): void
 
     $code = <<<'PHP'
 require %s . '/tests/bootstrap.php';
-require CORE_PATH . '/helpers/setup.php';
+require CORE_PATH . '/bootstrap/setup.php';
 PHP;
 
     $command = escapeshellarg(PHP_BINARY)

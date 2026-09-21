@@ -25,7 +25,7 @@ function robots_txt(): string
         'User-agent: *',
         'Allow: /',
         '',
-        'Sitemap: ' . seo_site_url() . '/sitemap.xml',
+        'Sitemap: ' . site_origin() . '/sitemap.xml',
     ];
 
     // A textarea submits CRLF; normalise so the served body is consistent.

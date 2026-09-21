@@ -3,489 +3,124 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Cache warm-up, static export and backup
+| Content package import/export
 |--------------------------------------------------------------------------
-|
-| The Utilities page can render every published page ahead of the first
-| visitor, and package the warmed pages, theme assets and media into a zip.
-| Cache files are written through cache_write() so the rename-into-place
-| rule stays in one place.
-|
+| The portable JSON document that carries content and settings between
+| installs: the theme's demo files, the Utilities export/download, and the
+| preview-then-apply import. The document shape is versioned by
+| CONTENT_PACKAGE_FORMAT; the admin page orchestrates it through the two
+| utilities_* helpers at the bottom.
 */
 
-/**
- * Public request paths of every published, due content item.
- *
- * The front page is omitted: it is served from the root request, and its own
- * slug would collide with the root in the cache key.
- *
- * @return list<string>
- */
-function published_content_paths(): array
-{
-    $theme      = theme_config();
-    $settings   = load_settings();
-    $prefixes   = $settings['content_prefixes'] ?? [];
-    $homepageId = (int) ($settings['homepage_id'] ?? 0);
-    $pdo        = db();
-    $now        = time();
-
-    $paths = [];
-
-    foreach (array_keys($theme['content_types'] ?? []) as $type) {
-        $stmt = $pdo->prepare("
-            SELECT id, slug, parent_id
-            FROM content
-            WHERE type = :type
-              AND status = 'published'
-              AND published_at IS NOT NULL
-              AND published_at <= :now
-              AND deleted_at IS NULL
-        ");
-        $stmt->execute(['type' => $type, 'now' => $now]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-        $prefix = $prefixes[$type] ?? '';
-
-        foreach ($items as $item) {
-            if ($homepageId > 0 && (int) $item['id'] === $homepageId) {
-                continue;
-            }
-
-            // Nested pages keep their parent segments, so the path matches
-            // what the router resolves.
-            $full    = build_full_slug($item, $items);
-            $paths[] = trim(($prefix ? $prefix . '/' : '') . $full, '/');
-        }
-    }
-
-    return array_values(array_unique(array_filter($paths, 'strlen')));
-}
-
-/**
- * Render and cache every published page, including the front page.
- *
- * A page that cannot be resolved or rendered is reported instead of
- * aborting the run, so one broken page does not stop the rest.
- *
- * @return array{rendered: int, failed: list<string>}
- */
-function warm_cache(): array
-{
-    // Maintenance mode closes the public site. Warming it would recreate the
-    // cache files that the 503 path relies on not existing.
-    if (maintenance_mode_enabled()) {
-        return ['rendered' => 0, 'failed' => []];
-    }
-
-    require_once CORE_PATH . '/render.php';
-
-    $homepageId = (int) (load_settings()['homepage_id'] ?? 0);
-
-    $requests = published_content_paths();
-
-    // The front page is its own cache entry, keyed by an empty request path.
-    if ($homepageId > 0) {
-        array_unshift($requests, '');
-    }
-
-    $rendered = 0;
-    $failed   = [];
-
-    foreach ($requests as $request) {
-        $label = $request === '' ? '/' : $request;
-
-        try {
-            $page = $request === '' ? load_content_by_id($homepageId) : load_content_by_slug($request);
-
-            if (!$page || ($page['status'] ?? '') !== 'published') {
-                $failed[] = $label;
-                continue;
-            }
-
-            // The path drives canonical URLs; the front page has none.
-            $page['path'] = $request;
-
-            $response = render_page($page);
-
-            if (($response['status'] ?? 200) !== 200) {
-                $failed[] = $label;
-                continue;
-            }
-
-            if (!cache_write($request, (string) $response['body'])) {
-                $failed[] = $label;
-                continue;
-            }
-
-            $rendered++;
-        } catch (Throwable $exception) {
-            debug_log("cache warm failed for '{$label}': " . $exception->getMessage());
-            $failed[] = $label;
-        }
-    }
-
-    return ['rendered' => $rendered, 'failed' => $failed];
-}
-
-/*
-|--------------------------------------------------------------------------
-| Static export
-|--------------------------------------------------------------------------
-|
-| A zip of the warmed pages, theme assets and media. Pages are written as
-| <path>/index.html so the pretty URLs keep working, and asset/media URLs
-| become relative to each page so the result runs without PHP.
-|
-*/
-
-/**
- * Every file below a directory, recursively.
- *
- * @return list<string>
- */
-function export_directory_files(string $directory): array
-{
-    if (!is_dir($directory)) {
-        return [];
-    }
-
-    $files = [];
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
-    );
-
-    foreach ($iterator as $file) {
-        if ($file->isFile()) {
-            $files[] = $file->getPathname();
-        }
-    }
-
-    return $files;
-}
-
-/**
- * Rewrite theme and media URLs relative to the page's own directory.
- *
- * Page-to-page links are already absolute paths and are left alone. The
- * lookbehind keeps an external URL that merely contains "/media/" intact.
- */
-function static_rewrite_urls(string $html, string $base, string $request): string
-{
-    $depth  = count(array_filter(explode('/', trim($request, '/')), 'strlen'));
-    $prefix = str_repeat('../', $depth);
-
-    foreach (['/theme/assets/', '/media/'] as $path) {
-        $pattern = "#(?<=['\"(\\s,])" . preg_quote($base . $path, '#') . '#';
-        $html    = preg_replace($pattern, $prefix . ltrim($path, '/'), $html) ?? $html;
-    }
-
-    return $html;
-}
-
-/**
- * The files a static export contains: one index.html per published page
- * plus the theme assets and media library.
- *
- * Split from export_static_site() so the entry list can be verified without
- * the zip extension.
- *
- * @return list<array{name: string, content?: string, source?: string}>
- */
-function static_export_entries(): array
-{
-    $base       = rtrim((string) config('url', ''), '/');
-    $homepageId = (int) (load_settings()['homepage_id'] ?? 0);
-
-    $requests = published_content_paths();
-
-    // The front page is stored as the root index.html.
-    if ($homepageId > 0) {
-        array_unshift($requests, '');
-    }
-
-    $entries = [];
-
-    foreach ($requests as $request) {
-        $cacheFile = cache_file_for($request);
-
-        if (!is_file($cacheFile)) {
-            continue;
-        }
-
-        $entries[] = [
-            'name'    => $request === '' ? 'index.html' : trim($request, '/') . '/index.html',
-            'content' => static_rewrite_urls((string) file_get_contents($cacheFile), $base, $request),
-        ];
-    }
-
-    foreach (export_directory_files(theme('assets')) as $file) {
-        $entries[] = [
-            'name'   => 'theme/assets/' . substr($file, strlen(theme('assets')) + 1),
-            'source' => $file,
-        ];
-    }
-
-    foreach (export_directory_files(STORAGE_PATH . '/media') as $file) {
-        $entries[] = [
-            'name'   => 'media/' . substr($file, strlen(STORAGE_PATH . '/media') + 1),
-            'source' => $file,
-        ];
-    }
-
-    // The virtual documents. Served per request on a live site, they would be
-    // missing from an export unless they are written out with everything else.
-    if (is_file(STORAGE_PATH . '/sitemap.xml')) {
-        $entries[] = ['name' => 'sitemap.xml', 'source' => STORAGE_PATH . '/sitemap.xml'];
-    }
-
-    if (function_exists('robots_txt')) {
-        $entries[] = ['name' => 'robots.txt', 'content' => robots_txt()];
-    }
-
-    if (function_exists('seo_manifest_json')) {
-        $entries[] = ['name' => 'site.webmanifest', 'content' => seo_manifest_json()];
-    }
-
-    return $entries;
-}
-
-/**
- * Warm the cache and package it as a zip.
- *
- * @return string Absolute path of the created archive.
- */
-function export_static_site(): string
-{
-    if (!zip_available()) {
-        throw new RuntimeException('Static export needs the PHP zip or phar extension, and neither is available.');
-    }
-
-    warm_cache();
-
-    $archive = STORAGE_PATH . '/static-site.zip';
-    zip_write($archive, static_export_entries());
-
-    return $archive;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Backup
-|--------------------------------------------------------------------------
-|
-| A zip of the whole site, laid out the way the install is, so the archive can
-| be unzipped into a new web root and run: the code, the consistent database
-| snapshot, the media library, the sitemap and the migration marker. The cache
-| is excluded because it is regenerable; logs, sessions, the import stash, the
-| test suite and the planning documents are not needed on a new host. config.php
-| travels with its form secret removed, and BACKUP-README.txt explains the
-| restore. Restore is manual — see the in-app documentation.
-|
-*/
-
-/**
- * The files a whole-site backup contains.
- *
- * Split from backup_build() so the list can be verified without the zip
- * extension, the way static_export_entries() is.
- *
- * @param string $dbSnapshot path of the consistent database copy to include
- * @return list<array{name: string, content?: string, source?: string}>
- */
-function backup_entries(string $dbSnapshot): array
-{
-    $entries = [];
-
-    // The code, laid out as it sits on disk. A stray log or editor file from a
-    // development machine is not part of the site.
-    foreach (['core', 'admin', 'theme'] as $directory) {
-        $root = CMS_PATH . '/' . $directory;
-
-        foreach (export_directory_files($root) as $file) {
-            if (preg_match('#(?:/\.DS_Store$|/Thumbs\.db$|\.(?:log|tmp)$)#i', $file)) {
-                continue;
-            }
-
-            $entries[] = [
-                'name'   => $directory . '/' . substr($file, strlen($root) + 1),
-                'source' => $file,
-            ];
-        }
-    }
-
-    // The front controller and the Apache routing contract.
-    foreach (['index.php', '.htaccess'] as $file) {
-        if (is_file(CMS_PATH . '/' . $file)) {
-            $entries[] = ['name' => $file, 'source' => CMS_PATH . '/' . $file];
-        }
-    }
-
-    if (is_file(CMS_PATH . '/config.php')) {
-        $entries[] = [
-            'name'    => 'config.php',
-            'content' => backup_config_contents(CMS_PATH . '/config.php'),
-        ];
-    }
-
-    // The data: the database snapshot, the media library, the sitemap, and the
-    // marker that says which migrations the restored database has already run.
-    $entries[] = ['name' => 'storage/data.sqlite', 'source' => $dbSnapshot];
-
-    foreach (export_directory_files(STORAGE_PATH . '/media') as $file) {
-        $entries[] = [
-            'name'   => 'storage/media/' . substr($file, strlen(STORAGE_PATH . '/media') + 1),
-            'source' => $file,
-        ];
-    }
-
-    foreach (['sitemap.xml', '.migrations'] as $file) {
-        if (is_file(STORAGE_PATH . '/' . $file)) {
-            $entries[] = ['name' => 'storage/' . $file, 'source' => STORAGE_PATH . '/' . $file];
-        }
-    }
-
-    $entries[] = ['name' => 'BACKUP-README.txt', 'content' => backup_readme()];
-
-    return $entries;
-}
-
-/**
- * config.php as it goes into the archive, with the form secret taken out.
- *
- * An archive is a download that ends up on other people's disks, and the form
- * secret signs public form tokens. Only a literal in the file can leak: a
- * secret read from the environment or built at runtime is not in there at all.
- * If the configured secret is still in the text after the rewrite, the file is
- * refused rather than shipped.
- *
- * @param string $path the config file to read, so the rewrite can be tested
- *                     without touching the install's own config.php
- */
-function backup_config_contents(string $path): string
-{
-    $contents = (string) file_get_contents($path);
-    $secret   = config('security.form_secret');
-
-    if (!is_string($secret) || $secret === '') {
-        return $contents; // Nothing configured, so nothing to remove.
-    }
-
-    // The key's value, whatever it was set to, becomes null.
-    $contents = (string) preg_replace(
-        "/(['\"]form_secret['\"]\s*=>\s*)(?:null|'[^']*'|\"[^\"]*\")/",
-        '$1null',
-        $contents
-    );
-
-    if (str_contains($contents, $secret)) {
-        throw new RuntimeException(
-            'The form secret still appears in config.php in a place this backup cannot remove (a comment, or a value built from it). Remove it there, or set security.form_secret to null, and try again.'
-        );
-    }
-
-    return $contents;
-}
-
-/**
- * The note that travels inside the archive: what it is, and how to put it back.
- */
-function backup_readme(): string
-{
-    $title = trim((string) get_setting('site_title', ''));
-    $url   = seo_site_url();
-    $when  = format_date(time(), 'Y-m-d H:i');
-
-    return <<<TXT
-Micro CMS - whole-site backup
-
-Site:     {$title}
-Address:  {$url}
-Created:  {$when}
-
-What is in here
-  The PHP code (index.php, .htaccess, core/, admin/, theme/), the database
-  (storage/data.sqlite), the media library, the sitemap and the migration
-  marker. config.php is included with security.form_secret removed.
-
-Putting it back
-  1. Unzip the archive into the web root, so index.php and core/ land where the
-     site should run.
-  2. Make storage/ writable by the web server user.
-  3. In config.php set "url" to the site's address (or leave it empty for a
-     domain root) and "env" to "production"; keep "setup_completed" true.
-  4. Point the virtual host at the folder and make sure .htaccess is honoured
-     (AllowOverride All).
-
-What is not in here
-  The page cache, the logs, the sessions, the import stash and the test suite.
-  The cache rebuilds on the next visit; the rest belongs to the old host.
-
-The form secret
-  security.form_secret was removed, so public form tokens fall back to a value
-  derived from the install path. Set a new random secret in config.php if the
-  site's forms are in use.
-TXT;
-}
-
-/**
- * Build a whole-site backup zip. Returns its path.
- */
-function backup_build(): string
-{
-    if (!zip_available()) {
-        throw new RuntimeException('Backups need the PHP zip or phar extension, and neither is available.');
-    }
-
-    $dbPath  = STORAGE_PATH . '/data.sqlite';
-    $dbCopy  = STORAGE_PATH . '/backup-data.sqlite';
-    $archive = STORAGE_PATH . '/backup.zip';
-
-    if (!is_file($dbPath)) {
-        throw new RuntimeException('The database file is missing.');
-    }
-
-    @unlink($dbCopy);
-
-    // VACUUM INTO gives a consistent snapshot even while the site is writing.
-    try {
-        $pdo = db();
-        $pdo->exec('VACUUM INTO ' . $pdo->quote($dbCopy));
-    } catch (Throwable $exception) {
-        // Older SQLite builds: a plain copy is better than no backup.
-        if (!@copy($dbPath, $dbCopy)) {
-            throw new RuntimeException('Could not copy the database for the backup.');
-        }
-    }
-
-    // The snapshot is a working file, wherever the archive ends up.
-    try {
-        zip_write($archive, backup_entries($dbCopy));
-    } finally {
-        @unlink($dbCopy);
-    }
-
-    return $archive;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Content package
-|--------------------------------------------------------------------------
-|
-| A theme ships its demo content as two documents — content.json and
-| settings.json — and the same pair moves live content between installs. An
-| import takes either, or both, so a package is also how content travels.
-|
-| Nothing carries a database id: parents, taxonomy links and the homepage are
-| named as "<type>:<slug path>" and resolved on import, because the receiving
-| database assigns its own ids. Media is deliberately absent — a demo
-| references theme image filenames, which resolve_image_value() already
-| handles, and uploaded binaries belong to the site that uploaded them.
-|
-*/
-
+/** Format version of a content package document. */
 const CONTENT_PACKAGE_FORMAT = 1;
+
+/**
+ * The sections the posted form asked for.
+ *
+ * @return array{content: bool, settings: bool}
+ */
+function utilities_package_sections(): array
+{
+    $wanted = (array) ($_POST['sections'] ?? []);
+
+    return [
+        'content'  => in_array('content', $wanted, true),
+        'settings' => in_array('settings', $wanted, true),
+    ];
+}
+
+/**
+ * Read the chosen source and plan it, without writing anything.
+ *
+ * @param array{content: bool, settings: bool} $sections
+ * @return array{errors: list<string>, plan: array<string, mixed>, package: array<string, mixed>, source: string, files: int, token: string, sections: array{content: bool, settings: bool}}
+ */
+function utilities_import_read(array $sections, string $stashedToken = ''): array
+{
+    $documents = [];
+    $errors    = [];
+    $source    = 'demo';
+    $files     = 0;
+    $token     = '';
+
+    if ($stashedToken !== '') {
+        $read   = content_package_stash_read($stashedToken);
+        $source = 'files';
+        $token  = $stashedToken;
+        $files  = count($read['documents']);
+        $documents = $read['documents'];
+        $errors = $read['errors'];
+    } else {
+        // A fresh upload on the preview request.
+        $uploads = content_package_uploads($_FILES['files'] ?? []);
+
+        if (content_package_uploads_present($uploads)) {
+            $stash     = content_package_stash_store($uploads);
+            $read      = content_package_stash_read($stash['token']);
+            $source    = 'files';
+            $token     = $stash['token'];
+            $files     = $stash['count'];
+            $documents = $read['documents'];
+            $errors    = array_merge($stash['errors'], $read['errors']);
+        } else {
+            $demo      = content_package_theme_demo();
+            $documents = $demo['documents'];
+            $errors    = $demo['errors'];
+        }
+    }
+
+    $available = ['content' => false, 'settings' => false];
+
+    foreach ($documents as $document) {
+        foreach (['content', 'settings'] as $section) {
+            if (isset($document[$section])) {
+                $available[$section] = true;
+            }
+        }
+    }
+
+    if (!$sections['content'] && !$sections['settings']) {
+        $errors[] = 'Choose content, settings, or both.';
+    }
+
+    foreach (['content', 'settings'] as $section) {
+        if ($sections[$section] && !$available[$section]) {
+            $errors[] = "The package carries no {$section}.";
+        }
+    }
+
+    // Keep only what was asked for, then plan the result.
+    $chosen = [];
+
+    foreach ($documents as $document) {
+        if (!$sections['content']) {
+            unset($document['content'], $document['taxonomies'], $document['menus']);
+        }
+
+        if (!$sections['settings']) {
+            unset($document['settings']);
+        }
+
+        if (isset($document['content']) || isset($document['settings'])) {
+            $chosen[] = $document;
+        }
+    }
+
+    $merged = content_package_merge($chosen);
+    $plan   = content_package_plan($merged['package']);
+
+    return [
+        'errors'   => array_merge($errors, $merged['problems']),
+        'plan'     => $plan,
+        'package'  => $merged['package'],
+        'source'   => $source,
+        'files'    => $files,
+        'token'    => $token,
+        // The apply form repeats these, so it imports what was previewed.
+        'sections' => $sections,
+    ];
+}
 
 /**
  * The settings a package may carry.
@@ -512,6 +147,7 @@ function content_package_setting_keys(): array
     ];
 }
 
+
 /**
  * Content rows with ids as integers and a full slug path each.
  *
@@ -534,6 +170,7 @@ function content_package_rows(): array
 
     return ['rows' => $rows, 'paths' => $paths];
 }
+
 
 /**
  * The theme's own demo package.
@@ -568,6 +205,7 @@ function content_package_theme_demo(): array
 
     return ['documents' => $documents, 'errors' => $errors];
 }
+
 
 /**
  * The content document: everything the editor owns except media.
@@ -677,6 +315,7 @@ function content_package_export_content(): array
     ];
 }
 
+
 /**
  * The settings document, including the homepage as a content reference.
  *
@@ -713,6 +352,7 @@ function content_package_export_settings(): array
     ];
 }
 
+
 /**
  * A document as the JSON a package file holds.
  */
@@ -723,6 +363,7 @@ function content_package_json(array $document): string
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
     ) . "\n";
 }
+
 
 /**
  * Decode one uploaded package file.
@@ -749,6 +390,7 @@ function content_package_parse(string $json): array
 
     return ['document' => $document, 'error' => ''];
 }
+
 
 /**
  * Merge parsed documents into one package.
@@ -797,6 +439,7 @@ function content_package_merge(array $documents): array
 
     return ['package' => $package, 'problems' => $problems];
 }
+
 
 /**
  * What an import would do, and everything wrong with the package.
@@ -991,6 +634,7 @@ function content_package_plan(array $package): array
     ];
 }
 
+
 /**
  * Every component type named in a component tree.
  *
@@ -1018,6 +662,7 @@ function content_package_component_types(mixed $components): array
     return array_values(array_unique($types));
 }
 
+
 /**
  * Does this theme (or core) have that component file?
  */
@@ -1025,6 +670,7 @@ function content_package_component_exists(string $name): bool
 {
     return is_file(theme("components/{$name}.php")) || is_file(CORE_PATH . "/components/{$name}.php");
 }
+
 
 /**
  * What a content id points at, as a "<type>:<path>" reference, or ''.
@@ -1045,6 +691,7 @@ function content_package_ref_of(int $id): string
 
     return '';
 }
+
 
 /**
  * Find existing content by "<type>:<path>", or null.
@@ -1070,6 +717,7 @@ function content_package_find_ref(string $ref): ?array
     return null;
 }
 
+
 /**
  * Row count for one table, optionally filtered.
  */
@@ -1079,6 +727,7 @@ function content_package_count(string $table, string $where = ''): int
 
     return (int) db()->query($sql)->fetchColumn();
 }
+
 
 /**
  * Apply a validated package.
@@ -1301,6 +950,7 @@ function content_package_import(array $package, array $options = []): array
     return $summary;
 }
 
+
 /*
 |--------------------------------------------------------------------------
 | Uploaded package files
@@ -1342,6 +992,7 @@ function content_package_uploads(array $files): array
     return $out;
 }
 
+
 /**
  * Were any files actually chosen?
  *
@@ -1357,6 +1008,7 @@ function content_package_uploads_present(array $uploads): bool
 
     return false;
 }
+
 
 /**
  * Store uploaded package files for the apply step.
@@ -1403,6 +1055,7 @@ function content_package_stash_store(array $uploads): array
     return ['token' => $token, 'count' => $stored, 'errors' => $errors];
 }
 
+
 /**
  * Read stashed documents back.
  *
@@ -1437,6 +1090,7 @@ function content_package_stash_read(string $token): array
     return ['documents' => $documents, 'errors' => $errors];
 }
 
+
 /**
  * Throw a stash away.
  */
@@ -1452,6 +1106,7 @@ function content_package_stash_forget(string $token): void
 
     @rmdir(STORAGE_PATH . '/imports/' . $token);
 }
+
 
 /**
  * Drop stashes nobody came back to.

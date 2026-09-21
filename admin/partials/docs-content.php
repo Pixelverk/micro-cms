@@ -273,7 +273,7 @@ function docs_content(): array
                     ]],
                 ],
                 'Adding an admin language' => [
-                    ['p' => 'Admin strings live in admin/lang/. Copy en.php, translate the values, and add the language to admin_languages() in core/helpers/admin.php. Every string is fetched with admin_trans(key).'],
+                    ['p' => 'Admin strings live in admin/lang/. Copy en.php, translate the values, and add the language to admin_languages() in core/modules/platform/i18n.php. Every string is fetched with admin_trans(key).'],
                     ['p' => 'Keys are short and descriptive: area_element, such as nav_dashboard, trash_move or settings_site_title_help. The area names the screen (nav, common, content, editor, versions, settings …) and the element names the string. Both files must carry the same keys; a missing one falls back to the key itself.'],
                 ],
                 'The admin UI' => [

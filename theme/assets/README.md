@@ -12,7 +12,7 @@ folder.
 | 1 | `layout.css` | Page scaffolding (sticky footer, full-height body) |
 | 2 | `utilities.css` | The shared class layer |
 | 3 | `style.css` | Theme tokens and theme-wide element rules |
-| 4 | *(injected)* | Per-component CSS, collected by `core/render.php` |
+| 4 | *(injected)* | Per-component CSS, collected by `core/modules/render/render.php` |
 
 Component CSS is injected after the stylesheets, so a component can always
 override the shared layer on equal specificity.
