@@ -67,17 +67,23 @@ if ($action === 'delete' && !admin_can('content.delete')) {
     $errors[] = admin_trans('bulk_error_cannot_delete');
 }
 
-if ($action === 'add_tag' || $action === 'remove_tag') {
-    $tagId = (int) ($_POST['tag_id'] ?? 0);
+if ($action === 'add_term' || $action === 'remove_term') {
+    $termId = (int) ($_POST['term_id'] ?? 0);
 
-    if ($tagId <= 0) {
-        $errors[] = admin_trans('bulk_error_choose_tag');
+    if ($termId <= 0) {
+        $errors[] = admin_trans('bulk_error_choose_term');
     } else {
-        $tagCheck = db()->prepare("SELECT id FROM taxonomy WHERE id = :id AND taxonomy_type = 'tag' LIMIT 1");
-        $tagCheck->execute(['id' => $tagId]);
+        $termCheck = db()->prepare("SELECT taxonomy_type FROM taxonomy WHERE id = ? LIMIT 1");
+        $termCheck->execute([$termId]);
+        $termKind = (string) $termCheck->fetchColumn();
 
-        if (!$tagCheck->fetchColumn()) {
-            $errors[] = admin_trans('bulk_error_tag_missing');
+        // The term must belong to a many-per-item taxonomy this type offers.
+        $allowed = $termKind !== ''
+            && in_array($termKind, content_type_taxonomies($type), true)
+            && !empty(taxonomy_config($termKind)['multiple']);
+
+        if (!$allowed) {
+            $errors[] = admin_trans('bulk_error_term_missing');
         }
     }
 }
@@ -203,20 +209,20 @@ try {
                 invalidate_cache((string) $row['slug'], (string) $row['type']);
                 break;
 
-            case 'add_tag':
-            case 'remove_tag':
-                $tagId = (int) $_POST['tag_id'];
+            case 'add_term':
+            case 'remove_term':
+                $termId = (int) $_POST['term_id'];
 
-                if ($action === 'add_tag') {
+                if ($action === 'add_term') {
                     $pdo->prepare("
                         INSERT OR IGNORE INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id)
-                        VALUES (:type, :id, :tag)
-                    ")->execute(['type' => $type, 'id' => $id, 'tag' => $tagId]);
+                        VALUES (:type, :id, :term)
+                    ")->execute(['type' => $type, 'id' => $id, 'term' => $termId]);
                 } else {
                     $pdo->prepare("
                         DELETE FROM taxonomy_term_relationships
-                        WHERE content_type = :type AND content_id = :id AND taxonomy_id = :tag
-                    ")->execute(['type' => $type, 'id' => $id, 'tag' => $tagId]);
+                        WHERE content_type = :type AND content_id = :id AND taxonomy_id = :term
+                    ")->execute(['type' => $type, 'id' => $id, 'term' => $termId]);
                 }
                 break;
         }

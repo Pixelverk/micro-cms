@@ -62,8 +62,7 @@ function admin_page_capabilities(): array
         'health'      => 'settings.manage',
         'menu'        => 'menu.manage',
         'redirects'   => 'redirects.manage',
-        'category'    => 'taxonomy.manage',
-        'tag'         => 'taxonomy.manage',
+        'taxonomy'    => 'taxonomy.manage',
         'media'       => 'media.manage',
         'messages'    => 'forms.view',
     ];

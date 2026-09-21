@@ -68,23 +68,24 @@ foreach ($theme['content_types'] ?? [] as $typeKey => $typeConfig) {
     ];
 }
 
-foreach (['category' => admin_trans('nav_categories'), 'tag' => admin_trans('nav_tags')] as $kind => $kindLabel) {
+foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig) {
     $stmt = db()->prepare("SELECT name, slug FROM taxonomy WHERE taxonomy_type = ? ORDER BY name COLLATE NOCASE ASC");
-    $stmt->execute([$kind]);
+    $stmt->execute([$taxonomyName]);
     $options = [];
 
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $term) {
         $options[] = [
-            'label' => (string) $term['name'],
-            'path'  => url($kind . '/' . $term['slug']),
-            'type'  => (string) $kind,
-            'id'    => 0,
-            'slug'  => (string) $term['slug'],
+            'label'    => (string) $term['name'],
+            'path'     => taxonomy_url($taxonomyName, (string) $term['slug']),
+            'type'     => 'taxonomy',
+            'taxonomy' => $taxonomyName,
+            'id'       => 0,
+            'slug'     => (string) $term['slug'],
         ];
     }
 
     if ($options) {
-        $pickerGroups[] = ['key' => $kind, 'label' => $kindLabel, 'options' => $options];
+        $pickerGroups[] = ['key' => 'taxonomy:' . $taxonomyName, 'label' => taxonomy_label($taxonomyName, true), 'options' => $options];
     }
 }
 

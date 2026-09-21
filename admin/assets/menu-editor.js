@@ -30,6 +30,7 @@ function loadLinkChoices() {
         option.dataset.slug = item.slug;
         option.dataset.label = item.label;
         option.dataset.url = item.path;
+        option.dataset.taxonomy = item.taxonomy || '';
 
         linkSelect.appendChild(option);
     });
@@ -232,6 +233,7 @@ addLinkButton.addEventListener('click', async () => {
         label: selectedOption.dataset.label || selectedOption.text,
         slug: selectedOption.dataset.slug || '',
         content_id: selectedOption.dataset.id || '',
+        taxonomy: selectedOption.dataset.taxonomy || '',
         target: '_self',
         hidden: false,
         url: selectedOption.dataset.url || '',

@@ -145,26 +145,51 @@ if ($status === 'scheduled') {
     }
 }
 
-// Taxonomy selections must exist and match this content type.
-$categoryId = !empty($_POST['category_id']) ? (int) $_POST['category_id'] : null;
-if ($categoryId) {
-    $catStmt = db()->prepare("SELECT id FROM taxonomy WHERE id = :id AND taxonomy_type = 'category' LIMIT 1");
-    $catStmt->execute(['id' => $categoryId]);
+// Taxonomy selections must exist, belong to the posted taxonomy, and that
+// taxonomy must be one this content type offers. Cardinality is enforced here:
+// a single-term taxonomy keeps only the first valid id.
+if (!isset($_POST['taxonomies']) || !is_array($_POST['taxonomies'])) {
+    // A stale form (or an older bookmark) posts the legacy field names; fold
+    // them into the generic shape so one validation path covers both.
+    $offered = content_type_taxonomies($contentType);
+    $legacy  = [];
 
-    if (!$catStmt->fetchColumn()) {
-        $errors['category_id'] = admin_trans('content_error_category');
+    if (!empty($_POST['category_id']) && in_array('category', $offered, true)) {
+        $legacy['category'] = [(int) $_POST['category_id']];
     }
+
+    if (!empty($_POST['tag_ids']) && is_array($_POST['tag_ids']) && in_array('tag', $offered, true)) {
+        $legacy['tag'] = $_POST['tag_ids'];
+    }
+
+    $_POST['taxonomies'] = $legacy;
 }
 
-$tagIds = array_values(array_filter(array_map('intval', (array) ($_POST['tag_ids'] ?? []))));
-if ($tagIds) {
-    $placeholders = implode(',', array_fill(0, count($tagIds), '?'));
-    $tagStmt = db()->prepare("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = 'tag' AND id IN ({$placeholders})");
-    $tagStmt->execute($tagIds);
+$selectedTaxonomies = [];
 
-    if ((int) $tagStmt->fetchColumn() !== count($tagIds)) {
-        $errors['tag_ids'] = admin_trans('content_error_tags');
+foreach (content_type_taxonomies($contentType) as $taxonomyName) {
+    $taxonomyConfig = taxonomy_config($taxonomyName);
+    $posted         = (array) ($_POST['taxonomies'][$taxonomyName] ?? []);
+    $ids            = array_values(array_unique(array_filter(array_map('intval', $posted), static fn($id) => $id > 0)));
+
+    if (empty($taxonomyConfig['multiple'])) {
+        $ids = array_slice($ids, 0, 1);
     }
+
+    $valid = [];
+
+    if ($ids) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = db()->prepare("SELECT id FROM taxonomy WHERE taxonomy_type = ? AND id IN ({$placeholders})");
+        $stmt->execute(array_merge([$taxonomyName], $ids));
+        $valid = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        if (count($valid) !== count($ids)) {
+            $errors['taxonomies'] = admin_trans('content_error_taxonomy');
+        }
+    }
+
+    $selectedTaxonomies[$taxonomyName] = $valid;
 }
 
 if ($errors) {
@@ -384,23 +409,16 @@ $pdo->prepare("
     AND content_id = ?
 ")->execute([$contentType, $id]);
 
-if ($categoryId) {
-    $pdo->prepare("
-        INSERT INTO taxonomy_term_relationships
-        (content_type, content_id, taxonomy_id)
-        VALUES (?, ?, ?)
-    ")->execute([$contentType, $id, $categoryId]);
-}
-
-// insert selected tags
-$stmt = $pdo->prepare("
+$linkTerm = $pdo->prepare("
     INSERT OR IGNORE INTO taxonomy_term_relationships
     (content_type, content_id, taxonomy_id)
     VALUES (?, ?, ?)
 ");
 
-foreach ($tagIds as $tagId) {
-    $stmt->execute([$contentType, $id, $tagId]);
+foreach ($selectedTaxonomies as $taxonomyIds) {
+    foreach ($taxonomyIds as $taxonomyId) {
+        $linkTerm->execute([$contentType, $id, $taxonomyId]);
+    }
 }
 
 

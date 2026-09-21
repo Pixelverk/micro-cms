@@ -355,4 +355,16 @@ t('the redirect search treats % and _ literally', function () {
     assert_count(0, redirect_all(['q' => '%%']), '%% is not a match-everything wildcard');
 });
 
+t('a taxonomy slug change keeps its old archive URL alive', function () {
+    $id = redirect_record_taxonomy_slug_change('category', 'old-topic', 'new-topic');
+
+    assert_true($id !== null, 'a redirect is recorded for the old archive');
+    assert_eq('category/new-topic', redirect_find('category/old-topic')['to_path'], 'and points at the new one');
+
+    // An undeclared taxonomy cannot produce an archive URL.
+    assert_eq(null, redirect_record_taxonomy_slug_change('not-a-taxonomy', 'a', 'b'), 'an undeclared taxonomy records nothing');
+
+    db()->prepare("DELETE FROM redirects WHERE from_path = ?")->execute(['category/old-topic']);
+});
+
 exit(test_summary());

@@ -455,12 +455,19 @@ function search_content_run(array $matcher, string $query, array $filters, int $
         $params['type'] = $filters['type'];
     }
 
-    // Taxonomy filters join through the relationship table.
+    // Taxonomy filters join through the relationship table. Only declared
+    // taxonomies are honoured, so a stray query parameter cannot filter by an
+    // arbitrary taxonomy_type.
     $joins = '';
-    $taxonomyFilters = array_filter([
-        'category' => $filters['category'] ?? null,
-        'tag'      => $filters['tag'] ?? null,
-    ]);
+    $taxonomyFilters = [];
+
+    foreach (theme_taxonomies() as $name => $config) {
+        $slug = $filters['taxonomy'][$name] ?? null;
+
+        if (is_string($slug) && $slug !== '') {
+            $taxonomyFilters[$name] = $slug;
+        }
+    }
 
     if ($taxonomyFilters) {
         $joins .= " INNER JOIN taxonomy_term_relationships ttr ON ttr.content_id = c.id AND ttr.content_type = c.type";

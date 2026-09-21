@@ -32,8 +32,8 @@ $thumbnail = $meta['thumbnail'] ?? $meta['image'] ?? '';
                         <header class="mb-4">
                             <h1 class="fw-bolder mb-1"><?= e($page['title'] ?? '') ?></h1>
                             <?php if (!empty($page['published_at'])): ?><div class="text-muted fst-italic mb-2"><?= e(format_date((int) $page['published_at'])) ?></div><?php endif; ?>
-                            <?php foreach (($page['categories'] ?? []) as $category): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('category/' . $category['slug'])) ?>"><?= e($category['name']) ?></a><?php endforeach; ?>
-                            <?php foreach (($page['tags'] ?? []) as $tag): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(url('tag/' . $tag['slug'])) ?>"><?= e($tag['name']) ?></a><?php endforeach; ?>
+                            <?php $taxonomies = content_taxonomies($page); foreach (($taxonomies['category'] ?? []) as $category): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(taxonomy_url('category', $category['slug'])) ?>"><?= e($category['name']) ?></a><?php endforeach; ?>
+                            <?php foreach (($taxonomies['tag'] ?? []) as $tag): ?><a class="badge bg-secondary text-decoration-none link-light me-1" href="<?= e(taxonomy_url('tag', $tag['slug'])) ?>"><?= e($tag['name']) ?></a><?php endforeach; ?>
                         </header>
                         <?php if ($thumbnail !== ''): ?><figure class="mb-4"><?= render_image($thumbnail, ['class' => 'img-fluid rounded', 'alt' => $page['title'] ?? '']) ?></figure><?php endif; ?>
                         <section class="mb-5">

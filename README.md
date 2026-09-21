@@ -108,7 +108,7 @@ Demo accounts, one per role. The password is the username:
 ### Implemented
 
 * Content CRUD for pages, blog posts and portfolio items
-* Categories and tags, with archive layouts
+* Taxonomies (Categories and Tags by default, more declared by the theme), with archive layouts
 * Nested pages
 * Component editor: drag to reorder, nest, duplicate, clone
 * Section components for assembled pages, rich text for written content

@@ -51,23 +51,18 @@ $formTypes = $theme['form_types'] ?? [];
         <?php endforeach; ?>
     </div>
 
-    <?php if (admin_can_open('category') || admin_can_open('tag')): ?>
+    <?php if (theme_taxonomies() && admin_can_open('taxonomy')): ?>
     <div class="sidebar-section">
         <div class="sidebar-title"><?= e(admin_trans('nav_collections')) ?></div>
 
-        <?php if (admin_can_open('category')): ?>
-        <a href="<?= url('admin/category') ?>" class="sidebar-link <?= admin_nav_active('category', $currentPath) ?>" data-label="Categories">
-            <span class="sidebar-icon"><?= icon('bookmark-book', 20) ?></span>
-            <?= e(admin_trans('nav_categories')) ?>
+        <?php foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig): ?>
+        <a href="<?= url('admin/taxonomy') . '?type=' . urlencode($taxonomyName) ?>"
+           class="sidebar-link <?= admin_nav_taxonomy_active($taxonomyName, $currentPath) ?>"
+           data-label="<?= e(taxonomy_label($taxonomyName, true)) ?>">
+            <span class="sidebar-icon"><?= icon(!empty($taxonomyConfig['multiple']) ? 'label' : 'bookmark-book', 20) ?></span>
+            <?= e(taxonomy_label($taxonomyName, true)) ?>
         </a>
-        <?php endif; ?>
-
-        <?php if (admin_can_open('tag')): ?>
-        <a href="<?= url('admin/tag') ?>" class="sidebar-link <?= admin_nav_active('tag', $currentPath) ?>" data-label="Tags">
-            <span class="sidebar-icon"><?= icon('label', 20) ?></span>
-            <?= e(admin_trans('nav_tags')) ?>
-        </a>
-        <?php endif; ?>
+        <?php endforeach; ?>
 
     </div>
     <?php endif; ?>

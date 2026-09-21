@@ -192,8 +192,9 @@ function load_content_by_slug(string $slug, ?string $type = null): ?array
             'updated_at'   => (int) $row['updated_at'],
             'published_at' => $row['published_at'] ? (int) $row['published_at'] : null,
             'scheduled_at' => $row['scheduled_at'] ? (int) $row['scheduled_at'] : null,
-            'categories'   => $tax['category'],
-            'tags'         => $tax['tag'],
+            'taxonomies'   => $tax,
+            'categories'   => $tax['category'] ?? [],
+            'tags'         => $tax['tag'] ?? [],
         ];
     }
 
@@ -463,8 +464,9 @@ function content_from_row(array $row): array
         'created_at'   => (int) $row['created_at'],
         'updated_at'   => (int) $row['updated_at'],
         'deleted_at'   => !empty($row['deleted_at']) ? (int) $row['deleted_at'] : null,
-        'categories'   => $tax['category'],
-        'tags'         => $tax['tag'],
+        'taxonomies'   => $tax,
+        'categories'   => $tax['category'] ?? [],
+        'tags'         => $tax['tag'] ?? [],
     ];
 }
 

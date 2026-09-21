@@ -211,17 +211,22 @@ t('the demo content exercises every layout the theme declares', function () {
 
     assert_count(0, $missing, 'layouts no demo page uses: ' . implode(', ', $missing));
 
-    // Archive layouts are reached through terms, one per content type: the
-    // blog's own archive and the generic fallback both need demo terms.
+    // Archive layouts are reached through terms, one per taxonomy: the blog's
+    // own archive and the generic fallback both need demo terms.
+    $taxonomyLayouts = [];
+
+    foreach (theme_taxonomies() as $name => $config) {
+        $taxonomyLayouts[$name] = ($config['layout'] ?? '') !== '' ? $config['layout'] : 'taxonomy';
+    }
+
     $archives = [];
 
     foreach ($package['taxonomies'] as $term) {
-        $config = $theme['content_types'][$term['content_type']] ?? [];
-        $archives[$config['taxonomy_layout'] ?? 'taxonomy'] = true;
+        $archives[$taxonomyLayouts[$term['type']] ?? 'taxonomy'] = true;
     }
 
-    assert_true(isset($archives['blog-archive']), 'a blog term renders the blog archive layout');
-    assert_true(isset($archives['taxonomy']), 'and a term of another type renders the generic one');
+    assert_true(isset($archives['blog-archive']), 'a term renders the blog archive layout');
+    assert_true(isset($archives['taxonomy']), 'and a term of another taxonomy renders the generic one');
 });
 
 t('a package round trip reproduces the site it came from', function () {

@@ -152,6 +152,15 @@ hydrates components it knows, and an unknown type becomes an HTML comment that
 is dropped on the next save. Check seeded and existing content for the component
 before removing it.
 
+**Taxonomies** are declared the same way. Core ships `category` and `tag`; the
+manifest's `taxonomies` key adds, overrides or removes (`'tag' => false`) one,
+and a content type lists the ones its editor offers under `taxonomies`. Terms
+are shared across the types that offer a taxonomy. A taxonomy's `url_prefix` is
+its archive path, `multiple` decides one-term vs many, and `layout` is its
+archive layout. The declarations live in `core/modules/platform/taxonomies.php`;
+the term reads and CRUD in `core/modules/content/taxonomy.php`. Health reports a
+bad prefix or an undeclared name.
+
 ### Add a schema migration
 
 Add a keyed closure to `migrate_registry()` in `core/modules/platform/migrate.php`,

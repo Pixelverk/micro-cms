@@ -29,12 +29,14 @@ $action = url('search');
 // Preserve filters in pagination links.
 $pageUrl = function (int $pageNumber) use ($action, $query, $filters): string {
     $params = array_filter([
-        'q'        => $query,
-        'type'     => $filters['type'] ?? '',
-        'category' => $filters['category'] ?? '',
-        'tag'      => $filters['tag'] ?? '',
-        'page'     => $pageNumber > 1 ? $pageNumber : '',
+        'q'    => $query,
+        'type' => $filters['type'] ?? '',
+        'page' => $pageNumber > 1 ? $pageNumber : '',
     ], static fn($value) => $value !== '' && $value !== null);
+
+    if (!empty($filters['taxonomy']) && is_array($filters['taxonomy'])) {
+        $params['taxonomy'] = $filters['taxonomy'];
+    }
 
     return $action . ($params ? '?' . http_build_query($params) : '');
 };

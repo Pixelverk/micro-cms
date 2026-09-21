@@ -44,3 +44,22 @@ function admin_nav_form_type_active(string $type, string $current, array $formTy
 
     return $active === $type ? 'active' : '';
 }
+
+/**
+ * "active" for one taxonomy's link on the shared taxonomy page.
+ */
+function admin_nav_taxonomy_active(string $name, string $current): string
+{
+    if (!in_array($current, ['taxonomy', 'taxonomy/edit'], true)) {
+        return '';
+    }
+
+    // No ?type= means the first declared taxonomy is being shown.
+    $active = (string) ($_GET['type'] ?? '');
+
+    if ($active === '') {
+        $active = (string) (array_key_first(theme_taxonomies()) ?? '');
+    }
+
+    return $active === $name ? 'active' : '';
+}

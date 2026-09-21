@@ -123,7 +123,7 @@ t('admin_can_open() answers with the same map the guard uses', function () {
     assert_true(admin_can_open('docs', $author));
 
     // Guarded pages follow the capability matrix.
-    foreach (['messages', 'settings', 'user', 'utilities', 'health', 'menu/edit', 'redirects', 'category', 'tag', 'media', 'activity'] as $page) {
+    foreach (['messages', 'settings', 'user', 'utilities', 'health', 'menu/edit', 'redirects', 'taxonomy', 'media', 'activity'] as $page) {
         assert_false(admin_can_open($page, $author), "an author must not open {$page}");
         assert_true(admin_can_open($page, $admin), "an admin opens {$page}");
     }

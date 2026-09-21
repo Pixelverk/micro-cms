@@ -158,64 +158,47 @@ $currentParentId = $contentData['parent_id'] ?? null;
 $excludeIds = $currentId ? array_merge([$currentId], content_descendant_ids($currentId, $allParents)) : [];
 $parentOptions = array_filter($allParents, fn($p) => !in_array($p['id'], $excludeIds, true));
 
-// categories
-
+// ----------------------------
+// Taxonomies this content type offers
+// ----------------------------
 $pdo = db();
 
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM taxonomy
-    WHERE taxonomy_type = 'category'
-    AND content_type = ?
-    ORDER BY name
-");
+$editorTaxonomies = [];
 
-$stmt->execute([$type]);
-$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+foreach (content_type_taxonomies($type) as $taxonomyName) {
+    $taxonomyConfig = taxonomy_config($taxonomyName);
 
-$selectedCategoryId = null;
-
-if ($isEdit && !empty($contentData['id'])) {
     $stmt = $pdo->prepare("
-        SELECT taxonomy_id
-        FROM taxonomy_term_relationships
-        WHERE content_type = ?
-        AND content_id = ?
-        LIMIT 1
+        SELECT *
+        FROM taxonomy
+        WHERE taxonomy_type = ?
+        ORDER BY name
     ");
+    $stmt->execute([$taxonomyName]);
+    $terms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmt->execute([$type, $contentData['id']]);
-    $selectedCategoryId = $stmt->fetchColumn() ?: null;
-}
+    $selected = [];
 
-// tags
+    if ($isEdit && !empty($contentData['id'])) {
+        $stmt = $pdo->prepare("
+            SELECT ttr.taxonomy_id
+            FROM taxonomy_term_relationships ttr
+            INNER JOIN taxonomy t ON t.id = ttr.taxonomy_id
+            WHERE ttr.content_type = ?
+              AND ttr.content_id = ?
+              AND t.taxonomy_type = ?
+        ");
+        $stmt->execute([$type, $contentData['id'], $taxonomyName]);
+        $selected = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
 
-// ----------------------------
-// Load tags
-// ----------------------------
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM taxonomy
-    WHERE taxonomy_type = 'tag'
-    AND content_type = ?
-    ORDER BY name
-");
-$stmt->execute([$type]);
-$tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// selected tags
-$selectedTagIds = [];
-
-if ($isEdit && !empty($contentData['id'])) {
-    $stmt = $pdo->prepare("
-        SELECT taxonomy_id
-        FROM taxonomy_term_relationships
-        WHERE content_type = ?
-        AND content_id = ?
-    ");
-    $stmt->execute([$type, $contentData['id']]);
-
-    $selectedTagIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $editorTaxonomies[] = [
+        'name'     => $taxonomyName,
+        'label'    => taxonomy_label($taxonomyName, true),
+        'multiple' => !empty($taxonomyConfig['multiple']),
+        'terms'    => $terms,
+        'selected' => $selected,
+    ];
 }
 
 // image files
@@ -700,34 +683,34 @@ $seoPreviewAttrs = 'data-seo-preview'
                 <input type="text" id="slug" name="slug" value="<?= e($slug) ?>">
             </label>
 
+            <?php foreach ($editorTaxonomies as $taxonomy): ?>
             <label>
-                <?= e(admin_trans('editor_category')) ?>
-                <select name="category_id">
-                    <option value=""><?= e(admin_trans('common_none')) ?></option>
-
-                    <?php foreach ($categories as $cat): ?>
-                        <option
-                            value="<?= (int)$cat['id'] ?>"
-                            <?= $selectedCategoryId == $cat['id'] ? 'selected' : '' ?>>
-                            <?= e($cat['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <?= e($taxonomy['label']) ?>
+                <?php if ($taxonomy['multiple']): ?>
+                    <select name="taxonomies[<?= e($taxonomy['name']) ?>][]" multiple size="6">
+                        <?php foreach ($taxonomy['terms'] as $term): ?>
+                            <option
+                                value="<?= (int) $term['id'] ?>"
+                                <?= in_array((int) $term['id'], $taxonomy['selected'], true) ? 'selected' : '' ?>>
+                                <?= e($term['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small><?= e(admin_trans('editor_hold_ctrl')) ?></small>
+                <?php else: ?>
+                    <select name="taxonomies[<?= e($taxonomy['name']) ?>]">
+                        <option value=""><?= e(admin_trans('common_none')) ?></option>
+                        <?php foreach ($taxonomy['terms'] as $term): ?>
+                            <option
+                                value="<?= (int) $term['id'] ?>"
+                                <?= in_array((int) $term['id'], $taxonomy['selected'], true) ? 'selected' : '' ?>>
+                                <?= e($term['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
             </label>
-
-            <label>
-                <?= e(admin_trans('nav_tags')) ?>
-                <select name="tag_ids[]" multiple size="6">
-                    <?php foreach ($tags as $tag): ?>
-                        <option
-                            value="<?= (int)$tag['id'] ?>"
-                            <?= in_array($tag['id'], $selectedTagIds) ? 'selected' : '' ?>>
-                            <?= e($tag['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <small><?= e(admin_trans('editor_hold_ctrl')) ?></small>
-            </label>
+            <?php endforeach; ?>
 
             <label>
                 <?= e(admin_trans('editor_parent')) ?>:

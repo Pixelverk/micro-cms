@@ -217,7 +217,7 @@ t('every layout the theme ships is reachable on the front end', function () use 
         '/privacy/'                  => 'policy',
         '/landing/'                  => 'landing',
         '/category/news/'            => 'blog-archive',
-        '/category/design/'          => 'taxonomy',
+        '/tag/web-design/'           => 'taxonomy',
         '/search?q=launch'           => 'search',
     ];
 
@@ -229,13 +229,14 @@ t('every layout the theme ships is reachable on the front end', function () use 
     }
 
     // The two archive layouts share their body markup, so they are told apart
-    // by the class the blog one adds to its main landmark.
+    // by the class the blog one adds to its main landmark. The layout now comes
+    // from the taxonomy, not the content type.
     [, $blogArchive] = http('GET', $base . '/category/news/', false);
     assert_contains('blog-archive-page', $blogArchive, 'the blog archive layout renders the term');
     assert_contains('<h1>News</h1>', $blogArchive, 'as the page heading');
 
-    [, $archive] = http('GET', $base . '/category/design/', false);
-    assert_contains('Type: category', $archive, 'so does the generic archive layout');
+    [, $archive] = http('GET', $base . '/tag/web-design/', false);
+    assert_contains('Type: tag', $archive, 'so does the generic archive layout');
     assert_not_contains('blog-archive-page', $archive, 'which is not the blog one');
 
     // The landing layout deliberately leaves the site chrome out.
@@ -407,6 +408,13 @@ t('categories and tags delete in bulk from their lists', function () use ($base)
     assert_contains('id="bulk-form"', $page, 'the bulk toolbar is on the page');
     assert_contains('class="bulk-row" name="ids[]"', $page, 'every row offers a checkbox');
     assert_contains('form="bulk-form"', $page, 'which joins the toolbar form');
+
+    // The unified page is the same list; the legacy URL is routed to it.
+    [$status, $canonical] = http('GET', $base . '/admin/taxonomy?type=category', true);
+    assert_eq(200, $status, 'the taxonomy page opens');
+    assert_contains('Bulk http one', $canonical, 'and lists the same terms the legacy URL does');
+    assert_contains('id="taxonomy-type-select"', $canonical, 'with a taxonomy switcher by the Add button');
+    assert_contains('Used by', $canonical, 'and an indicator of the content types it serves');
 
     $token = http_csrf_token($base, '/admin/category');
 
@@ -1971,8 +1979,8 @@ t('the dashboard offers only what the signed-in role can open', function () use 
         'href="' . url('admin/settings') . '"'  => 'settings',
         'href="' . url('admin/user') . '"'      => 'users',
         'href="' . url('admin/utilities') . '"' => 'utilities',
-        'href="' . url('admin/category') . '"'  => 'categories',
-        'href="' . url('admin/tag') . '"'       => 'tags',
+        'href="' . url('admin/taxonomy') . '?type=category"' => 'categories',
+        'href="' . url('admin/taxonomy') . '?type=tag"'      => 'tags',
         'href="' . url('admin/activity') . '"'  => 'the activity log',
     ];
 
@@ -2280,6 +2288,98 @@ t('the utilities scans report orphaned media and dead links', function () use ($
     assert_false(is_dir(STORAGE_PATH . '/media/' . $orphan), 'the orphan folder is gone');
 
     db()->prepare('DELETE FROM content WHERE id = :id')->execute(['id' => $id]);
+});
+
+t('the editor saves an item\'s taxonomy terms', function () use ($base) {
+    http_login($base);
+
+    $pdo = db();
+
+    $term = static function (string $kind, string $slug) use ($pdo): int {
+        $pdo->prepare("
+            INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at)
+            VALUES (?, 'blog_post', ?, ?, ?, ?)
+        ")->execute([$kind, ucfirst(str_replace('-', ' ', $slug)), $slug, time(), time()]);
+
+        return (int) $pdo->lastInsertId();
+    };
+
+    $catA = $term('category', 'editor-term-a');
+    $catB = $term('category', 'editor-term-b');
+    $tag  = $term('tag', 'editor-term-tag');
+
+    $pdo->prepare("
+        INSERT INTO content (type, slug, title, status, body, meta, created_at, updated_at)
+        VALUES ('blog_post', 'editor-term-post', 'Editor term post', 'published', '[]', '{}', ?, ?)
+    ")->execute([time(), time()]);
+
+    $id = (int) $pdo->lastInsertId();
+
+    $token = http_csrf_token($base, '/admin/content/edit?id=' . $id . '&type=blog_post');
+
+    // A category is one per item, so the second id is dropped; a tag keeps both.
+    [$status] = http('POST', $base . '/admin/content/save', true, [
+        '_token'     => $token,
+        'id'         => $id,
+        'type'       => 'blog_post',
+        'title'      => 'Editor term post',
+        'slug'       => 'editor-term-post',
+        'status'     => 'published',
+        'taxonomies' => [
+            'category' => [$catA, $catB],
+            'tag'      => [$tag],
+        ],
+    ]);
+
+    assert_eq(302, $status, 'the save redirects');
+
+    $links = $pdo->prepare("
+        SELECT t.taxonomy_type, t.id
+        FROM taxonomy_term_relationships r
+        INNER JOIN taxonomy t ON t.id = r.taxonomy_id
+        WHERE r.content_type = 'blog_post' AND r.content_id = ?
+        ORDER BY t.taxonomy_type, t.id
+    ");
+    $links->execute([$id]);
+
+    $byKind = [];
+
+    foreach ($links->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $byKind[$row['taxonomy_type']][] = (int) $row['id'];
+    }
+
+    assert_eq([$catA], $byKind['category'] ?? [], 'a single-term taxonomy keeps only the first id');
+    assert_eq([$tag], $byKind['tag'] ?? [], 'a many-term taxonomy keeps its terms');
+
+    // The editor posts the generic field name for every declared taxonomy.
+    [, $editor] = http('GET', $base . '/admin/content/edit?id=' . $id . '&type=blog_post');
+    assert_contains('taxonomies[category]', $editor, 'the category control is generic');
+    assert_contains('taxonomies[tag]', $editor, 'and so is the tag control');
+
+    // A page offers no taxonomies, so the editor renders no control for it.
+    [, $pageEditor] = http('GET', $base . '/admin/content/edit?type=page');
+    assert_not_contains('name="taxonomies[', $pageEditor, 'a type with no taxonomies shows no controls');
+});
+
+t('taxonomy terms are shared across the content types that offer them', function () use ($base) {
+    http_login($base);
+
+    // A term with no content type at all: every type that offers the taxonomy
+    // must be able to pick it. (Earlier tests replace the demo terms, so this
+    // creates its own rather than relying on them.)
+    $pdo = db();
+    $pdo->prepare("
+        INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at)
+        VALUES ('category', '', 'Shared Marker', 'shared-marker', ?, ?)
+    ")->execute([time(), time()]);
+
+    [, $portfolioEditor] = http('GET', $base . '/admin/content/edit?type=portfolio_item');
+    assert_contains('Shared Marker', $portfolioEditor, 'a portfolio item is offered a shared category');
+
+    [, $blogEditor] = http('GET', $base . '/admin/content/edit?type=blog_post');
+    assert_contains('Shared Marker', $blogEditor, 'and so is a blog post');
+
+    $pdo->prepare("DELETE FROM taxonomy WHERE slug = 'shared-marker'")->execute();
 });
 
 // ---------------------------------------------------------------------------

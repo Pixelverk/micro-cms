@@ -67,6 +67,43 @@ function generate_sitemap(): string
         }
     }
 
+    // Taxonomy archives: a declared taxonomy's terms that have at least one
+    // published item. An empty archive is not advertised.
+    foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig) {
+        $prefix = trim((string) ($taxonomyConfig['url_prefix'] ?? ''), '/');
+
+        if ($prefix === '') {
+            continue;
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT t.slug, t.updated_at
+            FROM taxonomy t
+            WHERE t.taxonomy_type = :type
+              AND EXISTS (
+                  SELECT 1
+                  FROM taxonomy_term_relationships r
+                  INNER JOIN content c ON c.id = r.content_id AND c.type = r.content_type
+                  WHERE r.taxonomy_id = t.id
+                    AND c.status = 'published'
+                    AND c.published_at IS NOT NULL
+                    AND c.published_at <= :now
+                    AND c.deleted_at IS NULL
+              )
+            ORDER BY t.slug
+        ");
+        $stmt->execute(['type' => $taxonomyName, 'now' => $now]);
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $term) {
+            $urls[] = [
+                'loc'        => $baseUrl . '/' . $prefix . '/' . $term['slug'] . '/',
+                'lastmod'    => date('Y-m-d', (int) $term['updated_at']),
+                'changefreq' => 'weekly',
+                'priority'   => '0.5',
+            ];
+        }
+    }
+
     $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><urlset/>');
     $xml->addAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
 

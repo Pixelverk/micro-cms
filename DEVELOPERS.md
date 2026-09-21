@@ -67,7 +67,8 @@ core/
     platform/             foundation: bootstrap, http, db, settings, cache, auth,
                           access (capabilities), i18n, preview, migrate,
                           validate, throttle, csrf, activity, analytics,
-                          pagination, maintenance, theme, datetime, zip, perf
+                          pagination, maintenance, theme, taxonomies
+                          (declarations), datetime, zip, perf
     media/                media.php (rows/URLs), upload.php (Imagick variants)
     seo/                  seo.php (head), manifest.php (icons/manifest),
                           sitemap.php, robots.php
@@ -85,7 +86,7 @@ admin/                    server-rendered admin area (see §8)
   lang/{en,sv}.php        every admin string
   assets/                 style.css, main.js, content-editor.js, menu-editor.js,
                           icons/*.svg, vendor/{quill,sortable}
-  auth/, content/, category/, tag/, media/, menu/, user/   one dir per area
+  auth/, content/, taxonomy/, media/, menu/, user/         one dir per area
 
 theme/                    the active theme (see §7)
   theme.php               the manifest
@@ -186,7 +187,7 @@ current, so a normal request does no migration work.
 | `menus` | `slug`, `label`, `items` JSON. |
 | `form_submissions` | Public form entries plus workflow `status`. |
 | `media` | One row per upload: `base_path` (`YYYY/MM/random`), mime, dimensions, `formats_json` (variant paths), `sizes_json`, `lqip_base64`, alt text. |
-| `taxonomy`, `taxonomy_term_relationships` | Categories and tags and their links to content. |
+| `taxonomy`, `taxonomy_term_relationships` | Taxonomy terms (Categories and Tags by default) and their links to content. `taxonomy.content_type` is a retired column and is never read. |
 | `login_attempts`, `form_rate_limits` | Throttling. |
 | `password_resets` | Hashed, expiring, single-use reset tokens. |
 
@@ -285,9 +286,29 @@ editing a stylesheet or script needs no version bump. Admin assets use
 | `schema` | Emit JSON-LD |
 
 A content type declares `label`, `default_layout`/`default_header`/
-`default_footer`, `available_components`, `url_prefix`, `taxonomy_layout`,
-`images` (editor image slots), `fields` (editor meta fields), and `editor`
-(`'components'` — the default — or `'rich-text'`).
+`default_footer`, `available_components`, `url_prefix`, `taxonomies` (the
+classifications its editor offers), `images` (editor image slots), `fields`
+(editor meta fields), and `editor` (`'components'` — the default — or
+`'rich-text'`).
+
+### Taxonomies
+
+Core ships `category` and `tag`; the manifest's `taxonomies` key overrides,
+removes (`'tag' => false`) or adds to them:
+
+```php
+'taxonomies' => [
+    'topic' => ['label' => 'Topic', 'url_prefix' => 'topic', 'multiple' => true, 'layout' => 'taxonomy'],
+],
+```
+
+`url_prefix` is the archive's first path segment, `multiple` decides whether an
+item carries one term or many, and `layout` is the archive layout (falling back
+to `taxonomy`). A content type lists the taxonomies it offers under
+`taxonomies`; terms are shared, so every type that lists one can pick any of its
+terms. `content_taxonomies($page)[name]` reads an item's terms and
+`taxonomy_url(name, slug)` links a term's archive. Health reports a bad prefix,
+an undeclared name, and a declared taxonomy no content type offers.
 
 ### A component
 

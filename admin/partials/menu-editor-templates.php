@@ -29,6 +29,7 @@
 
             <input type="hidden" class="field-input" data-field="type" value="url">
             <input type="hidden" class="field-input" data-field="content_id" value="">
+            <input type="hidden" class="field-input" data-field="taxonomy" value="">
         </div>
 
         <p class="menu-item-warning" data-item-warning hidden></p>

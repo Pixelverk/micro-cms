@@ -114,7 +114,7 @@ return [
             // The default is 'components', the Add component editor.
             'editor' => 'rich-text',
             'url_prefix' => 'blog',
-            'taxonomy_layout' => 'blog-archive',
+            'taxonomies' => ['category', 'tag'],
             // Presentation images the layout renders. Keys are stored in the
             // item's meta JSON and get a matching image field in the editor;
             // values may be media ids, theme filenames or absolute URLs.
@@ -147,6 +147,7 @@ return [
             ],
             'editor' => 'rich-text',
             'url_prefix' => 'portfolio',
+            'taxonomies' => ['category'],
             'images' => [
                 'thumbnail' => ['label' => 'Featured image'],
                 'gallery'   => ['label' => 'Gallery', 'multiple' => true],
@@ -160,6 +161,33 @@ return [
                     'help'  => 'Where "View project" points. Leave blank to hide it.',
                 ],
             ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Taxonomies
+    |--------------------------------------------------------------------------
+    | Core ships Category and Tag; list one here to override it, `false` to
+    | remove it, or a new name to add a taxonomy. Which content types offer a
+    | taxonomy is declared on the content type under `taxonomies`.
+    |
+    | `multiple` is the one real difference between the two defaults: a category
+    | is one term per item, a tag is many. `url_prefix` is the archive's first
+    | path segment. `layout` is the archive layout ('taxonomy' when absent).
+    */
+    'taxonomies' => [
+        'category' => [
+            'url_prefix' => 'category',
+            'multiple'   => false,
+            // An archive layout now lives on the taxonomy: terms are shared, so
+            // a content type can no longer choose it.
+            'layout'     => 'blog-archive',
+        ],
+        'tag' => [
+            'url_prefix' => 'tag',
+            'multiple'   => true,
+            'layout'     => 'taxonomy',
         ],
     ],
 

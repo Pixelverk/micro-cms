@@ -23,16 +23,34 @@ $homepageSlug = content_homepage_slug();
 // ----------------------------
 // Filters
 // ----------------------------
-// Tags are offered as a bulk action target.
-$tagStmt = db()->prepare("
-    SELECT id, name
-    FROM taxonomy
-    WHERE taxonomy_type = 'tag'
-    AND content_type = ?
-    ORDER BY name
-");
-$tagStmt->execute([$type]);
-$tags = $tagStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+// The bulk toolbar can add or remove one term at a time. Only many-per-item
+// taxonomies are offered: adding a second term to a single-term taxonomy would
+// break its cardinality.
+$bulkTaxonomies = [];
+
+foreach (content_type_taxonomies($type) as $taxonomyName) {
+    $taxonomyConfig = taxonomy_config($taxonomyName);
+
+    if (empty($taxonomyConfig['multiple'])) {
+        continue;
+    }
+
+    $termStmt = db()->prepare("
+        SELECT id, name
+        FROM taxonomy
+        WHERE taxonomy_type = ?
+        ORDER BY name
+    ");
+    $termStmt->execute([$taxonomyName]);
+    $terms = $termStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    if ($terms) {
+        $bulkTaxonomies[$taxonomyName] = [
+            'label' => taxonomy_label($taxonomyName, true),
+            'terms' => $terms,
+        ];
+    }
+}
 
 // Authors work on their own drafts; other roles see everything.
 $visibleToUser = function (array $list): array {
@@ -170,7 +188,6 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
 </div>
 
 <?php if (admin_can('content.bulk') && !empty($items) && !$isTrashView): ?>
-    <?php $availableTags = $tags; ?>
     <form id="bulk-form" method="post" action="<?= e(url('admin/content/bulk')) ?>" class="bulk-toolbar" hidden>
         <?= csrf_field() ?>
         <input type="hidden" name="type" value="<?= e($type) ?>">
@@ -190,17 +207,23 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
                     <option value="delete"><?= e(admin_trans('trash_move')) ?></option>
                 <?php endif; ?>
                 <option value="clear_cache"><?= e(admin_trans('bulk_clear_cache')) ?></option>
-                <option value="add_tag"><?= e(admin_trans('bulk_add_tag')) ?></option>
-                <option value="remove_tag"><?= e(admin_trans('bulk_remove_tag')) ?></option>
+                <?php if ($bulkTaxonomies): ?>
+                    <option value="add_term"><?= e(admin_trans('bulk_add_term')) ?></option>
+                    <option value="remove_term"><?= e(admin_trans('bulk_remove_term')) ?></option>
+                <?php endif; ?>
             </select>
         </label>
 
         <label id="bulk-tag-wrap" hidden>
-            <span class="visually-hidden"><?= e(admin_trans('bulk_tag')) ?></span>
-            <select name="tag_id" id="bulk-tag" class="field-input">
-                <option value=""><?= e(admin_trans('bulk_choose_tag')) ?>…</option>
-                <?php foreach ($availableTags as $tagOption): ?>
-                    <option value="<?= (int) $tagOption['id'] ?>"><?= e($tagOption['name']) ?></option>
+            <span class="visually-hidden"><?= e(admin_trans('bulk_term')) ?></span>
+            <select name="term_id" id="bulk-tag" class="field-input">
+                <option value=""><?= e(admin_trans('bulk_choose_term')) ?>…</option>
+                <?php foreach ($bulkTaxonomies as $taxonomyName => $group): ?>
+                    <optgroup label="<?= e($group['label']) ?>">
+                        <?php foreach ($group['terms'] as $termOption): ?>
+                            <option value="<?= (int) $termOption['id'] ?>"><?= e($termOption['name']) ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
                 <?php endforeach; ?>
             </select>
         </label>
@@ -432,7 +455,7 @@ $tabs['trash'] = ['label' => admin_trans('trash_title'), 'count' => count($trash
 
     if (actionSelect) {
         actionSelect.addEventListener('change', () => {
-            const needsTag = actionSelect.value === 'add_tag' || actionSelect.value === 'remove_tag';
+            const needsTag = actionSelect.value === 'add_term' || actionSelect.value === 'remove_term';
 
             if (tagWrap) tagWrap.hidden = !needsTag;
             if (needsTag && tagSelect) tagSelect.required = true;

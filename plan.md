@@ -37,6 +37,10 @@ These are not up for renegotiation inside a phase:
 * **E — structure refactor** (organisational only: `core/` grouped into modules
   plus the boundary fixes that make the modules point one way; no behaviour
   change). Phases M1–M8, then optional M9, in the track at the end of this file.
+  Shipped.
+* **F — taxonomies** (one general concept; a theme declares any number, the CMS
+  ships Category and Tag, each content type lists the ones it offers). Phases
+  F1–F6, in the track at the end of this file. Planned; decisions confirmed.
 
 ## Rules every phase follows
 
@@ -773,6 +777,387 @@ reaching back up out of `platform`.
 
 ---
 
+# Track F — taxonomies
+
+**Status:** shipped. One general taxonomy concept,
+replacing the two hard-coded kinds. A theme declares any number of taxonomies in
+`theme.php`; the CMS ships Category and Tag as the defaults, each content type
+declares which ones it offers, and the admin manages them all the same way.
+
+### Progress
+
+* **F1 shipped** — the declaration layer (`platform/taxonomies.php`), the
+  `$page['taxonomies']` read API, the manifest declarations, and the Health
+  group.
+* **F2 shipped** — routing resolves any declared `url_prefix`; redirects, the
+  nested search filter (`?taxonomy[<name>]=`) and the menu taxonomy kind moved
+  over.
+* **F3 shipped** — one `admin/taxonomy/*` page set with `?type=`, a single
+  `taxonomy` capability, one Collections link per declared taxonomy, generic
+  `taxonomy_*` strings, and `/admin/category` + `/admin/tag` routed to it.
+* **F4 shipped** — the editor renders one control per taxonomy the content type
+  offers (single or multi per `multiple`), posts `taxonomies[<name>]`, enforces
+  cardinality on save, and folds the legacy `category_id` / `tag_ids[]` fields
+  into the generic shape. The content-list bulk action adds or removes a term
+  from any many-per-item taxonomy the type offers.
+* **F5 shipped** — `taxonomy.content_type` is retired: nothing reads or filters
+  by it, `save_taxonomy()` and the content package write it empty, and the
+  content-type tabs and field are gone from the taxonomy admin. The archive
+  layout now comes from the taxonomy declaration (category → `blog-archive`,
+  tag → `taxonomy`), the package keys terms by `taxonomy:slug`, the 54 unused
+  `category_*` / `tag_*` language keys are gone, and the in-app, developer and
+  project docs describe the model.
+* **F6 shipped** — the sitemap lists every declared taxonomy archive that has at
+  least one published item (priority `0.5`), and a term whose slug changes
+  records a 301 from the old archive URL to the new one (`save_taxonomy()` calls
+  `redirect_record_taxonomy_slug_change()`).
+* **Two deviations recorded.** (a) The retired column is **not dropped**: SQLite
+  can only `DROP COLUMN` on 3.35+, and a host that refused would then break every
+  term save on a `NOT NULL` column. It is ignored and written empty instead; a
+  later migration can drop it once the minimum SQLite is known. (b) Because an
+  archive no longer claims a content type, its `og:type` is now `website` (not
+  `article`) and its JSON-LD is `WebPage` — a deliberate, more correct change
+  confined to taxonomy archive pages.
+
+## Why
+
+Category and tag are already the same thing in the data model — rows in
+`taxonomy` with a free-text `taxonomy_type` — but the code treats them as two
+fixed kinds:
+
+* **Two near-duplicate admin page sets.** `admin/category/{index,edit,save,
+  remove,bulk}.php` and `admin/tag/*` are the same screens with a different
+  word; `bulk.php` is ~87% identical, `edit.php` ~78%, `index.php` ~63%.
+* **A theme cannot declare a third.** There is no `taxonomies` key, so a
+  "Topic", "Format" or "Location" classification cannot exist without core
+  changes.
+* **`category` and `tag` are special-cased in about a dozen places:** the
+  router's archive prefixes and search filters, `redirects.php`,
+  `menus.php` (item kinds), `seo.php` (article section), `content_from_row()`
+  (`categories`/`tags` keys), the content editor's two controls and its save
+  handler (`category_id` / `tag_ids[]`), the content list filter and bulk
+  action, `content-package.php` (a term-type allowlist), the admin capability
+  map, the sidebar, the menu picker, and the shipped theme's layouts.
+
+The result is that adding a classification is a core change, and reading one in
+a theme means knowing the two magic key names.
+
+## The model
+
+A **taxonomy** is a named classification declared by the theme. It owns terms;
+content items link to terms. The CMS ships two defaults; a theme may override,
+remove or add.
+
+The taxonomy declaration owns the taxonomy's own identity and presentation:
+
+```php
+// theme/theme.php
+'taxonomies' => [
+    'category' => [
+        'label'        => 'Category',
+        'label_plural' => 'Categories',
+        'url_prefix'   => 'category',
+        'multiple'     => false,            // one term per item
+        'layout'       => 'blog-archive',   // archive layout; 'taxonomy' when absent
+    ],
+    'tag' => [
+        'label'        => 'Tag',
+        'label_plural' => 'Tags',
+        'url_prefix'   => 'tag',
+        'multiple'     => true,             // many terms per item
+        'layout'       => 'blog-archive',
+    ],
+
+    // A theme may add its own.
+    'topic' => [
+        'label'        => 'Topic',
+        'label_plural' => 'Topics',
+        'url_prefix'   => 'topic',
+        'multiple'     => true,
+    ],
+],
+```
+
+| Key | Meaning |
+| --- | --- |
+| `label`, `label_plural` | Editor-facing names. Theme-declared text is shown as-is, like a content type's `label`; the built-in two resolve through `admin_trans()` so they stay bilingual. |
+| `url_prefix` | First path segment of an archive (`/topic/design`). Defaults to the taxonomy name. Must be unique and not collide with a content type prefix or a reserved route. |
+| `multiple` | `true` = many terms per item (tags), `false` = one (category). Drives the editor control and the save rule. Defaults to `true`. |
+| `layout` | Archive layout. Falls back to `'taxonomy'`. |
+| `primary` | Optional. Marks the taxonomy whose first term supplies the article `section` in SEO. Defaults to the first `multiple => false` taxonomy. |
+
+**Which content types offer which taxonomies is declared on the content type**,
+the same way it already declares `available_components`, `images` and `fields`:
+
+```php
+'content_types' => [
+    'page' => [
+        // no 'taxonomies' key → the page editor shows no taxonomy controls
+    ],
+    'blog_post' => [
+        // …
+        'taxonomies' => ['category', 'tag'],
+    ],
+    'portfolio_item' => [
+        // …
+        'taxonomies' => ['category'],
+    ],
+],
+```
+
+So the association is read in the direction the editor needs it (a type asks for
+its taxonomies), while each taxonomy keeps its own label, prefix, cardinality
+and layout. An absent key means none. A type listing an undeclared taxonomy is a
+theme bug Health reports; a declared taxonomy no type lists is reported as a
+warning (nothing can ever use it).
+
+**Defaults and merge.** `taxonomy_defaults()` in core returns `category` and
+`tag`. `theme_taxonomies()` merges the theme's `taxonomies` over them, keyed by
+name:
+
+* a theme entry with the same name overrides the default's keys;
+* `'category' => false` removes a default;
+* a new name adds a taxonomy;
+* an absent `taxonomies` key leaves the two defaults, and an absent
+  `content_types[...]['taxonomies']` leaves that type with none — so every
+  existing theme keeps working unchanged.
+
+**Terms are shared.** A term belongs to its taxonomy, not to one content type.
+The current per-term `taxonomy.content_type` goes away: a "Topic" can apply to
+blog posts and portfolio items at once, and one Category term is offered to both
+`blog_post` and `portfolio_item`. The link table already records the item's own
+type, so nothing else changes.
+
+**One archive layout per taxonomy.** The taxonomy declares `layout`; the current
+`taxonomy_layout` on a content type becomes a fallback only. A taxonomy shared
+by several content types cannot vary its layout per type in this version (see
+Non-goals).
+
+## Where the concept lands
+
+| Concern | Today | After |
+| --- | --- | --- |
+| Declaration | implied by the two literals | `theme.php` `taxonomies` + core defaults |
+| Type ↔ taxonomy | implied by the term's `content_type` | content type declares `'taxonomies' => [...]` |
+| Read API | `$page['categories']`, `$page['tags']` | `$page['taxonomies'][<name>]`, `content_taxonomies($page)` |
+| Term admin | `admin/category/*`, `admin/tag/*` | `admin/taxonomy/*` with `?type=<name>` |
+| Page capability | `category`, `tag` | `taxonomy` |
+| Sidebar | two hard-coded links | one link per declared taxonomy, in the **Collections** group |
+| Editor control | `category_id`, `tag_ids[]` | `taxonomies[<name>]` per the type's declaration |
+| Archive route | `category/`, `tag/` literals | every declared `url_prefix` |
+| Archive layout | content type's `taxonomy_layout` | taxonomy's `layout` |
+| Search filter | `?category=`, `?tag=` | `?taxonomy[<name>]=` |
+| Menu link kind | `type=category|tag` | `type=taxonomy` + `taxonomy=<name>` |
+| Content package | allowlist `['category','tag']` | declared names |
+| SEO `section` | `$page['categories'][0]` | the `primary` taxonomy's first term |
+| Sitemap | content only | content plus taxonomy archives |
+| Health | nothing | a new **Taxonomies** group |
+
+## Theme-facing API
+
+New helpers in `core/modules/content/taxonomy.php`:
+
+```php
+theme_taxonomies(): array                          // name => declaration, merged with defaults
+taxonomy_config(string $name): ?array
+content_type_taxonomies(string $type): array       // names the type offers, resolved
+taxonomy_url(string $name, string $slug): string   // url('<prefix>/<slug>')
+content_taxonomies(array $page): array             // name => list of term rows
+```
+
+A component or layout reads the one it means by name:
+
+```php
+<?php foreach (content_taxonomies($page)['topic'] ?? [] as $term): ?>
+    <a href="<?= e(taxonomy_url('topic', $term['slug'])) ?>"><?= e($term['name']) ?></a>
+<?php endforeach; ?>
+```
+
+`content_from_row()` sets `$page['taxonomies']` (keyed by declared name, each a
+list — empty when the item has none). `$page['categories']` and `$page['tags']`
+are kept as aliases for one release, then removed; the shipped theme moves to
+the new key in phase F1.
+
+An archive page keeps `$page['taxonomy']` (the term row, including its
+`taxonomy_type` name) and `$page['items']`, and gains `$page['taxonomy_config']`
+(its declaration) so a layout can title and style from the declaration rather
+than a literal.
+
+## Front-end routing
+
+`route_request()` builds a prefix map from `theme_taxonomies()` and, when the
+first path segment is a declared `url_prefix` and a slug follows, loads that
+archive through the generalised `load_taxonomy_archive($name, $slug)`. Unknown
+prefixes 404 as today. `/category/...` and `/tag/...` keep working because the
+defaults declare those prefixes.
+
+Collisions are a theme bug, not a runtime surprise: a `url_prefix` must not
+duplicate another taxonomy's, a content type's `url_prefix`, or a reserved route
+(`search`, `sitemap.xml`, `robots.txt`, `site.webmanifest`, `form-submit`,
+`form-token`) or `admin` / `media`. Health reports each.
+
+## Admin
+
+One page set replaces the two:
+
+```
+admin/taxonomy/index.php    ?type=<name>          list, filter, bulk
+admin/taxonomy/edit.php     ?type=<name>&id=…     add/edit a term
+admin/taxonomy/save.php     POST                  save_taxonomy(<name>, $_POST)
+admin/taxonomy/remove.php   POST                  remove_taxonomy(<name>, id)
+admin/taxonomy/bulk.php     POST                  bulk_delete_taxonomies(<name>, ids)
+```
+
+* `admin_page_capabilities()` drops `category` and `tag` and gains
+  `'taxonomy' => 'taxonomy.manage'`.
+* The sidebar keeps its **Collections** group (`nav_collections`), positioned
+  after the content-type links as today, and renders one link per declared
+  taxonomy (`/admin/taxonomy?type=<name>`), each with its declaration's label.
+  The group disappears when no taxonomies are declared. The active state is
+  keyed on the `taxonomy` page plus `?type=`.
+* The term form drops the content-type select (the content types decide where
+  the taxonomy is offered) and keeps name, slug and description.
+* **Old URLs keep working.** `admin/category.php` and `admin/tag.php` become
+  three-line redirects to `/admin/taxonomy?type=category` (and `tag`), so
+  bookmarks and muscle memory survive. They are removed once the redirects have
+  served their purpose.
+* Language: generic `taxonomy_*` keys in both files replace the used
+  `category_*` / `tag_*` keys; the built-in labels still resolve through
+  `admin_trans()` for the sidebar and page titles, while theme-declared labels
+  are shown as written (confirmed: no translation keys for new taxonomies yet).
+
+## Editor
+
+The content editor renders one control per taxonomy the current content type
+declares: a single `<select name="taxonomies[<name>]">` when `multiple` is
+false, a multi-select (or checkbox list) `name="taxonomies[<name>][]"` when
+true. A type with no `taxonomies` key — a Page, say — shows no controls at all.
+`admin/content/save.php`:
+
+* reads `taxonomies[<name>]`, drops ids whose term is not in that taxonomy, and
+  enforces the cardinality (`multiple => false` keeps the first valid id);
+* replaces the item's relationships for every declared taxonomy in one pass,
+  inside the existing transaction;
+* keeps `category_id` / `tag_ids[]` readable for one release so a stale form
+  does not silently drop terms.
+
+`admin/content/index.php`'s tag filter becomes a per-taxonomy filter, and the
+bulk "add/remove tag" action gains a taxonomy selector (default the first
+`multiple => true` taxonomy). `admin/content/bulk.php` and `duplicate.php`
+switch from `taxonomy_type = 'tag'` to the selected taxonomy.
+
+## Menus, redirects, package, SEO, sitemap
+
+* **Menus.** A taxonomy link becomes `type = 'taxonomy'` plus a `taxonomy` name,
+  added to the allowed kinds and offered by the picker for every declared
+  taxonomy. Existing `type = 'category' | 'tag'` items are still resolved (read
+  as taxonomy links) until re-saved.
+* **Redirects.** `redirect_content_path()` and the reserved-path list recognise
+  every declared `url_prefix`, not just the two.
+* **Content package.** The term-type allowlist becomes "any declared taxonomy",
+  so a package round-trips a Topic. Existing packages with `category`/`tag`
+  terms import unchanged.
+* **SEO.** The article `section` comes from the `primary` taxonomy's first term
+  (category by default), not `$page['categories'][0]`.
+* **Sitemap.** `generate_sitemap()` also lists every declared taxonomy archive
+  that has at least one published item, with the term's `updated_at` as
+  `lastmod` and the same `noindex`/visibility rules as content. Confirmed.
+
+## Health
+
+A new **Taxonomies** group in `theme_manifest_problems()`:
+
+* every `url_prefix` is non-empty, lowercase `[a-z0-9-]`, and unique;
+* no collision with a content type prefix or a reserved route;
+* every content type's `taxonomies` names a declared taxonomy;
+* a declared taxonomy that no content type lists is a warning;
+* `multiple` is boolean and `layout` (when given) exists;
+* at most one taxonomy is `primary`.
+
+## Data and migration
+
+The schema already carries what is needed: `taxonomy.taxonomy_type` is
+free-text and `taxonomy_term_relationships` links terms to items. The one
+change is retiring `taxonomy.content_type`:
+
+* stop writing it in `save_taxonomy()` and stop reading it in the editor and the
+  archive;
+* a migration makes it nullable and leaves existing values in place (harmless),
+  with a later migration free to drop it via `migrate_drop_column()`.
+
+No new table, no data rewrite, and `UNIQUE(taxonomy_type, slug)` is unchanged.
+
+## Phases
+
+Each ships alone with the usual bar: `php tests/run.php` passes, the function
+inventory moves only by the names the phase adds, and the golden-HTML set (the
+Track E verification bar) is unchanged except where a phase deliberately changes
+markup.
+
+* **F1 — Declare and read.** `taxonomy_defaults()`, `theme_taxonomies()`,
+  `taxonomy_config()`, `content_type_taxonomies()`, `taxonomy_url()`,
+  `content_taxonomies()`; `$page` gains `taxonomies` (with
+  `categories`/`tags` aliases); the shipped theme's layouts and `seo.php` move
+  to the new API; `blog_post.taxonomy_layout` moves onto the category/tag
+  declarations and the blog_post/portfolio_item `taxonomies` keys land; the
+  Health group lands. No visible change.
+* **F2 — Front end.** Router resolves any declared prefix; redirects, search
+  filters (`?taxonomy[<name>]=`) and menus move over; `primary` drives SEO.
+* **F3 — Admin unification.** `admin/taxonomy/*`, capability, the Collections
+  links, language keys, alias redirects. No editor change yet, so the pages
+  manage the same data the old ones did.
+* **F4 — Editor.** Per-declaration controls, `taxonomies[<name>]` POST, save
+  validation, content-list filter and bulk action.
+* **F5 — Cleanup.** Stop writing/reading `taxonomy.content_type` (migration);
+  content-package generalisation; remove the `category_*` / `tag_*` keys that
+  are now unused; update `docs-content.php`, `DEVELOPERS.md`, `AGENTS.md` and
+  `README.md`.
+* **F6 — Sitemap and term slugs.** List taxonomy archives in the sitemap
+  (confirmed); record a redirect when a term's slug changes, so the old archive
+  URL keeps working.
+
+## Test updates
+
+`tests/` names category or tag in twelve suites. F1–F6 update them as the
+behaviour changes: `content`, `http`, `search`, `menus`, `redirects`,
+`duplicate`, `export`, `pagination`, `pagination-http`, `seo`, `theme`,
+`admin`. New coverage: `theme_taxonomies()` merge/removal rules, a
+theme-declared third taxonomy end to end (declare → type lists it → admin →
+editor → archive → read in a layout), a type with no taxonomies showing no
+controls, cardinality enforcement, prefix collision reporting, archive URLs in
+the sitemap, and old `/admin/category` redirecting to the new page.
+
+## Non-goals
+
+* **Hierarchical taxonomies** (parent/child terms, a tree UI) — not asked for;
+  the table has no `parent_id` and the admin has no tree.
+* **Per-term custom fields**, term images or descriptions beyond the existing
+  `description`.
+* **Per-content-type archive layouts for a shared taxonomy** — one taxonomy has
+  one `layout`; a theme that needs two looks declares two taxonomies.
+* **A taxonomy manager in Settings** — taxonomies are structure, so the theme
+  declares them in code, like content types and components.
+* **Multi-language term names** — that is Track D.
+* **Drag-ordering terms** — a `weight` key can wait until someone asks.
+* **Changing how relationships are stored** — the existing link table stands.
+
+## Decisions (confirmed)
+
+1. **Shared terms** — a term can be used by every content type that offers its
+   taxonomy. Confirmed.
+2. **One admin page** at `/admin/taxonomy?type=<name>`, with a **Collections**
+   sidebar group holding one link per taxonomy. Confirmed.
+3. **Theme-declared labels are shown as written**, with no translation keys for
+   them yet; the built-in Category and Tag stay bilingual. Confirmed.
+4. **Search filters are nested**: `?taxonomy[<name>]=<slug>`. Confirmed.
+5. **Taxonomy archives are added to the sitemap.** Confirmed.
+6. **The type ↔ taxonomy association lives on the content type**
+   (`'taxonomies' => [...]`), so a Page can offer none, a Blog Post Category and
+   Tag, and a Portfolio Item Category. Confirmed as the requirement; the
+   declaration direction follows the existing content-type pattern.
+
+---
+
 # Backlog
 
 Confirm each before starting; none is scheduled.
@@ -849,6 +1234,8 @@ Settle each before starting the work it belongs to.
   report-only, or report-only plus nonces for the admin's inline scripts?
 * **Track D:** schedule the multi-language work when a real client needs a second
   locale, and decide then whether per-locale menu labels are in its first version.
+
+(Track F's decisions are settled; they are recorded at the end of that track.)
 
 # Notes
 

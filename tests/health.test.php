@@ -47,7 +47,7 @@ t('the theme manifest is reported as healthy', function () {
         $byLabel[$check['label']] = $check;
     }
 
-    foreach (['Theme layouts', 'Theme components', 'Theme meta fields', 'Theme assets', 'Theme partials', 'Theme form fields'] as $label) {
+    foreach (['Theme layouts', 'Theme components', 'Theme meta fields', 'Theme assets', 'Theme partials', 'Theme form fields', 'Theme taxonomies'] as $label) {
         assert_true(isset($byLabel[$label]), "{$label} should be part of the report");
         assert_eq('ok', $byLabel[$label]['status'] ?? null, "{$label} should be ok for the shipped theme");
     }

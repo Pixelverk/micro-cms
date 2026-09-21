@@ -177,6 +177,7 @@ function bootstrap_core(): void
     require_once CORE_PATH . '/modules/platform/pagination.php';
     require_once CORE_PATH . '/modules/platform/zip.php';
     require_once CORE_PATH . '/modules/platform/theme.php';
+    require_once CORE_PATH . '/modules/platform/taxonomies.php';
     require_once CORE_PATH . '/modules/platform/http.php';
     require_once CORE_PATH . '/modules/platform/datetime.php';
     // User functions (current_user, is_logged_in) are needed by capability

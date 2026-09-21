@@ -120,20 +120,30 @@ function seo_metadata(array $page): array
     $isArticle   = $ogType === 'article';
     $publishedAt = (int) ($page['published_at'] ?? 0);
     $updatedAt   = (int) ($page['updated_at'] ?? 0);
-    $categories  = is_array($page['categories'] ?? null) ? $page['categories'] : [];
-    $tags        = is_array($page['tags'] ?? null) ? $page['tags'] : [];
+    // The page array carries the item's terms, keyed by taxonomy name.
+    $taxonomies  = is_array($page['taxonomies'] ?? null) ? $page['taxonomies'] : [];
+    $primaryName = taxonomy_primary_name();
 
     $section    = '';
     $articleTags = [];
 
     if ($isArticle) {
-        $section = trim((string) ($categories[0]['name'] ?? ''));
+        // The primary taxonomy (a category, by default) names the section.
+        $section = $primaryName === null ? '' : trim((string) ($taxonomies[$primaryName][0]['name'] ?? ''));
 
-        foreach ($tags as $tag) {
-            $name = trim((string) ($tag['name'] ?? ''));
+        // A tag-like taxonomy allows several terms per item; its terms become
+        // the article's tags.
+        foreach (theme_taxonomies() as $name => $config) {
+            if (empty($config['multiple'])) {
+                continue;
+            }
 
-            if ($name !== '') {
-                $articleTags[] = $name;
+            foreach ($taxonomies[$name] ?? [] as $term) {
+                $termName = trim((string) ($term['name'] ?? ''));
+
+                if ($termName !== '') {
+                    $articleTags[] = $termName;
+                }
             }
         }
     }

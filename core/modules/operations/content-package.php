@@ -262,30 +262,31 @@ function content_package_export_content(): array
 
     foreach (db()->query("SELECT * FROM taxonomy ORDER BY id ASC") as $term) {
         $taxonomies[] = [
-            'type'         => (string) $term['taxonomy_type'],
-            'content_type' => (string) $term['content_type'],
-            'name'         => (string) $term['name'],
-            'slug'         => (string) $term['slug'],
-            'description'  => (string) ($term['description'] ?? ''),
-            'content'      => [],
+            'type'        => (string) $term['taxonomy_type'],
+            'name'        => (string) $term['name'],
+            'slug'        => (string) $term['slug'],
+            'description' => (string) ($term['description'] ?? ''),
+            'content'     => [],
         ];
     }
 
     // Attach the content each term is used by, so the links travel with it.
+    // Terms are shared, so the key is the taxonomy and slug; the relationship's
+    // own content_type is the linked item's type.
     $termIndex = [];
 
     foreach ($taxonomies as $index => $term) {
-        $termIndex[$term['type'] . ':' . $term['content_type'] . ':' . $term['slug']] = $index;
+        $termIndex[$term['type'] . ':' . $term['slug']] = $index;
     }
 
     $links = db()->query("
-        SELECT r.taxonomy_id, r.content_id, t.taxonomy_type, t.content_type, t.slug
+        SELECT r.taxonomy_id, r.content_id, r.content_type, t.taxonomy_type, t.slug
         FROM taxonomy_term_relationships r
         JOIN taxonomy t ON t.id = r.taxonomy_id
     ");
 
     foreach ($links as $link) {
-        $key = $link['taxonomy_type'] . ':' . $link['content_type'] . ':' . $link['slug'];
+        $key = $link['taxonomy_type'] . ':' . $link['slug'];
         $row = $byId[(int) $link['content_id']] ?? null;
 
         if ($row === null || $row['type'] !== $link['content_type'] || !isset($termIndex[$key])) {
@@ -529,12 +530,8 @@ function content_package_plan(array $package): array
 
             $termType = (string) ($term['type'] ?? '');
 
-            if (!in_array($termType, ['category', 'tag'], true)) {
+            if (taxonomy_config($termType) === null) {
                 $problems[] = "Taxonomy '{$term['slug']}' has unknown type '{$termType}'.";
-            }
-
-            if (!isset($contentTypes[(string) ($term['content_type'] ?? '')])) {
-                $problems[] = "Taxonomy '{$term['slug']}' belongs to an unknown content type.";
             }
 
             foreach ((array) ($term['content'] ?? []) as $ref) {
@@ -821,23 +818,23 @@ function content_package_import(array $package, array $options = []): array
             // Taxonomy terms, then the links between them and the content.
             $termIds = [];
 
+            // content_type is written empty: terms are shared across content
+            // types, so the column is a retired vestige.
             $insertTerm = $pdo->prepare("
                 INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, description, created_at, updated_at)
-                VALUES (:taxonomy_type, :content_type, :name, :slug, :description, :now, :now)
+                VALUES (:taxonomy_type, '', :name, :slug, :description, :now, :now)
             ");
 
             foreach ($package['taxonomies'] as $term) {
                 $insertTerm->execute([
                     'taxonomy_type' => (string) $term['type'],
-                    'content_type'  => (string) $term['content_type'],
                     'name'          => (string) ($term['name'] ?? $term['slug']),
                     'slug'          => (string) $term['slug'],
                     'description'   => (string) ($term['description'] ?? ''),
                     'now'           => $now,
                 ]);
 
-                $termIds[(string) $term['type'] . ':' . (string) $term['content_type'] . ':' . (string) $term['slug']]
-                    = (int) $pdo->lastInsertId();
+                $termIds[(string) $term['type'] . ':' . (string) $term['slug']] = (int) $pdo->lastInsertId();
                 $summary['taxonomies']++;
             }
 
@@ -847,15 +844,18 @@ function content_package_import(array $package, array $options = []): array
             ");
 
             foreach ($package['taxonomies'] as $term) {
-                $termKey = (string) $term['type'] . ':' . (string) $term['content_type'] . ':' . (string) $term['slug'];
+                $termKey = (string) $term['type'] . ':' . (string) $term['slug'];
 
                 foreach ((array) ($term['content'] ?? []) as $ref) {
                     if (!isset($termIds[$termKey], $ids[(string) $ref])) {
                         continue;
                     }
 
+                    // The relationship records the linked item's own type.
+                    $itemType = explode(':', (string) $ref, 2)[0] ?? '';
+
                     $insertLink->execute([
-                        'content_type' => (string) $term['content_type'],
+                        'content_type' => $itemType,
                         'content_id'   => $ids[(string) $ref],
                         'taxonomy_id'  => $termIds[$termKey],
                     ]);

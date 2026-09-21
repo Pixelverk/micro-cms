@@ -575,4 +575,37 @@ t('the author field is editable and reaches the head', function () {
     assert_eq('Grace Hopper', $meta['author'] ?? '', 'a posted author is kept');
 });
 
+t('the sitemap lists taxonomy archives that have published items', function () {
+    set_setting('site_url', 'https://example.com');
+    settings_cache_clear();
+
+    $pdo = db();
+    $now = time();
+
+    $term = static function (string $slug) use ($pdo, $now): int {
+        $pdo->prepare("
+            INSERT INTO taxonomy (taxonomy_type, content_type, name, slug, created_at, updated_at)
+            VALUES ('category', '', ?, ?, ?, ?)
+        ")->execute([ucfirst(str_replace('-', ' ', $slug)), $slug, $now, $now]);
+
+        return (int) $pdo->lastInsertId();
+    };
+
+    $linked = $term('sitemap-term');
+    $empty  = $term('empty-term');
+
+    $pageId = (int) $pdo->query("SELECT id FROM content WHERE slug = 'about' AND deleted_at IS NULL LIMIT 1")->fetchColumn();
+    $pdo->prepare("
+        INSERT OR IGNORE INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id)
+        VALUES ('page', :id, :term)
+    ")->execute(['id' => $pageId, 'term' => $linked]);
+
+    $xml = generate_sitemap();
+
+    assert_contains('https://example.com/category/sitemap-term/', $xml, 'a term with a published item is advertised');
+    assert_not_contains('empty-term', $xml, 'an empty archive is not');
+
+    $pdo->prepare("DELETE FROM taxonomy WHERE id IN (?, ?)")->execute([$linked, $empty]);
+});
+
 exit(test_summary());

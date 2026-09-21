@@ -244,6 +244,39 @@ function redirect_record_slug_change(string $type, array $oldRow, array $newRow)
 }
 
 /**
+ * Keep an old taxonomy archive URL alive after a term's slug changes.
+ */
+function redirect_record_taxonomy_slug_change(string $kind, string $oldSlug, string $newSlug): ?int
+{
+    $config = taxonomy_config($kind);
+
+    if ($config === null || $oldSlug === '' || $newSlug === '' || $oldSlug === $newSlug) {
+        return null;
+    }
+
+    $prefix = trim((string) ($config['url_prefix'] ?? ''), '/');
+
+    if ($prefix === '') {
+        return null;
+    }
+
+    $oldPath = $prefix . '/' . $oldSlug;
+    $newPath = $prefix . '/' . $newSlug;
+
+    if (redirect_is_reserved($oldPath)) {
+        return null;
+    }
+
+    try {
+        return redirect_save($oldPath, $newPath, 301);
+    } catch (Throwable $exception) {
+        debug_log('redirect not recorded for /' . $oldPath . '/: ' . $exception->getMessage());
+
+        return null;
+    }
+}
+
+/**
  * Where a content row lives: its type's prefix plus its parents' slugs.
  *
  * @param list<array<string, mixed>> $rows Rows of the same type, when the caller has them.
@@ -363,14 +396,20 @@ function redirect_shadowed_content(string $path): string
         return '';
     }
 
-    // An archive lives at category/<slug> or tag/<slug>.
+    // An archive lives at any declared taxonomy's url_prefix.
     $parts = explode('/', $path);
 
-    if (count($parts) === 2 && in_array($parts[0], ['category', 'tag'], true)) {
-        $stmt = db()->prepare("SELECT name FROM taxonomy WHERE taxonomy_type = :type AND slug = :slug LIMIT 1");
-        $stmt->execute(['type' => $parts[0], 'slug' => $parts[1]]);
+    if (count($parts) === 2) {
+        foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig) {
+            if ((string) $taxonomyConfig['url_prefix'] !== $parts[0]) {
+                continue;
+            }
 
-        return (string) $stmt->fetchColumn();
+            $stmt = db()->prepare("SELECT name FROM taxonomy WHERE taxonomy_type = :type AND slug = :slug LIMIT 1");
+            $stmt->execute(['type' => $taxonomyName, 'slug' => $parts[1]]);
+
+            return (string) $stmt->fetchColumn();
+        }
     }
 
     if (!function_exists('load_content_by_slug')) {

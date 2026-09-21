@@ -197,16 +197,24 @@ function menu_item_target(array $item, array &$context): array
         return ['url' => $slug !== '' ? $slug : '#', 'broken' => false];
     }
 
-    if ($type === 'category' || $type === 'tag') {
-        $key = $type . ':' . $slug;
+    if ($type === 'category' || $type === 'tag' || $type === 'taxonomy') {
+        // A taxonomy link names its taxonomy; the legacy category/tag kinds
+        // name themselves.
+        $taxonomyName = $type === 'taxonomy' ? trim((string) ($item['taxonomy'] ?? '')) : $type;
+
+        if (taxonomy_config($taxonomyName) === null) {
+            return ['url' => '', 'broken' => true];
+        }
+
+        $key = $taxonomyName . ':' . $slug;
 
         if (!isset($context['terms'][$key])) {
             $stmt = db()->prepare("SELECT COUNT(*) FROM taxonomy WHERE taxonomy_type = ? AND slug = ?");
-            $stmt->execute([$type, $slug]);
+            $stmt->execute([$taxonomyName, $slug]);
             $context['terms'][$key] = (int) $stmt->fetchColumn() > 0;
         }
 
-        return ['url' => url($type . '/' . $slug), 'broken' => !$context['terms'][$key]];
+        return ['url' => taxonomy_url($taxonomyName, $slug), 'broken' => !$context['terms'][$key]];
     }
 
     // Anything else has to be a content type the theme declares.
@@ -441,15 +449,16 @@ function delete_menu(string $slug): bool
 /**
  * Normalise the posted menu item tree before it is saved.
  *
- * `type` is a content type key, 'url' for a hand-written link, or 'category' /
- * 'tag' for an archive. `content_id` is what lets a link follow a renamed page;
+ * `type` is a content type key, 'url' for a hand-written link, or 'taxonomy'
+ * for an archive (with a `taxonomy` name; the legacy 'category' / 'tag' kinds
+ * still resolve). `content_id` is what lets a link follow a renamed page;
  * the slug beside it is the fallback. Neither `content_id` nor `hidden` is
  * written when it carries no information, so a plain item stays plain.
  */
 function process_menu_items(array $items): array {
     $theme = theme_config();
     $kinds = array_merge(
-        ['url', 'category', 'tag'],
+        ['url', 'category', 'tag', 'taxonomy'],
         array_keys($theme['content_types'] ?? [])
     );
 
@@ -480,6 +489,14 @@ function process_menu_items(array $items): array {
 
         if ($contentId > 0) {
             $entry['content_id'] = $contentId;
+        }
+
+        if ($type === 'taxonomy') {
+            $taxonomyName = trim((string) ($item['taxonomy'] ?? ''));
+
+            if ($taxonomyName !== '') {
+                $entry['taxonomy'] = $taxonomyName;
+            }
         }
 
         if (!empty($item['hidden'])) {

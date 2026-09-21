@@ -66,8 +66,9 @@ if (!$taxonomy) {
             }
 
             // Categories & Tags
-            $categories = array_column($item['categories'] ?? [], 'name');
-            $tags       = array_column($item['tags'] ?? [], 'name');
+            $itemTaxonomies = content_taxonomies($item);
+            $categories = array_column($itemTaxonomies['category'] ?? [], 'name');
+            $tags       = array_column($itemTaxonomies['tag'] ?? [], 'name');
 
             if ($categories) {
                 echo '<span class="taxonomy-categories">Category: ' . implode(', ', array_map('htmlspecialchars', $categories)) . '</span>';

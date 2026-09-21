@@ -96,14 +96,18 @@ function route_request($path): array
     // ----------------------------
     // Taxonomy archives
     // ----------------------------
-    if (str_starts_with($path, 'category/') || str_starts_with($path, 'tag/')) {
-        [$taxonomyType, $slug] = explode('/', $path, 2);
+    // Every declared taxonomy owns its url_prefix; the first path segment picks
+    // which one, and the second is the term slug.
+    $taxonomyPrefixes = [];
 
-        if (!in_array($taxonomyType, ['category', 'tag'], true)) {
-            return load_fallback_404();
-        }
+    foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig) {
+        $taxonomyPrefixes[(string) $taxonomyConfig['url_prefix']] = (string) $taxonomyName;
+    }
 
-        return load_taxonomy_archive($taxonomyType, $slug);
+    $segments = explode('/', $path, 2);
+
+    if (count($segments) === 2 && isset($taxonomyPrefixes[$segments[0]])) {
+        return load_taxonomy_archive($taxonomyPrefixes[$segments[0]], $segments[1]);
     }
 
     // Normal page: load by slug
@@ -178,6 +182,15 @@ function route_admin_request(): void
         return;
     }
 
+    // The old category and tag pages are the taxonomy page for that name, so a
+    // bookmark keeps working. The whole subtree redirects, not just the list.
+    $legacy = explode('/', $page, 2);
+
+    if (in_array($legacy[0], ['category', 'tag'], true)) {
+        $_GET['type'] = $_REQUEST['type'] = $legacy[0];
+        $page = isset($legacy[1]) ? 'taxonomy/' . $legacy[1] : 'taxonomy';
+    }
+
     // Page-level capability check.
     admin_guard($page);
 
@@ -205,10 +218,24 @@ function route_search_request(): array
 {
     $query = trim((string) ($_GET['q'] ?? ''));
 
+    // Taxonomy filters are nested and only declared names are honoured:
+    //   ?taxonomy[category]=news&taxonomy[topic]=design
+    $requestedTaxonomies = $_GET['taxonomy'] ?? [];
+    $taxonomyFilters = [];
+
+    if (is_array($requestedTaxonomies)) {
+        foreach (theme_taxonomies() as $taxonomyName => $taxonomyConfig) {
+            $slug = trim((string) ($requestedTaxonomies[$taxonomyName] ?? ''));
+
+            if ($slug !== '') {
+                $taxonomyFilters[$taxonomyName] = $slug;
+            }
+        }
+    }
+
     $filters = [
         'type'     => trim((string) ($_GET['type'] ?? '')),
-        'category' => trim((string) ($_GET['category'] ?? '')),
-        'tag'      => trim((string) ($_GET['tag'] ?? '')),
+        'taxonomy' => $taxonomyFilters,
     ];
 
     $page = max(1, (int) ($_GET['page'] ?? 1));

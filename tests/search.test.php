@@ -210,9 +210,9 @@ t('results can be filtered by category and tag', function () {
     $pdo->prepare("INSERT INTO taxonomy_term_relationships (content_type, content_id, taxonomy_id) VALUES ('page', :id, :tax)")
         ->execute(['id' => $pageId, 'tax' => $tagId]);
 
-    assert_true(search_content('TaxPageMarker', ['category' => 'page-news'])['total'] >= 1, 'category filter matches');
-    assert_true(search_content('TaxPageMarker', ['tag' => 'featured'])['total'] >= 1, 'tag filter matches');
-    assert_eq(0, search_content('TaxPageMarker', ['category' => 'missing'])['total'], 'unknown term matches nothing');
+    assert_true(search_content('TaxPageMarker', ['taxonomy' => ['category' => 'page-news']])['total'] >= 1, 'category filter matches');
+    assert_true(search_content('TaxPageMarker', ['taxonomy' => ['tag' => 'featured']])['total'] >= 1, 'tag filter matches');
+    assert_eq(0, search_content('TaxPageMarker', ['taxonomy' => ['category' => 'missing']])['total'], 'unknown term matches nothing');
 });
 
 t('results paginate', function () {

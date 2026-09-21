@@ -393,6 +393,94 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
         }
     }
 
+    // ---------------------------------------------------------- taxonomies
+    $taxonomies = theme_taxonomies(is_array($theme['taxonomies'] ?? null) ? $theme['taxonomies'] : []);
+
+    $reservedPrefixes = ['admin', 'media', 'search', 'sitemap.xml', 'robots.txt', 'site.webmanifest', 'form-submit', 'form-token'];
+
+    // A content type's URL prefix is the other namespace an archive collides with.
+    $contentPrefixes = [];
+
+    foreach ($contentTypes as $type => $config) {
+        $prefix = trim((string) ($settings['content_prefixes'][$type] ?? ($config['url_prefix'] ?? '')), '/');
+
+        if ($prefix !== '') {
+            $contentPrefixes[$prefix] = (string) $type;
+        }
+    }
+
+    $seenPrefixes = [];
+    $primaryCount = 0;
+
+    foreach ($taxonomies as $name => $config) {
+        $prefix = (string) ($config['url_prefix'] ?? '');
+
+        if ($prefix === '' || preg_match('/^[a-z0-9-]+$/', $prefix) !== 1) {
+            $add('taxonomies', 'fail', "taxonomy '{$name}' has an invalid url_prefix '{$prefix}' (lowercase a-z, 0-9 and - only)");
+        } elseif (isset($seenPrefixes[$prefix])) {
+            $add('taxonomies', 'fail', "taxonomy '{$name}' and '{$seenPrefixes[$prefix]}' share the url_prefix '{$prefix}'");
+        } else {
+            $seenPrefixes[$prefix] = (string) $name;
+
+            if (in_array($prefix, $reservedPrefixes, true)) {
+                $add('taxonomies', 'fail', "taxonomy '{$name}' uses the reserved url_prefix '{$prefix}'");
+            }
+
+            if (isset($contentPrefixes[$prefix])) {
+                $add('taxonomies', 'fail', "taxonomy '{$name}' url_prefix '{$prefix}' collides with the '{$contentPrefixes[$prefix]}' content type");
+            }
+        }
+
+        $layout = (string) ($config['layout'] ?? '');
+
+        if ($layout !== '' && !isset($layoutFiles[$layout])) {
+            $add('taxonomies', 'fail', "taxonomy '{$name}' names layout '{$layout}', but theme/layouts/{$layout}.php does not exist");
+        }
+
+        if (!empty($config['primary'])) {
+            $primaryCount++;
+        }
+    }
+
+    if ($primaryCount > 1) {
+        $add('taxonomies', 'warn', "{$primaryCount} taxonomies are marked primary; only one can supply the article section");
+    }
+
+    // Which taxonomies each content type offers.
+    $offered = [];
+    $explicitTaxonomies = is_array($theme['taxonomies'] ?? null) ? $theme['taxonomies'] : [];
+
+    foreach ($contentTypes as $type => $config) {
+        $declared = $config['taxonomies'] ?? [];
+
+        if ($declared === null || $declared === []) {
+            continue;
+        }
+
+        if (!is_array($declared)) {
+            $add('taxonomies', 'fail', "{$type}.taxonomies is not a list of taxonomy names");
+            continue;
+        }
+
+        foreach ($declared as $name) {
+            $name = (string) $name;
+
+            if (!isset($taxonomies[$name])) {
+                $add('taxonomies', 'fail', "{$type}.taxonomies names '{$name}', which the manifest does not declare");
+            } else {
+                $offered[$name] = true;
+            }
+        }
+    }
+
+    foreach ($taxonomies as $name => $config) {
+        // Only a taxonomy the theme declares itself is "unused" when no content
+        // type offers it; the two core defaults are always present.
+        if (!isset($offered[$name]) && array_key_exists($name, $explicitTaxonomies) && $explicitTaxonomies[$name] !== false) {
+            $add('taxonomies', 'warn', "taxonomy '{$name}' is declared but no content type offers it");
+        }
+    }
+
     return $problems;
 }
 
@@ -509,6 +597,7 @@ function health_checks(): array
         'assets'      => ['Theme assets', 'Every declared stylesheet, script and icon exists.'],
         'partials'    => ['Theme partials', 'Every partial a layout or component includes exists.'],
         'forms'       => ['Theme form fields', 'Every declared form field is well formed.'],
+        'taxonomies'  => ['Theme taxonomies', 'Every taxonomy has a usable prefix and layout, and each content type names taxonomies that exist.'],
     ];
 
     foreach ($themeGroups as $group => [$label, $okDetail]) {
