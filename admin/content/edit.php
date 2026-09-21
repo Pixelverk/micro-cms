@@ -306,6 +306,11 @@ if ($richTextEditor === null) {
             );
         }
 
+        // A field may declare how wide it wants to be. The values are the
+        // helper's, so a typo becomes automatic rather than a class the
+        // stylesheet does not know.
+        $schema = content_component_field_schema($schema);
+
         $availableComponents[$name] = [
             'label'            => $component['label'] ?? $name,
             'description'      => $component['description'] ?? '',

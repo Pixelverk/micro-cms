@@ -35,25 +35,29 @@ return [
         'type' => 'text',
         'label' => 'Btn 1 url',
         'required' => false,
-        'default' => '#'
+        'default' => '#',
+        'span' => 'half'
     ],
     'btn1_text' => [
         'type' => 'text',
         'label' => 'Btn 1 text',
         'required' => false,
-        'default' => 'Get Started'
+        'default' => 'Get Started',
+        'span' => 'half'
     ],
     'btn2_url' => [
         'type' => 'text',
         'label' => 'Btn 2 url',
         'required' => false,
-        'default' => '#'
+        'default' => '#',
+        'span' => 'half'
     ],
     'btn2_text' => [
         'type' => 'text',
         'label' => 'Btn 2 text',
         'required' => false,
-        'default' => 'Learn More'
+        'default' => 'Learn More',
+        'span' => 'half'
     ]
 ],
 

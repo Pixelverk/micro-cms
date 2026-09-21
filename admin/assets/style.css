@@ -1832,14 +1832,49 @@ button.header-icon:hover { background: transparent; }
     font-size: 0.85rem;
 }
 
-/* Component fields fill the row: short fields sit beside each other and a
-   field only takes the whole width when there is not room for two. The track is
-   the only thing that decides a field's width. */
+/* Component fields fill the row.
+   A field that declares nothing takes the whole row, exactly as if it had said
+   'span' => 'full'. That is deliberate: the author sees the field at full width
+   and opts into 'third' or 'half', rather than a silent middle value deciding
+   for them, and a field added to an existing schema keeps the width it always
+   had.
+   The row is six tracks, which is what lets 'third' (two tracks) and 'half'
+   (three) both be exact. The spans are one custom property each so the narrower
+   layouts below only change the track count.
+   Width is measured on the card, not the viewport, so two component cards of
+   different widths on one page each lay out sensibly. */
 .component-fields {
+    container-type: inline-size;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0.85rem 1rem;
     align-content: start;
+
+    --field-span-third: span 2;
+    --field-span-half: span 3;
+    --field-span-full: 1 / -1;
+}
+
+.component-fields > .field { grid-column: var(--field-span-full); }
+.component-fields > .field-span-third { grid-column: var(--field-span-third); }
+.component-fields > .field-span-half  { grid-column: var(--field-span-half); }
+.component-fields > .field-span-full  { grid-column: var(--field-span-full); }
+
+/* Below this a six-track row leaves a third under 200px to type in. Three
+   tracks of roughly the same width, with a declared half clamped to the row —
+   which is what an author would want at that size. An undeclared field is still
+   the whole row. */
+@container (max-width: 1040px) {
+    .component-fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        --field-span-third: span 1;
+    }
+}
+
+/* Too narrow for one field to share a row at all. */
+@container (max-width: 640px) {
+    .component-fields > .field { grid-column: 1 / -1; }
 }
 
 /* A grid item defaults to min-width: auto, which lets a wide child (a rich-text
@@ -2834,6 +2869,7 @@ button.sidebar-link {
 
 #components-container .component-title {
     cursor: grab;
+    margin-bottom: 1rem;
 }
 
 #components-container {

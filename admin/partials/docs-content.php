@@ -155,6 +155,7 @@ function docs_content(): array
                         "label is the component's name in the editor; description is the one line the Add component library shows under it",
                         "a preview image at theme/assets/previews/<component>.<ext> is what the library shows; without one the tile is a neutral placeholder",
                         "schema field types: text, textarea, number, color, checkbox, url, email, select, quill, image, icon",
+                        "a field may declare 'span' => 'third' or 'half' to share the editor row; a field with no span takes the whole row, the same as 'span' => 'full'",
                         "an image field gets the media-library picker; render its value with render_image(\$props['image'] ?? '', ['class' => 'img-fluid']) so a media id and a URL both work",
                         "an icon field opens an icon browser built from theme/assets/icons/; render its value with theme_icon(\$props['icon'] ?? ''), which inlines the SVG and returns nothing for a name the theme does not ship",
                         "an image field's default fills a new component and comes back when the editor clears the field; ':placeholder' is the value that means the CMS's placeholder box, and 'ratio' in the attrs says what shape it is",

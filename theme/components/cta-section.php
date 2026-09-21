@@ -25,17 +25,21 @@ return [
         'required' => true,
         'default' => 'Default Text'
     ],
+    // A field with no span takes the whole row; the button's two fields read as
+    // a pair, so they take half a row each.
     'url' => [
         'type' => 'string',
         'label' => 'CTA URL',
         'required' => true,
-        'default' => '#'
+        'default' => '#',
+        'span' => 'half'
     ],
     'linktext' => [
         'type' => 'string',
         'label' => 'CTA Link Text',
         'required' => true,
-        'default' => 'Click Me'
+        'default' => 'Click Me',
+        'span' => 'half'
     ]
 ],
 

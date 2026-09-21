@@ -69,8 +69,10 @@ and tidy-ups, media fallbacks without theme placeholder files, component
 previews with the Add component dialog, and the whole-site backup download.
 
 **Shipped:** rich-text-only content types — a content type can declare
-`'editor' => 'rich-text'` and be edited as one rich text field; and content-type
-meta fields — a content type can declare its own meta keys under `'fields'`.
+`'editor' => 'rich-text'` and be edited as one rich text field; content-type
+meta fields — a content type can declare its own meta keys under `'fields'`;
+and component field widths — a component schema field can declare
+`'span' => 'full' | 'half' | 'third'`.
 See both below. What is left is in the Backlog, which is unscheduled: confirm an
 item before starting it.
 
@@ -308,6 +310,57 @@ mechanism with its galleries is untouched. `content_meta_fields()` reads only
   error rendering beside a field: a failed field reports through the existing
   save-error path.
 * Loosening `validate_url()` for relative, `mailto:` or `tel:` links.
+
+---
+
+## Component field widths
+
+**Status:** shipped.
+
+### Why
+
+Component fields used to take a whole row each, which is wasteful on a wide
+card. They now share a row, but a flow decides the pairings by width rather than
+by what the fields are, and a theme had no way to say "this one wants the row".
+
+### The declaration
+
+A schema field may add one key:
+
+```php
+'title' => ['type' => 'text', 'label' => 'Title', 'span' => 'full'],
+```
+
+`full`, `half` or `third`. Omitted — or a value the editor does not know — means
+the field takes the whole row, exactly as if `full` had been written. That is
+deliberate: the author sees the field at full width and opts into `third` or
+`half`, rather than a silent middle value deciding for them, and a field added
+to an existing schema keeps the width it always had.
+
+### How it works
+
+* The row is six tracks, which is what lets `third` (two tracks) and `half`
+  (three) both be exact. A field that declares nothing is the whole row (see
+  above); `third` and `half` are the only reasons to declare anything. Each span
+  is a custom property, so the narrower layouts change only the track count.
+  The grid is switched by the card's own width (`@container`), not the viewport:
+  six tracks, then three on a card under 1040px, then one field per row under
+  640px.
+* `core/helpers/content.php` owns the allowed values and normalises the schema
+  once, so the editor script only applies the class it is handed and there is
+  one list to change. The shipped theme declares a span only where it is not the
+  default — the hero's and CTA's paired fields.
+* Health reports a `span` that is not one of the three, because a typo would
+  otherwise be silently ignored — the same reasoning as the meta field types.
+* Components only. The meta fields and the SEO fields use their own grids and
+  are unchanged; the same hint could be added to them later.
+
+### Verification
+
+`php tests/run.php` passes with a test for the schema normalisation (known
+values kept, an unknown one dropped) and for the editor applying the class.
+Through the local server: a component whose schema declares spans renders those
+classes, and one that declares none keeps the automatic flow.
 
 ---
 

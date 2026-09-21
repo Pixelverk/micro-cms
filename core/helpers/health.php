@@ -237,6 +237,20 @@ function theme_manifest_problems(array $theme, string $themePath, array $setting
                 $add('components', 'warn', "{$name}'s content_type default '{$default}' is not a declared content type");
             }
         }
+
+        // A field's `span` becomes a class, so a value the editor does not know
+        // is dropped and the field silently flows instead. Worth saying.
+        foreach ($schema as $field => $rules) {
+            if (!is_array($rules) || !isset($rules['span'])) {
+                continue;
+            }
+
+            $span = is_string($rules['span']) ? $rules['span'] : '';
+
+            if (!in_array($span, content_component_field_spans(), true)) {
+                $add('components', 'warn', "{$name}.{$field} declares span '{$span}', which is not 'full', 'half' or 'third'");
+            }
+        }
     }
 
     // ---------------------------------------------------------- meta fields

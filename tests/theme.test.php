@@ -116,6 +116,62 @@ t('every theme component follows the component contract', function () {
     }
 });
 
+t('a component field width is kept only when the editor knows it', function () {
+    $schema = content_component_field_schema([
+        'title'    => ['type' => 'text', 'span' => 'full'],
+        'subtitle' => ['type' => 'text', 'span' => 'half'],
+        'aside'    => ['type' => 'text', 'span' => 'third'],
+        'body'     => ['type' => 'textarea'],
+        'note'     => ['type' => 'text', 'span' => 'wide'],
+        'broken'   => ['type' => 'text', 'span' => ['full']],
+    ]);
+
+    assert_eq('full', $schema['title']['span']);
+    assert_eq('half', $schema['subtitle']['span']);
+    assert_eq('third', $schema['aside']['span']);
+
+    assert_true(!isset($schema['body']['span']), 'a field that declares nothing is left to flow');
+    assert_true(!isset($schema['note']['span']), 'an unknown width is dropped, so the field flows');
+    assert_true(!isset($schema['broken']['span']), 'and so is one that is not a string');
+
+    // The allowed values are one list, read wherever they are checked.
+    assert_eq(['full', 'half', 'third'], content_component_field_spans());
+
+    // The shipped theme only declares the widths that are not the default: a
+    // field with no span already takes the whole row, so saying 'full' would be
+    // noise.
+    $hero = content_component_definition('hero-section')['schema'];
+
+    assert_true(!isset($hero['title']['span']), 'an undeclared field is left alone — it is full already');
+    assert_eq('half', content_component_definition('cta-section')['schema']['url']['span'] ?? null, 'a paired field asks for half');
+});
+
+t('the editor applies a declared field width as a class', function () {
+    $js = (string) file_get_contents(CMS_PATH . '/admin/assets/content-editor.js');
+
+    assert_contains('fieldNode.classList.add(`field-span-${field.span}`)', $js, 'the schema value becomes a class');
+    assert_contains('if (field.span)', $js, 'a field that declares nothing is left alone');
+
+    // The row is six tracks, which is what lets 'third' (two tracks) and 'half'
+    // (three) both be exact. A field that declares nothing is the whole row,
+    // exactly like 'full' — the author opts in rather than a default deciding
+    // for them. The spans are custom properties so the narrower layouts only
+    // change the track count.
+    $css = (string) file_get_contents(CMS_PATH . '/admin/assets/style.css');
+
+    assert_contains('grid-template-columns: repeat(6, minmax(0, 1fr))', $css, 'the wide row is six tracks');
+    assert_contains('.component-fields > .field { grid-column: var(--field-span-full); }', $css, 'an undeclared field takes the whole row, like full');
+    assert_contains('--field-span-third: span 2;', $css, 'a third is two of six');
+    assert_contains('--field-span-half: span 3;', $css, 'a half is three of six');
+    assert_contains('--field-span-full: 1 / -1;', $css, 'full takes the row');
+
+    // The card's own width decides when fields stop sharing a row, and the
+    // narrower layouts only change the track count.
+    assert_contains('container-type: inline-size', $css, 'the row is measured on the card, not the viewport');
+    assert_contains('grid-template-columns: repeat(3, minmax(0, 1fr))', $css, 'a narrow card shares between three');
+    assert_contains('@container (max-width: 640px)', $css, 'too narrow to share at all: every field takes the row');
+});
+
 t('the theme ships its icons as SVG files, and inlines the one a component asks for', function () {
     $icons = theme_icons();
 

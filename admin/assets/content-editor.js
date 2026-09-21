@@ -91,6 +91,11 @@ function createComponent(type, data = {}) {
         fieldNode.querySelector('.field-label').textContent = field.label || name;
         const input = fieldNode.querySelector('.field-input');
 
+        // How much of the row the field takes. The schema value is normalised
+        // server-side, so it is one of the classes the stylesheet knows; a field
+        // that declares nothing is left to the grid.
+        if (field.span) fieldNode.classList.add(`field-span-${field.span}`);
+
         // A rich-text field's hidden input carries the submitted HTML; Quill is
         // built over it by bootstrapQuillEditors() once the component is added.
         if (fieldType === 'quill') {

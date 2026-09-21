@@ -1787,6 +1787,47 @@ function content_rich_text_body(array $ctConfig, array $body): array
 */
 
 /**
+ * The widths a component schema field may ask for.
+ *
+ * A field that declares none is automatic: the editor's grid gives it its
+ * natural share of the row.
+ *
+ * @return list<string>
+ */
+function content_component_field_spans(): array
+{
+    return ['full', 'half', 'third'];
+}
+
+/**
+ * A component schema with its field widths normalised.
+ *
+ * The editor turns `span` into a class, so a value the stylesheet does not know
+ * is dropped here — the field then behaves as if it had declared nothing. The
+ * allowed values live in content_component_field_spans() so the editor, the
+ * save path and the Health page all read the same list.
+ *
+ * @param array<string, mixed> $schema
+ * @return array<string, mixed>
+ */
+function content_component_field_schema(array $schema): array
+{
+    foreach ($schema as $name => $field) {
+        if (!is_array($field) || !isset($field['span'])) {
+            continue;
+        }
+
+        $span = is_string($field['span']) ? $field['span'] : '';
+
+        if (!in_array($span, content_component_field_spans(), true)) {
+            unset($schema[$name]['span']);
+        }
+    }
+
+    return $schema;
+}
+
+/**
  * A component's own definition, or [] when it does not exist.
  *
  * @return array<string, mixed>
